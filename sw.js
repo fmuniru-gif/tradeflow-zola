@@ -1,5 +1,5 @@
-/* TradeFlow PWA — Zola Electronics Zone (Tamale) — Service Worker v3.0 */
-const CACHE = 'tradeflow-v3-2';
+/* TradeFlow PWA — Zola Electronics Zone (Tamale) — Service Worker v3.2.1 */
+const CACHE = 'tradeflow-v3-2-1';
 const ASSETS = [
   './',
   './index.html',

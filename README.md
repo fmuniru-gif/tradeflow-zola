@@ -61,16 +61,29 @@ Offline-first Progressive Web App for sales, inventory, cash balances, expenses,
 
 ---
 
-## Logins (from your Excel system)
+## Logins (defaults — change in Settings after first login)
 
 | Cashier            | Role    | Password  | Tel        |
 |--------------------|---------|-----------|------------|
 | Muniru Fuseini     | ADMIN   | `trnat330`| 0553486788 |
 | Abdul-Basit        | CASHIER2| `6522558` | 0508223452 |
 
-- **Admin Mode PIN** (sensitive actions): `055348`
-- **Price Adjustment PIN**: `0000`
-- Only **ADMIN** can Stock In and Undo transactions.
+- **Admin Mode PIN** (default): `055348`
+- **Price Adjustment PIN** (default): `0000`
+- Admin can change PINs, add/edit/delete users under **Settings** (elevated only).
+- Cashier 2: Sale Out + own receipts today, unless Admin Mode is ON.
+
+## Import historical Excel (2020–today)
+
+1. Login as ADMIN (or Cashier2 with Admin Mode PIN).
+2. **Settings** → **Import Excel workbook**.
+3. Choose your VBA `.xlsx` (the real shop file).
+4. Mode:
+   - **Merge** — keep app data, add/update from Excel
+   - **Replace** — replace stock/accounts/sales history; **keeps** security users/PINs
+5. Device must be online once so SheetJS can load, then data stays offline.
+
+Mapped sheets include: `STOCK AND SALES RECORDS`, `DEBTORS`, `CREDITORS`, `DEPOSITORS`, monthly snapshots, `ACCOUNT_TRANSACTIONS`, `CASH_BALANCES`, `EXPENSES`, `RECEIPT REGISTER`, `KPI_HISTORY`, `Cashiers`, `BusinessInfo`.
 
 ---
 

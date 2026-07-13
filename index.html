@@ -150,7 +150,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.2 · Tamale · GH₵ · Offline-ready</div>
+    <div class="sub">TradeFlow v3.2.1 · Tamale · GH₵ · Offline-ready</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -170,7 +170,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.2 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.2.1 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -221,8 +221,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
    TradeFlow PWA v3.0 — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.2';
-const DB_KEY = 'tradeflow_v32_zola';
+const APP_VERSION = '3.2.1';
+const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0;
 const BUSINESS = {
   name: 'Zola Electronics Zone',
@@ -1923,7 +1923,7 @@ function viewSync(){
       <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
       <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
       <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
-      <div class="statline"><span>SW cache</span><b>tradeflow-v3-2</b></div>
+      <div class="statline"><span>SW cache</span><b>tradeflow-v3-2-1</b></div>
     </div>
   </div>`;
 }
@@ -2029,16 +2029,17 @@ function viewSettings(){
     </div>
     <div class="card">
       <h3>Import Excel (historical data)</h3>
-      <p class="muted" style="font-size:13px">Upload your Excel workbook (<code>.xlsx</code>) from Zola / the VBA system. Maps sheets like <b>STOCK AND SALES RECORDS</b>, Debtors, Creditors, Expenses, Receipts, Cash, etc. Ideal for 2020–today history.</p>
-      <input type="file" id="xlsxFile" accept=".xlsx,.xlsm,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+      <p class="muted" style="font-size:13px">Upload the real shop workbook (<code>.xlsx</code> or <code>.xlsm</code>). Reads <b>STOCK AND SALES RECORDS</b> by VBA columns (B–Q), plus Debtors/Creditors/Cash/Expenses/Receipts. Use <b>Replace</b> for a clean full history load (2020–today).</p>
+      <input type="file" id="xlsxFile" accept=".xlsx,.xlsm,.xls,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
       <div class="field" style="margin-top:10px"><label>Import mode</label>
         <select id="xlsxMode">
-          <option value="merge">Merge (keep existing, add/update from Excel)</option>
-          <option value="replace">Replace stock &amp; accounts with Excel (keep security)</option>
+          <option value="replace">Replace with Excel history (recommended first import · keeps users/PINs)</option>
+          <option value="merge">Merge (add/update into existing app data)</option>
         </select>
       </div>
       <button class="btn warn" style="margin-top:8px" onclick="importExcelWorkbook()">Import Excel workbook</button>
-      <div id="xlsxStatus" class="muted" style="font-size:12px;margin-top:8px"></div>
+      <p class="muted" style="font-size:11px;margin-top:8px">Needs internet once (loads Excel reader). After import, open <b>Stock Balance</b> and <b>Dashboard</b> and pick the correct Year/Month. A detailed report appears below.</p>
+      <div id="xlsxStatus" class="muted" style="font-size:12px;margin-top:8px;line-height:1.45"></div>
     </div>
   </div>
 
@@ -2224,159 +2225,239 @@ function resetAll(){
 
 
 /* =========================================================
-   EXCEL WORKBOOK IMPORT (SheetJS) — historical data 2020+
+   EXCEL WORKBOOK IMPORT (SheetJS) — robust .xlsx/.xlsm
+   Matches VBA column layout for Muniru/Zola workbook
    ========================================================= */
 let _xlsxLoading = null;
 function loadSheetJS(){
   if(window.XLSX) return Promise.resolve(window.XLSX);
   if(_xlsxLoading) return _xlsxLoading;
   _xlsxLoading = new Promise((resolve, reject)=>{
-    const s = document.createElement('script');
-    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-    s.onload = ()=> resolve(window.XLSX);
-    s.onerror = ()=>{
-      // fallback
-      const s2 = document.createElement('script');
-      s2.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-      s2.onload = ()=> resolve(window.XLSX);
-      s2.onerror = ()=> reject(new Error('Could not load SheetJS. Go online once to import Excel.'));
-      document.head.appendChild(s2);
+    const urls = [
+      'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
+      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+      'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+    ];
+    let i = 0;
+    const tryNext = ()=>{
+      if(i >= urls.length){ reject(new Error('Could not load SheetJS. Connect to internet once, then retry import.')); return; }
+      const s = document.createElement('script');
+      s.src = urls[i++];
+      s.onload = ()=> window.XLSX ? resolve(window.XLSX) : tryNext();
+      s.onerror = tryNext;
+      document.head.appendChild(s);
     };
-    document.head.appendChild(s);
+    tryNext();
   });
   return _xlsxLoading;
 }
-function sheetToObjects(wb, names){
-  // names: array of possible sheet names (case-insensitive)
-  const lower = {};
-  wb.SheetNames.forEach(n => { lower[n.toLowerCase().trim()] = n; });
-  let sheetName = null;
-  for(const want of names){
-    if(lower[want.toLowerCase()]){ sheetName = lower[want.toLowerCase()]; break; }
+
+/** Find sheet by exact, case-insensitive, or partial name match */
+function findSheetName(wb, candidates){
+  const names = wb.SheetNames || [];
+  const lowerMap = names.map(n => ({ raw: n, low: n.toLowerCase().replace(/\s+/g,' ').trim() }));
+  for(const want of candidates){
+    const w = want.toLowerCase().replace(/\s+/g,' ').trim();
+    const exact = lowerMap.find(x => x.low === w);
+    if(exact) return exact.raw;
   }
-  if(!sheetName) return null;
-  const ws = wb.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
-  return { sheetName, rows, ws };
-}
-function sheetToMatrix(wb, names){
-  const lower = {};
-  wb.SheetNames.forEach(n => { lower[n.toLowerCase().trim()] = n; });
-  let sheetName = null;
-  for(const want of names){
-    if(lower[want.toLowerCase()]){ sheetName = lower[want.toLowerCase()]; break; }
+  for(const want of candidates){
+    const w = want.toLowerCase().replace(/\s+/g,' ').trim();
+    const part = lowerMap.find(x => x.low.includes(w) || w.includes(x.low));
+    if(part) return part.raw;
   }
-  if(!sheetName) return null;
-  const ws = wb.Sheets[sheetName];
-  const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true });
-  return { sheetName, matrix, ws };
+  return null;
 }
-function normKey(k){
-  return String(k||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+
+function getMatrix(wb, candidates){
+  const name = findSheetName(wb, candidates);
+  if(!name) return null;
+  const ws = wb.Sheets[name];
+  // raw:true keeps numbers; blankrows false
+  const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true, blankrows: false });
+  return { name, ws, matrix };
 }
-function rowGet(row, candidates){
-  // candidates: list of header names to try
-  const map = {};
-  Object.keys(row).forEach(k => { map[normKey(k)] = row[k]; });
-  for(const c of candidates){
-    const v = map[normKey(c)];
-    if(v !== undefined && v !== '') return v;
-  }
-  // partial contains
-  for(const c of candidates){
-    const nc = normKey(c);
-    for(const k of Object.keys(map)){
-      if(k === nc || k.includes(nc) || nc.includes(k)){
-        if(map[k] !== undefined && map[k] !== '') return map[k];
-      }
-    }
-  }
-  return '';
+
+function cellStr(v){
+  if(v === null || v === undefined) return '';
+  if(typeof v === 'string') return v.trim();
+  if(typeof v === 'number' && !isNaN(v)) return String(v);
+  if(v instanceof Date) return v.toISOString();
+  return String(v).trim();
 }
-function toNum(v){
+function cellNum(v){
   if(v === null || v === undefined || v === '') return 0;
-  if(typeof v === 'number') return v;
-  const s = String(v).replace(/,/g,'').replace(/GH₵/gi,'').replace(/GHS/gi,'').trim();
+  if(typeof v === 'number' && !isNaN(v)) return v;
+  if(v instanceof Date) return 0;
+  let s = String(v).trim();
+  if(!s) return 0;
+  // strip currency / spaces
+  s = s.replace(/GH[S₵¢]?/gi,'').replace(/,/g,'').replace(/\s/g,'').replace(/[^\d.\-eE+]/g,'');
   const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }
-function toMonthNum(v){
+function excelSerialToDate(v){
+  if(v instanceof Date && !isNaN(v.getTime())) return v;
+  if(typeof v === 'number' && v > 20000 && v < 80000){
+    // Excel serial (1900 system)
+    const utc = Math.round((v - 25569) * 86400 * 1000);
+    return new Date(utc);
+  }
+  if(typeof v === 'string' && v.trim()){
+    const d = new Date(v);
+    if(!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+function excelDateToISO(v){
+  const d = excelSerialToDate(v);
+  return d ? d.toISOString() : nowISO();
+}
+function monthFromValue(v){
   if(v === null || v === undefined || v === '') return 0;
-  if(typeof v === 'number' && v >= 1 && v <= 12) return Math.floor(v);
+  if(typeof v === 'number'){
+    if(v >= 1 && v <= 12) return Math.floor(v);
+    // sometimes month stored as date serial
+    const d = excelSerialToDate(v);
+    if(d) return d.getMonth()+1;
+    return 0;
+  }
   const s = String(v).trim();
-  if(/^\d{1,2}$/.test(s)){ const n = +s; return n>=1&&n<=12?n:0; }
+  if(/^\d{1,2}$/.test(s)){ const n=+s; return (n>=1&&n<=12)?n:0; }
   const names = ['january','february','march','april','may','june','july','august','september','october','november','december'];
   const low = s.toLowerCase();
   for(let i=0;i<12;i++){
-    if(names[i].startsWith(low.slice(0,3)) || low.startsWith(names[i].slice(0,3))) return i+1;
+    if(low.startsWith(names[i].slice(0,3)) || names[i].startsWith(low.slice(0,3))) return i+1;
   }
-  // Excel serial date?
+  const d = excelSerialToDate(v);
+  if(d) return d.getMonth()+1;
   return 0;
 }
-function excelDateToISO(v){
-  if(v === null || v === undefined || v === '') return nowISO();
+function yearFromValue(v){
+  if(v === null || v === undefined || v === '') return 0;
   if(typeof v === 'number'){
-    // Excel serial
-    const utc = Math.round((v - 25569) * 86400 * 1000);
-    return new Date(utc).toISOString();
+    if(v >= 2000 && v <= 2100) return Math.floor(v);
+    if(v > 20000 && v < 80000){
+      const d = excelSerialToDate(v);
+      return d ? d.getFullYear() : 0;
+    }
+    return 0;
   }
-  const d = new Date(v);
-  if(!isNaN(d.getTime())) return d.toISOString();
-  return nowISO();
+  const s = String(v).trim();
+  if(/^\d{4}$/.test(s)) return +s;
+  const d = excelSerialToDate(v);
+  return d ? d.getFullYear() : 0;
 }
-function parseYearMonth(row){
-  let year = toNum(rowGet(row, ['YEAR','Year','year']));
-  let month = toMonthNum(rowGet(row, ['MONTH','Month','month']));
-  if(!year){
-    const d = rowGet(row, ['Date','DATE','date']);
-    if(d){
-      const iso = excelDateToISO(d);
-      const dt = new Date(iso);
-      year = dt.getFullYear();
-      if(!month) month = dt.getMonth()+1;
+
+/** Detect header row index by looking for known header labels in a row */
+function findHeaderRow(matrix, mustHaveAny){
+  const maxScan = Math.min(matrix.length, 15);
+  for(let r=0; r<maxScan; r++){
+    const row = matrix[r] || [];
+    const labels = row.map(c => cellStr(c).toLowerCase());
+    const joined = labels.join(' | ');
+    let hits = 0;
+    for(const h of mustHaveAny){
+      if(labels.some(l => l === h || l.includes(h))) hits++;
+    }
+    if(hits >= 2) return r;
+  }
+  return 0; // assume first row headers
+}
+
+/** Map header labels → column index */
+function mapHeaders(headerRow){
+  const map = {};
+  (headerRow||[]).forEach((h,i)=>{
+    const k = cellStr(h).toLowerCase().replace(/\s+/g,' ').trim();
+    if(k) map[k] = i;
+  });
+  return map;
+}
+function colIndex(map, candidates, fallbackLetter){
+  for(const c of candidates){
+    const k = c.toLowerCase().replace(/\s+/g,' ').trim();
+    if(map[k] !== undefined) return map[k];
+  }
+  // partial
+  for(const c of candidates){
+    const k = c.toLowerCase().replace(/\s+/g,' ').trim();
+    for(const key of Object.keys(map)){
+      if(key.includes(k) || k.includes(key)) return map[key];
     }
   }
-  if(!year) year = new Date().getFullYear();
-  if(!month) month = new Date().getMonth()+1;
-  return { year: Math.floor(year), month: Math.floor(month) };
+  // Excel letter A=0
+  if(fallbackLetter){
+    const letter = fallbackLetter.toUpperCase();
+    return letter.charCodeAt(0) - 65;
+  }
+  return -1;
+}
+function rowVal(row, idx){
+  if(idx < 0 || !row) return null;
+  return row[idx] !== undefined ? row[idx] : null;
 }
 
 async function importExcelWorkbook(){
   if(!isElevated()){ toast('Only admin can import Excel.','err'); return; }
   const fileInput = $('xlsxFile');
   const status = $('xlsxStatus');
-  const setStatus = (t)=>{ if(status) status.textContent = t; };
+  const setStatus = (t)=>{ if(status) status.innerHTML = t; };
   const file = fileInput && fileInput.files && fileInput.files[0];
-  if(!file){ toast('Choose an Excel .xlsx file first','err'); return; }
+  if(!file){ toast('Choose an Excel .xlsx or .xlsm file first','err'); return; }
   const mode = ($('xlsxMode') && $('xlsxMode').value) || 'merge';
 
   try{
-    setStatus('Loading SheetJS…');
+    setStatus('Loading Excel reader…');
     await loadSheetJS();
-    setStatus('Reading workbook…');
+    setStatus('Reading <b>'+esc(file.name)+'</b> ('+Math.round(file.size/1024)+' KB)…');
     const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-    setStatus('Sheets found: ' + wb.SheetNames.join(', '));
+    // cellFormula:false — use cached calculated values when present
+    const wb = XLSX.read(buf, {
+      type: 'array',
+      cellDates: true,
+      cellNF: false,
+      cellText: false,
+      dense: false
+    });
+    const sheetList = (wb.SheetNames||[]).join(', ');
+    setStatus('Sheets found ('+(wb.SheetNames||[]).length+'): '+esc(sheetList)+'<br>Importing…');
 
     const report = importWorkbookToDB(wb, mode);
     saveDB();
     populateLoginCashiers();
-    setStatus('Import complete. ' + report);
-    toast('Excel import complete');
+    setStatus(
+      '<b style="color:#86efac">Import complete.</b><br>'+
+      report.html +
+      '<br><span class="muted">Open Stock Balance / Dashboard / Accounts to verify figures. Period set to '+
+      esc(monthName(DB.selectedMonth)+' '+DB.selectedYear)+'.</span>'
+    );
+    toast('Excel import complete · '+report.summary);
+    // stay on settings so user can read report
     render();
+    // re-show status after render — store last report
+    window.__lastImportReport = report;
+    setTimeout(()=>{
+      const el = $('xlsxStatus');
+      if(el) el.innerHTML =
+        '<b style="color:#86efac">Import complete.</b><br>'+report.html+
+        '<br><span class="muted">Period: '+esc(monthName(DB.selectedMonth)+' '+DB.selectedYear)+
+        ' · Products: '+DB.products.length+' · Stock rows: '+DB.stockRows.length+
+        ' · Debtors: '+DB.debtors.length+' · Receipts: '+DB.receipts.length+'</span>';
+    }, 50);
   }catch(e){
     console.error(e);
-    setStatus('Failed: ' + (e.message||e));
+    setStatus('<b style="color:#fca5a5">Failed:</b> '+esc(e.message||String(e)));
     toast('Excel import failed: '+(e.message||e), 'err');
   }
 }
 
 function importWorkbookToDB(wb, mode){
-  const notes = [];
+  const lines = [];
   const securityBackup = deepClone(getSecurity());
+  const bizBackup = deepClone(DB.business);
 
   if(mode === 'replace'){
-    // wipe transactional data, keep security + business shell
     DB.products = [];
     DB.stockRows = [];
     DB.sales = [];
@@ -2394,87 +2475,138 @@ function importWorkbookToDB(wb, mode){
     DB.receipts = [];
     DB.undoLog = [];
     DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
-    notes.push('Replaced transactional data');
+    lines.push('Mode: replace transactional data (security kept)');
+  } else {
+    lines.push('Mode: merge');
   }
 
-  // BusinessInfo
-  const biz = sheetToMatrix(wb, ['BusinessInfo','Business Info','businessinfo']);
-  if(biz && biz.matrix.length){
-    const a1 = biz.matrix[0] && biz.matrix[0][0];
-    const a2 = biz.matrix[1] && biz.matrix[1][0];
-    const a3 = biz.matrix[2] && biz.matrix[2][0];
-    if(a1) DB.business.name = String(a1).trim();
-    if(a2) DB.business.address = String(a2).trim();
-    if(a3) DB.business.tel = String(a3).trim();
-    notes.push('BusinessInfo');
+  // ---------- BusinessInfo ----------
+  const biz = getMatrix(wb, ['BusinessInfo','Business Info','businessinfo']);
+  if(biz){
+    const m = biz.matrix;
+    const a1 = m[0] && m[0][0];
+    const a2 = m[1] && m[1][0];
+    const a3 = m[2] && m[2][0];
+    if(cellStr(a1)) DB.business.name = cellStr(a1);
+    if(cellStr(a2)) DB.business.address = cellStr(a2);
+    if(cellStr(a3)) DB.business.tel = cellStr(a3);
+    lines.push('✓ BusinessInfo ← '+biz.name);
   }
 
-  // Cashiers sheet → merge into security (do not wipe passwords if names match? import tel only unless new)
-  const cash = sheetToObjects(wb, ['Cashiers','cashiers','CASHIERS']);
-  if(cash && cash.rows.length){
+  // ---------- Cashiers ----------
+  const cash = getMatrix(wb, ['Cashiers','cashiers','CASHIERS']);
+  if(cash){
     let added = 0;
-    cash.rows.forEach(row=>{
-      const name = String(rowGet(row, ['Name','Cashier','A','cashier name'])||'').trim();
-      const tel = String(rowGet(row, ['Tel','Phone','Contact','B','telephone'])||'').trim();
-      if(!name) return;
+    const m = cash.matrix;
+    const hr = findHeaderRow(m, ['name','cashier','tel','phone']);
+    for(let r = hr+1; r < m.length; r++){
+      const row = m[r]||[];
+      const name = cellStr(row[0]);
+      const tel = cellStr(row[1]);
+      if(!name || name.toLowerCase()==='name') continue;
       const sec = getSecurity();
       let u = sec.cashiers.find(c => c.name.toLowerCase() === name.toLowerCase());
-      if(u){
-        if(tel) u.tel = tel;
-      } else {
+      if(u){ if(tel) u.tel = tel; }
+      else {
         sec.cashiers.push({
-          id: idStamp('USR-'),
-          name, tel,
-          role: name.toLowerCase().includes('muniru') ? 'ADMIN' : 'CASHIER2',
-          password: 'change-me',
-          sig: 'Sig_User.jpg',
-          active: true
+          id: idStamp('USR-'), name, tel,
+          role: /muniru/i.test(name) ? 'ADMIN' : 'CASHIER2',
+          password: 'change-me', sig: 'Sig_User.jpg', active: true
         });
         added++;
       }
-    });
-    notes.push('Cashiers (+'+added+' new — set passwords in Settings)');
+    }
+    lines.push('✓ Cashiers ← '+cash.name+(added?(' · +'+added+' new (set passwords in Settings)'):''));
   }
 
-  // STOCK AND SALES RECORDS
-  const stock = sheetToObjects(wb, [
-    'STOCK AND SALES RECORDS','Stock and Sales Records','STOCK AND SALES','MasterTable','Stock'
+  // ---------- STOCK AND SALES RECORDS (critical) ----------
+  // VBA columns: B=PRODUCT NAME, C=CATEGORY, D=QTY IN, E=R STOCK, G=U COST,
+  // J=YEAR, K=MONTH, L=QTY OUT, M=U PRICE, N=DISC, O=T SALES, P=PROFIT, Q=A PRICE
+  const stockPack = getMatrix(wb, [
+    'STOCK AND SALES RECORDS','Stock and Sales Records','STOCK AND SALES',
+    'Stock And Sales Records','MasterTable','STOCK'
   ]);
-  let stockCount = 0;
-  if(stock && stock.rows.length){
-    const productSet = new Map(DB.products.map(p => [p.name.toLowerCase(), p]));
-    stock.rows.forEach((row, idx)=>{
-      const productName = String(rowGet(row, ['PRODUCT NAME','Product Name','Product','PRODUCT','B'])||'').trim();
-      if(!productName) return;
-      const category = String(rowGet(row, ['CATEGORY','Category','C'])||'').trim();
-      const { year, month } = parseYearMonth(row);
-      const qtyIn = toNum(rowGet(row, ['QTY IN','Qty In','QTYIN','D']));
-      let rStock = toNum(rowGet(row, ['R STOCK','RSTOCK','CR STOCK','Remaining','E']));
-      const uCost = toNum(rowGet(row, ['U COST','Unit Cost','UCOST','G','Cost']));
-      const qtyOut = toNum(rowGet(row, ['QTY OUT','Qty Out','QTYOUT','L']));
-      const uPrice = toNum(rowGet(row, ['U PRICE','Unit Price','UPRICE','M','Price']));
-      const disc = toNum(rowGet(row, ['DISC','Discount','N']));
-      let tSales = toNum(rowGet(row, ['T SALES','T SALES','Total Sales','O','SALES']));
-      let profit = toNum(rowGet(row, ['PROFIT','Profit','P']));
-      const aPrice = toNum(rowGet(row, ['A PRICE','APRICE','Q','Price Adj']));
-      // recompute remaining if missing
-      if(!rStock && (qtyIn || qtyOut)) rStock = Math.max(0, qtyIn - qtyOut);
-      if(!tSales && qtyOut && uPrice) tSales = qtyOut * uPrice - disc;
-      if(!profit && tSales) profit = tSales - (qtyOut * uCost);
+  let stockCount = 0, stockSkipped = 0;
+  if(stockPack){
+    const m = stockPack.matrix;
+    const hr = findHeaderRow(m, ['product','qty','year','month','cost','price','name']);
+    const hmap = mapHeaders(m[hr]||[]);
+    // Prefer header map; fall back to fixed VBA letters (0-based: A=0 … B=1)
+    const cName = colIndex(hmap, ['product name','product','item','name'], 'B');
+    const cCat  = colIndex(hmap, ['category','cat'], 'C');
+    const cIn   = colIndex(hmap, ['qty in','qtyin','quantity in','in'], 'D');
+    const cRem  = colIndex(hmap, ['r stock','rstock','cr stock','remaining','rem stock','stock'], 'E');
+    const cCost = colIndex(hmap, ['u cost','unit cost','ucost','cost'], 'G');
+    const cYear = colIndex(hmap, ['year','yr'], 'J');
+    const cMon  = colIndex(hmap, ['month','mon'], 'K');
+    const cOut  = colIndex(hmap, ['qty out','qtyout','quantity out','out','sold'], 'L');
+    const cPrice= colIndex(hmap, ['u price','unit price','uprice','price','selling'], 'M');
+    const cDisc = colIndex(hmap, ['disc','discount'], 'N');
+    const cSales= colIndex(hmap, ['t sales','tsales','total sales','sales amount','sales'], 'O');
+    const cProf = colIndex(hmap, ['profit'], 'P');
+    const cAdj  = colIndex(hmap, ['a price','aprice','price adj','adjustment'], 'Q');
 
-      // product catalog
+    lines.push('· Stock headers row '+(hr+1)+' · cols name='+cName+' in='+cIn+' cost='+cCost+' year='+cYear+' month='+cMon);
+
+    const productSet = new Map(DB.products.map(p => [p.name.toLowerCase(), p]));
+
+    for(let r = hr+1; r < m.length; r++){
+      const row = m[r] || [];
+      const productName = cellStr(rowVal(row, cName));
+      if(!productName) { stockSkipped++; continue; }
+      // skip totals / junk
+      if(/^(total|grand|sum|#n\/a)/i.test(productName)) { stockSkipped++; continue; }
+
+      let year = yearFromValue(rowVal(row, cYear));
+      let month = monthFromValue(rowVal(row, cMon));
+      if(!year || !month){
+        // try any date-looking cell
+        stockSkipped++;
+        // still allow if we can salvage
+        if(!year) year = DB.selectedYear || new Date().getFullYear();
+        if(!month) month = DB.selectedMonth || (new Date().getMonth()+1);
+      }
+
+      const qtyIn = cellNum(rowVal(row, cIn));
+      const qtyOut = cellNum(rowVal(row, cOut));
+      let rStock = cellNum(rowVal(row, cRem));
+      const uCost = cellNum(rowVal(row, cCost));
+      const uPrice = cellNum(rowVal(row, cPrice));
+      const disc = cellNum(rowVal(row, cDisc));
+      let tSales = cellNum(rowVal(row, cSales));
+      let profit = cellNum(rowVal(row, cProf));
+      const aPrice = cellNum(rowVal(row, cAdj));
+      const category = cellStr(rowVal(row, cCat));
+
+      // Recompute if Excel formulas not cached in file
+      if(rStock === 0 && (qtyIn !== 0 || qtyOut !== 0)){
+        rStock = qtyIn - qtyOut;
+      }
+      if(tSales === 0 && qtyOut !== 0 && uPrice !== 0){
+        tSales = (qtyOut * uPrice) - disc;
+      }
+      if(profit === 0 && tSales !== 0){
+        profit = tSales - (qtyOut * uCost);
+      }
+
+      // Skip completely empty numeric rows
+      if(qtyIn===0 && qtyOut===0 && rStock===0 && uCost===0 && tSales===0 && !category){
+        // still keep if product name only? skip noise
+        if(!uPrice){ stockSkipped++; continue; }
+      }
+
       if(!productSet.has(productName.toLowerCase())){
-        const p = { id: 'PRD-IMP-'+Date.now()+'-'+idx, name: productName, category, uPrice: uPrice||0 };
+        const p = { id: 'PRD-IMP-'+Date.now()+'-'+r, name: productName, category, uPrice: uPrice||0 };
         DB.products.push(p);
         productSet.set(productName.toLowerCase(), p);
       } else {
         const p = productSet.get(productName.toLowerCase());
         if(category && !p.category) p.category = category;
-        if(uPrice && !p.uPrice) p.uPrice = uPrice;
+        if(uPrice) p.uPrice = uPrice;
       }
 
       const rec = {
-        id: idStamp('STKIN-') + '-' + idx,
+        id: 'STKIN-IMP-'+year+'-'+month+'-'+r,
         productId: productSet.get(productName.toLowerCase()).id,
         productName, category, year, month,
         qtyIn, rStock, uCost, qtyOut,
@@ -2484,19 +2616,21 @@ function importWorkbookToDB(wb, mode){
       };
 
       if(mode === 'merge'){
-        // merge same product+year+month+uCost
-        const existing = DB.stockRows.find(r =>
-          r.productName === productName && r.year===year && r.month===month && Math.abs((Number(r.uCost)||0)-uCost)<0.0001
+        const existing = DB.stockRows.find(x =>
+          x.productName === productName && x.year===year && x.month===month &&
+          Math.abs((Number(x.uCost)||0) - uCost) < 0.0001
         );
         if(existing){
-          // take max-ish of imported values for history completeness
-          existing.qtyIn = Math.max(Number(existing.qtyIn)||0, qtyIn);
-          existing.qtyOut = Math.max(Number(existing.qtyOut)||0, qtyOut);
+          // Prefer non-zero imported history figures
+          existing.qtyIn = qtyIn || existing.qtyIn;
+          existing.qtyOut = qtyOut || existing.qtyOut;
           existing.rStock = rStock;
-          existing.tSales = Math.max(Number(existing.tSales)||0, tSales);
-          existing.profit = Math.max(Number(existing.profit)||0, profit);
-          existing.disc = Math.max(Number(existing.disc)||0, disc);
+          existing.tSales = tSales || existing.tSales;
+          existing.profit = profit || existing.profit;
+          existing.disc = disc || existing.disc;
+          existing.aPrice = aPrice || existing.aPrice;
           if(uPrice) existing.uPrice = uPrice;
+          if(uCost) existing.uCost = uCost;
         } else {
           DB.stockRows.push(rec);
         }
@@ -2504,257 +2638,340 @@ function importWorkbookToDB(wb, mode){
         DB.stockRows.push(rec);
       }
       stockCount++;
-    });
-    notes.push('Stock rows: '+stockCount);
+    }
+    lines.push('✓ Stock ← '+stockPack.name+' · <b>'+stockCount+'</b> rows imported'+(stockSkipped?(' · skipped '+stockSkipped):''));
   } else {
-    notes.push('Stock sheet not found');
+    lines.push('✗ STOCK AND SALES RECORDS sheet <b>not found</b>. Sheets: '+esc((wb.SheetNames||[]).join(', ')));
   }
 
-  // Helper for account sheets
-  function importAccountSheet(sheetNames, kind, prefix){
-    const pack = sheetToObjects(wb, sheetNames);
-    if(!pack || !pack.rows.length) return 0;
-    let n = 0;
-    pack.rows.forEach((row, idx)=>{
-      let id = String(rowGet(row, ['ID','Id','Account ID','A'])||'').trim();
-      const name = String(rowGet(row, ['Name','NAME','B'])||'').trim();
-      if(!name && !id) return;
-      const contact = String(rowGet(row, ['Contact','Phone','Tel','C'])||'').trim();
-      const description = String(rowGet(row, ['Description','Desc','D'])||'').trim();
-      const balance = toNum(rowGet(row, ['Balance','E','Bal']));
-      const date = excelDateToISO(rowGet(row, ['Date','F']));
-      if(!id) id = idStamp(prefix) + '-' + idx;
+  // ---------- Account registers (fixed VBA layout A–F) ----------
+  function importAccountsFixed(candidates, kind, prefix){
+    const pack = getMatrix(wb, candidates);
+    if(!pack){ lines.push('· '+kind+': sheet not found'); return 0; }
+    const m = pack.matrix;
+    const hr = findHeaderRow(m, ['name','balance','id','contact','phone']);
+    const hmap = mapHeaders(m[hr]||[]);
+    // VBA: A=ID B=Name C=Contact D=Description E=Balance F=Date
+    let cId = colIndex(hmap, ['id','account id','debtor id'], 'A');
+    let cName = colIndex(hmap, ['name','account name','debtor','creditor'], 'B');
+    let cContact = colIndex(hmap, ['contact','phone','tel','mobile'], 'C');
+    let cDesc = colIndex(hmap, ['description','desc','details'], 'D');
+    let cBal = colIndex(hmap, ['balance','bal','amount','outstanding'], 'E');
+    let cDate = colIndex(hmap, ['date','updated'], 'F');
+
+    // If header row looks wrong (name col empty for data), force VBA letters
+    let sampleName = '';
+    for(let r=hr+1; r<Math.min(m.length, hr+6); r++){
+      sampleName = cellStr(rowVal(m[r], cName));
+      if(sampleName) break;
+    }
+    if(!sampleName){
+      cId=0; cName=1; cContact=2; cDesc=3; cBal=4; cDate=5;
+    }
+
+    let n=0, sumBal=0;
+    for(let r=hr+1; r<m.length; r++){
+      const row = m[r]||[];
+      let id = cellStr(rowVal(row, cId));
+      const name = cellStr(rowVal(row, cName));
+      if(!name && !id) continue;
+      if(/^(name|id|total)/i.test(name)) continue;
+      const contact = cellStr(rowVal(row, cContact));
+      const description = cellStr(rowVal(row, cDesc));
+      const balance = cellNum(rowVal(row, cBal));
+      const date = excelDateToISO(rowVal(row, cDate));
+      if(!id) id = idStamp(prefix)+'-'+r;
+
       const list = DB[kind];
-      let existing = list.find(x => x.id === id || (name && x.name.toLowerCase()===name.toLowerCase()));
+      let existing = list.find(x => x.id === id || (name && (x.name||'').toLowerCase()===name.toLowerCase()));
       if(existing){
+        // Always take Excel balance on import (user wants true figures)
         existing.balance = balance;
-        existing.contact = contact || existing.contact;
-        existing.description = description || existing.description;
+        if(contact) existing.contact = contact;
+        if(description) existing.description = description;
         existing.date = date;
       } else {
         list.push({ id, name: name||id, contact, description, balance, date });
       }
+      sumBal += balance;
       n++;
-    });
+    }
+    lines.push('✓ '+kind+' ← '+pack.name+' · '+n+' records · Σ balance <b>'+fmtN(sumBal)+'</b>');
     return n;
   }
-  const nd = importAccountSheet(['DEBTORS','Debtors'], 'debtors', 'DEB-');
-  const nc = importAccountSheet(['CREDITORS','Creditors'], 'creditors', 'CRD-');
-  const np = importAccountSheet(['DEPOSITORS','Depositors'], 'depositors', 'DEP-');
-  if(nd||nc||np) notes.push(`Accounts D/C/P: ${nd}/${nc}/${np}`);
+  importAccountsFixed(['DEBTORS','Debtors','debtors'], 'debtors', 'DEB-');
+  importAccountsFixed(['CREDITORS','Creditors','creditors'], 'creditors', 'CRD-');
+  importAccountsFixed(['DEPOSITORS','Depositors','depositors'], 'depositors', 'DEP-');
 
-  // Monthly snapshots
-  function importMonthly(sheetNames, targetKey){
-    const pack = sheetToObjects(wb, sheetNames);
+  // ---------- Monthly snapshots ----------
+  function importMonthlyFixed(candidates, targetKey){
+    const pack = getMatrix(wb, candidates);
     if(!pack) return 0;
+    const m = pack.matrix;
+    const hr = findHeaderRow(m, ['name','year','month','balance','id']);
     let n=0;
-    pack.rows.forEach(row=>{
-      const id = String(rowGet(row, ['ID','A'])||'').trim();
-      const name = String(rowGet(row, ['Name','B'])||'').trim();
-      if(!id && !name) return;
-      const phone = String(rowGet(row, ['Phone','Contact','C'])||'').trim();
-      const snapYear = Math.floor(toNum(rowGet(row, ['snapYear','Year','D','YEAR'])));
-      const snapMonth = toMonthNum(rowGet(row, ['snapMonth','Month','E','MONTH'])) || Math.floor(toNum(rowGet(row, ['snapMonth','Month','E'])));
-      const bal = toNum(rowGet(row, ['bal','Balance','F']));
-      const closingBalance = toNum(rowGet(row, ['ClosingBalance','Closing Balance','G'])) || bal;
-      if(!snapYear) return;
+    for(let r=hr+1; r<m.length; r++){
+      const row = m[r]||[];
+      // A ID B Name C Phone D Year E Month F bal G Closing
+      const id = cellStr(row[0]);
+      const name = cellStr(row[1]);
+      if(!id && !name) continue;
+      const phone = cellStr(row[2]);
+      const snapYear = yearFromValue(row[3]) || Math.floor(cellNum(row[3]));
+      const snapMonth = monthFromValue(row[4]) || Math.floor(cellNum(row[4]));
+      const bal = cellNum(row[5]);
+      const closingBalance = cellNum(row[6]) || bal;
+      if(!snapYear) continue;
+      if(mode==='merge' && DB[targetKey].some(x=>x.id===id && x.snapYear===snapYear && x.snapMonth===snapMonth)) continue;
       DB[targetKey].push({ id, name, phone, snapYear, snapMonth, bal, closingBalance });
       n++;
-    });
+    }
+    if(n) lines.push('✓ '+targetKey+' · '+n);
     return n;
   }
-  const m1 = importMonthly(['DEBTORS_MONTHLY','Debtors_Monthly'], 'debtorsMonthly');
-  const m2 = importMonthly(['CREDITORS_MONTHLY','Creditors_Monthly'], 'creditorsMonthly');
-  const m3 = importMonthly(['DEPOSITORS_MONTHLY','Depositors_Monthly'], 'depositorsMonthly');
-  if(m1+m2+m3) notes.push('Monthly snaps: '+(m1+m2+m3));
+  importMonthlyFixed(['DEBTORS_MONTHLY','Debtors_Monthly','DEBTORS MONTHLY'], 'debtorsMonthly');
+  importMonthlyFixed(['CREDITORS_MONTHLY','Creditors_Monthly','CREDITORS MONTHLY'], 'creditorsMonthly');
+  importMonthlyFixed(['DEPOSITORS_MONTHLY','Depositors_Monthly','DEPOSITORS MONTHLY'], 'depositorsMonthly');
 
-  // ACCOUNT_TRANSACTIONS
-  const atx = sheetToObjects(wb, ['ACCOUNT_TRANSACTIONS','Account_Transactions','Account Transactions']);
-  if(atx && atx.rows.length){
+  // ---------- ACCOUNT_TRANSACTIONS ----------
+  const atx = getMatrix(wb, ['ACCOUNT_TRANSACTIONS','Account_Transactions','Account Transactions','ACCOUNT TRANSACTIONS']);
+  if(atx){
+    const m = atx.matrix;
+    const hr = findHeaderRow(m, ['account','amount','type','name','txn']);
     let n=0;
-    atx.rows.forEach((row, idx)=>{
-      const id = String(rowGet(row, ['ID','A','ATX'])|| idStamp('ATX-')+'-'+idx);
-      const accountID = String(rowGet(row, ['accountID','Account ID','B'])||'').trim();
-      const accountType = String(rowGet(row, ['accountType','Account Type','C','Type'])||'').trim();
-      const name = String(rowGet(row, ['name','Name','D'])||'').trim();
-      const txnType = String(rowGet(row, ['txnType','Txn Type','E','Transaction'])||'').trim();
-      const amount = toNum(rowGet(row, ['amount','Amount','F']));
-      const balanceAfter = toNum(rowGet(row, ['balanceAfter','Balance After','G']));
-      const date = excelDateToISO(rowGet(row, ['Date','H','date']));
-      const receiptNo = String(rowGet(row, ['receiptNo','Receipt','J','I'])||'').trim();
-      if(!accountID && !name) return;
-      if(mode==='merge' && DB.accountTxns.some(t=>t.id===id)) return;
-      DB.accountTxns.push({ id, accountID, accountType, name, txnType, amount, balanceAfter, date, receiptNo, cashier: 'import' });
+    for(let r=hr+1; r<m.length; r++){
+      const row = m[r]||[];
+      // A ATX B accountID C type D name E txn F amount G balAfter H date J receipt
+      const id = cellStr(row[0]) || (idStamp('ATX-')+'-'+r);
+      const accountID = cellStr(row[1]);
+      const accountType = cellStr(row[2]);
+      const name = cellStr(row[3]);
+      const txnType = cellStr(row[4]);
+      const amount = cellNum(row[5]);
+      const balanceAfter = cellNum(row[6]);
+      const date = excelDateToISO(row[7]);
+      const receiptNo = cellStr(row[9] !== undefined ? row[9] : row[8]);
+      if(!accountID && !name) continue;
+      if(mode==='merge' && DB.accountTxns.some(t=>t.id===id)) continue;
+      DB.accountTxns.push({ id, accountID, accountType, name, txnType, amount, balanceAfter, date, receiptNo, cashier:'import' });
       n++;
-    });
-    notes.push('ATX: '+n);
+    }
+    lines.push('✓ Account txns · '+n);
   }
 
-  // CASH_BALANCES
-  const cb = sheetToMatrix(wb, ['CASH_BALANCES','Cash_Balances','Cash Balances']);
-  if(cb && cb.matrix.length){
-    // Expect A=type B=balance, rows may include headers
+  // ---------- CASH_BALANCES ----------
+  const cb = getMatrix(wb, ['CASH_BALANCES','Cash_Balances','Cash Balances','CASH BALANCES']);
+  if(cb){
+    let hits=0;
     cb.matrix.forEach((row,i)=>{
-      if(!row || !row.length) return;
-      const t = String(row[0]||'').trim();
-      const bal = toNum(row[1]);
-      if(CASH_TYPES.includes(t)) DB.cashBalances[t] = bal;
-      else if(i>=1 && t && CASH_TYPES.some(x=>x.toLowerCase()===t.toLowerCase())){
-        const key = CASH_TYPES.find(x=>x.toLowerCase()===t.toLowerCase());
-        DB.cashBalances[key] = bal;
+      if(!row) return;
+      const t = cellStr(row[0]);
+      const bal = cellNum(row[1]);
+      const key = CASH_TYPES.find(x => x.toLowerCase() === t.toLowerCase());
+      if(key){ DB.cashBalances[key] = bal; hits++; }
+      // rows B2:B5 without labels in col A — map by row index if needed
+    });
+    // Fallback: if sheet is only balances in B2:B5
+    if(!hits && cb.matrix.length >= 5){
+      // try row1-4 values in col B
+      for(let i=0;i<4;i++){
+        const bal = cellNum((cb.matrix[i+1]||[])[1] !== undefined ? (cb.matrix[i+1]||[])[1] : (cb.matrix[i+1]||[])[0]);
+        if(CASH_TYPES[i]) { DB.cashBalances[CASH_TYPES[i]] = bal; hits++; }
       }
-    });
-    // also try objects
-    notes.push('Cash balances');
-  }
-  const cbo = sheetToObjects(wb, ['CASH_BALANCES','Cash_Balances']);
-  if(cbo){
-    cbo.rows.forEach(row=>{
-      const t = String(rowGet(row, ['CashType','Cash Type','Type','A'])||'').trim();
-      const bal = toNum(rowGet(row, ['Balance','B']));
-      const key = CASH_TYPES.find(x=>x.toLowerCase()===t.toLowerCase());
-      if(key) DB.cashBalances[key] = bal;
-    });
+    }
+    lines.push('✓ Cash balances · '+hits+' wallets · total '+fmtN(KPI_CashBuckets_Total()));
   }
 
-  // CASH_BALANCE_LOG
-  const cbl = sheetToObjects(wb, ['CASH_BALANCE_LOG','Cash_Balance_Log','Cash Balance Log']);
-  if(cbl && cbl.rows.length){
+  // ---------- CASH_BALANCE_LOG ----------
+  const cbl = getMatrix(wb, ['CASH_BALANCE_LOG','Cash_Balance_Log','Cash Balance Log']);
+  if(cbl){
+    const m = cbl.matrix;
+    const hr = findHeaderRow(m, ['cash','amount','type','action']);
     let n=0;
-    cbl.rows.forEach((row,idx)=>{
-      const id = String(rowGet(row, ['ID','A'])|| idStamp('CB-')+'-'+idx);
-      if(mode==='merge' && DB.cashLog.some(x=>x.id===id)) return;
+    for(let r=hr+1;r<m.length;r++){
+      const row = m[r]||[];
+      const id = cellStr(row[0]) || (idStamp('CB-')+'-'+r);
+      if(mode==='merge' && DB.cashLog.some(x=>x.id===id)) continue;
+      const cashType = cellStr(row[1]);
+      if(!cashType) continue;
       DB.cashLog.push({
-        id,
-        cashType: String(rowGet(row, ['CashType','Type','B'])||''),
-        action: String(rowGet(row, ['Action','C','Add/Deduct'])||''),
-        amount: toNum(rowGet(row, ['Amount','D','amt'])),
-        before: toNum(rowGet(row, ['Before','E'])),
-        after: toNum(rowGet(row, ['After','F'])),
-        at: excelDateToISO(rowGet(row, ['Date','G','Now'])),
-        cashier: String(rowGet(row, ['Cashier','H'])||'import'),
+        id, cashType,
+        action: cellStr(row[2])||'Add',
+        amount: cellNum(row[3]),
+        before: cellNum(row[4]),
+        after: cellNum(row[5]),
+        at: excelDateToISO(row[6]),
+        cashier: cellStr(row[7])||'import',
         note: 'excel-import'
       });
       n++;
-    });
-    notes.push('Cash log: '+n);
+    }
+    lines.push('✓ Cash log · '+n);
   }
 
-  // EXPENSES
-  const exp = sheetToObjects(wb, ['EXPENSES','Expenses']);
-  if(exp && exp.rows.length){
-    let n=0;
-    exp.rows.forEach((row,idx)=>{
-      const id = String(rowGet(row, ['ID','A'])|| idStamp('EXP-')+'-'+idx);
-      if(mode==='merge' && DB.expenses.some(x=>x.id===id)) return;
-      const description = String(rowGet(row, ['Description','B','Desc'])||'').trim();
-      if(!description) return;
+  // ---------- EXPENSES ----------
+  const exp = getMatrix(wb, ['EXPENSES','Expenses']);
+  if(exp){
+    const m = exp.matrix;
+    const hr = findHeaderRow(m, ['description','amount','category','date']);
+    let n=0, sum=0;
+    for(let r=hr+1;r<m.length;r++){
+      const row = m[r]||[];
+      const id = cellStr(row[0]) || (idStamp('EXP-')+'-'+r);
+      const description = cellStr(row[1]);
+      if(!description || /^description$/i.test(description)) continue;
+      if(mode==='merge' && DB.expenses.some(x=>x.id===id)) continue;
+      const amount = cellNum(row[3] !== undefined && cellNum(row[3]) ? row[3] : row[2]);
+      // VBA: A id B desc C cat D amount E date — try both if needed
+      let category = cellStr(row[2]);
+      let amt = cellNum(row[3]);
+      let dateV = row[4];
+      if(amt === 0 && cellNum(row[2]) !== 0 && !category){
+        // shifted?
+        amt = cellNum(row[2]); category = 'Miscellaneous'; dateV = row[3];
+      }
+      if(amt === 0) amt = cellNum(row[3]) || cellNum(row[2]);
       DB.expenses.push({
         id, description,
-        category: String(rowGet(row, ['Category','C'])||'Miscellaneous'),
-        amount: toNum(rowGet(row, ['Amount','D'])),
-        date: excelDateToISO(rowGet(row, ['Date','E'])),
+        category: category || 'Miscellaneous',
+        amount: amt,
+        date: excelDateToISO(dateV),
         cashier: 'import'
       });
-      n++;
-    });
-    notes.push('Expenses: '+n);
+      sum += amt; n++;
+    }
+    lines.push('✓ Expenses · '+n+' · Σ '+fmtN(sum));
   }
 
-  // RECEIPT REGISTER
-  const reg = sheetToObjects(wb, ['RECEIPT REGISTER','Receipt Register','Receipts']);
-  if(reg && reg.rows.length){
-    let n=0;
-    reg.rows.forEach((row,idx)=>{
-      const receiptNo = String(rowGet(row, ['Receipt No','ReceiptNo','receiptNo','A','Receipt'])||'').trim();
-      if(!receiptNo) return;
-      if(mode==='merge' && DB.receipts.some(r=>r.receiptNo===receiptNo)) return;
-      const totalAmount = toNum(rowGet(row, ['Total','TotalAmount','D','Amount']));
-      const balance = toNum(rowGet(row, ['Balance','E']));
+  // ---------- RECEIPT REGISTER ----------
+  const reg = getMatrix(wb, ['RECEIPT REGISTER','Receipt Register','RECEIPTS','Receipts']);
+  if(reg){
+    const m = reg.matrix;
+    const hr = findHeaderRow(m, ['receipt','customer','total','date']);
+    const hmap = mapHeaders(m[hr]||[]);
+    const cR = colIndex(hmap, ['receipt no','receipt','receiptno','sr'], 'A');
+    const cC = colIndex(hmap, ['customer','customer name','name'], 'B');
+    const cT = colIndex(hmap, ['contact','tel','phone'], 'C');
+    const cTot = colIndex(hmap, ['total','total amount','amount'], 'D');
+    const cBal = colIndex(hmap, ['balance','owed'], 'E');
+    const cDate = colIndex(hmap, ['date'], 'F');
+    const cCash = colIndex(hmap, ['cashier'], 'G');
+    let n=0, sum=0;
+    for(let r=hr+1;r<m.length;r++){
+      const row = m[r]||[];
+      const receiptNo = cellStr(rowVal(row, cR >=0 ? cR : 0));
+      if(!receiptNo || /^receipt/i.test(receiptNo)) continue;
+      if(mode==='merge' && DB.receipts.some(x=>x.receiptNo===receiptNo)) continue;
+      const totalAmount = cellNum(rowVal(row, cTot >=0 ? cTot : 3));
+      const balance = cellNum(rowVal(row, cBal >=0 ? cBal : 4));
       DB.receipts.push({
         receiptNo,
-        customerName: String(rowGet(row, ['Customer','CustomerName','B','Name'])||''),
-        contact: String(rowGet(row, ['Contact','Tel','C','Phone'])||''),
+        customerName: cellStr(rowVal(row, cC >=0 ? cC : 1)),
+        contact: cellStr(rowVal(row, cT >=0 ? cT : 2)),
         totalAmount,
         amountPaid: Math.max(0, totalAmount - balance),
         balance: balance > 0 ? balance : 0,
-        date: excelDateToISO(rowGet(row, ['Date','F'])),
+        date: excelDateToISO(rowVal(row, cDate >=0 ? cDate : 5)),
         credit: balance > 0,
-        cashier: String(rowGet(row, ['Cashier','G','H'])||'import'),
+        cashier: cellStr(rowVal(row, cCash >=0 ? cCash : 6)) || 'import',
         lines: []
       });
-      n++;
-    });
-    notes.push('Receipts: '+n);
+      sum += totalAmount; n++;
+    }
+    lines.push('✓ Receipts · '+n+' · Σ '+fmtN(sum));
   }
 
-  // KPI_HISTORY
-  const kpi = sheetToObjects(wb, ['KPI_HISTORY','KPI History','Kpi_History']);
-  if(kpi && kpi.rows.length){
+  // ---------- KPI_HISTORY ----------
+  const kpi = getMatrix(wb, ['KPI_HISTORY','KPI History','Kpi_History']);
+  if(kpi){
+    const m = kpi.matrix;
+    const hr = findHeaderRow(m, ['year','month','gross','net']);
     let n=0;
-    kpi.rows.forEach(row=>{
-      const year = Math.floor(toNum(rowGet(row, ['Year','A','YEAR'])));
-      const month = toMonthNum(rowGet(row, ['Month','B','MONTH'])) || Math.floor(toNum(rowGet(row, ['Month','B'])));
-      if(!year || !month) return;
-      if(mode==='merge' && DB.kpiHistory.some(k=>k.year===year && k.month===month)) return;
+    for(let r=hr+1;r<m.length;r++){
+      const row = m[r]||[];
+      const year = yearFromValue(row[0]) || Math.floor(cellNum(row[0]));
+      const month = monthFromValue(row[1]) || Math.floor(cellNum(row[1]));
+      if(!year || !month) continue;
+      if(mode==='merge' && DB.kpiHistory.some(k=>k.year===year && k.month===month)) continue;
       DB.kpiHistory.push({
         year, month,
-        qtyIn: toNum(rowGet(row, ['qtyIn','C','Qty In'])),
-        qtyOut: toNum(rowGet(row, ['qtyOut','D','Qty Out'])),
-        qtyRem: toNum(rowGet(row, ['qtyRem','E','Rem'])),
-        gross: toNum(rowGet(row, ['Gross','F','gross'])),
-        net: toNum(rowGet(row, ['Net','G','net'])),
-        liquidCash: toNum(rowGet(row, ['LiquidCash','H','Liquid'])),
-        debt: toNum(rowGet(row, ['Debt','I'])),
-        creditors: toNum(rowGet(row, ['Creditors','J'])),
-        deposits: toNum(rowGet(row, ['Deposits','K']))
+        qtyIn: cellNum(row[2]), qtyOut: cellNum(row[3]), qtyRem: cellNum(row[4]),
+        gross: cellNum(row[5]), net: cellNum(row[6]),
+        liquidCash: cellNum(row[7]), debt: cellNum(row[8]),
+        creditors: cellNum(row[9]), deposits: cellNum(row[10])
       });
       n++;
-    });
-    notes.push('KPI history: '+n);
+    }
+    lines.push('✓ KPI history · '+n);
   }
 
-  // UndoLog (optional)
-  const ul = sheetToObjects(wb, ['UndoLog','UNDOLOG','Undo Log']);
-  if(ul && ul.rows.length){
+  // ---------- UndoLog ----------
+  const ul = getMatrix(wb, ['UndoLog','UNDOLOG','Undo Log']);
+  if(ul){
+    const m = ul.matrix;
+    const hr = findHeaderRow(m, ['row','product','type','qty']);
     let n=0;
-    ul.rows.forEach(row=>{
+    for(let r=hr+1;r<m.length;r++){
+      const row = m[r]||[];
+      const product = cellStr(row[1]);
+      const type = cellStr(row[2]);
+      if(!product && !type) continue;
       DB.undoLog.push({
-        row: rowGet(row, ['Row','A']),
-        product: String(rowGet(row, ['Product','B'])||''),
-        type: String(rowGet(row, ['Type','C'])||''),
-        qty: toNum(rowGet(row, ['Qty','D'])),
-        disc: toNum(rowGet(row, ['Discount','E','Disc'])),
-        at: excelDateToISO(rowGet(row, ['Date','F','Now'])),
-        batchId: String(rowGet(row, ['BatchID','R','Batch'])||''),
+        row: row[0], product, type,
+        qty: cellNum(row[3]), disc: cellNum(row[4]),
+        at: excelDateToISO(row[5]),
+        batchId: cellStr(row[17] !== undefined ? row[17] : ''),
         cashier: 'import'
       });
       n++;
-    });
-    notes.push('UndoLog: '+n);
+    }
+    lines.push('✓ UndoLog · '+n);
   }
 
-  // Restore security always (never clobber PINs/passwords from excel replace)
+  // Always restore security (never take passwords from excel)
   DB.security = securityBackup;
+  if(!DB.business.name) DB.business = bizBackup;
 
-  // Set selected period to latest stock month
-  const lm = getLatestMonth();
-  if(lm.year){ DB.selectedYear = lm.year; DB.selectedMonth = lm.month; }
-
-  // Build product list from stock if products empty
+  // Products from stock if needed
   if(!DB.products.length && DB.stockRows.length){
     const seen = new Set();
     DB.stockRows.forEach(r=>{
-      const k = r.productName.toLowerCase();
-      if(seen.has(k)) return;
+      const k = (r.productName||'').toLowerCase();
+      if(!k || seen.has(k)) return;
       seen.add(k);
       DB.products.push({ id: r.productId||idStamp('PRD-'), name: r.productName, category: r.category||'', uPrice: r.uPrice||0 });
     });
   }
 
-  return notes.join(' · ') || 'No recognised sheets';
-}
+  // Period = latest month that has stock activity
+  let best = { year:0, month:0 };
+  DB.stockRows.forEach(r=>{
+    if(r.year > best.year || (r.year===best.year && r.month>best.month)) best = { year:r.year, month:r.month };
+  });
+  if(best.year){ DB.selectedYear = best.year; DB.selectedMonth = best.month; }
 
+  // Summary stats
+  const stockVal = DB.stockRows.reduce((s,r)=>s+(Number(r.rStock)||0)*(Number(r.uCost)||0),0);
+  const salesVal = DB.stockRows.reduce((s,r)=>s+(Number(r.tSales)||0),0);
+  const debtVal = DB.debtors.reduce((s,d)=>s+(Number(d.balance)||0),0);
+  lines.push('——');
+  lines.push('Totals now in app: Products <b>'+DB.products.length+'</b> · Stock rows <b>'+DB.stockRows.length+
+    '</b> · CR stock value <b>'+fmt(stockVal)+'</b> · Σ T Sales (all rows) <b>'+fmt(salesVal)+
+    '</b> · Debtors Σ <b>'+fmt(debtVal)+'</b>');
+
+  if(stockCount === 0 && stockPack){
+    lines.push('<b style="color:#fcd34d">Warning:</b> Stock sheet found but 0 data rows parsed. Headers may differ — send sheet screenshot or first-row headers.');
+  }
+  if(!stockPack){
+    lines.push('<b style="color:#fcd34d">Warning:</b> Main stock sheet missing. Rename tab to STOCK AND SALES RECORDS or re-export from Excel.');
+  }
+
+  const summary = 'stock '+DB.stockRows.length+' · debtors '+DB.debtors.length+' · receipts '+DB.receipts.length;
+  return {
+    summary,
+    html: lines.map(l=>'• '+l).join('<br>')
+  };
+}
 
 /* ---------- escape ---------- */
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
