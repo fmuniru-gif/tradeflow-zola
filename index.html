@@ -1,0 +1,2789 @@
+<!DOCTYPE html>
+<html lang="en-GH">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f766e" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="description" content="Zola Electronics Zone — Sales & Inventory PWA (offline)" />
+<title>Zola Electronics Zone · TradeFlow v3.2</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
+<style>
+:root{
+  --bg:#0f172a; --panel:#1e293b; --panel2:#334155; --line:#475569;
+  --text:#f1f5f9; --muted:#94a3b8; --teal:#0f766e; --teal2:#14b8a6;
+  --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#3b82f6; --pink:#ec4899;
+  --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.35);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:var(--teal2)}
+.app{display:flex;min-height:100%;}
+.sidebar{width:260px;background:linear-gradient(180deg,#0b1224,#0f172a);border-right:1px solid #1e293b;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:20;transition:transform .25s}
+.brand{padding:18px 16px 10px;border-bottom:1px solid #1e293b}
+.brand h1{margin:0;font-size:15px;letter-spacing:.3px;color:#fff}
+.brand p{margin:4px 0 0;font-size:11px;color:var(--muted)}
+.nav{padding:10px 8px;overflow:auto;flex:1}
+.nav button{width:100%;text-align:left;padding:11px 12px;border-radius:10px;color:var(--muted);display:flex;gap:10px;align-items:center;margin-bottom:2px;font-size:13.5px}
+.nav button:hover{background:#1e293b;color:#fff}
+.nav button.active{background:rgba(15,118,110,.25);color:var(--teal2);font-weight:600}
+.nav .sec{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;padding:14px 12px 6px}
+.userbox{padding:12px;border-top:1px solid #1e293b;font-size:12px;color:var(--muted)}
+.userbox strong{color:#fff;display:block}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #1e293b;background:rgba(15,23,42,.9);position:sticky;top:0;z-index:15;backdrop-filter:blur(8px)}
+.topbar h2{margin:0;font-size:17px;flex:1}
+.burger{display:none;width:40px;height:40px;border-radius:10px;background:var(--panel);font-size:18px}
+.content{padding:16px;padding-bottom:calc(24px + var(--safe-b));flex:1}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g6{grid-template-columns:repeat(6,1fr)}
+@media(max-width:1100px){.g6{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){
+  .sidebar{position:fixed;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0);box-shadow:var(--shadow)}
+  .burger{display:inline-flex;align-items:center;justify-content:center}
+  .g2,.g3,.g4,.g6{grid-template-columns:1fr 1fr}
+  .g1m{grid-template-columns:1fr}
+}
+.card{background:var(--panel);border:1px solid #273449;border-radius:var(--radius);padding:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.kpi{min-height:92px}
+.kpi .val{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.kpi .sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi.teal .val{color:var(--teal2)}
+.kpi.green .val{color:var(--green)}
+.kpi.red .val{color:var(--red)}
+.kpi.amber .val{color:var(--amber)}
+.kpi.blue .val{color:var(--blue)}
+.kpi.pink .val{color:var(--pink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:10px;background:var(--teal);color:#fff;font-weight:600;font-size:13.5px;border:1px solid transparent;transition:.15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--text)}
+.btn.danger{background:#b91c1c}
+.btn.warn{background:#b45309}
+.btn.ok{background:#15803d}
+.btn.sm{padding:7px 10px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;min-width:0}
+.field label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.field input,.field select,.field textarea{
+  background:#0b1220;border:1px solid #334155;border-radius:10px;padding:10px 12px;outline:none;width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal2);box-shadow:0 0 0 3px rgba(20,184,166,.15)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 8px;border-bottom:1px solid #273449;text-align:left}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;background:var(--panel)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.credit-row td{background:rgba(255,199,206,.12)!important;color:#fca5a5}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge.admin{background:rgba(245,158,11,.2);color:var(--amber)}
+.badge.cashier{background:rgba(59,130,246,.2);color:#93c5fd}
+.badge.ok{background:rgba(34,197,94,.15);color:var(--green)}
+.badge.warn{background:rgba(245,158,11,.15);color:var(--amber)}
+.badge.bad{background:rgba(239,68,68,.15);color:#fca5a5}
+.modal-bg{position:fixed;inset:0;background:rgba(2,6,23,.72);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid #334155;border-radius:16px;width:min(520px,100%);max-height:90vh;overflow:auto;padding:18px;box-shadow:var(--shadow)}
+.modal h3{margin:0 0 12px;font-size:18px}
+.toast-wrap{position:fixed;right:14px;bottom:calc(14px + var(--safe-b));z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#0b1220;border:1px solid #334155;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);animation:slide .25s ease}
+.toast.ok{border-color:#166534}.toast.err{border-color:#991b1b}.toast.warn{border-color:#92400e}
+@keyframes slide{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.login-screen{position:fixed;inset:0;background:radial-gradient(1200px 600px at 20% -10%,#134e4a,transparent),var(--bg);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px}
+.login-card{width:min(400px,100%);background:var(--panel);border:1px solid #334155;border-radius:18px;padding:28px 22px;box-shadow:var(--shadow)}
+.login-card h1{margin:0 0 4px;font-size:20px;text-align:center}
+.login-card .sub{text-align:center;color:var(--muted);font-size:12px;margin-bottom:18px}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.right{text-align:right}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.hr{border:0;border-top:1px solid #273449;margin:14px 0}
+.cart-item{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #273449;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:#0b1220;border:1px solid #334155;border-radius:999px;padding:4px 10px;font-size:12px}
+.search{position:relative}
+.search input{padding-left:36px}
+.search::before{content:"⌕";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+.table-wrap{overflow:auto;max-height:55vh;border:1px solid #273449;border-radius:12px}
+.footer-note{font-size:11px;color:#64748b;margin-top:18px;text-align:center}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:19;display:none}
+.overlay.show{display:block}
+.receipt-paper{background:#fff;color:#111;padding:18px;border-radius:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.45}
+.receipt-paper h4{margin:0 0 6px;text-align:center;font-size:14px}
+.receipt-paper .center{text-align:center}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{padding:8px 12px;border-radius:999px;background:#0b1220;border:1px solid #334155;color:var(--muted);font-size:12.5px;font-weight:600}
+.tabs button.active{background:rgba(15,118,110,.3);border-color:var(--teal);color:var(--teal2)}
+.empty{padding:28px;text-align:center;color:var(--muted);font-size:13px}
+.statline{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px dashed #273449}
+.statline b{font-variant-numeric:tabular-nums}
+
+.sale-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+@media(max-width:900px){.sale-layout{grid-template-columns:1fr}}
+.sale-theme{background:rgba(230,240,255,.04);border-color:#1e3a5f}
+.field input:disabled,.field input[readonly]{opacity:.75;cursor:not-allowed}
+.suggest{position:absolute;left:0;right:0;top:100%;z-index:30;background:#0b1220;border:1px solid #334155;border-radius:10px;max-height:160px;overflow:auto;display:none}
+.suggest.show{display:block}
+.suggest div{padding:8px 12px;cursor:pointer;font-size:13px}
+.suggest div:hover,.suggest div.active{background:rgba(15,118,110,.25)}
+.suggest .none{color:#fca5a5;cursor:default}
+.pos-totals .statline b{font-size:15px}
+.credit-row td{background:rgba(255,199,206,.18)!important;color:#fca5a5}
+
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:10px">
+      <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
+    </div>
+    <h1>Zola Electronics Zone</h1>
+    <div class="sub">TradeFlow v3.2 · Tamale · GH₵ · Offline-ready</div>
+    <div class="field">
+      <label>Cashier</label>
+      <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" />
+    </div>
+    <button class="btn" style="width:100%;margin-top:6px" onclick="doLogin()">Sign in</button>
+    <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">Data stays on this device until you Export / Import.</p>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSide()"></div>
+
+<div class="app" id="appShell" style="display:none">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <h1>Zola Electronics Zone</h1>
+      <p>TradeFlow PWA · v3.2 · Tamale · GH₵</p>
+    </div>
+    <nav class="nav" id="mainNav">
+      <div class="sec" data-admin-only>Main</div>
+      <button data-view="dashboard" data-admin-only onclick="nav('dashboard')">📊 Dashboard KPIs</button>
+      <button data-view="pos" class="active" onclick="nav('pos')">🛒 Sale Out</button>
+      <button data-view="receipts" onclick="nav('receipts')">🖨️ Receipts</button>
+      <button data-view="stockin" data-admin-only id="navStockIn" onclick="nav('stockin')">📥 Stock In</button>
+      <button data-view="products" data-admin-only onclick="nav('products')">📦 Products</button>
+      <button data-view="stock" data-admin-only onclick="nav('stock')">📋 Stock Balance</button>
+      <div class="sec" data-admin-only>Money</div>
+      <button data-view="cash" data-admin-only onclick="nav('cash')">💵 Cash Balances</button>
+      <button data-view="expenses" data-admin-only onclick="nav('expenses')">🧾 Expenses</button>
+      <button data-view="accounts" data-admin-only onclick="nav('accounts')">👥 Accounts</button>
+      <div class="sec" data-admin-only>Period</div>
+      <button data-view="monthend" data-admin-only id="navMonthEnd" onclick="nav('monthend')">📅 Start New Month</button>
+      <button data-view="reports" data-admin-only onclick="nav('reports')">📈 Reports</button>
+      <div class="sec">System</div>
+      <button data-view="sync" data-admin-only onclick="nav('sync')">🔄 Sync / Backup</button>
+      <button data-view="settings" data-admin-only onclick="nav('settings')">⚙️ Settings</button>
+      <button id="navAdminMode" onclick="toggleAdminModeBtn()">🔐 Admin Mode (OFF)</button>
+      <button onclick="doLogout()">🚪 Logout</button>
+    </nav>
+    <div class="userbox">
+      <strong id="uiUserName">—</strong>
+      <span id="uiUserRole" class="badge admin">ADMIN</span>
+      <div class="muted" style="margin-top:6px" id="uiPeriod">—</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="burger" onclick="toggleSide()" aria-label="Menu">☰</button>
+      <h2 id="viewTitle">Dashboard KPIs</h2>
+      <span class="pill mono" id="clockPill">—</span>
+      <button class="btn sm ghost" onclick="refreshAll()" title="Refresh">↻</button>
+    </div>
+    <div class="content" id="viewRoot"></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+/* =========================================================
+   TradeFlow PWA v3.0 — Zola Electronics Zone (Tamale)
+   Full offline sales / inventory / cash / accounts / KPIs
+   ========================================================= */
+const APP_VERSION = '3.2';
+const DB_KEY = 'tradeflow_v32_zola';
+const VAT_RATE = 0;
+const BUSINESS = {
+  name: 'Zola Electronics Zone',
+  address: 'Tamale, Northern Region, Ghana',
+  tel: '0553486788'
+};
+/* Default security seed — live values live in DB.security (editable by admin) */
+const DEFAULT_SECURITY = {
+  adminPIN: '055348',
+  pricePIN: '0000',
+  cashiers: [
+    { id: 'USR-ADMIN', name: 'Muniru Fuseini', tel: '0553486788', role: 'ADMIN', password: 'trnat330', sig: 'Sig_Mun.jpg', active: true },
+    { id: 'USR-C2', name: 'Abdul-Basit', tel: '0508223452', role: 'CASHIER2', password: '6522558', sig: 'Sig_Bas.jpg', active: true }
+  ]
+};
+function getSecurity(){
+  if(!DB) return deepClone(DEFAULT_SECURITY);
+  if(!DB.security) DB.security = deepClone(DEFAULT_SECURITY);
+  if(!Array.isArray(DB.security.cashiers) || !DB.security.cashiers.length){
+    DB.security.cashiers = deepClone(DEFAULT_SECURITY.cashiers);
+  }
+  if(!DB.security.adminPIN) DB.security.adminPIN = DEFAULT_SECURITY.adminPIN;
+  if(!DB.security.pricePIN) DB.security.pricePIN = DEFAULT_SECURITY.pricePIN;
+  return DB.security;
+}
+function getCashiers(){ return getSecurity().cashiers.filter(c => c.active !== false); }
+function getAdminPIN(){ return getSecurity().adminPIN || DEFAULT_SECURITY.adminPIN; }
+function getPricePIN(){ return getSecurity().pricePIN || DEFAULT_SECURITY.pricePIN; }
+function getCashierByName(name){ return getCashiers().find(c => c.name === name); }
+const EXPENSE_CATS = ['Rent','Utilities','Fuel','Salary','Maintenance','Miscellaneous'];
+const CASH_TYPES = ['Cash in Hand','Bank Savings','MOMO','Others'];
+
+/* ---------- state ---------- */
+let DB = null;
+let session = { cashier: null, tel: null, role: null, adminMode: false, sig: null, isCashier2: false };
+let cart = [];
+let currentView = 'pos';
+let priceAdjUnlocked = false;
+
+
+/* ---------- utils ---------- */
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => 'GH₵ ' + (Number(n)||0).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN = (n) => (Number(n)||0).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nowISO = () => new Date().toISOString();
+const pad = (n) => String(n).padStart(2,'0');
+function idStamp(prefix){
+  const d = new Date();
+  return prefix + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+}
+function toast(msg, type='ok'){
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('toasts').appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 3200);
+}
+function monthName(m){ return ['','January','February','March','April','May','June','July','August','September','October','November','December'][m]||m; }
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+
+/* ---------- persistence ---------- */
+function defaultDB(){
+  const y = new Date().getFullYear();
+  const m = new Date().getMonth()+1;
+  return {
+    version: APP_VERSION,
+    business: deepClone(BUSINESS),
+    selectedYear: y,
+    selectedMonth: m,
+    products: [],          // master product catalog (name, category, uPrice, ...)
+    stockRows: [],         // FIFO cost-tier rows: {id, productName, category, year, month, qtyIn, rStock, uCost, qtyOut, uPrice, disc, tSales, profit, aPrice, productId}
+    sales: [],             // sale headers
+    saleLines: [],         // sale line allocations
+    security: deepClone(DEFAULT_SECURITY),
+    debtors: [],
+    creditors: [],
+    depositors: [],
+    debtorsMonthly: [],
+    creditorsMonthly: [],
+    depositorsMonthly: [],
+    accountTxns: [],
+    cashBalances: { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 },
+    cashLog: [],
+    expenses: [],
+    kpiHistory: [],
+    receipts: [],
+    undoLog: [],
+    settings: { priceAdjEnabled: false }
+  };
+}
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(!raw){ DB = defaultDB(); saveDB(); return; }
+    DB = JSON.parse(raw);
+    // migrations / guards
+    if(!DB.cashBalances) DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
+    CASH_TYPES.forEach(t=>{ if(DB.cashBalances[t]==null) DB.cashBalances[t]=0; });
+    ['products','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','receipts','undoLog'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
+    if(!DB.security) DB.security = deepClone(DEFAULT_SECURITY);
+    else {
+      if(!Array.isArray(DB.security.cashiers) || !DB.security.cashiers.length) DB.security.cashiers = deepClone(DEFAULT_SECURITY.cashiers);
+      if(!DB.security.adminPIN) DB.security.adminPIN = DEFAULT_SECURITY.adminPIN;
+      if(!DB.security.pricePIN) DB.security.pricePIN = DEFAULT_SECURITY.pricePIN;
+      DB.security.cashiers.forEach(c=>{ if(c.active === undefined) c.active = true; if(!c.id) c.id = 'USR-'+Date.now()+Math.floor(Math.random()*999); });
+    }
+    // legacy: migrate old cashiers array if present
+    if(Array.isArray(DB.cashiers) && DB.cashiers.length && DB.security.cashiers.length === DEFAULT_SECURITY.cashiers.length){
+      // keep security as source of truth
+    }
+    if(!DB.selectedYear) DB.selectedYear = new Date().getFullYear();
+    if(!DB.selectedMonth) DB.selectedMonth = new Date().getMonth()+1;
+  }catch(e){
+    console.error(e);
+    DB = defaultDB();
+  }
+}
+function saveDB(){
+  localStorage.setItem(DB_KEY, JSON.stringify(DB));
+}
+
+/* ---------- KPI engine (exact VBA formulas) ---------- */
+function isOpenMonth(){
+  const latest = getLatestMonth();
+  return DB.selectedYear===latest.year && DB.selectedMonth===latest.month;
+}
+function getLatestMonth(){
+  let y = DB.selectedYear, m = DB.selectedMonth;
+  if(DB.stockRows.length){
+    let best = {year:0,month:0};
+    DB.stockRows.forEach(r=>{
+      if(r.year>best.year || (r.year===best.year && r.month>best.month)) best={year:r.year,month:r.month};
+    });
+    if(best.year) { y=best.year; m=best.month; }
+  }
+  // also consider sales / expenses dates
+  return {year:y, month:m};
+}
+function KPI_CRStock(){
+  return DB.stockRows
+    .filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth)
+    .reduce((s,r)=> s + (Number(r.rStock)||0)*(Number(r.uCost)||0), 0);
+}
+function KPI_TotalOutstandingDebt(){
+  if(isOpenMonth()){
+    return DB.debtors.reduce((s,d)=>s+(Number(d.balance)||0),0);
+  }
+  return DB.debtorsMonthly
+    .filter(x=>x.snapYear===DB.selectedYear && x.snapMonth===DB.selectedMonth)
+    .reduce((s,x)=>s+(Number(x.closingBalance!=null?x.closingBalance:x.bal)||0),0);
+}
+function KPI_TotalCreditors(){
+  if(isOpenMonth()){
+    return DB.creditors.reduce((s,d)=>s+(Number(d.balance)||0),0);
+  }
+  return DB.creditorsMonthly
+    .filter(x=>x.snapYear===DB.selectedYear && x.snapMonth===DB.selectedMonth)
+    .reduce((s,x)=>s+(Number(x.closingBalance!=null?x.closingBalance:x.bal)||0),0);
+}
+function KPI_TotalDeposits(){
+  if(isOpenMonth()){
+    return DB.depositors.reduce((s,d)=>s+(Number(d.balance)||0),0);
+  }
+  return DB.depositorsMonthly
+    .filter(x=>x.snapYear===DB.selectedYear && x.snapMonth===DB.selectedMonth)
+    .reduce((s,x)=>s+(Number(x.closingBalance!=null?x.closingBalance:x.bal)||0),0);
+}
+function KPI_CashBuckets_Total(){
+  return CASH_TYPES.reduce((s,t)=>s+(Number(DB.cashBalances[t])||0),0);
+}
+function KPI_TotalExpenses_CurrentMonth(){
+  return DB.expenses
+    .filter(e=>{
+      const d = new Date(e.date);
+      return d.getFullYear()===DB.selectedYear && (d.getMonth()+1)===DB.selectedMonth;
+    })
+    .reduce((s,e)=>s+(Number(e.amount)||0),0);
+}
+function GetGrossProfit_CurrentMonth(){
+  return DB.stockRows
+    .filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth)
+    .reduce((s,r)=>s+(Number(r.profit)||0),0);
+}
+function KPI_NetProfit(){
+  return GetGrossProfit_CurrentMonth() - KPI_TotalExpenses_CurrentMonth();
+}
+function KPI_LiquidCash(){
+  return (KPI_CRStock() + KPI_TotalOutstandingDebt() + KPI_CashBuckets_Total())
+       - (KPI_TotalCreditors() + KPI_TotalDeposits());
+}
+function KPI_Zakaat(){
+  return KPI_LiquidCash() / 40;
+}
+function KPI_QtyIn(){
+  return DB.stockRows.filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth)
+    .reduce((s,r)=>s+(Number(r.qtyIn)||0),0);
+}
+function KPI_QtyOut(){
+  return DB.stockRows.filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth)
+    .reduce((s,r)=>s+(Number(r.qtyOut)||0),0);
+}
+function KPI_QtyRem(){
+  return DB.stockRows.filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth)
+    .reduce((s,r)=>s+(Number(r.rStock)||0),0);
+}
+function KPI_TotalSales(){
+  return DB.stockRows.filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth)
+    .reduce((s,r)=>s+(Number(r.tSales)||0),0);
+}
+
+/* ---------- auth / roles (Excel ApplyRibbonVisibility) ---------- */
+function isElevated(){
+  // Muniru (ADMIN login) always elevated; Cashier2 only when Admin Mode ON
+  return session.role === 'ADMIN' || !!session.adminMode;
+}
+function populateLoginCashiers(){
+  const sel = $('loginCashier');
+  if(!sel) return;
+  const list = getCashiers();
+  const prev = sel.value;
+  sel.innerHTML = list.map(c => {
+    const tag = c.role === 'ADMIN' ? 'ADMIN' : 'CASHIER';
+    return `<option value="${escAttr(c.name)}">${esc(c.name)} (${tag})</option>`;
+  }).join('');
+  if(prev && list.some(c=>c.name===prev)) sel.value = prev;
+}
+function doLogin(){
+  const name = $('loginCashier').value;
+  const pass = $('loginPass').value;
+  const c = getCashierByName(name);
+  if(!c || c.password !== pass){
+    toast('Incorrect password.', 'err');
+    return;
+  }
+  session.cashier = c.name;
+  session.tel = c.tel;
+  session.role = c.role;
+  session.sig = c.sig;
+  session.isCashier2 = (c.role !== 'ADMIN');
+  // Excel: Muniru starts Admin Mode ON; Cashier2 starts OFF
+  session.adminMode = (c.role === 'ADMIN');
+  priceAdjUnlocked = false;
+  cart = [];
+  $('loginScreen').style.display = 'none';
+  $('appShell').style.display = 'flex';
+  updateUserBadge();
+  applyRoleUI();
+  updatePeriodUI();
+  // Excel ForceSaleOutLanding
+  nav('pos');
+  toast('Welcome, ' + c.name.split(' ')[0] + '!');
+}
+function doLogout(){
+  session = { cashier:null, tel:null, role:null, adminMode:false, sig:null, isCashier2:false };
+  cart = [];
+  priceAdjUnlocked = false;
+  $('appShell').style.display = 'none';
+  $('loginScreen').style.display = 'flex';
+  $('loginPass').value = '';
+}
+function requireAdmin(msg){
+  if(isElevated()) return true;
+  toast(msg || 'Only admin can perform this action.', 'err');
+  return false;
+}
+function updateUserBadge(){
+  $('uiUserName').textContent = session.cashier || '—';
+  const elevated = isElevated();
+  if(session.isCashier2 && session.adminMode){
+    $('uiUserRole').textContent = 'CASHIER2 · Admin Mode ON';
+    $('uiUserRole').className = 'badge admin';
+  } else if(session.role === 'ADMIN'){
+    $('uiUserRole').textContent = 'ADMIN';
+    $('uiUserRole').className = 'badge admin';
+  } else {
+    $('uiUserRole').textContent = 'CASHIER 2';
+    $('uiUserRole').className = 'badge cashier';
+  }
+}
+function applyRoleUI(){
+  const elevated = isElevated();
+  // Hide admin-only nav items for locked Cashier2
+  document.querySelectorAll('[data-admin-only]').forEach(el=>{
+    el.style.display = elevated ? '' : 'none';
+  });
+  // Receipts always visible (Cashier2: own+today filter inside view)
+  const admBtn = $('navAdminMode');
+  if(admBtn){
+    // Excel: Admin Mode button always visible for both
+    admBtn.style.display = '';
+    if(session.role === 'ADMIN' && !session.isCashier2){
+      // Muniru is always admin; button still toggles visual but stays ON by default
+      admBtn.textContent = session.adminMode ? '🔐 Admin Mode (ON)' : '🔐 Admin Mode (OFF)';
+    } else {
+      admBtn.textContent = session.adminMode ? '🔐 Admin Mode (ON)' : '🔐 Admin Mode (OFF)';
+    }
+    admBtn.style.background = session.adminMode ? 'rgba(0,150,0,.25)' : '';
+    admBtn.style.color = session.adminMode ? '#86efac' : '';
+  }
+  updateUserBadge();
+}
+function toggleAdminModeBtn(){
+  if(session.adminMode){
+    // Turning OFF
+    session.adminMode = false;
+    // Excel: when Cashier2 turns off, force Sale Out landing
+    applyRoleUI();
+    toast('Admin Mode (OFF)');
+    nav('pos');
+    return;
+  }
+  // Turning ON — require PIN (Excel frmAdminPIN)
+  promptPIN('Admin Mode PIN', getAdminPIN(), ()=>{
+    session.adminMode = true;
+    applyRoleUI();
+    toast('Admin Mode (ON)');
+    // Excel ForceSaleOutLanding after toggle
+    nav('pos');
+  });
+}
+function promptPIN(title, expected, onOk){
+  openModal(`
+    <h3>${title}</h3>
+    <div class="field"><label>PIN</label><input id="pinInput" type="password" inputmode="numeric" maxlength="12" /></div>
+    <div class="row">
+      <button class="btn" onclick="(__pinOk&&__pinOk())">Confirm</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+  window.__pinOk = ()=>{
+    const v = document.getElementById('pinInput').value;
+    if(v !== expected){
+      toast('Incorrect PIN!', 'err');
+      return;
+    }
+    closeModal();
+    onOk();
+  };
+  setTimeout(()=>{ const el=document.getElementById('pinInput'); if(el) el.focus(); }, 50);
+}
+
+/* ---------- navigation ---------- */
+const TITLES = {
+  dashboard:'Dashboard KPIs', pos:'Sale Out', stockin:'Stock In', products:'Products',
+  stock:'Stock Balance', cash:'Cash Balances', expenses:'Expenses', accounts:'Accounts',
+  receipts:'Receipt Register', monthend:'Start New Month', reports:'Reports',
+  sync:'Sync / Backup', settings:'Settings'
+};
+const CASHIER2_ALLOWED = new Set(['pos','receipts']);
+function nav(view){
+  // Hard gate — Excel Cashier2 locked ribbon
+  if(!isElevated() && !CASHIER2_ALLOWED.has(view)){
+    const msgs = {
+      dashboard: 'Only admin can view KPI dashboard.',
+      stockin: 'Only ADMIN can perform Stock In.',
+      monthend: 'Only admin can start a New Month.',
+      expenses: 'Only admin can access Expenses.',
+      accounts: 'Only admin can access Accounts.',
+      cash: 'Only admin can access Cash Balances.',
+      reports: 'Only admin can view reports.',
+      products: 'Only admin can manage products.',
+      stock: 'Only admin can view Stock Balance.',
+      sync: 'Only admin can access Sync / Backup.',
+      settings: 'Only admin can access Settings.'
+    };
+    toast(msgs[view] || 'Only admin can open this page.', 'err');
+    view = 'pos';
+  }
+  currentView = view;
+  document.querySelectorAll('#mainNav button[data-view]').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view===view);
+  });
+  $('viewTitle').textContent = TITLES[view]||view;
+  closeSide();
+  render();
+}
+function toggleSide(){
+  $('sidebar').classList.toggle('open');
+  $('sideOverlay').classList.toggle('show');
+}
+function closeSide(){
+  $('sidebar').classList.remove('open');
+  $('sideOverlay').classList.remove('show');
+}
+function updatePeriodUI(){
+  $('uiPeriod').textContent = monthName(DB.selectedMonth) + ' ' + DB.selectedYear;
+}
+function refreshAll(){ saveDB(); render(); toast('Refreshed'); }
+
+/* ---------- modal ---------- */
+function openModal(html){ $('modalBody').innerHTML = html; $('modalBg').classList.add('show'); }
+function closeModal(){ $('modalBg').classList.remove('show'); $('modalBody').innerHTML=''; window.__pinOk=null; }
+
+/* ---------- RENDER ---------- */
+function render(){
+  updatePeriodUI();
+  applyRoleUI();
+  // Safety: if locked cashier somehow on admin view, bounce to pos
+  if(!isElevated() && !CASHIER2_ALLOWED.has(currentView)){
+    currentView = 'pos';
+    $('viewTitle').textContent = TITLES.pos;
+  }
+  const root = $('viewRoot');
+  switch(currentView){
+    case 'dashboard': root.innerHTML = viewDashboard(); break;
+    case 'pos': root.innerHTML = viewPOS(); bindPOS(); break;
+    case 'stockin': root.innerHTML = viewStockIn(); break;
+    case 'products': root.innerHTML = viewProducts(); break;
+    case 'stock': root.innerHTML = viewStock(); break;
+    case 'cash': root.innerHTML = viewCash(); break;
+    case 'expenses': root.innerHTML = viewExpenses(); break;
+    case 'accounts': root.innerHTML = viewAccounts(); break;
+    case 'receipts': root.innerHTML = viewReceipts(); break;
+    case 'monthend': root.innerHTML = viewMonthEnd(); break;
+    case 'reports': root.innerHTML = viewReports(); break;
+    case 'sync': root.innerHTML = viewSync(); break;
+    case 'settings': root.innerHTML = viewSettings(); break;
+    default: root.innerHTML = '<div class="empty">Unknown view</div>';
+  }
+}
+
+/* ===== DASHBOARD — 12 KPI tiles ===== */
+function periodSelectorHTML(){
+  const years = new Set([DB.selectedYear, new Date().getFullYear()]);
+  DB.stockRows.forEach(r=>years.add(r.year));
+  DB.kpiHistory.forEach(k=>years.add(k.year));
+  const yOpts = [...years].sort((a,b)=>b-a).map(y=>`<option value="${y}" ${y===DB.selectedYear?'selected':''}>${y}</option>`).join('');
+  const mOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}" ${m===DB.selectedMonth?'selected':''}>${monthName(m)}</option>`).join('');
+  return `<div class="row" style="margin-bottom:12px">
+    <div class="field" style="margin:0;min-width:120px"><label>Year</label>
+      <select id="selYear" onchange="changePeriod()">${yOpts}</select></div>
+    <div class="field" style="margin:0;min-width:140px"><label>Month</label>
+      <select id="selMonth" onchange="changePeriod()">${mOpts}</select></div>
+    <span class="pill" style="margin-top:18px">${isOpenMonth()?'● Live open month':'○ Snapshot / closed month'}</span>
+  </div>`;
+}
+function changePeriod(){
+  DB.selectedYear = Number($('selYear').value);
+  DB.selectedMonth = Number($('selMonth').value);
+  saveDB(); render();
+}
+function viewDashboard(){
+  const tiles = [
+    {k:'Gross Profit', v:fmt(GetGrossProfit_CurrentMonth()), c:'green', s:'Σ PROFIT (month)'},
+    {k:'Expenses', v:fmt(KPI_TotalExpenses_CurrentMonth()), c:'red', s:'EXPENSES this month'},
+    {k:'Net Profit', v:fmt(KPI_NetProfit()), c:'teal', s:'Gross − Expenses'},
+    {k:'Total Sales', v:fmt(KPI_TotalSales()), c:'blue', s:'Σ T SALES'},
+    {k:'CR Stock (value)', v:fmt(KPI_CRStock()), c:'amber', s:'R STOCK × U COST'},
+    {k:'Qty In / Out / Rem', v:`${fmtN(KPI_QtyIn())} / ${fmtN(KPI_QtyOut())} / ${fmtN(KPI_QtyRem())}`, c:'blue', s:'Units this month'},
+    {k:'Outstanding Debt', v:fmt(KPI_TotalOutstandingDebt()), c:'red', s:isOpenMonth()?'Live DEBTORS':'Monthly snapshot'},
+    {k:'Creditors', v:fmt(KPI_TotalCreditors()), c:'amber', s:isOpenMonth()?'Live CREDITORS':'Monthly snapshot'},
+    {k:'Deposits', v:fmt(KPI_TotalDeposits()), c:'pink', s:isOpenMonth()?'Live DEPOSITORS':'Monthly snapshot'},
+    {k:'Cash Buckets', v:fmt(KPI_CashBuckets_Total()), c:'green', s:'Hand+Bank+MOMO+Others'},
+    {k:'Liquid Cash', v:fmt(KPI_LiquidCash()), c:'teal', s:'(CR+Debt+Cash)−(Cred+Dep)'},
+    {k:'Zakaat (2.5%)', v:fmt(KPI_Zakaat()), c:'pink', s:'Liquid Cash ÷ 40'},
+  ];
+  return periodSelectorHTML() +
+    `<div class="grid g3" style="margin-bottom:14px">` +
+    tiles.map(t=>`<div class="card kpi ${t.c}"><h3>${t.k}</h3><div class="val mono">${t.v}</div><div class="sub">${t.s}</div></div>`).join('') +
+    `</div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Quick actions</h3>
+        <div class="row">
+          <button class="btn" onclick="nav('pos')">New Sale</button>
+          <button class="btn ghost" onclick="nav('stockin')" ${session.role!=='ADMIN'&&!session.adminMode?'disabled':''}>Stock In</button>
+          <button class="btn ghost" onclick="nav('cash')">Cash</button>
+          <button class="btn ghost" onclick="nav('expenses')">Expense</button>
+          <button class="btn ghost" onclick="nav('accounts')">Accounts</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Cash wallets</h3>
+        ${CASH_TYPES.map(t=>`<div class="statline"><span>${t}</span><b class="mono">${fmt(DB.cashBalances[t])}</b></div>`).join('')}
+      </div>
+    </div>
+    <p class="footer-note">Formulas match your Excel KPI module · Zola Electronics Zone · Tamale · v${APP_VERSION}</p>`;
+}
+
+/* ===== PRODUCTS ===== */
+function viewProducts(){
+  const rows = DB.products.map((p,i)=>`<tr>
+    <td>${esc(p.name)}</td><td>${esc(p.category||'')}</td>
+    <td class="mono right">${fmtN(p.uPrice)}</td>
+    <td class="mono right">${fmtN(stockOnHand(p.name))}</td>
+    <td><button class="btn sm ghost" onclick="editProduct(${i})">Edit</button>
+        <button class="btn sm danger" onclick="delProduct(${i})">Del</button></td>
+  </tr>`).join('') || `<tr><td colspan="5" class="empty">No products yet — add one below.</td></tr>`;
+  return `<div class="grid g2">
+    <div class="card">
+      <h3>Add product</h3>
+      <div class="field"><label>Product name</label><input id="pName" placeholder="e.g. Cement 50kg" /></div>
+      <div class="field"><label>Category</label><input id="pCat" placeholder="e.g. Building" /></div>
+      <div class="field"><label>Unit price (GH₵)</label><input id="pPrice" type="number" min="0" step="0.01" value="0" /></div>
+      <button class="btn" onclick="addProduct()">Save product</button>
+    </div>
+    <div class="card">
+      <h3>Catalog (${DB.products.length})</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Category</th><th class="right">U Price</th><th class="right">On hand</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+function stockOnHand(name){
+  // Excel GetRemainingQty / GetTotalAvailableForSale — latest open stock month
+  const lm = getLatestMonth();
+  return DB.stockRows
+    .filter(r=>r.productName===name && r.year===lm.year && r.month===lm.month)
+    .reduce((s,r)=>s+(Number(r.rStock)||0),0);
+}
+function getBaseUnitPrice(name){
+  const lm = getLatestMonth();
+  // Prefer latest stock row uPrice in open month, else product catalog
+  const rows = DB.stockRows.filter(r=>r.productName===name && r.year===lm.year && r.month===lm.month);
+  if(rows.length){
+    // most recent by id
+    const r = rows[rows.length-1];
+    if(r.uPrice!=null) return Number(r.uPrice)||0;
+  }
+  const p = DB.products.find(x=>x.name===name);
+  return p ? (Number(p.uPrice)||0) : 0;
+}
+function addProduct(){
+  const name = ($('pName').value||'').trim();
+  const category = ($('pCat').value||'').trim();
+  const uPrice = Number($('pPrice').value)||0;
+  if(!name){ toast('Product name required','err'); return; }
+  if(DB.products.some(p=>p.name.toLowerCase()===name.toLowerCase())){
+    toast('Product already exists','warn'); return;
+  }
+  DB.products.push({ id:'PRD-'+Date.now(), name, category, uPrice });
+  saveDB(); toast('Product saved'); render();
+}
+function editProduct(i){
+  const p = DB.products[i];
+  openModal(`<h3>Edit product</h3>
+    <div class="field"><label>Name</label><input id="epName" value="${escAttr(p.name)}" /></div>
+    <div class="field"><label>Category</label><input id="epCat" value="${escAttr(p.category||'')}" /></div>
+    <div class="field"><label>Unit price</label><input id="epPrice" type="number" step="0.01" value="${p.uPrice}" /></div>
+    <div class="row"><button class="btn" onclick="saveEditProduct(${i})">Save</button>
+    <button class="btn ghost" onclick="closeModal()">Cancel</button></div>`);
+}
+function saveEditProduct(i){
+  const name = document.getElementById('epName').value.trim();
+  if(!name){ toast('Name required','err'); return; }
+  const old = DB.products[i].name;
+  DB.products[i].name = name;
+  DB.products[i].category = document.getElementById('epCat').value.trim();
+  DB.products[i].uPrice = Number(document.getElementById('epPrice').value)||0;
+  if(old!==name){
+    DB.stockRows.forEach(r=>{ if(r.productName===old) r.productName=name; });
+  }
+  saveDB(); closeModal(); toast('Updated'); render();
+}
+function delProduct(i){
+  if(!confirm('Delete this product from catalog? Stock rows are kept.')) return;
+  DB.products.splice(i,1); saveDB(); render();
+}
+
+/* ===== STOCK IN (ADMIN only) ===== */
+function viewStockIn(){
+  if(session.role!=='ADMIN' && !session.adminMode){
+    return `<div class="card"><div class="empty">Only ADMIN can perform Stock In.</div></div>`;
+  }
+  const opts = DB.products.map(p=>`<option value="${escAttr(p.name)}">${esc(p.name)}</option>`).join('');
+  const recent = DB.stockRows.slice().reverse().slice(0,30).map(r=>`<tr>
+    <td>${r.year}-${pad(r.month)}</td><td>${esc(r.productName)}</td>
+    <td class="mono right">${fmtN(r.qtyIn)}</td><td class="mono right">${fmtN(r.uCost)}</td>
+    <td class="mono right">${fmtN(r.rStock)}</td>
+  </tr>`).join('') || `<tr><td colspan="5" class="empty">No stock rows yet</td></tr>`;
+  return `<div class="grid g2">
+    <div class="card">
+      <h3>Stock In — batch</h3>
+      <div class="field"><label>Product</label>
+        <select id="siProduct"><option value="">— select —</option>${opts}</select></div>
+      <div class="field"><label>Or new product name</label><input id="siNewName" placeholder="Creates catalog entry if new" /></div>
+      <div class="field"><label>Category</label><input id="siCat" /></div>
+      <div class="row">
+        <div class="field" style="flex:1"><label>Qty In</label><input id="siQty" type="number" min="0" step="1" value="1" /></div>
+        <div class="field" style="flex:1"><label>Unit Cost (GH₵)</label><input id="siCost" type="number" min="0" step="0.01" value="0" /></div>
+        <div class="field" style="flex:1"><label>Unit Price (GH₵)</label><input id="siPrice" type="number" min="0" step="0.01" value="0" /></div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1"><label>Year</label><input id="siYear" type="number" value="${DB.selectedYear}" /></div>
+        <div class="field" style="flex:1"><label>Month</label><input id="siMonth" type="number" min="1" max="12" value="${DB.selectedMonth}" /></div>
+      </div>
+      <button class="btn" onclick="doStockIn()">Record Stock In</button>
+      <p class="muted" style="font-size:12px;margin-top:10px">Same product + same unit cost in the open month merges into one FIFO batch row (Excel AddOrUpdateTransaction).</p>
+    </div>
+    <div class="card">
+      <h3>Recent stock rows</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Period</th><th>Product</th><th class="right">Qty In</th><th class="right">U Cost</th><th class="right">R Stock</th></tr></thead>
+        <tbody>${recent}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+function doStockIn(){
+  if(session.role!=='ADMIN' && !session.adminMode){
+    toast('Only ADMIN can perform Stock In.','err'); return;
+  }
+  let name = ($('siProduct').value||'').trim() || ($('siNewName').value||'').trim();
+  const category = ($('siCat').value||'').trim();
+  const qty = Number($('siQty').value)||0;
+  const uCost = Number($('siCost').value)||0;
+  let uPrice = Number($('siPrice').value)||0;
+  const year = Number($('siYear').value)||DB.selectedYear;
+  const month = Number($('siMonth').value)||DB.selectedMonth;
+  if(!name){ toast('Product required','err'); return; }
+  if(qty<=0){ toast('Qty must be > 0','err'); return; }
+  // catalog
+  let prod = DB.products.find(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(!prod){
+    prod = { id:'PRD-'+Date.now(), name, category, uPrice: uPrice||0 };
+    DB.products.push(prod);
+  } else {
+    name = prod.name;
+    if(uPrice<=0) uPrice = prod.uPrice||0;
+    if(category && !prod.category) prod.category = category;
+  }
+  // merge same cost batch in month
+  let row = DB.stockRows.find(r=>
+    r.productName===name && r.year===year && r.month===month && Number(r.uCost)===uCost
+  );
+  if(row){
+    row.qtyIn = (Number(row.qtyIn)||0) + qty;
+    row.rStock = (Number(row.rStock)||0) + qty;
+    if(uPrice>0) row.uPrice = uPrice;
+  } else {
+    DB.stockRows.push({
+      id: idStamp('STKIN-'),
+      productId: prod.id,
+      productName: name,
+      category: category || prod.category || '',
+      year, month,
+      qtyIn: qty,
+      rStock: qty,
+      uCost,
+      qtyOut: 0,
+      uPrice: uPrice || prod.uPrice || 0,
+      disc: 0,
+      tSales: 0,
+      profit: 0,
+      aPrice: 0
+    });
+  }
+  DB.undoLog.push({ row: name, product:name, type:'STOCK_IN', qty, disc:0, at:nowISO(), batchId:idStamp('STKIN-'), cashier:session.cashier });
+  saveDB(); toast('Stock In recorded: '+qty+' × '+name); render();
+}
+
+/* ===== STOCK BALANCE ===== */
+function viewStock(){
+  const map = {};
+  DB.stockRows.filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth).forEach(r=>{
+    const k = r.productName;
+    if(!map[k]) map[k] = { name:k, cat:r.category, qty:0, value:0, tiers:[] };
+    map[k].qty += Number(r.rStock)||0;
+    map[k].value += (Number(r.rStock)||0)*(Number(r.uCost)||0);
+    if((Number(r.rStock)||0)>0) map[k].tiers.push({cost:r.uCost, qty:r.rStock});
+  });
+  const list = Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
+  const rows = list.map(p=>`<tr>
+    <td>${esc(p.name)}</td><td>${esc(p.cat||'')}</td>
+    <td class="mono right">${fmtN(p.qty)}</td>
+    <td class="mono right">${fmt(p.value)}</td>
+    <td style="font-size:11px;color:var(--muted)">${p.tiers.map(t=>fmtN(t.qty)+'@'+fmtN(t.cost)).join(', ')||'—'}</td>
+  </tr>`).join('') || `<tr><td colspan="5" class="empty">No stock in ${monthName(DB.selectedMonth)} ${DB.selectedYear}</td></tr>`;
+  return periodSelectorHTML() + `<div class="card">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">Current stock balance</h3>
+      <span class="pill">CR value: <b class="mono">${fmt(KPI_CRStock())}</b></span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Product</th><th>Category</th><th class="right">R Stock</th><th class="right">Value</th><th>FIFO tiers</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+/* ===== POS / SALE OUT + FIFO (Excel frmTransaction) ===== */
+function viewPOS(){
+  const lm = getLatestMonth();
+  const names = [...new Set([
+    ...DB.products.map(p=>p.name),
+    ...DB.stockRows.map(r=>r.productName)
+  ])].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+
+  const listRows = cart.map((c,i)=>{
+    const line = round2(c.qty * c.uPrice - (c.disc||0));
+    return `<tr>
+      <td>${esc(c.name)}</td>
+      <td class="mono right">${fmtN(c.qty)}</td>
+      <td class="mono right">${fmtN(c.uPrice)}</td>
+      <td class="mono right">${fmtN(c.disc||0)}</td>
+      <td class="mono right">${fmtN(line)}</td>
+      <td><button class="btn sm danger" onclick="removeCartItem(${i})">Remove</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" class="empty">No items added.</td></tr>`;
+
+  const sub = cartSubtotal();
+  const vat = round2(sub * VAT_RATE);
+  const grand = round2(sub + vat);
+  const paid = cart._paid != null ? cart._paid : 0;
+  const balDisplay = round2(paid - grand); // Excel: paid − grand
+
+  return `<div class="sale-layout">
+    <div>
+      <div class="card sale-theme" style="margin-bottom:12px">
+        <h3>Product entry · Sale Out</h3>
+        <div class="field" style="position:relative">
+          <label>Search product</label>
+          <input id="posSearch" placeholder="Type to search…" autocomplete="off"
+            oninput="onPosSearch()" onkeydown="posSearchKey(event)" />
+          <div id="posSuggest" class="suggest"></div>
+        </div>
+        <div class="field">
+          <label>Product (must exist in stock)</label>
+          <select id="posProduct" onchange="onPosProductChange()">
+            <option value="">— select —</option>
+            ${names.map(n=>`<option value="${escAttr(n)}">${esc(n)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1"><label>Qty</label>
+            <input id="posQty" type="number" min="0.01" step="1" value="1" /></div>
+          <div class="field" style="flex:1"><label>Unit price (locked)</label>
+            <input id="posUPrice" type="number" step="0.01" value="0" readonly /></div>
+          <div class="field" style="flex:1"><label>Price adj (dbl-click / PIN)</label>
+            <input id="posPriceAdj" type="number" step="0.01" value="0" readonly
+              ondblclick="unlockPriceAdj()" title="Double-click to unlock with PIN 0000" /></div>
+          <div class="field" style="flex:1"><label>Discount (GH₵)</label>
+            <input id="posDisc" type="number" min="0" step="0.01" value="0" /></div>
+        </div>
+        <div class="row">
+          <span class="pill">Remaining qty: <b class="mono" id="posRemQty">0</b></span>
+          <span class="pill">Open month: ${monthName(lm.month)} ${lm.year}</span>
+          <span class="pill">Cashier: ${esc(session.cashier||'')}</span>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" onclick="addItemToList()">Add item</button>
+          <button class="btn ghost" onclick="clearProductEntry()">Clear entry</button>
+        </div>
+        <p class="muted" style="font-size:12px;margin:10px 0 0">Unit cost is hidden in Sale Out (Excel rule). Effective price = Unit price + Price adj. New products must be added via Stock In first.</p>
+      </div>
+
+      <div class="card">
+        <h3>Items added (lstItems)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>Product</th><th class="right">Qty</th><th class="right">Unit price</th>
+            <th class="right">Discount</th><th class="right">Total</th><th></th>
+          </tr></thead>
+          <tbody id="posItemsBody">${listRows}</tbody>
+        </table></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm danger" onclick="cart=[];refreshSaleTotals();render()">Clear all items</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <h3>Customer</h3>
+        <div class="field"><label>Customer name *</label>
+          <input id="posCust" placeholder="Required for Print Receipt" value="${escAttr(cart._cust||'')}" oninput="cart._cust=this.value" /></div>
+        <div class="field"><label>Location</label>
+          <input id="posLoc" placeholder="Optional" value="${escAttr(cart._loc||'')}" oninput="cart._loc=this.value" /></div>
+        <div class="field"><label>Telephone *</label>
+          <input id="posTel" placeholder="Required for Print Receipt" value="${escAttr(cart._tel||'')}" oninput="cart._tel=this.value" /></div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <h3>Cashier (display only)</h3>
+        <div class="statline"><span>Name</span><b>${esc(session.cashier||'')}</b></div>
+        <div class="statline"><span>Tel</span><b>${esc(session.tel||'')}</b></div>
+      </div>
+
+      <div class="card pos-totals">
+        <h3>Payment summary</h3>
+        <div class="statline"><span>Subtotal</span><b class="mono" id="posSubtotal">${fmtN(sub)}</b></div>
+        <div class="statline"><span>VAT (${VAT_RATE*100}%)</span><b class="mono" id="posVat">${fmtN(vat)}</b></div>
+        <div class="statline"><span>Grand total</span><b class="mono" id="posGrand">${fmtN(grand)}</b></div>
+        <div class="field" style="margin-top:10px"><label>Amount paid</label>
+          <input id="posAmountPaid" type="number" min="0" step="0.01" value="${paid}"
+            oninput="onAmountPaidChange()" /></div>
+        <div class="statline"><span>Balance (paid − grand)</span><b class="mono" id="posBalance">${fmtN(balDisplay)}</b></div>
+        <p class="muted" style="font-size:11px;margin:8px 0 0">If Amount paid &lt; Grand total, outstanding goes to DEBTORS (credit sale). Excel has no Cash/MOMO dropdown on this form.</p>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" style="flex:1" onclick="printReceiptSale()">🖨️ Print Receipt</button>
+          <button class="btn ok" style="flex:1" onclick="quickSaleOut()">⚡ Quick Sale Out</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function bindPOS(){
+  // restore paid field listener already inline
+  if(priceAdjUnlocked){
+    const el = $('posPriceAdj');
+    if(el){ el.readOnly = false; }
+  }
+}
+function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+function cartSubtotal(){
+  return round2(cart.reduce((s,c)=> s + (c.qty*c.uPrice - (c.disc||0)), 0));
+}
+function refreshSaleTotals(){
+  const sub = cartSubtotal();
+  const vat = round2(sub * VAT_RATE);
+  const grand = round2(sub + vat);
+  const paid = Number(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid || 0);
+  cart._paid = paid;
+  if($('posSubtotal')) $('posSubtotal').textContent = fmtN(sub);
+  if($('posVat')) $('posVat').textContent = fmtN(vat);
+  if($('posGrand')) $('posGrand').textContent = fmtN(grand);
+  if($('posBalance')) $('posBalance').textContent = fmtN(round2(paid - grand));
+}
+function onAmountPaidChange(){
+  cart._paid = Number($('posAmountPaid').value)||0;
+  refreshSaleTotals();
+}
+function onPosSearch(){
+  const q = ($('posSearch').value||'').trim().toLowerCase();
+  const box = $('posSuggest');
+  if(!box) return;
+  if(!q){ box.classList.remove('show'); box.innerHTML=''; return; }
+  const names = [...new Set([
+    ...DB.products.map(p=>p.name),
+    ...DB.stockRows.map(r=>r.productName)
+  ])].filter(Boolean);
+  // Excel ranked: starts-with=1, word-start=2, contains=3
+  const scored = [];
+  names.forEach(n=>{
+    const low = n.toLowerCase();
+    const pos = low.indexOf(q);
+    if(pos < 0) return;
+    let score = 3;
+    if(pos === 0) score = 1;
+    else if(low[pos-1] === ' ') score = 2;
+    scored.push({n, score});
+  });
+  scored.sort((a,b)=> a.score-b.score || a.n.localeCompare(b.n));
+  if(!scored.length){
+    box.innerHTML = '<div class="none">No matching items</div>';
+    box.classList.add('show');
+    return;
+  }
+  box.innerHTML = scored.slice(0,12).map(x=>`<div onclick="pickProduct('${escAttr(x.n).replace(/'/g,"&#39;")}')">${esc(x.n)}</div>`).join('');
+  box.classList.add('show');
+}
+function posSearchKey(e){
+  if(e.key === 'Escape'){ const b=$('posSuggest'); if(b){ b.classList.remove('show'); } }
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    const b = $('posSuggest');
+    const first = b && b.querySelector('div:not(.none)');
+    if(first) first.click();
+  }
+}
+function pickProduct(name){
+  // decode basic
+  name = String(name||'');
+  if($('posSearch')) $('posSearch').value = name;
+  if($('posProduct')) $('posProduct').value = name;
+  const b = $('posSuggest'); if(b){ b.classList.remove('show'); b.innerHTML=''; }
+  onPosProductChange();
+}
+function onPosProductChange(){
+  const name = ($('posProduct')&&$('posProduct').value)||'';
+  if(!name){
+    if($('posUPrice')) $('posUPrice').value = 0;
+    if($('posRemQty')) $('posRemQty').textContent = '0';
+    return;
+  }
+  const base = getBaseUnitPrice(name);
+  if($('posUPrice')) $('posUPrice').value = base;
+  if($('posPriceAdj')) $('posPriceAdj').value = 0;
+  if($('posRemQty')) $('posRemQty').textContent = fmtN(stockOnHand(name));
+  if($('posSearch')) $('posSearch').value = name;
+}
+function unlockPriceAdj(){
+  promptPIN('Price Adjustment PIN', getPricePIN(), ()=>{
+    priceAdjUnlocked = true;
+    const el = $('posPriceAdj');
+    if(el){ el.readOnly = false; el.focus(); }
+    toast('Price adjustment unlocked.', 'ok');
+  });
+}
+function clearProductEntry(){
+  if($('posSearch')) $('posSearch').value = '';
+  if($('posProduct')) $('posProduct').value = '';
+  if($('posQty')) $('posQty').value = '1';
+  if($('posUPrice')) $('posUPrice').value = '0';
+  if($('posPriceAdj')){ $('posPriceAdj').value = '0'; if(!priceAdjUnlocked) $('posPriceAdj').readOnly = true; }
+  if($('posDisc')) $('posDisc').value = '0';
+  if($('posRemQty')) $('posRemQty').textContent = '0';
+  const b = $('posSuggest'); if(b){ b.classList.remove('show'); }
+}
+/** Excel AddItemToList */
+function addItemToList(){
+  const name = (($('posProduct')&&$('posProduct').value)||'').trim();
+  if(!name){ toast('Select a product.', 'err'); return; }
+
+  // Must exist in product list / stock history (Excel ProductList)
+  const known = DB.products.some(p=>p.name.toLowerCase()===name.toLowerCase())
+    || DB.stockRows.some(r=>r.productName.toLowerCase()===name.toLowerCase());
+  if(!known){
+    toast("The product '"+name+"' does not exist in stock.\nPlease add it first via Stock In.", 'err');
+    return;
+  }
+
+  const qty = Number($('posQty').value)||0;
+  if(qty <= 0){ toast('Quantity must be > 0.', 'err'); return; }
+
+  const base = Number($('posUPrice').value)||0;
+  const adj = Number($('posPriceAdj').value)||0;
+  // Excel: if adj field used without unlock and non-zero, block
+  if(Math.abs(adj) > 1e-9 && !priceAdjUnlocked){
+    toast('Price adjustment is locked. Double-click Price adj and enter PIN 0000.', 'warn');
+    return;
+  }
+  const uPrice = base + adj; // effective
+  const disc = Number($('posDisc').value)||0;
+
+  const avail = stockOnHand(name);
+  const already = cart.filter(c=>c.name===name).reduce((s,c)=>s+c.qty, 0);
+  if(already + qty > avail + 1e-9){
+    toast("Cannot add "+qty+" units of '"+name+"'.\nAvailable stock (current month): "+avail+"\nAlready in this sale: "+already, 'err');
+    return;
+  }
+
+  const lineTotal = round2(qty * uPrice - disc);
+  cart.push({ name, qty, uPrice, basePrice: base, adj, disc, lineTotal });
+  // lock adj again after add (Excel Exit locks)
+  priceAdjUnlocked = false;
+  clearProductEntry();
+  render(); // refresh list
+  toast('Item added');
+}
+function removeCartItem(i){
+  cart.splice(i,1);
+  render();
+}
+
+/** Excel RecordSaleOut_FIFO — do NOT overwrite base uPrice (M); update Q A PRICE */
+function recordSaleOutFIFO(productName, qty, uPrice, disc){
+  const lm = getLatestMonth();
+  // snapshot for rollback
+  const rows = DB.stockRows
+    .filter(r => r.productName === productName && r.year===lm.year && r.month===lm.month
+      && ((Number(r.qtyIn)||0) - (Number(r.qtyOut)||0) > 0 || (Number(r.rStock)||0) > 0));
+
+  // normalize remaining
+  let totalAvailable = 0;
+  rows.forEach(r=>{
+    const rem = (r.rStock != null) ? Number(r.rStock) : (Number(r.qtyIn)||0)-(Number(r.qtyOut)||0);
+    r._rem = rem;
+    if(rem > 0) totalAvailable += rem;
+  });
+  if(totalAvailable < qty - 1e-9){
+    throw new Error('Not enough stock available for "'+productName+'".\nRequested: '+qty+', Available: '+totalAvailable);
+  }
+
+  let qtyRemaining = qty;
+  const qtyTotal = qty;
+  let discAllocated = 0;
+  const allocated = [];
+
+  while(qtyRemaining > 1e-9){
+    // lowest unit cost among remaining
+    let best = null;
+    DB.stockRows.forEach(r=>{
+      if(r.productName !== productName || r.year!==lm.year || r.month!==lm.month) return;
+      const rem = (r.rStock != null) ? Number(r.rStock) : (Number(r.qtyIn)||0)-(Number(r.qtyOut)||0);
+      if(rem <= 0) return;
+      if(!best || Number(r.uCost) < Number(best.uCost)) best = r;
+    });
+    if(!best) throw new Error('FIFO allocation failed for '+productName);
+
+    const rem = (best.rStock != null) ? Number(best.rStock) : (Number(best.qtyIn)||0)-(Number(best.qtyOut)||0);
+    const thisQty = Math.min(qtyRemaining, rem);
+
+    let rowDisc = 0;
+    if(disc && qtyTotal > 0){
+      if(qtyRemaining - thisQty <= 1e-9) rowDisc = disc - discAllocated;
+      else rowDisc = disc * (thisQty / qtyTotal);
+    }
+    discAllocated += rowDisc;
+
+    const basePrice = Number(best.uPrice)||0; // original M — do not overwrite
+    const adjValue = (uPrice - basePrice) * thisQty;
+
+    best.qtyOut = (Number(best.qtyOut)||0) + thisQty;
+    best.rStock = rem - thisQty;
+    best.disc = (Number(best.disc)||0) + rowDisc;
+    // T Sales uses effective uPrice cumulative style simplified:
+    const chunkSales = thisQty * uPrice - rowDisc;
+    best.tSales = (Number(best.tSales)||0) + chunkSales;
+    const chunkCost = thisQty * (Number(best.uCost)||0);
+    best.profit = (Number(best.profit)||0) + (chunkSales - chunkCost);
+    if(adjValue) best.aPrice = (Number(best.aPrice)||0) + adjValue;
+    // DO NOT overwrite best.uPrice (Excel: leave original stock price)
+
+    DB.undoLog.push({
+      row: best.id, product: productName, type: 'Sale Out',
+      qty: thisQty, disc: rowDisc, at: nowISO(),
+      batchId: '', cashier: session.cashier
+    });
+
+    allocated.push({ stockRowId: best.id, qty: thisQty, uCost: best.uCost, sales: chunkSales, disc: rowDisc, aPrice: adjValue });
+    qtyRemaining -= thisQty;
+  }
+  return allocated;
+}
+
+function getOrCreateDebtorID(debtorName, contact){
+  // Excel: match by Trim name only on DEBTORS.B
+  const name = (debtorName||'').trim();
+  let d = DB.debtors.find(x => (x.name||'').trim() === name);
+  if(d) return d.id;
+  const id = idStamp('DEB-');
+  DB.debtors.push({
+    id,
+    name,
+    contact: contact||'',
+    description: 'Auto-created from credit sale',
+    balance: 0,
+    date: nowISO()
+  });
+  return id;
+}
+
+function resetSaleOutForm(){
+  cart = [];
+  cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = 0;
+  priceAdjUnlocked = false;
+}
+
+function quickSaleOut(){
+  // Excel cmdQuickSaleOut — FIFO only, no receipt/customer/debtor
+  if(!session.cashier){ toast('No active cashier detected. Please login first.', 'err'); return; }
+  if(!cart.length){ toast('Please add at least one item for quick sale.', 'err'); return; }
+  try{
+    cart.forEach(line=>{
+      recordSaleOutFIFO(line.name, line.qty, line.uPrice, line.disc||0);
+    });
+  }catch(e){
+    loadDB();
+    toast(e.message||String(e), 'err');
+    return;
+  }
+  saveDB();
+  resetSaleOutForm();
+  toast('Quick Sale Out recorded');
+  render();
+}
+
+function printReceiptSale(){
+  // Excel cmdPrintReceipt order
+  if(!session.cashier){ toast('No active cashier detected. Please login first.', 'err'); return; }
+  if(!cart.length){ toast('No items added.', 'err'); return; }
+  const customer = (($('posCust')&&$('posCust').value)||cart._cust||'').trim();
+  const location = (($('posLoc')&&$('posLoc').value)||cart._loc||'').trim();
+  const tel = (($('posTel')&&$('posTel').value)||cart._tel||'').trim();
+  if(!customer){ toast('Customer required.', 'err'); return; }
+  if(!tel){ toast('Customer Tel required.', 'err'); return; }
+
+  const subtotal = cartSubtotal();
+  const totalWithVAT = round2(subtotal + subtotal * VAT_RATE);
+  const amountPaid = Number(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid || 0);
+  const outstanding = round2(totalWithVAT - amountPaid); // for register/debtor
+  const receiptBal = round2(amountPaid - totalWithVAT); // for printed receipt
+
+  const receiptNo = idStamp('SR-');
+  const items = cart.map(c => ({
+    product: c.name,
+    qty: c.qty,
+    uPrice: c.uPrice,
+    disc: c.disc||0,
+    total: round2(c.qty*c.uPrice - (c.disc||0))
+  }));
+
+  // FIFO first? Excel does Print then FIFO — but if FIFO fails stock is inconsistent.
+  // We FIFO first then receipt; on failure abort all.
+  let allocations = [];
+  try{
+    cart.forEach(line=>{
+      const alloc = recordSaleOutFIFO(line.name, line.qty, line.uPrice, line.disc||0);
+      allocations.push({ line, alloc });
+    });
+  }catch(e){
+    loadDB();
+    toast(e.message||String(e), 'err');
+    return;
+  }
+
+  // Debtor if outstanding > 0
+  if(outstanding > 0){
+    const debtorID = getOrCreateDebtorID(customer, tel);
+    const d = DB.debtors.find(x=>x.id===debtorID);
+    d.balance = (Number(d.balance)||0) + outstanding;
+    d.date = nowISO();
+    if(!d.contact && tel) d.contact = tel;
+    logAccountTxn(debtorID, 'Debtor', customer, 'Credit Sale', outstanding, d.balance, receiptNo);
+  }
+
+  // Receipt register (Excel LogReceiptToRegister)
+  DB.receipts.push({
+    receiptNo,
+    customerName: customer,
+    contact: tel,
+    location,
+    totalAmount: totalWithVAT,
+    amountPaid,
+    balance: outstanding > 0 ? outstanding : 0,
+    date: nowISO(),
+    credit: outstanding > 0,
+    cashier: session.cashier,
+    cashierTel: session.tel,
+    lines: items
+  });
+
+  DB.sales.push({
+    id: receiptNo,
+    receiptNo,
+    customer,
+    contact: tel,
+    location,
+    total: totalWithVAT,
+    paid: amountPaid,
+    balance: outstanding,
+    pay: outstanding > 0 ? (amountPaid > 0 ? 'PARTIAL' : 'CREDIT') : 'PAID',
+    cashier: session.cashier,
+    date: nowISO(),
+    year: getLatestMonth().year,
+    month: getLatestMonth().month,
+    lines: allocations.map(a=>({
+      product: a.line.name,
+      qty: a.line.qty,
+      price: a.line.uPrice,
+      disc: a.line.disc||0,
+      amount: round2(a.line.qty*a.line.uPrice - (a.line.disc||0)),
+      fifo: a.alloc
+    }))
+  });
+
+  saveDB();
+  const saleSnap = {
+    receiptNo, customer, location, contact: tel,
+    total: totalWithVAT, paid: amountPaid,
+    balance: receiptBal, outstanding,
+    cashier: session.cashier, cashierTel: session.tel,
+    date: nowISO(), lines: items
+  };
+  resetSaleOutForm();
+  toast('Sale recorded · '+receiptNo);
+  showReceiptModal(saleSnap);
+}
+
+function formatOrdinalDate(d){
+  const dt = d instanceof Date ? d : new Date(d);
+  const day = dt.getDate();
+  const suf = (day%10===1 && day!==11) ? 'st' : (day%10===2 && day!==12) ? 'nd' : (day%10===3 && day!==13) ? 'rd' : 'th';
+  return day + suf + ' ' + dt.toLocaleString('en-GB',{month:'long', year:'numeric'});
+}
+
+function showReceiptModal(sale){
+  const lines = (sale.lines||[]).map(l=>`
+    <tr>
+      <td>${esc(l.product)}</td>
+      <td style="text-align:center">${fmtN(l.qty)}</td>
+      <td style="text-align:right">${fmtN(l.uPrice)}</td>
+      <td style="text-align:right">${fmtN(l.disc||0)}</td>
+      <td style="text-align:right">${fmtN(l.total)}</td>
+    </tr>`).join('');
+  const biz = DB.business || BUSINESS;
+  openModal(`
+    <div class="receipt-paper" id="receiptPrint">
+      <div class="center" style="color:#00f;font-weight:800;font-size:18px;letter-spacing:1px">SALES RECEIPT</div>
+      <div style="margin-top:8px"><b>${esc(biz.name)}</b><br>${esc(biz.address)}<br>Tel: ${esc(biz.tel)}</div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px">
+        <div></div>
+        <div>Receipt No: <b>${esc(sale.receiptNo)}</b><br>Date: ${formatOrdinalDate(sale.date)}</div>
+      </div>
+      <div style="margin-top:10px">
+        Customer: <b>${esc(sale.customer)}</b><br>
+        Location: ${esc(sale.location||'')}<br>
+        Telephone: ${esc(sale.contact||'')}
+      </div>
+      <table style="width:100%;margin-top:10px;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:#e6e6e6;color:#111">
+          <th style="text-align:left;padding:4px">Product</th>
+          <th>Qty</th><th>Unit Price</th><th>Discount</th><th>Total</th>
+        </tr></thead>
+        <tbody style="color:#111">${lines}</tbody>
+      </table>
+      <div style="margin-top:10px;text-align:right;color:#111">
+        <div>Subtotal: ${fmtN(sale.total)}</div>
+        <div>VAT: ${fmtN(0)}</div>
+        <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
+        <div style="margin-top:6px">Amount Paid: ${fmtN(sale.paid)}</div>
+        <div>Balance: ${fmtN(sale.balance)}</div>
+      </div>
+      <div style="margin-top:14px;color:#111">
+        Cashier Signature: ........................<br>
+        <i>${esc(sale.cashier||'')} (${esc(sale.cashierTel||'')})</i>
+      </div>
+      <div class="center" style="margin-top:14px;font-size:16px;font-weight:800;color:#111">Thank you for your business!</div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" onclick="window.print()">Print</button>
+      <button class="btn ghost" onclick="closeModal();render()">Close</button>
+      ${isElevated()?`<button class="btn ghost" onclick="closeModal();nav('receipts')">Receipts</button>`:''}
+    </div>
+  `);
+}
+
+/* ===== CASH BALANCES ===== */
+function viewCash(){
+  const wallets = CASH_TYPES.map(t=>`<div class="card kpi teal"><h3>${t}</h3><div class="val mono">${fmt(DB.cashBalances[t])}</div></div>`).join('');
+  const log = DB.cashLog.slice().reverse().slice(0,40).map(l=>`<tr>
+    <td class="mono" style="font-size:11px">${esc(l.id)}</td>
+    <td>${esc(l.cashType)}</td><td>${esc(l.action)}</td>
+    <td class="mono right">${fmtN(l.amount)}</td>
+    <td class="mono right">${fmtN(l.after)}</td>
+    <td style="font-size:11px">${new Date(l.at).toLocaleString()}</td>
+    <td>${esc(l.cashier||'')}</td>
+  </tr>`).join('') || `<tr><td colspan="7" class="empty">No cash movements yet</td></tr>`;
+  return `<div class="grid g4" style="margin-bottom:12px">${wallets}</div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Add / Deduct</h3>
+      <div class="field"><label>Wallet</label>
+        <select id="cbType">${CASH_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Action</label>
+        <select id="cbAction"><option>Add</option><option>Deduct</option></select></div>
+      <div class="field"><label>Amount (GH₵)</label><input id="cbAmt" type="number" min="0" step="0.01" value="0" /></div>
+      <div class="field"><label>Note</label><input id="cbNote" placeholder="optional" /></div>
+      <button class="btn" onclick="doCashMove()">Post</button>
+      <div class="statline" style="margin-top:12px"><span>Total buckets</span><b class="mono">${fmt(KPI_CashBuckets_Total())}</b></div>
+    </div>
+    <div class="card">
+      <h3>Cash log</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Type</th><th>Act</th><th class="right">Amt</th><th class="right">After</th><th>When</th><th>Who</th></tr></thead>
+        <tbody>${log}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+function adjustCash(type, action, amount, note){
+  const before = Number(DB.cashBalances[type])||0;
+  let after = before;
+  if(action==='Add') after = before + amount;
+  else after = before - amount;
+  DB.cashBalances[type] = after;
+  DB.cashLog.push({
+    id: idStamp('CB-'),
+    cashType: type,
+    action,
+    amount,
+    before,
+    after,
+    at: nowISO(),
+    cashier: session.cashier,
+    note: note||''
+  });
+}
+function doCashMove(){
+  const type = $('cbType').value;
+  const action = $('cbAction').value;
+  const amount = Number($('cbAmt').value)||0;
+  const note = ($('cbNote').value||'').trim();
+  if(amount<=0){ toast('Amount must be > 0','err'); return; }
+  if(action==='Deduct' && amount > (Number(DB.cashBalances[type])||0)+1e-9){
+    toast('Insufficient balance in '+type,'err'); return;
+  }
+  adjustCash(type, action, amount, note);
+  saveDB(); toast(action+' '+fmt(amount)+' → '+type); render();
+}
+
+/* ===== EXPENSES ===== */
+function viewExpenses(){
+  const monthExp = DB.expenses.filter(e=>{
+    const d=new Date(e.date);
+    return d.getFullYear()===DB.selectedYear && (d.getMonth()+1)===DB.selectedMonth;
+  });
+  const rows = monthExp.slice().reverse().map(e=>`<tr>
+    <td class="mono" style="font-size:11px">${esc(e.id)}</td>
+    <td>${esc(e.description)}</td><td>${esc(e.category)}</td>
+    <td class="mono right">${fmt(e.amount)}</td>
+    <td>${new Date(e.date).toLocaleDateString()}</td>
+    <td><button class="btn sm danger" onclick="delExpense('${e.id}')">Del</button></td>
+  </tr>`).join('') || `<tr><td colspan="6" class="empty">No expenses this month</td></tr>`;
+  return periodSelectorHTML() + `<div class="grid g2">
+    <div class="card">
+      <h3>Record expense</h3>
+      <div class="field"><label>Description</label><input id="exDesc" /></div>
+      <div class="field"><label>Category</label>
+        <select id="exCat">${EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="field"><label>Amount (GH₵)</label><input id="exAmt" type="number" min="0" step="0.01" value="0" /></div>
+      <div class="field"><label>Date</label><input id="exDate" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
+      <div class="field"><label>Pay from wallet (optional deduct)</label>
+        <select id="exWallet"><option value="">— no cash deduct —</option>${CASH_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <button class="btn" onclick="addExpense()">Save expense</button>
+      <div class="statline" style="margin-top:12px"><span>Month total</span><b class="mono">${fmt(KPI_TotalExpenses_CurrentMonth())}</b></div>
+    </div>
+    <div class="card">
+      <h3>Expenses · ${monthName(DB.selectedMonth)} ${DB.selectedYear}</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Desc</th><th>Cat</th><th class="right">Amt</th><th>Date</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+function addExpense(){
+  const description = ($('exDesc').value||'').trim();
+  const category = $('exCat').value;
+  const amount = Number($('exAmt').value)||0;
+  const date = $('exDate').value || new Date().toISOString().slice(0,10);
+  const wallet = $('exWallet').value;
+  if(!description){ toast('Description required','err'); return; }
+  if(amount<=0){ toast('Amount must be > 0','err'); return; }
+  if(wallet){
+    if(amount > (Number(DB.cashBalances[wallet])||0)+1e-9){
+      toast('Insufficient wallet balance','err'); return;
+    }
+    adjustCash(wallet, 'Deduct', amount, 'Expense: '+description);
+  }
+  DB.expenses.push({
+    id: idStamp('EXP-'),
+    description, category, amount,
+    date: new Date(date).toISOString(),
+    cashier: session.cashier
+  });
+  saveDB(); toast('Expense saved'); render();
+}
+function delExpense(id){
+  if(!requireAdmin('Only ADMIN can delete expenses.')) return;
+  if(!confirm('Delete expense?')) return;
+  DB.expenses = DB.expenses.filter(e=>e.id!==id);
+  saveDB(); render();
+}
+
+/* ===== ACCOUNTS (Debtors / Creditors / Depositors) ===== */
+let accTab = 'debtors';
+function viewAccounts(){
+  const tabs = [
+    ['debtors','Debtors'],['creditors','Creditors'],['depositors','Depositors']
+  ];
+  const list = DB[accTab] || [];
+  const rows = list.map(a=>`<tr>
+    <td class="mono" style="font-size:11px">${esc(a.id)}</td>
+    <td>${esc(a.name)}</td><td>${esc(a.contact||'')}</td>
+    <td>${esc(a.description||'')}</td>
+    <td class="mono right">${fmt(a.balance)}</td>
+    <td style="font-size:11px">${a.date?new Date(a.date).toLocaleDateString():''}</td>
+    <td><button class="btn sm" onclick="openSettle('${accTab}','${a.id}')">Settle</button></td>
+  </tr>`).join('') || `<tr><td colspan="7" class="empty">No ${accTab}</td></tr>`;
+  return `<div class="tabs">${tabs.map(([k,l])=>`<button class="${accTab===k?'active':''}" onclick="accTab='${k}';render()">${l}</button>`).join('')}</div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Add ${accTab.slice(0,-1)}</h3>
+      <div class="field"><label>Name</label><input id="acName" /></div>
+      <div class="field"><label>Contact / Phone</label><input id="acContact" /></div>
+      <div class="field"><label>Description</label><input id="acDesc" /></div>
+      <div class="field"><label>Opening balance (GH₵)</label><input id="acBal" type="number" step="0.01" value="0" /></div>
+      <button class="btn" onclick="addAccount()">Save</button>
+    </div>
+    <div class="card">
+      <h3>Register · total ${fmt(
+        accTab==='debtors'?KPI_TotalOutstandingDebt():
+        accTab==='creditors'?KPI_TotalCreditors():KPI_TotalDeposits()
+      )}</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Desc</th><th class="right">Balance</th><th>Date</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h3>Recent account transactions</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>Type</th><th>Name</th><th>Txn</th><th class="right">Amount</th><th class="right">Bal after</th><th>Receipt</th></tr></thead>
+      <tbody>${DB.accountTxns.slice().reverse().slice(0,25).map(t=>`<tr>
+        <td class="mono" style="font-size:11px">${esc(t.id)}</td>
+        <td>${esc(t.accountType)}</td><td>${esc(t.name)}</td><td>${esc(t.txnType)}</td>
+        <td class="mono right">${fmtN(t.amount)}</td>
+        <td class="mono right">${fmtN(t.balanceAfter)}</td>
+        <td>${esc(t.receiptNo||'')}</td>
+      </tr>`).join('') || `<tr><td colspan="7" class="empty">None</td></tr>`}</tbody>
+    </table></div>
+  </div>`;
+}
+function getOrCreateAccount(kind, name, contact, description){
+  const list = DB[kind];
+  let a = list.find(x=>x.name.toLowerCase()===name.toLowerCase());
+  if(a) return a.id;
+  const prefix = kind==='debtors'?'DEB-': kind==='creditors'?'CRD-':'DEP-';
+  const id = idStamp(prefix);
+  list.push({ id, name, contact: contact||'', description: description||'', balance:0, date: nowISO() });
+  return id;
+}
+function addAccount(){
+  const name = ($('acName').value||'').trim();
+  const contact = ($('acContact').value||'').trim();
+  const description = ($('acDesc').value||'').trim();
+  const bal = Number($('acBal').value)||0;
+  if(!name){ toast('Name required','err'); return; }
+  const id = getOrCreateAccount(accTab, name, contact, description);
+  const a = DB[accTab].find(x=>x.id===id);
+  if(bal){
+    a.balance = (Number(a.balance)||0) + bal;
+    a.description = description || a.description;
+    a.contact = contact || a.contact;
+    logAccountTxn(id, accTab.slice(0,-1).toUpperCase(), name, 'OPENING', bal, a.balance, '');
+  }
+  saveDB(); toast('Account saved'); render();
+}
+function logAccountTxn(accountID, accountType, name, txnType, amount, balanceAfter, receiptNo){
+  DB.accountTxns.push({
+    id: idStamp('ATX-'),
+    accountID, accountType, name, txnType,
+    amount, balanceAfter,
+    date: nowISO(),
+    receiptNo: receiptNo||'',
+    cashier: session.cashier
+  });
+}
+function openSettle(kind, id){
+  const a = DB[kind].find(x=>x.id===id);
+  if(!a) return;
+  openModal(`<h3>Settle · ${esc(a.name)}</h3>
+    <p class="muted">Current balance: <b class="mono">${fmt(a.balance)}</b></p>
+    <div class="field"><label>Amount (GH₵)</label><input id="stAmt" type="number" min="0" step="0.01" value="${Math.max(0,a.balance)}" /></div>
+    <div class="field"><label>Direction</label>
+      <select id="stDir">
+        <option value="REDUCE">Reduce balance (collect / pay)</option>
+        <option value="INCREASE">Increase balance</option>
+      </select>
+    </div>
+    <div class="field"><label>Cash wallet impact</label>
+      <select id="stWallet">
+        <option value="">— no cash movement —</option>
+        ${CASH_TYPES.map(t=>`<option>${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Note</label><input id="stNote" /></div>
+    <div class="row">
+      <button class="btn" onclick="applySettle('${kind}','${id}')">Apply</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+function applySettle(kind, id){
+  const a = DB[kind].find(x=>x.id===id);
+  if(!a) return;
+  const amt = Number(document.getElementById('stAmt').value)||0;
+  const dir = document.getElementById('stDir').value;
+  const wallet = document.getElementById('stWallet').value;
+  const note = document.getElementById('stNote').value||'';
+  if(amt<=0){ toast('Amount required','err'); return; }
+  const signed = dir==='REDUCE' ? -amt : amt;
+  const before = Number(a.balance)||0;
+  a.balance = before + signed;
+  a.date = nowISO();
+  // cash side effects (common shop sense)
+  if(wallet){
+    if(kind==='debtors' && dir==='REDUCE'){
+      // collected from debtor → cash in
+      adjustCash(wallet, 'Add', amt, 'Debtor settle '+a.name);
+    } else if(kind==='creditors' && dir==='REDUCE'){
+      // paid creditor → cash out
+      if(amt > (Number(DB.cashBalances[wallet])||0)+1e-9){ toast('Insufficient wallet','err'); a.balance=before; return; }
+      adjustCash(wallet, 'Deduct', amt, 'Creditor pay '+a.name);
+    } else if(kind==='depositors' && dir==='REDUCE'){
+      // return deposit → cash out
+      if(amt > (Number(DB.cashBalances[wallet])||0)+1e-9){ toast('Insufficient wallet','err'); a.balance=before; return; }
+      adjustCash(wallet, 'Deduct', amt, 'Deposit return '+a.name);
+    } else if(kind==='depositors' && dir==='INCREASE'){
+      adjustCash(wallet, 'Add', amt, 'Deposit in '+a.name);
+    }
+  }
+  logAccountTxn(id, kind.slice(0,-1).toUpperCase(), a.name, dir==='REDUCE'?'SETTLE':'INCREASE', signed, a.balance, note);
+  saveDB(); closeModal(); toast('Settlement posted'); render();
+}
+
+/* ===== RECEIPTS ===== */
+function viewReceipts(){
+  const today = new Date();
+  const isToday = (iso)=>{
+    const d = new Date(iso);
+    return d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate();
+  };
+  let list = DB.receipts.slice().reverse();
+  let note = 'All receipts · credit sales red (Excel RGB 255,199,206)';
+  // Option B: Cashier2 (not elevated) — own receipts, today only
+  if(session.isCashier2 && !isElevated()){
+    list = list.filter(r => r.cashier === session.cashier && isToday(r.date));
+    note = 'Your receipts today only (Cashier 2) · credit sales in red';
+  }
+  const rows = list.map(r=>`<tr class="${r.credit||r.balance?'credit-row':''}">
+    <td class="mono" style="font-size:11px">${esc(r.receiptNo)}</td>
+    <td>${esc(r.customerName)}</td><td>${esc(r.contact||'')}</td>
+    <td class="mono right">${fmt(r.totalAmount)}</td>
+    <td class="mono right">${r.balance?fmt(r.balance):'—'}</td>
+    <td style="font-size:11px">${new Date(r.date).toLocaleString()}</td>
+    <td>${esc(r.cashier||'')}</td>
+    <td>${(r.credit||r.balance)?'<span class="badge bad">CREDIT</span>':'<span class="badge ok">PAID</span>'}</td>
+  </tr>`).join('') || `<tr><td colspan="8" class="empty">${session.isCashier2&&!isElevated()?'No receipts for you today yet.':'No receipts yet'}</td></tr>`;
+  return `<div class="card">
+    <h3>Receipt register <span class="muted" style="font-weight:400">(${esc(note)})</span></h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Receipt #</th><th>Customer</th><th>Contact</th><th class="right">Total</th><th class="right">Balance (owed)</th><th>Date</th><th>Cashier</th><th>Flag</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+/* ===== MONTH END ===== */
+function viewMonthEnd(){
+  if(session.role!=='ADMIN' && !session.adminMode){
+    return `<div class="card"><div class="empty">Only admin can start a New Month.</div></div>`;
+  }
+  const latest = getLatestMonth();
+  let ny=latest.year, nm=latest.month+1;
+  if(nm>12){ nm=1; ny++; }
+  return `<div class="card">
+    <h3>Start New Month (rollover)</h3>
+    <p>Current working period: <b>${monthName(DB.selectedMonth)} ${DB.selectedYear}</b></p>
+    <p>Latest stock period: <b>${monthName(latest.month)} ${latest.year}</b></p>
+    <p>Will open: <b>${monthName(nm)} ${ny}</b></p>
+    <ul class="muted" style="font-size:13px;line-height:1.6">
+      <li>Snapshot Debtors / Creditors / Depositors → monthly sheets</li>
+      <li>Write KPI history row for closing month</li>
+      <li>Carry remaining R STOCK into next month as QTY IN (same U COST batches)</li>
+      <li>Switch selected period to the new month</li>
+    </ul>
+    <div class="row">
+      <div class="field" style="margin:0"><label>New year</label><input id="meYear" type="number" value="${ny}" /></div>
+      <div class="field" style="margin:0"><label>New month</label><input id="meMonth" type="number" min="1" max="12" value="${nm}" /></div>
+    </div>
+    <button class="btn warn" style="margin-top:12px" onclick="confirmMonthEnd()">Run Start New Month</button>
+    <p class="muted" style="font-size:12px;margin-top:10px">Tip: Export a backup from Sync first (like RolloverBackup_yyyymmdd_hhmmss).</p>
+  </div>`;
+}
+function confirmMonthEnd(){
+  promptPIN('Admin PIN required', getAdminPIN(), ()=> startNewMonth());
+}
+function snapshotAccounts(kind, monthlyKey, year, month){
+  DB[kind].forEach(a=>{
+    DB[monthlyKey].push({
+      id: a.id,
+      name: a.name,
+      phone: a.contact||'',
+      snapYear: year,
+      snapMonth: month,
+      bal: Number(a.balance)||0,
+      closingBalance: Number(a.balance)||0
+    });
+  });
+}
+function startNewMonth(){
+  const oldY = DB.selectedYear, oldM = DB.selectedMonth;
+  const year = Number($('meYear').value);
+  const month = Number($('meMonth').value);
+  if(!year || month<1 || month>12){ toast('Invalid period','err'); return; }
+  // prevent dup carry if rows already exist
+  const exists = DB.stockRows.some(r=>r.year===year && r.month===month);
+  if(exists && !confirm('Stock rows already exist for that month. Continue and add carry-over rows?')) return;
+
+  // snapshots for closing month
+  snapshotAccounts('debtors','debtorsMonthly', oldY, oldM);
+  snapshotAccounts('creditors','creditorsMonthly', oldY, oldM);
+  snapshotAccounts('depositors','depositorsMonthly', oldY, oldM);
+
+  // KPI history
+  DB.kpiHistory.push({
+    year: oldY, month: oldM,
+    qtyIn: KPI_QtyIn(), qtyOut: KPI_QtyOut(), qtyRem: KPI_QtyRem(),
+    gross: GetGrossProfit_CurrentMonth(),
+    net: KPI_NetProfit(),
+    liquidCash: KPI_LiquidCash(),
+    debt: KPI_TotalOutstandingDebt(),
+    creditors: KPI_TotalCreditors(),
+    deposits: KPI_TotalDeposits()
+  });
+
+  // CarryOverStock: R STOCK > 0 → new month qtyIn/rStock
+  const carry = DB.stockRows.filter(r=>r.year===oldY && r.month===oldM && (Number(r.rStock)||0)>0);
+  carry.forEach(r=>{
+    DB.stockRows.push({
+      id: idStamp('STKIN-'),
+      productId: r.productId,
+      productName: r.productName,
+      category: r.category,
+      year, month,
+      qtyIn: Number(r.rStock)||0,
+      rStock: Number(r.rStock)||0,
+      uCost: Number(r.uCost)||0,
+      qtyOut: 0,
+      uPrice: Number(r.uPrice)||0,
+      disc: 0, tSales: 0, profit: 0, aPrice: 0,
+      carriedFrom: r.id
+    });
+  });
+
+  DB.selectedYear = year;
+  DB.selectedMonth = month;
+  saveDB();
+  toast(`New month opened: ${monthName(month)} ${year} · carried ${carry.length} batches`);
+  nav('dashboard');
+}
+
+/* ===== REPORTS ===== */
+function viewReports(){
+  const hist = DB.kpiHistory.slice().reverse().map(k=>`<tr>
+    <td>${k.year}-${pad(k.month)}</td>
+    <td class="mono right">${fmtN(k.qtyIn)}</td>
+    <td class="mono right">${fmtN(k.qtyOut)}</td>
+    <td class="mono right">${fmtN(k.qtyRem)}</td>
+    <td class="mono right">${fmt(k.gross)}</td>
+    <td class="mono right">${fmt(k.net)}</td>
+    <td class="mono right">${fmt(k.liquidCash)}</td>
+  </tr>`).join('') || `<tr><td colspan="7" class="empty">No closed months yet — run Start New Month to archive KPIs</td></tr>`;
+  const top = {};
+  DB.sales.filter(s=>s.year===DB.selectedYear && s.month===DB.selectedMonth).forEach(s=>{
+    (s.lines||[]).forEach(l=>{ top[l.product]=(top[l.product]||0)+l.amount; });
+  });
+  const topRows = Object.entries(top).sort((a,b)=>b[1]-a[1]).slice(0,15)
+    .map(([n,v])=>`<tr><td>${esc(n)}</td><td class="mono right">${fmt(v)}</td></tr>`).join('')
+    || `<tr><td colspan="2" class="empty">No sales this month</td></tr>`;
+  return periodSelectorHTML() + `<div class="grid g2">
+    <div class="card">
+      <h3>This month snapshot</h3>
+      <div class="statline"><span>Sales</span><b>${fmt(KPI_TotalSales())}</b></div>
+      <div class="statline"><span>Gross</span><b>${fmt(GetGrossProfit_CurrentMonth())}</b></div>
+      <div class="statline"><span>Expenses</span><b>${fmt(KPI_TotalExpenses_CurrentMonth())}</b></div>
+      <div class="statline"><span>Net</span><b>${fmt(KPI_NetProfit())}</b></div>
+      <div class="statline"><span>Liquid cash</span><b>${fmt(KPI_LiquidCash())}</b></div>
+      <div class="statline"><span>Zakaat</span><b>${fmt(KPI_Zakaat())}</b></div>
+    </div>
+    <div class="card">
+      <h3>Top products (sales value)</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Product</th><th class="right">Sales</th></tr></thead>
+        <tbody>${topRows}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h3>KPI history (closed months)</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Period</th><th class="right">In</th><th class="right">Out</th><th class="right">Rem</th><th class="right">Gross</th><th class="right">Net</th><th class="right">Liquid</th></tr></thead>
+      <tbody>${hist}</tbody>
+    </table></div>
+  </div>`;
+}
+
+/* ===== SYNC / BACKUP ===== */
+function viewSync(){
+  return `<div class="grid g2">
+    <div class="card">
+      <h3>Export backup</h3>
+      <p class="muted" style="font-size:13px">Download a full <code>.tradeflow.json</code> snapshot. Share via WhatsApp / USB / Drive, then Import on another device.</p>
+      <button class="btn" onclick="exportDB()">⬇ Export .tradeflow.json</button>
+      <button class="btn ghost" style="margin-left:8px" onclick="exportDB(true)">⬇ Timestamped backup</button>
+    </div>
+    <div class="card">
+      <h3>Import JSON backup</h3>
+      <p class="muted" style="font-size:13px">Replaces data on <b>this</b> device. Export first if you need a safety copy.</p>
+      <input type="file" id="importFile" accept="application/json,.json,.tradeflow.json" />
+      <div class="row" style="margin-top:10px">
+        <button class="btn warn" onclick="importDB()">Import & replace</button>
+      </div>
+      <hr class="hr" />
+      <h3>Import Excel workbook</h3>
+      <p class="muted" style="font-size:13px">Load history from your VBA <code>.xlsx</code> (2020–today). Full controls also in <b>Settings</b>.</p>
+      <button class="btn ghost" onclick="nav('settings')">Open Settings → Excel import</button>
+    </div>
+    <div class="card">
+      <h3>Multi-device sharing</h3>
+      <ol style="font-size:13px;line-height:1.55;color:var(--muted);padding-left:18px">
+        <li>Deploy one HTTPS URL (GitHub Pages / Netlify) — same app on every phone.</li>
+        <li>Each device keeps its own offline database.</li>
+        <li>End of day: Export on main till → Import on office laptop (or reverse).</li>
+        <li>Optional later: cloud sync (Supabase) — schema notes in Settings.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Device status</h3>
+      <div class="statline"><span>App version</span><b>v${APP_VERSION}</b></div>
+      <div class="statline"><span>DB key</span><b class="mono" style="font-size:11px">${DB_KEY}</b></div>
+      <div class="statline"><span>Products</span><b>${DB.products.length}</b></div>
+      <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
+      <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
+      <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
+      <div class="statline"><span>SW cache</span><b>tradeflow-v3-2</b></div>
+    </div>
+  </div>`;
+}
+function exportDB(stamped){
+  const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds());
+  a.href = URL.createObjectURL(blob);
+  a.download = stamped ? `RolloverBackup_${stamp}.tradeflow.json` : `zola-tradeflow-v${APP_VERSION}.tradeflow.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Export ready');
+}
+function importDB(){
+  const f = $('importFile').files?.[0];
+  if(!f){ toast('Choose a file first','err'); return; }
+  if(!confirm('Replace ALL data on this device with the import file?')) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || typeof data!=='object') throw new Error('Invalid file');
+      DB = Object.assign(defaultDB(), data);
+      saveDB();
+      toast('Import complete');
+      render();
+    }catch(e){ toast('Import failed: '+e.message,'err'); }
+  };
+  reader.readAsText(f);
+}
+
+/* ===== SETTINGS ===== */
+function viewSettings(){
+  if(!isElevated()){
+    return `<div class="card"><div class="empty">Only admin can access Settings.</div></div>`;
+  }
+  const sec = getSecurity();
+  const rows = sec.cashiers.map((c,i)=>`<tr>
+    <td>${esc(c.name)}${c.active===false?' <span class="badge bad">inactive</span>':''}</td>
+    <td>${esc(c.tel||'')}</td>
+    <td><span class="badge ${c.role==='ADMIN'?'admin':'cashier'}">${esc(c.role)}</span></td>
+    <td class="mono">••••••••</td>
+    <td>
+      <button class="btn sm ghost" onclick="editUser(${i})">Edit</button>
+      ${c.role==='ADMIN'?'':`<button class="btn sm danger" onclick="deleteUser(${i})">Delete</button>`}
+    </td>
+  </tr>`).join('');
+
+  return `<div class="grid g2">
+    <div class="card">
+      <h3>Business info</h3>
+      <div class="field"><label>Name</label><input id="biName" value="${escAttr(DB.business.name)}" /></div>
+      <div class="field"><label>Address</label><input id="biAddr" value="${escAttr(DB.business.address)}" /></div>
+      <div class="field"><label>Tel</label><input id="biTel" value="${escAttr(DB.business.tel)}" /></div>
+      <button class="btn" onclick="saveBiz()">Save business</button>
+    </div>
+    <div class="card">
+      <h3>PINs (Admin only)</h3>
+      <p class="muted" style="font-size:12px">These replace Excel frmAdminPIN / frmPriceAdjPIN defaults.</p>
+      <div class="field"><label>Admin Mode PIN</label>
+        <input id="setAdminPIN" type="password" value="${escAttr(sec.adminPIN)}" autocomplete="new-password" /></div>
+      <div class="field"><label>Price Adjustment PIN</label>
+        <input id="setPricePIN" type="password" value="${escAttr(sec.pricePIN)}" autocomplete="new-password" /></div>
+      <div class="field"><label>Confirm with current Admin PIN</label>
+        <input id="setPinConfirm" type="password" placeholder="Current Admin PIN" autocomplete="off" /></div>
+      <button class="btn" onclick="savePINs()">Save PINs</button>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost" onclick="toggleAdminModeBtn()">Toggle Admin Mode</button>
+        <button class="btn ghost" onclick="undoLast()">Undo last transaction</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h3>Users / cashiers</h3>
+    <p class="muted" style="font-size:12px">Add staff with unique passwords. Role ADMIN = full access. Any other role = Cashier 2 rules (Sale Out + own receipts unless Admin Mode).</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Tel</th><th>Role</th><th>Password</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <hr class="hr" />
+    <h3 style="margin-top:8px">Add user</h3>
+    <div class="grid g2">
+      <div class="field"><label>Full name</label><input id="nuName" placeholder="e.g. Ama Mensah" /></div>
+      <div class="field"><label>Telephone</label><input id="nuTel" placeholder="0XX..." /></div>
+      <div class="field"><label>Role</label>
+        <select id="nuRole">
+          <option value="CASHIER2">CASHIER (Sale Out only)</option>
+          <option value="ADMIN">ADMIN (full access)</option>
+        </select>
+      </div>
+      <div class="field"><label>Password</label><input id="nuPass" type="password" autocomplete="new-password" /></div>
+    </div>
+    <button class="btn" onclick="addUser()">Add user</button>
+  </div>
+
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card">
+      <h3>Danger zone</h3>
+      <button class="btn danger" onclick="resetAll()">Wipe all local data</button>
+      <p class="muted" style="font-size:12px;margin-top:8px">Export a backup first. Security settings are wiped too (defaults restored).</p>
+    </div>
+    <div class="card">
+      <h3>Import Excel (historical data)</h3>
+      <p class="muted" style="font-size:13px">Upload your Excel workbook (<code>.xlsx</code>) from Zola / the VBA system. Maps sheets like <b>STOCK AND SALES RECORDS</b>, Debtors, Creditors, Expenses, Receipts, Cash, etc. Ideal for 2020–today history.</p>
+      <input type="file" id="xlsxFile" accept=".xlsx,.xlsm,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+      <div class="field" style="margin-top:10px"><label>Import mode</label>
+        <select id="xlsxMode">
+          <option value="merge">Merge (keep existing, add/update from Excel)</option>
+          <option value="replace">Replace stock &amp; accounts with Excel (keep security)</option>
+        </select>
+      </div>
+      <button class="btn warn" style="margin-top:8px" onclick="importExcelWorkbook()">Import Excel workbook</button>
+      <div id="xlsxStatus" class="muted" style="font-size:12px;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h3>Undo log (latest 20)</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>When</th><th>Type</th><th>Product</th><th>Qty</th><th>Cashier</th><th>Batch</th></tr></thead>
+      <tbody>${DB.undoLog.slice().reverse().slice(0,20).map(u=>`<tr>
+        <td style="font-size:11px">${u.at?new Date(u.at).toLocaleString():''}</td>
+        <td>${esc(u.type)}</td><td>${esc(u.product)}</td>
+        <td class="mono">${fmtN(u.qty)}</td><td>${esc(u.cashier||'')}</td>
+        <td class="mono" style="font-size:11px">${esc(u.batchId||'')}</td>
+      </tr>`).join('') || `<tr><td colspan="6" class="empty">Empty</td></tr>`}</tbody>
+    </table></div>
+  </div>`;
+}
+function savePINs(){
+  if(!isElevated()){ toast('Only admin can change PINs.','err'); return; }
+  const cur = ($('setPinConfirm').value||'').trim();
+  if(cur !== getAdminPIN()){ toast('Current Admin PIN is incorrect.','err'); return; }
+  const a = ($('setAdminPIN').value||'').trim();
+  const p = ($('setPricePIN').value||'').trim();
+  if(a.length < 4){ toast('Admin PIN must be at least 4 characters.','err'); return; }
+  if(p.length < 1){ toast('Price PIN required.','err'); return; }
+  getSecurity().adminPIN = a;
+  getSecurity().pricePIN = p;
+  saveDB();
+  toast('PINs updated');
+  render();
+}
+function addUser(){
+  if(!isElevated()){ toast('Only admin can add users.','err'); return; }
+  const name = ($('nuName').value||'').trim();
+  const tel = ($('nuTel').value||'').trim();
+  const role = $('nuRole').value;
+  const password = ($('nuPass').value||'');
+  if(!name){ toast('Name required','err'); return; }
+  if(password.length < 4){ toast('Password must be at least 4 characters','err'); return; }
+  const sec = getSecurity();
+  if(sec.cashiers.some(c => c.name.toLowerCase()===name.toLowerCase() && c.active!==false)){
+    toast('A user with that name already exists','err'); return;
+  }
+  sec.cashiers.push({
+    id: idStamp('USR-'),
+    name, tel, role, password,
+    sig: role==='ADMIN'?'Sig_Admin.jpg':'Sig_User.jpg',
+    active: true
+  });
+  saveDB();
+  populateLoginCashiers();
+  toast('User added: '+name);
+  render();
+}
+function editUser(i){
+  if(!isElevated()) return;
+  const c = getSecurity().cashiers[i];
+  if(!c) return;
+  openModal(`<h3>Edit user · ${esc(c.name)}</h3>
+    <div class="field"><label>Name</label><input id="euName" value="${escAttr(c.name)}" /></div>
+    <div class="field"><label>Telephone</label><input id="euTel" value="${escAttr(c.tel||'')}" /></div>
+    <div class="field"><label>Role</label>
+      <select id="euRole">
+        <option value="CASHIER2" ${c.role!=='ADMIN'?'selected':''}>CASHIER</option>
+        <option value="ADMIN" ${c.role==='ADMIN'?'selected':''}>ADMIN</option>
+      </select>
+    </div>
+    <div class="field"><label>New password (leave blank to keep)</label>
+      <input id="euPass" type="password" autocomplete="new-password" placeholder="••••••••" /></div>
+    <div class="field"><label>Active</label>
+      <select id="euActive"><option value="1" ${c.active!==false?'selected':''}>Active</option>
+      <option value="0" ${c.active===false?'selected':''}>Inactive</option></select>
+    </div>
+    <div class="field"><label>Confirm with Admin PIN</label>
+      <input id="euPin" type="password" /></div>
+    <div class="row">
+      <button class="btn" onclick="saveEditUser(${i})">Save</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+function saveEditUser(i){
+  if(($('euPin').value||'') !== getAdminPIN()){ toast('Incorrect PIN!','err'); return; }
+  const sec = getSecurity();
+  const c = sec.cashiers[i];
+  if(!c) return;
+  const name = ($('euName').value||'').trim();
+  if(!name){ toast('Name required','err'); return; }
+  // prevent removing last admin
+  const role = $('euRole').value;
+  const active = $('euActive').value === '1';
+  if(c.role==='ADMIN' && (role!=='ADMIN' || !active)){
+    const otherAdmins = sec.cashiers.filter((x,j)=>j!==i && x.role==='ADMIN' && x.active!==false);
+    if(!otherAdmins.length){ toast('Cannot remove or demote the last ADMIN.','err'); return; }
+  }
+  const dup = sec.cashiers.some((x,j)=> j!==i && x.name.toLowerCase()===name.toLowerCase() && x.active!==false);
+  if(dup){ toast('Another user already has that name','err'); return; }
+  c.name = name;
+  c.tel = ($('euTel').value||'').trim();
+  c.role = role;
+  c.active = active;
+  const np = $('euPass').value;
+  if(np){
+    if(np.length < 4){ toast('Password must be at least 4 characters','err'); return; }
+    c.password = np;
+  }
+  // if editing currently logged-in user name/role, refresh session lightly
+  if(session.cashier && session.cashier !== c.name){
+    // if old name matched previous - handled below
+  }
+  saveDB();
+  populateLoginCashiers();
+  closeModal();
+  toast('User updated');
+  render();
+}
+function deleteUser(i){
+  if(!isElevated()) return;
+  const sec = getSecurity();
+  const c = sec.cashiers[i];
+  if(!c) return;
+  if(c.role==='ADMIN'){
+    toast('Delete ADMIN from Edit → set Inactive, or demote only if another ADMIN exists.','warn');
+    return;
+  }
+  if(c.name === session.cashier){ toast('Cannot delete the logged-in user.','err'); return; }
+  promptPIN('Admin PIN to delete user', getAdminPIN(), ()=>{
+    if(!confirm('Delete user "'+c.name+'"? They will no longer be able to log in.')) return;
+    sec.cashiers.splice(i,1);
+    saveDB();
+    populateLoginCashiers();
+    toast('User deleted');
+    render();
+  });
+}
+
+function saveBiz(){
+  DB.business.name = $('biName').value.trim() || BUSINESS.name;
+  DB.business.address = $('biAddr').value.trim();
+  DB.business.tel = $('biTel').value.trim();
+  saveDB(); toast('Business info saved');
+}
+function enableAdminMode(){
+  toggleAdminModeBtn();
+}
+function undoLast(){
+  if(session.role!=='ADMIN' && !session.adminMode){
+    toast('Only ADMIN can undo transactions.','err'); return;
+  }
+  promptPIN('Admin PIN to undo', getAdminPIN(), ()=>{
+    const last = DB.undoLog[DB.undoLog.length-1];
+    if(!last){ toast('Nothing to undo','warn'); return; }
+    if(last.type==='SALE'){
+      toast('Full sale reverse is logged; restore stock manually from backup for safety in v3.0. Last sale: '+last.batchId,'warn');
+      // soft mark
+      DB.undoLog.push({ row:last.batchId, product:last.product, type:'UNDO_REQUEST', qty:last.qty, disc:0, at:nowISO(), batchId:idStamp('UNDO-'), cashier:session.cashier });
+      saveDB(); render();
+      return;
+    }
+    if(last.type==='STOCK_IN'){
+      // reverse last matching stock-in qty from newest row
+      const row = DB.stockRows.slice().reverse().find(r=>r.productName===last.product);
+      if(row){
+        row.qtyIn = Math.max(0,(Number(row.qtyIn)||0)- (Number(last.qty)||0));
+        row.rStock = Math.max(0,(Number(row.rStock)||0)- (Number(last.qty)||0));
+      }
+      DB.undoLog.pop();
+      saveDB(); toast('Stock In undone'); render();
+      return;
+    }
+    toast('Undo type not automated: '+last.type,'warn');
+  });
+}
+function resetAll(){
+  if(!requireAdmin()) return;
+  promptPIN('Admin PIN to WIPE data', getAdminPIN(), ()=>{
+    if(!confirm('Really wipe ALL local data?')) return;
+    DB = defaultDB();
+    saveDB();
+    cart=[];
+    toast('Data wiped');
+    nav(isElevated()?'dashboard':'pos');
+  });
+}
+
+
+/* =========================================================
+   EXCEL WORKBOOK IMPORT (SheetJS) — historical data 2020+
+   ========================================================= */
+let _xlsxLoading = null;
+function loadSheetJS(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(_xlsxLoading) return _xlsxLoading;
+  _xlsxLoading = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload = ()=> resolve(window.XLSX);
+    s.onerror = ()=>{
+      // fallback
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s2.onload = ()=> resolve(window.XLSX);
+      s2.onerror = ()=> reject(new Error('Could not load SheetJS. Go online once to import Excel.'));
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s);
+  });
+  return _xlsxLoading;
+}
+function sheetToObjects(wb, names){
+  // names: array of possible sheet names (case-insensitive)
+  const lower = {};
+  wb.SheetNames.forEach(n => { lower[n.toLowerCase().trim()] = n; });
+  let sheetName = null;
+  for(const want of names){
+    if(lower[want.toLowerCase()]){ sheetName = lower[want.toLowerCase()]; break; }
+  }
+  if(!sheetName) return null;
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+  return { sheetName, rows, ws };
+}
+function sheetToMatrix(wb, names){
+  const lower = {};
+  wb.SheetNames.forEach(n => { lower[n.toLowerCase().trim()] = n; });
+  let sheetName = null;
+  for(const want of names){
+    if(lower[want.toLowerCase()]){ sheetName = lower[want.toLowerCase()]; break; }
+  }
+  if(!sheetName) return null;
+  const ws = wb.Sheets[sheetName];
+  const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true });
+  return { sheetName, matrix, ws };
+}
+function normKey(k){
+  return String(k||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function rowGet(row, candidates){
+  // candidates: list of header names to try
+  const map = {};
+  Object.keys(row).forEach(k => { map[normKey(k)] = row[k]; });
+  for(const c of candidates){
+    const v = map[normKey(c)];
+    if(v !== undefined && v !== '') return v;
+  }
+  // partial contains
+  for(const c of candidates){
+    const nc = normKey(c);
+    for(const k of Object.keys(map)){
+      if(k === nc || k.includes(nc) || nc.includes(k)){
+        if(map[k] !== undefined && map[k] !== '') return map[k];
+      }
+    }
+  }
+  return '';
+}
+function toNum(v){
+  if(v === null || v === undefined || v === '') return 0;
+  if(typeof v === 'number') return v;
+  const s = String(v).replace(/,/g,'').replace(/GH₵/gi,'').replace(/GHS/gi,'').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+function toMonthNum(v){
+  if(v === null || v === undefined || v === '') return 0;
+  if(typeof v === 'number' && v >= 1 && v <= 12) return Math.floor(v);
+  const s = String(v).trim();
+  if(/^\d{1,2}$/.test(s)){ const n = +s; return n>=1&&n<=12?n:0; }
+  const names = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const low = s.toLowerCase();
+  for(let i=0;i<12;i++){
+    if(names[i].startsWith(low.slice(0,3)) || low.startsWith(names[i].slice(0,3))) return i+1;
+  }
+  // Excel serial date?
+  return 0;
+}
+function excelDateToISO(v){
+  if(v === null || v === undefined || v === '') return nowISO();
+  if(typeof v === 'number'){
+    // Excel serial
+    const utc = Math.round((v - 25569) * 86400 * 1000);
+    return new Date(utc).toISOString();
+  }
+  const d = new Date(v);
+  if(!isNaN(d.getTime())) return d.toISOString();
+  return nowISO();
+}
+function parseYearMonth(row){
+  let year = toNum(rowGet(row, ['YEAR','Year','year']));
+  let month = toMonthNum(rowGet(row, ['MONTH','Month','month']));
+  if(!year){
+    const d = rowGet(row, ['Date','DATE','date']);
+    if(d){
+      const iso = excelDateToISO(d);
+      const dt = new Date(iso);
+      year = dt.getFullYear();
+      if(!month) month = dt.getMonth()+1;
+    }
+  }
+  if(!year) year = new Date().getFullYear();
+  if(!month) month = new Date().getMonth()+1;
+  return { year: Math.floor(year), month: Math.floor(month) };
+}
+
+async function importExcelWorkbook(){
+  if(!isElevated()){ toast('Only admin can import Excel.','err'); return; }
+  const fileInput = $('xlsxFile');
+  const status = $('xlsxStatus');
+  const setStatus = (t)=>{ if(status) status.textContent = t; };
+  const file = fileInput && fileInput.files && fileInput.files[0];
+  if(!file){ toast('Choose an Excel .xlsx file first','err'); return; }
+  const mode = ($('xlsxMode') && $('xlsxMode').value) || 'merge';
+
+  try{
+    setStatus('Loading SheetJS…');
+    await loadSheetJS();
+    setStatus('Reading workbook…');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    setStatus('Sheets found: ' + wb.SheetNames.join(', '));
+
+    const report = importWorkbookToDB(wb, mode);
+    saveDB();
+    populateLoginCashiers();
+    setStatus('Import complete. ' + report);
+    toast('Excel import complete');
+    render();
+  }catch(e){
+    console.error(e);
+    setStatus('Failed: ' + (e.message||e));
+    toast('Excel import failed: '+(e.message||e), 'err');
+  }
+}
+
+function importWorkbookToDB(wb, mode){
+  const notes = [];
+  const securityBackup = deepClone(getSecurity());
+
+  if(mode === 'replace'){
+    // wipe transactional data, keep security + business shell
+    DB.products = [];
+    DB.stockRows = [];
+    DB.sales = [];
+    DB.saleLines = [];
+    DB.debtors = [];
+    DB.creditors = [];
+    DB.depositors = [];
+    DB.debtorsMonthly = [];
+    DB.creditorsMonthly = [];
+    DB.depositorsMonthly = [];
+    DB.accountTxns = [];
+    DB.cashLog = [];
+    DB.expenses = [];
+    DB.kpiHistory = [];
+    DB.receipts = [];
+    DB.undoLog = [];
+    DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
+    notes.push('Replaced transactional data');
+  }
+
+  // BusinessInfo
+  const biz = sheetToMatrix(wb, ['BusinessInfo','Business Info','businessinfo']);
+  if(biz && biz.matrix.length){
+    const a1 = biz.matrix[0] && biz.matrix[0][0];
+    const a2 = biz.matrix[1] && biz.matrix[1][0];
+    const a3 = biz.matrix[2] && biz.matrix[2][0];
+    if(a1) DB.business.name = String(a1).trim();
+    if(a2) DB.business.address = String(a2).trim();
+    if(a3) DB.business.tel = String(a3).trim();
+    notes.push('BusinessInfo');
+  }
+
+  // Cashiers sheet → merge into security (do not wipe passwords if names match? import tel only unless new)
+  const cash = sheetToObjects(wb, ['Cashiers','cashiers','CASHIERS']);
+  if(cash && cash.rows.length){
+    let added = 0;
+    cash.rows.forEach(row=>{
+      const name = String(rowGet(row, ['Name','Cashier','A','cashier name'])||'').trim();
+      const tel = String(rowGet(row, ['Tel','Phone','Contact','B','telephone'])||'').trim();
+      if(!name) return;
+      const sec = getSecurity();
+      let u = sec.cashiers.find(c => c.name.toLowerCase() === name.toLowerCase());
+      if(u){
+        if(tel) u.tel = tel;
+      } else {
+        sec.cashiers.push({
+          id: idStamp('USR-'),
+          name, tel,
+          role: name.toLowerCase().includes('muniru') ? 'ADMIN' : 'CASHIER2',
+          password: 'change-me',
+          sig: 'Sig_User.jpg',
+          active: true
+        });
+        added++;
+      }
+    });
+    notes.push('Cashiers (+'+added+' new — set passwords in Settings)');
+  }
+
+  // STOCK AND SALES RECORDS
+  const stock = sheetToObjects(wb, [
+    'STOCK AND SALES RECORDS','Stock and Sales Records','STOCK AND SALES','MasterTable','Stock'
+  ]);
+  let stockCount = 0;
+  if(stock && stock.rows.length){
+    const productSet = new Map(DB.products.map(p => [p.name.toLowerCase(), p]));
+    stock.rows.forEach((row, idx)=>{
+      const productName = String(rowGet(row, ['PRODUCT NAME','Product Name','Product','PRODUCT','B'])||'').trim();
+      if(!productName) return;
+      const category = String(rowGet(row, ['CATEGORY','Category','C'])||'').trim();
+      const { year, month } = parseYearMonth(row);
+      const qtyIn = toNum(rowGet(row, ['QTY IN','Qty In','QTYIN','D']));
+      let rStock = toNum(rowGet(row, ['R STOCK','RSTOCK','CR STOCK','Remaining','E']));
+      const uCost = toNum(rowGet(row, ['U COST','Unit Cost','UCOST','G','Cost']));
+      const qtyOut = toNum(rowGet(row, ['QTY OUT','Qty Out','QTYOUT','L']));
+      const uPrice = toNum(rowGet(row, ['U PRICE','Unit Price','UPRICE','M','Price']));
+      const disc = toNum(rowGet(row, ['DISC','Discount','N']));
+      let tSales = toNum(rowGet(row, ['T SALES','T SALES','Total Sales','O','SALES']));
+      let profit = toNum(rowGet(row, ['PROFIT','Profit','P']));
+      const aPrice = toNum(rowGet(row, ['A PRICE','APRICE','Q','Price Adj']));
+      // recompute remaining if missing
+      if(!rStock && (qtyIn || qtyOut)) rStock = Math.max(0, qtyIn - qtyOut);
+      if(!tSales && qtyOut && uPrice) tSales = qtyOut * uPrice - disc;
+      if(!profit && tSales) profit = tSales - (qtyOut * uCost);
+
+      // product catalog
+      if(!productSet.has(productName.toLowerCase())){
+        const p = { id: 'PRD-IMP-'+Date.now()+'-'+idx, name: productName, category, uPrice: uPrice||0 };
+        DB.products.push(p);
+        productSet.set(productName.toLowerCase(), p);
+      } else {
+        const p = productSet.get(productName.toLowerCase());
+        if(category && !p.category) p.category = category;
+        if(uPrice && !p.uPrice) p.uPrice = uPrice;
+      }
+
+      const rec = {
+        id: idStamp('STKIN-') + '-' + idx,
+        productId: productSet.get(productName.toLowerCase()).id,
+        productName, category, year, month,
+        qtyIn, rStock, uCost, qtyOut,
+        uPrice: uPrice||0,
+        disc, tSales, profit, aPrice,
+        imported: true
+      };
+
+      if(mode === 'merge'){
+        // merge same product+year+month+uCost
+        const existing = DB.stockRows.find(r =>
+          r.productName === productName && r.year===year && r.month===month && Math.abs((Number(r.uCost)||0)-uCost)<0.0001
+        );
+        if(existing){
+          // take max-ish of imported values for history completeness
+          existing.qtyIn = Math.max(Number(existing.qtyIn)||0, qtyIn);
+          existing.qtyOut = Math.max(Number(existing.qtyOut)||0, qtyOut);
+          existing.rStock = rStock;
+          existing.tSales = Math.max(Number(existing.tSales)||0, tSales);
+          existing.profit = Math.max(Number(existing.profit)||0, profit);
+          existing.disc = Math.max(Number(existing.disc)||0, disc);
+          if(uPrice) existing.uPrice = uPrice;
+        } else {
+          DB.stockRows.push(rec);
+        }
+      } else {
+        DB.stockRows.push(rec);
+      }
+      stockCount++;
+    });
+    notes.push('Stock rows: '+stockCount);
+  } else {
+    notes.push('Stock sheet not found');
+  }
+
+  // Helper for account sheets
+  function importAccountSheet(sheetNames, kind, prefix){
+    const pack = sheetToObjects(wb, sheetNames);
+    if(!pack || !pack.rows.length) return 0;
+    let n = 0;
+    pack.rows.forEach((row, idx)=>{
+      let id = String(rowGet(row, ['ID','Id','Account ID','A'])||'').trim();
+      const name = String(rowGet(row, ['Name','NAME','B'])||'').trim();
+      if(!name && !id) return;
+      const contact = String(rowGet(row, ['Contact','Phone','Tel','C'])||'').trim();
+      const description = String(rowGet(row, ['Description','Desc','D'])||'').trim();
+      const balance = toNum(rowGet(row, ['Balance','E','Bal']));
+      const date = excelDateToISO(rowGet(row, ['Date','F']));
+      if(!id) id = idStamp(prefix) + '-' + idx;
+      const list = DB[kind];
+      let existing = list.find(x => x.id === id || (name && x.name.toLowerCase()===name.toLowerCase()));
+      if(existing){
+        existing.balance = balance;
+        existing.contact = contact || existing.contact;
+        existing.description = description || existing.description;
+        existing.date = date;
+      } else {
+        list.push({ id, name: name||id, contact, description, balance, date });
+      }
+      n++;
+    });
+    return n;
+  }
+  const nd = importAccountSheet(['DEBTORS','Debtors'], 'debtors', 'DEB-');
+  const nc = importAccountSheet(['CREDITORS','Creditors'], 'creditors', 'CRD-');
+  const np = importAccountSheet(['DEPOSITORS','Depositors'], 'depositors', 'DEP-');
+  if(nd||nc||np) notes.push(`Accounts D/C/P: ${nd}/${nc}/${np}`);
+
+  // Monthly snapshots
+  function importMonthly(sheetNames, targetKey){
+    const pack = sheetToObjects(wb, sheetNames);
+    if(!pack) return 0;
+    let n=0;
+    pack.rows.forEach(row=>{
+      const id = String(rowGet(row, ['ID','A'])||'').trim();
+      const name = String(rowGet(row, ['Name','B'])||'').trim();
+      if(!id && !name) return;
+      const phone = String(rowGet(row, ['Phone','Contact','C'])||'').trim();
+      const snapYear = Math.floor(toNum(rowGet(row, ['snapYear','Year','D','YEAR'])));
+      const snapMonth = toMonthNum(rowGet(row, ['snapMonth','Month','E','MONTH'])) || Math.floor(toNum(rowGet(row, ['snapMonth','Month','E'])));
+      const bal = toNum(rowGet(row, ['bal','Balance','F']));
+      const closingBalance = toNum(rowGet(row, ['ClosingBalance','Closing Balance','G'])) || bal;
+      if(!snapYear) return;
+      DB[targetKey].push({ id, name, phone, snapYear, snapMonth, bal, closingBalance });
+      n++;
+    });
+    return n;
+  }
+  const m1 = importMonthly(['DEBTORS_MONTHLY','Debtors_Monthly'], 'debtorsMonthly');
+  const m2 = importMonthly(['CREDITORS_MONTHLY','Creditors_Monthly'], 'creditorsMonthly');
+  const m3 = importMonthly(['DEPOSITORS_MONTHLY','Depositors_Monthly'], 'depositorsMonthly');
+  if(m1+m2+m3) notes.push('Monthly snaps: '+(m1+m2+m3));
+
+  // ACCOUNT_TRANSACTIONS
+  const atx = sheetToObjects(wb, ['ACCOUNT_TRANSACTIONS','Account_Transactions','Account Transactions']);
+  if(atx && atx.rows.length){
+    let n=0;
+    atx.rows.forEach((row, idx)=>{
+      const id = String(rowGet(row, ['ID','A','ATX'])|| idStamp('ATX-')+'-'+idx);
+      const accountID = String(rowGet(row, ['accountID','Account ID','B'])||'').trim();
+      const accountType = String(rowGet(row, ['accountType','Account Type','C','Type'])||'').trim();
+      const name = String(rowGet(row, ['name','Name','D'])||'').trim();
+      const txnType = String(rowGet(row, ['txnType','Txn Type','E','Transaction'])||'').trim();
+      const amount = toNum(rowGet(row, ['amount','Amount','F']));
+      const balanceAfter = toNum(rowGet(row, ['balanceAfter','Balance After','G']));
+      const date = excelDateToISO(rowGet(row, ['Date','H','date']));
+      const receiptNo = String(rowGet(row, ['receiptNo','Receipt','J','I'])||'').trim();
+      if(!accountID && !name) return;
+      if(mode==='merge' && DB.accountTxns.some(t=>t.id===id)) return;
+      DB.accountTxns.push({ id, accountID, accountType, name, txnType, amount, balanceAfter, date, receiptNo, cashier: 'import' });
+      n++;
+    });
+    notes.push('ATX: '+n);
+  }
+
+  // CASH_BALANCES
+  const cb = sheetToMatrix(wb, ['CASH_BALANCES','Cash_Balances','Cash Balances']);
+  if(cb && cb.matrix.length){
+    // Expect A=type B=balance, rows may include headers
+    cb.matrix.forEach((row,i)=>{
+      if(!row || !row.length) return;
+      const t = String(row[0]||'').trim();
+      const bal = toNum(row[1]);
+      if(CASH_TYPES.includes(t)) DB.cashBalances[t] = bal;
+      else if(i>=1 && t && CASH_TYPES.some(x=>x.toLowerCase()===t.toLowerCase())){
+        const key = CASH_TYPES.find(x=>x.toLowerCase()===t.toLowerCase());
+        DB.cashBalances[key] = bal;
+      }
+    });
+    // also try objects
+    notes.push('Cash balances');
+  }
+  const cbo = sheetToObjects(wb, ['CASH_BALANCES','Cash_Balances']);
+  if(cbo){
+    cbo.rows.forEach(row=>{
+      const t = String(rowGet(row, ['CashType','Cash Type','Type','A'])||'').trim();
+      const bal = toNum(rowGet(row, ['Balance','B']));
+      const key = CASH_TYPES.find(x=>x.toLowerCase()===t.toLowerCase());
+      if(key) DB.cashBalances[key] = bal;
+    });
+  }
+
+  // CASH_BALANCE_LOG
+  const cbl = sheetToObjects(wb, ['CASH_BALANCE_LOG','Cash_Balance_Log','Cash Balance Log']);
+  if(cbl && cbl.rows.length){
+    let n=0;
+    cbl.rows.forEach((row,idx)=>{
+      const id = String(rowGet(row, ['ID','A'])|| idStamp('CB-')+'-'+idx);
+      if(mode==='merge' && DB.cashLog.some(x=>x.id===id)) return;
+      DB.cashLog.push({
+        id,
+        cashType: String(rowGet(row, ['CashType','Type','B'])||''),
+        action: String(rowGet(row, ['Action','C','Add/Deduct'])||''),
+        amount: toNum(rowGet(row, ['Amount','D','amt'])),
+        before: toNum(rowGet(row, ['Before','E'])),
+        after: toNum(rowGet(row, ['After','F'])),
+        at: excelDateToISO(rowGet(row, ['Date','G','Now'])),
+        cashier: String(rowGet(row, ['Cashier','H'])||'import'),
+        note: 'excel-import'
+      });
+      n++;
+    });
+    notes.push('Cash log: '+n);
+  }
+
+  // EXPENSES
+  const exp = sheetToObjects(wb, ['EXPENSES','Expenses']);
+  if(exp && exp.rows.length){
+    let n=0;
+    exp.rows.forEach((row,idx)=>{
+      const id = String(rowGet(row, ['ID','A'])|| idStamp('EXP-')+'-'+idx);
+      if(mode==='merge' && DB.expenses.some(x=>x.id===id)) return;
+      const description = String(rowGet(row, ['Description','B','Desc'])||'').trim();
+      if(!description) return;
+      DB.expenses.push({
+        id, description,
+        category: String(rowGet(row, ['Category','C'])||'Miscellaneous'),
+        amount: toNum(rowGet(row, ['Amount','D'])),
+        date: excelDateToISO(rowGet(row, ['Date','E'])),
+        cashier: 'import'
+      });
+      n++;
+    });
+    notes.push('Expenses: '+n);
+  }
+
+  // RECEIPT REGISTER
+  const reg = sheetToObjects(wb, ['RECEIPT REGISTER','Receipt Register','Receipts']);
+  if(reg && reg.rows.length){
+    let n=0;
+    reg.rows.forEach((row,idx)=>{
+      const receiptNo = String(rowGet(row, ['Receipt No','ReceiptNo','receiptNo','A','Receipt'])||'').trim();
+      if(!receiptNo) return;
+      if(mode==='merge' && DB.receipts.some(r=>r.receiptNo===receiptNo)) return;
+      const totalAmount = toNum(rowGet(row, ['Total','TotalAmount','D','Amount']));
+      const balance = toNum(rowGet(row, ['Balance','E']));
+      DB.receipts.push({
+        receiptNo,
+        customerName: String(rowGet(row, ['Customer','CustomerName','B','Name'])||''),
+        contact: String(rowGet(row, ['Contact','Tel','C','Phone'])||''),
+        totalAmount,
+        amountPaid: Math.max(0, totalAmount - balance),
+        balance: balance > 0 ? balance : 0,
+        date: excelDateToISO(rowGet(row, ['Date','F'])),
+        credit: balance > 0,
+        cashier: String(rowGet(row, ['Cashier','G','H'])||'import'),
+        lines: []
+      });
+      n++;
+    });
+    notes.push('Receipts: '+n);
+  }
+
+  // KPI_HISTORY
+  const kpi = sheetToObjects(wb, ['KPI_HISTORY','KPI History','Kpi_History']);
+  if(kpi && kpi.rows.length){
+    let n=0;
+    kpi.rows.forEach(row=>{
+      const year = Math.floor(toNum(rowGet(row, ['Year','A','YEAR'])));
+      const month = toMonthNum(rowGet(row, ['Month','B','MONTH'])) || Math.floor(toNum(rowGet(row, ['Month','B'])));
+      if(!year || !month) return;
+      if(mode==='merge' && DB.kpiHistory.some(k=>k.year===year && k.month===month)) return;
+      DB.kpiHistory.push({
+        year, month,
+        qtyIn: toNum(rowGet(row, ['qtyIn','C','Qty In'])),
+        qtyOut: toNum(rowGet(row, ['qtyOut','D','Qty Out'])),
+        qtyRem: toNum(rowGet(row, ['qtyRem','E','Rem'])),
+        gross: toNum(rowGet(row, ['Gross','F','gross'])),
+        net: toNum(rowGet(row, ['Net','G','net'])),
+        liquidCash: toNum(rowGet(row, ['LiquidCash','H','Liquid'])),
+        debt: toNum(rowGet(row, ['Debt','I'])),
+        creditors: toNum(rowGet(row, ['Creditors','J'])),
+        deposits: toNum(rowGet(row, ['Deposits','K']))
+      });
+      n++;
+    });
+    notes.push('KPI history: '+n);
+  }
+
+  // UndoLog (optional)
+  const ul = sheetToObjects(wb, ['UndoLog','UNDOLOG','Undo Log']);
+  if(ul && ul.rows.length){
+    let n=0;
+    ul.rows.forEach(row=>{
+      DB.undoLog.push({
+        row: rowGet(row, ['Row','A']),
+        product: String(rowGet(row, ['Product','B'])||''),
+        type: String(rowGet(row, ['Type','C'])||''),
+        qty: toNum(rowGet(row, ['Qty','D'])),
+        disc: toNum(rowGet(row, ['Discount','E','Disc'])),
+        at: excelDateToISO(rowGet(row, ['Date','F','Now'])),
+        batchId: String(rowGet(row, ['BatchID','R','Batch'])||''),
+        cashier: 'import'
+      });
+      n++;
+    });
+    notes.push('UndoLog: '+n);
+  }
+
+  // Restore security always (never clobber PINs/passwords from excel replace)
+  DB.security = securityBackup;
+
+  // Set selected period to latest stock month
+  const lm = getLatestMonth();
+  if(lm.year){ DB.selectedYear = lm.year; DB.selectedMonth = lm.month; }
+
+  // Build product list from stock if products empty
+  if(!DB.products.length && DB.stockRows.length){
+    const seen = new Set();
+    DB.stockRows.forEach(r=>{
+      const k = r.productName.toLowerCase();
+      if(seen.has(k)) return;
+      seen.add(k);
+      DB.products.push({ id: r.productId||idStamp('PRD-'), name: r.productName, category: r.category||'', uPrice: r.uPrice||0 });
+    });
+  }
+
+  return notes.join(' · ') || 'No recognised sheets';
+}
+
+
+/* ---------- escape ---------- */
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function escAttr(s){ return esc(s).replace(/\n/g,''); }
+
+/* ---------- clock + SW ---------- */
+function tick(){
+  const d = new Date();
+  const el = $('clockPill');
+  if(el) el.textContent = d.toLocaleString('en-GH',{hour12:false});
+}
+function registerSW(){
+  if(!('serviceWorker' in navigator)) return;
+  // only on http(s)
+  if(location.protocol==='file:') return;
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+/* ---------- boot ---------- */
+loadDB();
+populateLoginCashiers();
+tick(); setInterval(tick, 1000);
+registerSW();
+// Enter key on login
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && $('loginScreen').style.display!=='none'){
+    doLogin();
+  }
+});
+</script>
+</body>
+</html>
