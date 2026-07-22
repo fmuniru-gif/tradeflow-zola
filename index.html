@@ -330,7 +330,7 @@ function loadDB(){
     if(!DB.cashBalances) DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
     CASH_TYPES.forEach(t=>{ if(DB.cashBalances[t]==null) DB.cashBalances[t]=0; });
     ['products','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','receipts','undoLog','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
-    if(!DB.backupSettings) DB.backupSettings = { autoBackupEnabled:false, schedule:'manual', keepLocalBackups:30, cloudProvider:'none', cloudConnected:false };
+    if(!DB.backupSettings) DB.backupSettings = { autoBackupEnabled:false, schedule:'manual', keepLocalBackups:30, cloudProvider:'google-drive', cloudConnected:false, googleClientId:'', lastCloudBackupAt:'', lastRestoreAt:'' };
     if(!DB.security) DB.security = deepClone(DEFAULT_SECURITY);
     else {
       if(!Array.isArray(DB.security.cashiers) || !DB.security.cashiers.length) DB.security.cashiers = deepClone(DEFAULT_SECURITY.cashiers);

@@ -1,5 +1,5 @@
-/* TradeFlow PWA — Zola Electronics Zone (Tamale) — Service Worker v3.2.1 */
-const CACHE = 'zezms-cloud-backup-m1-20260721';
+/* TradeFlow PWA — Zola Electronics Zone (Tamale) — Service Worker — Cloud Backup & Restore M2 */
+const CACHE = 'zezms-cloud-backup-restore-m2-20260722';
 const ASSETS = [
   './',
   './index.html',
