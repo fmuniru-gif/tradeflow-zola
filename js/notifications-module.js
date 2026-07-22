@@ -1,0 +1,14 @@
+(function(){
+window.ZEZMS=window.ZEZMS||{};
+ZEZMS.modules=ZEZMS.modules||{};
+ZEZMS.modules.notifications={
+ success:function(message){
+   if(ZEZMS.log){ZEZMS.log.info(message);}
+   if(ZEZMS.events){ZEZMS.events.emit("notify:success",{message:message});}
+ },
+ error:function(message){
+   if(ZEZMS.log){ZEZMS.log.error?ZEZMS.log.error(message):ZEZMS.log.info(message);}
+   if(ZEZMS.events){ZEZMS.events.emit("notify:error",{message:message});}
+ }
+};
+})();

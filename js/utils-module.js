@@ -1,0 +1,12 @@
+(function(){
+window.ZEZMS=window.ZEZMS||{};
+ZEZMS.modules=ZEZMS.modules||{};
+ZEZMS.modules.utils={
+ emit:function(name,data){
+   if(ZEZMS.events){ZEZMS.events.emit(name,data);}
+ },
+ log:function(){
+   if(ZEZMS.log){ZEZMS.log.info.apply(ZEZMS.log,arguments);}
+ }
+};
+})();

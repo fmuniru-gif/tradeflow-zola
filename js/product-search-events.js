@@ -1,0 +1,15 @@
+(function(){
+window.ZEZMS=window.ZEZMS||{};
+ZEZMS.modules=ZEZMS.modules||{};
+ZEZMS.modules.productSearchEvents={
+ emitSearch:function(query,count){
+   if(ZEZMS.events){
+     ZEZMS.events.emit("product:search",{
+       query:query,
+       results:count,
+       timestamp:Date.now()
+     });
+   }
+ }
+};
+})();
