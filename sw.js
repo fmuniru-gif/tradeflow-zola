@@ -1,81 +1,89 @@
-/* TradeFlow PWA — Zola Electronics Zone (Tamale) — Service Worker — Cloud Backup & Restore M2 */
-const CACHE = 'zezms-cloud-backup-restore-m2-20260722';
+/* ZEZMS TradeFlow — Cloud Backup & Restore M2 */
+const CACHE = 'zezms-cloud-backup-restore-m2-full-20260722-r1';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './js/app.js',
-  './js/backup-manager.js',
-  './js/bootpatch.js',
-  './js/config.js',
-  './js/db-events.js',
-  './js/dbservice.js',
-  './js/diagnostics.js',
-  './js/events.js',
-  './js/health-module.js',
-  './js/lifecycle-module.js',
-  './js/logger.js',
-  './js/notifications-module.js',
-  './js/product-search-adapter.js',
-  './js/product-search-controller.js',
-  './js/product-search-events.js',
-  './js/product-search-facade.js',
-  './js/product-search-metrics.js',
-  './js/product-search-module.js',
-  './js/product-search-service.js',
-  './js/registry.js',
-  './js/storage.js',
-  './js/system-module.js',
-  './js/utils-module.js'
+  './js/app.js?v=20260722-m2-full-r1',
+  './js/backup-manager.js?v=20260722-m2-full-r1',
+  './js/bootpatch.js?v=20260722-m2-full-r1',
+  './js/config.js?v=20260722-m2-full-r1',
+  './js/db-events.js?v=20260722-m2-full-r1',
+  './js/dbservice.js?v=20260722-m2-full-r1',
+  './js/diagnostics.js?v=20260722-m2-full-r1',
+  './js/events.js?v=20260722-m2-full-r1',
+  './js/health-module.js?v=20260722-m2-full-r1',
+  './js/lifecycle-module.js?v=20260722-m2-full-r1',
+  './js/logger.js?v=20260722-m2-full-r1',
+  './js/notifications-module.js?v=20260722-m2-full-r1',
+  './js/product-search-adapter.js?v=20260722-m2-full-r1',
+  './js/product-search-controller.js?v=20260722-m2-full-r1',
+  './js/product-search-events.js?v=20260722-m2-full-r1',
+  './js/product-search-facade.js?v=20260722-m2-full-r1',
+  './js/product-search-metrics.js?v=20260722-m2-full-r1',
+  './js/product-search-module.js?v=20260722-m2-full-r1',
+  './js/product-search-service.js?v=20260722-m2-full-r1',
+  './js/registry.js?v=20260722-m2-full-r1',
+  './js/storage.js?v=20260722-m2-full-r1',
+  './js/system-module.js?v=20260722-m2-full-r1',
+  './js/utils-module.js?v=20260722-m2-full-r1'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((cache) => cache.addAll(ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
+  const request = event.request;
+  if (request.method !== 'GET') return;
 
-  // Always ask GitHub Pages for the newest application page first. This avoids
-  // retaining an older index.html after a deployment while preserving offline use.
-  if (req.mode === 'navigate') {
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isNavigation = request.mode === 'navigate';
+  const isAppCode = isNavigation
+    || url.pathname.endsWith('.js')
+    || url.pathname.endsWith('/index.html')
+    || url.pathname.endsWith('/manifest.json');
+
+  if (isAppCode) {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (res && res.status === 200 && res.type === 'basic') {
-            const clone = res.clone();
-            caches.open(CACHE).then((cache) => cache.put('./index.html', clone));
+      fetch(request)
+        .then((response) => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, clone));
           }
-          return res;
+          return response;
         })
-        .catch(() => caches.match('./index.html').then((cached) => cached || caches.match('./')))
+        .catch(() =>
+          caches.match(request).then((cached) =>
+            cached || caches.match(request, { ignoreSearch: true }) || caches.match('./index.html')
+          )
+        )
     );
     return;
   }
 
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          if (res && res.status === 200 && res.type === 'basic') {
-            const clone = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, clone));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+      if (response && response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(request, clone));
+      }
+      return response;
+    }))
   );
 });

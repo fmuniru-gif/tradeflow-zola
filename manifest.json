@@ -1,15 +1,19 @@
 {
   "name": "Zola Electronics Zone",
   "short_name": "TradeFlow Zola",
-  "description": "Sales, inventory, cash & accounts PWA for Zola Electronics Zone — Tamale, Ghana. Works offline.",
-  "start_url": "./index.html",
+  "description": "Sales, inventory, cash, accounts, local restore and Google Drive backup for Zola Electronics Zone.",
+  "start_url": "./index.html?build=20260722-m2-full-r1",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0f172a",
   "theme_color": "#0f766e",
   "lang": "en-GH",
-  "categories": ["business", "finance", "productivity"],
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230f766e'/%3E%3Ctext x='256' y='300' font-size='220' text-anchor='middle' fill='white' font-family='Arial Black,Arial,sans-serif'%3EZ%3C/text%3E%3C/svg%3E",

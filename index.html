@@ -6,8 +6,9 @@
 <meta name="theme-color" content="#0f766e" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="description" content="Zola Electronics Zone — Sales & Inventory PWA (offline)" />
-<title>Zola Electronics Zone · TradeFlow v3.2</title>
+<meta name="description" content="Zola Electronics Zone — Sales, Inventory, Cloud Backup & Restore M2" />
+<meta name="zezms-build" content="20260722-m2-full-r1" />
+<title>Zola Electronics Zone · TradeFlow v3.2.2 · Backup M2</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 <style>
@@ -150,7 +151,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.2.1 · Tamale · GH₵ · Offline-ready</div>
+    <div class="sub">TradeFlow v3.2.2 · Cloud Backup & Restore M2 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -170,7 +171,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.2.1 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.2.2 · Backup M2 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -216,12 +217,37 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <div class="modal" id="modalBody"></div>
 </div>
 
+<!-- ZEZMS modules load first so persistence is available during clean boot. -->
+<script src="js/config.js?v=20260722-m2-full-r1"></script>
+<script src="js/app.js?v=20260722-m2-full-r1"></script>
+<script src="js/logger.js?v=20260722-m2-full-r1"></script>
+<script src="js/diagnostics.js?v=20260722-m2-full-r1"></script>
+<script src="js/registry.js?v=20260722-m2-full-r1"></script>
+<script src="js/storage.js?v=20260722-m2-full-r1"></script>
+<script src="js/dbservice.js?v=20260722-m2-full-r1"></script>
+<script src="js/bootpatch.js?v=20260722-m2-full-r1"></script>
+<script src="js/events.js?v=20260722-m2-full-r1"></script>
+<script src="js/db-events.js?v=20260722-m2-full-r1"></script>
+<script src="js/system-module.js?v=20260722-m2-full-r1"></script>
+<script src="js/health-module.js?v=20260722-m2-full-r1"></script>
+<script src="js/utils-module.js?v=20260722-m2-full-r1"></script>
+<script src="js/lifecycle-module.js?v=20260722-m2-full-r1"></script>
+<script src="js/notifications-module.js?v=20260722-m2-full-r1"></script>
+<script src="js/product-search-module.js?v=20260722-m2-full-r1"></script>
+<script src="js/product-search-adapter.js?v=20260722-m2-full-r1"></script>
+<script src="js/product-search-service.js?v=20260722-m2-full-r1"></script>
+<script src="js/product-search-controller.js?v=20260722-m2-full-r1"></script>
+<script src="js/product-search-events.js?v=20260722-m2-full-r1"></script>
+<script src="js/product-search-metrics.js?v=20260722-m2-full-r1"></script>
+<script src="js/product-search-facade.js?v=20260722-m2-full-r1"></script>
+<script src="js/backup-manager.js?v=20260722-m2-full-r1"></script>
+
 <script>
 /* =========================================================
    TradeFlow PWA v3.0 — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.2.1';
+const APP_VERSION = '3.2.2';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0;
 const BUSINESS = {
@@ -315,8 +341,11 @@ function defaultDB(){
       autoBackupEnabled: false,
       schedule: 'manual',
       keepLocalBackups: 30,
-      cloudProvider: 'none',
-      cloudConnected: false
+      cloudProvider: 'google-drive',
+      cloudConnected: false,
+      googleClientId: '',
+      lastCloudBackupAt: '',
+      lastRestoreAt: ''
     },
     settings: { priceAdjEnabled: false }
   };
@@ -330,7 +359,16 @@ function loadDB(){
     if(!DB.cashBalances) DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
     CASH_TYPES.forEach(t=>{ if(DB.cashBalances[t]==null) DB.cashBalances[t]=0; });
     ['products','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','receipts','undoLog','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
-    if(!DB.backupSettings) DB.backupSettings = { autoBackupEnabled:false, schedule:'manual', keepLocalBackups:30, cloudProvider:'google-drive', cloudConnected:false, googleClientId:'', lastCloudBackupAt:'', lastRestoreAt:'' };
+    DB.backupSettings = Object.assign({
+      autoBackupEnabled:false,
+      schedule:'manual',
+      keepLocalBackups:30,
+      cloudProvider:'google-drive',
+      cloudConnected:false,
+      googleClientId:'',
+      lastCloudBackupAt:'',
+      lastRestoreAt:''
+    }, DB.backupSettings || {});
     if(!DB.security) DB.security = deepClone(DEFAULT_SECURITY);
     else {
       if(!Array.isArray(DB.security.cashiers) || !DB.security.cashiers.length) DB.security.cashiers = deepClone(DEFAULT_SECURITY.cashiers);
@@ -1933,7 +1971,7 @@ function viewSync(){
       <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
       <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
       <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
-      <div class="statline"><span>SW cache</span><b>tradeflow-v3-2-1</b></div>
+      <div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-cloud-backup-restore-m2-full-20260722-r1</b></div>
     </div>
   </div>`;
 }
@@ -2997,9 +3035,13 @@ function tick(){
 }
 function registerSW(){
   if(!('serviceWorker' in navigator)) return;
-  // only on http(s)
   if(location.protocol==='file:') return;
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+  navigator.serviceWorker.register('./sw.js?v=20260722-m2-full-r1').then(reg=>{
+    reg.update().catch(()=>{});
+  }).catch(err=>{
+    console.warn('Service worker registration failed', err);
+  });
 }
 
 /* ---------- boot ---------- */
@@ -3014,45 +3056,27 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/config.js"></script>
-<script src="js/app.js"></script>
-<script src="js/logger.js"></script>
-<script src="js/diagnostics.js"></script>
 
-<script src="js/registry.js"></script>
-<script src="js/storage.js"></script>
 
-<script src="js/dbservice.js"></script>
-<script src="js/bootpatch.js"></script>
 
-<script src="js/events.js"></script>
 
-<script src="js/db-events.js"></script>
 
-<script src="js/system-module.js"></script>
 
-<script src="js/health-module.js"></script>
 
-<script src="js/utils-module.js"></script>
 
-<script src="js/lifecycle-module.js"></script>
 
-<script src="js/notifications-module.js"></script>
 
-<script src="js/product-search-module.js"></script>
 
-<script src="js/product-search-adapter.js"></script>
 
-<script src="js/product-search-service.js"></script>
 
-<script src="js/product-search-controller.js"></script>
 
-<script src="js/product-search-events.js"></script>
 
-<script src="js/product-search-metrics.js"></script>
 
-<script src="js/product-search-facade.js"></script>
 
-<script src="js/backup-manager.js"></script>
+
+
+
+
+
 </body>
 </html>
