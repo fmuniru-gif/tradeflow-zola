@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone",
   "short_name": "TradeFlow Zola",
-  "description": "Sales, inventory, cash, accounts, local restore and Google Drive backup for Zola Electronics Zone.",
-  "start_url": "./index.html?build=20260722-m2-full-r1",
+  "description": "Offline-first sales, inventory, backup and authenticated live multi-device cloud sync for Zola Electronics Zone.",
+  "start_url": "./index.html?build=20260722-m3-live-sync-r1",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

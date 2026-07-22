@@ -1,32 +1,33 @@
-/* ZEZMS TradeFlow — Cloud Backup & Restore M2 */
-const CACHE = 'zezms-cloud-backup-restore-m2-full-20260722-r1';
+/* ZEZMS TradeFlow — Live Cloud Sync M3 */
+const CACHE = 'zezms-cloud-sync-m3-20260722-r1';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './js/app.js?v=20260722-m2-full-r1',
-  './js/backup-manager.js?v=20260722-m2-full-r1',
-  './js/bootpatch.js?v=20260722-m2-full-r1',
-  './js/config.js?v=20260722-m2-full-r1',
-  './js/db-events.js?v=20260722-m2-full-r1',
-  './js/dbservice.js?v=20260722-m2-full-r1',
-  './js/diagnostics.js?v=20260722-m2-full-r1',
-  './js/events.js?v=20260722-m2-full-r1',
-  './js/health-module.js?v=20260722-m2-full-r1',
-  './js/lifecycle-module.js?v=20260722-m2-full-r1',
-  './js/logger.js?v=20260722-m2-full-r1',
-  './js/notifications-module.js?v=20260722-m2-full-r1',
-  './js/product-search-adapter.js?v=20260722-m2-full-r1',
-  './js/product-search-controller.js?v=20260722-m2-full-r1',
-  './js/product-search-events.js?v=20260722-m2-full-r1',
-  './js/product-search-facade.js?v=20260722-m2-full-r1',
-  './js/product-search-metrics.js?v=20260722-m2-full-r1',
-  './js/product-search-module.js?v=20260722-m2-full-r1',
-  './js/product-search-service.js?v=20260722-m2-full-r1',
-  './js/registry.js?v=20260722-m2-full-r1',
-  './js/storage.js?v=20260722-m2-full-r1',
-  './js/system-module.js?v=20260722-m2-full-r1',
-  './js/utils-module.js?v=20260722-m2-full-r1'
+  './js/app.js?v=20260722-m3-live-sync-r1',
+  './js/backup-manager.js?v=20260722-m3-live-sync-r1',
+  './js/cloud-sync.js?v=20260722-m3-live-sync-r1',
+  './js/bootpatch.js?v=20260722-m3-live-sync-r1',
+  './js/config.js?v=20260722-m3-live-sync-r1',
+  './js/db-events.js?v=20260722-m3-live-sync-r1',
+  './js/dbservice.js?v=20260722-m3-live-sync-r1',
+  './js/diagnostics.js?v=20260722-m3-live-sync-r1',
+  './js/events.js?v=20260722-m3-live-sync-r1',
+  './js/health-module.js?v=20260722-m3-live-sync-r1',
+  './js/lifecycle-module.js?v=20260722-m3-live-sync-r1',
+  './js/logger.js?v=20260722-m3-live-sync-r1',
+  './js/notifications-module.js?v=20260722-m3-live-sync-r1',
+  './js/product-search-adapter.js?v=20260722-m3-live-sync-r1',
+  './js/product-search-controller.js?v=20260722-m3-live-sync-r1',
+  './js/product-search-events.js?v=20260722-m3-live-sync-r1',
+  './js/product-search-facade.js?v=20260722-m3-live-sync-r1',
+  './js/product-search-metrics.js?v=20260722-m3-live-sync-r1',
+  './js/product-search-module.js?v=20260722-m3-live-sync-r1',
+  './js/product-search-service.js?v=20260722-m3-live-sync-r1',
+  './js/registry.js?v=20260722-m3-live-sync-r1',
+  './js/storage.js?v=20260722-m3-live-sync-r1',
+  './js/system-module.js?v=20260722-m3-live-sync-r1',
+  './js/utils-module.js?v=20260722-m3-live-sync-r1'
 ];
 
 self.addEventListener('install', (event) => {

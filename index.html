@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Cloud Backup & Restore M2" />
-<meta name="zezms-build" content="20260722-m2-full-r1" />
-<title>Zola Electronics Zone · TradeFlow v3.2.2 · Backup M2</title>
+<meta name="zezms-build" content="20260722-m3-live-sync-r1" />
+<title>Zola Electronics Zone · TradeFlow v3.3.0 · Cloud Sync M3</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 <style>
@@ -151,7 +151,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.2.2 · Cloud Backup & Restore M2 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.3.0 · Live Cloud Sync M3 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -161,7 +161,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" />
     </div>
     <button class="btn" style="width:100%;margin-top:6px" onclick="doLogin()">Sign in</button>
-    <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">Data stays on this device until you Export / Import.</p>
+    <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">Offline-first: local saves continue without internet; configured devices sync when online.</p>
   </div>
 </div>
 
@@ -171,7 +171,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.2.2 · Backup M2 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.3.0 · Sync M3 · Backup M2 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -218,36 +218,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260722-m2-full-r1"></script>
-<script src="js/app.js?v=20260722-m2-full-r1"></script>
-<script src="js/logger.js?v=20260722-m2-full-r1"></script>
-<script src="js/diagnostics.js?v=20260722-m2-full-r1"></script>
-<script src="js/registry.js?v=20260722-m2-full-r1"></script>
-<script src="js/storage.js?v=20260722-m2-full-r1"></script>
-<script src="js/dbservice.js?v=20260722-m2-full-r1"></script>
-<script src="js/bootpatch.js?v=20260722-m2-full-r1"></script>
-<script src="js/events.js?v=20260722-m2-full-r1"></script>
-<script src="js/db-events.js?v=20260722-m2-full-r1"></script>
-<script src="js/system-module.js?v=20260722-m2-full-r1"></script>
-<script src="js/health-module.js?v=20260722-m2-full-r1"></script>
-<script src="js/utils-module.js?v=20260722-m2-full-r1"></script>
-<script src="js/lifecycle-module.js?v=20260722-m2-full-r1"></script>
-<script src="js/notifications-module.js?v=20260722-m2-full-r1"></script>
-<script src="js/product-search-module.js?v=20260722-m2-full-r1"></script>
-<script src="js/product-search-adapter.js?v=20260722-m2-full-r1"></script>
-<script src="js/product-search-service.js?v=20260722-m2-full-r1"></script>
-<script src="js/product-search-controller.js?v=20260722-m2-full-r1"></script>
-<script src="js/product-search-events.js?v=20260722-m2-full-r1"></script>
-<script src="js/product-search-metrics.js?v=20260722-m2-full-r1"></script>
-<script src="js/product-search-facade.js?v=20260722-m2-full-r1"></script>
-<script src="js/backup-manager.js?v=20260722-m2-full-r1"></script>
+<script src="js/config.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/app.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/logger.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/diagnostics.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/registry.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/storage.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/dbservice.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/bootpatch.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/events.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/db-events.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/system-module.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/health-module.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/utils-module.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/lifecycle-module.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/notifications-module.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/product-search-module.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/product-search-adapter.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/product-search-service.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/product-search-controller.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/product-search-events.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/product-search-metrics.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/product-search-facade.js?v=20260722-m3-live-sync-r1"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/cloud-sync.js?v=20260722-m3-live-sync-r1"></script>
+<script src="js/backup-manager.js?v=20260722-m3-live-sync-r1"></script>
 
 <script>
 /* =========================================================
    TradeFlow PWA v3.0 — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.2.2';
+const APP_VERSION = '3.3.0';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0;
 const BUSINESS = {
@@ -354,7 +356,7 @@ function loadDB(){
   try{
     const raw = ZEZMS.db.load(DB_KEY);
     if(!raw){ DB = defaultDB(); saveDB(); return; }
-    DB = JSON.parse(raw);
+    DB = (typeof raw === 'string') ? JSON.parse(raw) : raw;
     // migrations / guards
     if(!DB.cashBalances) DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
     CASH_TYPES.forEach(t=>{ if(DB.cashBalances[t]==null) DB.cashBalances[t]=0; });
@@ -389,6 +391,9 @@ function loadDB(){
 }
 function saveDB(){
   ZEZMS.db.save(DB_KEY, DB);
+  if(ZEZMS.cloudSync && typeof ZEZMS.cloudSync.onLocalSave === 'function'){
+    ZEZMS.cloudSync.onLocalSave('database-save');
+  }
 }
 
 /* ---------- KPI engine (exact VBA formulas) ---------- */
@@ -1941,6 +1946,7 @@ function viewSync(){
       <button class="btn" onclick="exportDB()">⬇ Export .tradeflow.json</button>
       <button class="btn ghost" style="margin-left:8px" onclick="exportDB(true)">⬇ Timestamped backup</button>
     </div>
+    ${ZEZMS.cloudSync && ZEZMS.cloudSync.syncCardHtml ? ZEZMS.cloudSync.syncCardHtml() : ''}
     ${ZEZMS.backup && ZEZMS.backup.syncCardHtml ? ZEZMS.backup.syncCardHtml() : ''}
     <div class="card">
       <h3>Import JSON backup</h3>
@@ -1955,13 +1961,15 @@ function viewSync(){
       <button class="btn ghost" onclick="nav('settings')">Open Settings → Excel import</button>
     </div>
     <div class="card">
-      <h3>Multi-device sharing</h3>
+      <h3>Live multi-device workflow</h3>
       <ol style="font-size:13px;line-height:1.55;color:var(--muted);padding-left:18px">
-        <li>Deploy one HTTPS URL (GitHub Pages / Netlify) — same app on every phone.</li>
-        <li>Each device keeps its own offline database.</li>
-        <li>End of day: Export on main till → Import on office laptop (or reverse).</li>
-        <li>Optional later: cloud sync (Supabase) — schema notes in Settings.</li>
+        <li>Configure one Supabase project and create one ZEZMS cloud account.</li>
+        <li>Upload the complete device as the initial cloud master copy.</li>
+        <li>Sign in with the same cloud account on every additional device.</li>
+        <li>Download the cloud master once, then enable Live Sync.</li>
+        <li>Saved transactions upload automatically; other online devices receive newer revisions.</li>
       </ol>
+      <p class="muted" style="font-size:11px">M3 prevents silent overwrites: simultaneous unsent changes create a conflict that must be resolved by an administrator.</p>
     </div>
     <div class="card">
       <h3>Device status</h3>
@@ -1971,7 +1979,7 @@ function viewSync(){
       <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
       <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
       <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
-      <div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-cloud-backup-restore-m2-full-20260722-r1</b></div>
+      <div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M3 ACTIVE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-cloud-sync-m3-20260722-r1</b></div>
     </div>
   </div>`;
 }
@@ -2090,6 +2098,8 @@ function viewSettings(){
       <div id="xlsxStatus" class="muted" style="font-size:12px;margin-top:8px;line-height:1.45"></div>
     </div>
   </div>
+
+  ${ZEZMS.cloudSync && ZEZMS.cloudSync.settingsHtml ? ZEZMS.cloudSync.settingsHtml() : ''}
 
   ${ZEZMS.backup && ZEZMS.backup.settingsHtml ? ZEZMS.backup.settingsHtml() : ''}
 
@@ -3037,7 +3047,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260722-m2-full-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260722-m3-live-sync-r1').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3047,6 +3057,9 @@ function registerSW(){
 /* ---------- boot ---------- */
 loadDB();
 populateLoginCashiers();
+if(ZEZMS.cloudSync && typeof ZEZMS.cloudSync.init === 'function'){
+  setTimeout(()=>ZEZMS.cloudSync.init(), 0);
+}
 tick(); setInterval(tick, 1000);
 registerSW();
 // Enter key on login
