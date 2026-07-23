@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260723-m3-operations-r1';
+  const BUILD = '20260723-product-id-search-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
