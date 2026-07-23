@@ -198,7 +198,7 @@
       'products', 'stockRows', 'sales', 'saleLines', 'debtors', 'creditors',
       'depositors', 'debtorsMonthly', 'creditorsMonthly', 'depositorsMonthly',
       'accountTxns', 'cashLog', 'expenses', 'kpiHistory', 'receipts',
-      'undoLog', 'backupHistory'
+      'undoLog', 'inventoryTxns', 'backupHistory'
     ];
     arrayKeys.forEach(function (key) {
       if (!Array.isArray(restored[key])) restored[key] = [];

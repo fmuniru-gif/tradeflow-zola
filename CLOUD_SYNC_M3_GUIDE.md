@@ -106,4 +106,4 @@ After deployment:
 
 The M3 service-worker cache is:
 
-`zezms-cloud-sync-m3-20260722-r1`
+`zezms-m3-operations-20260723-r1`
