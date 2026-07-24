@@ -1,10 +1,10 @@
-/* ZEZMS TradeFlow — M3 Operations Update
+/* ZEZMS TradeFlow — Operations Update retained in M4
    Receipt printing/reprinting, transaction reversal, account deletion,
    and KPI bar-chart dashboard. */
 (function () {
   'use strict';
 
-  const BUILD = '20260723-product-id-search-r1';
+  const BUILD = '20260724-transaction-merge-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
