@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260724-transaction-merge-r1" />
-<title>Zola Electronics Zone · TradeFlow v3.4.0 · Cloud Sync M4</title>
+<meta name="zezms-build" content="20260725-auto-month-rollover-r1" />
+<title>Zola Electronics Zone · TradeFlow v3.4.1 · Automatic Month Rollover</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 <style>
@@ -151,7 +151,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.0 · Transaction Merge M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.1 · Automatic Month Rollover · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -171,7 +171,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.0 · Sync M4 · Backup M2 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.1 · Auto Month · Sync M4 · Backup M2 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -185,8 +185,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <button data-view="cash" data-admin-only onclick="nav('cash')">💵 Cash Balances</button>
       <button data-view="expenses" data-admin-only onclick="nav('expenses')">🧾 Expenses</button>
       <button data-view="accounts" data-admin-only onclick="nav('accounts')">👥 Accounts</button>
-      <div class="sec" data-admin-only>Period</div>
-      <button data-view="monthend" data-admin-only id="navMonthEnd" onclick="nav('monthend')">📅 Start New Month</button>
       <button data-view="reports" data-admin-only onclick="nav('reports')">📈 Reports</button>
       <div class="sec">System</div>
       <button data-view="sync" data-admin-only onclick="nav('sync')">🔄 Sync / Backup</button>
@@ -218,38 +216,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/app.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/logger.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/diagnostics.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/registry.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/storage.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/dbservice.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/bootpatch.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/events.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/db-events.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/system-module.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/health-module.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/utils-module.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/lifecycle-module.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/notifications-module.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/product-search-module.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/product-search-adapter.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/product-search-service.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/product-search-controller.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/product-search-events.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/product-search-metrics.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/product-search-facade.js?v=20260724-transaction-merge-r1"></script>
+<script src="js/config.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/app.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/logger.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/diagnostics.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/registry.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/storage.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/dbservice.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/bootpatch.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/events.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/db-events.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/system-module.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/health-module.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/utils-module.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/lifecycle-module.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/notifications-module.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/product-search-module.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/product-search-adapter.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/product-search-service.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/product-search-controller.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/product-search-events.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/product-search-metrics.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/product-search-facade.js?v=20260725-auto-month-rollover-r1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260724-transaction-merge-r1"></script>
-<script src="js/backup-manager.js?v=20260724-transaction-merge-r1"></script>
+<script src="js/cloud-sync.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/backup-manager.js?v=20260725-auto-month-rollover-r1"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.0 — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.1 — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.0';
+const APP_VERSION = '3.4.1';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0;
 const BUSINESS = {
@@ -341,6 +339,7 @@ function defaultDB(){
     cashLog: [],
     expenses: [],
     kpiHistory: [],
+    monthRollovers: [],
     receipts: [],
     undoLog: [],
     inventoryTxns: [],
@@ -363,10 +362,11 @@ function loadDB(){
     const raw = ZEZMS.db.load(DB_KEY);
     if(!raw){ DB = defaultDB(); saveDB(); return; }
     DB = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+    DB.version = APP_VERSION;
     // migrations / guards
     if(!DB.cashBalances) DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
     CASH_TYPES.forEach(t=>{ if(DB.cashBalances[t]==null) DB.cashBalances[t]=0; });
-    ['products','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','receipts','undoLog','inventoryTxns','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
+    ['products','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','monthRollovers','receipts','undoLog','inventoryTxns','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
     DB.backupSettings = Object.assign({
       autoBackupEnabled:false,
       schedule:'manual',
@@ -626,7 +626,7 @@ function promptPIN(title, expected, onOk){
 const TITLES = {
   dashboard:'Dashboard KPIs', pos:'Sale Out', stockin:'Stock In', products:'Products',
   stock:'Stock Balance', cash:'Cash Balances', expenses:'Expenses', accounts:'Accounts',
-  receipts:'Receipt Register', monthend:'Start New Month', reports:'Reports',
+  receipts:'Receipt Register', reports:'Reports',
   sync:'Sync / Backup', settings:'Settings'
 };
 const CASHIER2_ALLOWED = new Set(['pos','receipts']);
@@ -636,7 +636,6 @@ function nav(view){
     const msgs = {
       dashboard: 'Only admin can view KPI dashboard.',
       stockin: 'Only ADMIN can perform Stock In.',
-      monthend: 'Only admin can start a New Month.',
       expenses: 'Only admin can access Expenses.',
       accounts: 'Only admin can access Accounts.',
       cash: 'Only admin can access Cash Balances.',
@@ -694,7 +693,6 @@ function render(){
     case 'expenses': root.innerHTML = viewExpenses(); break;
     case 'accounts': root.innerHTML = viewAccounts(); break;
     case 'receipts': root.innerHTML = viewReceipts(); break;
-    case 'monthend': root.innerHTML = viewMonthEnd(); break;
     case 'reports': root.innerHTML = viewReports(); break;
     case 'sync': root.innerHTML = viewSync(); break;
     case 'settings': root.innerHTML = viewSettings(); break;
@@ -1944,100 +1942,10 @@ function viewReceipts(){
   </div>`;
 }
 
-/* ===== MONTH END ===== */
-function viewMonthEnd(){
-  if(session.role!=='ADMIN' && !session.adminMode){
-    return `<div class="card"><div class="empty">Only admin can start a New Month.</div></div>`;
-  }
-  const latest = getLatestMonth();
-  let ny=latest.year, nm=latest.month+1;
-  if(nm>12){ nm=1; ny++; }
-  return `<div class="card">
-    <h3>Start New Month (rollover)</h3>
-    <p>Current working period: <b>${monthName(DB.selectedMonth)} ${DB.selectedYear}</b></p>
-    <p>Latest stock period: <b>${monthName(latest.month)} ${latest.year}</b></p>
-    <p>Will open: <b>${monthName(nm)} ${ny}</b></p>
-    <ul class="muted" style="font-size:13px;line-height:1.6">
-      <li>Snapshot Debtors / Creditors / Depositors → monthly sheets</li>
-      <li>Write KPI history row for closing month</li>
-      <li>Carry remaining R STOCK into next month as QTY IN (same U COST batches)</li>
-      <li>Switch selected period to the new month</li>
-    </ul>
-    <div class="row">
-      <div class="field" style="margin:0"><label>New year</label><input id="meYear" type="number" value="${ny}" /></div>
-      <div class="field" style="margin:0"><label>New month</label><input id="meMonth" type="number" min="1" max="12" value="${nm}" /></div>
-    </div>
-    <button class="btn warn" style="margin-top:12px" onclick="confirmMonthEnd()">Run Start New Month</button>
-    <p class="muted" style="font-size:12px;margin-top:10px">Tip: Export a backup from Sync first (like RolloverBackup_yyyymmdd_hhmmss).</p>
-  </div>`;
-}
-function confirmMonthEnd(){
-  promptPIN('Admin PIN required', getAdminPIN(), ()=> startNewMonth());
-}
-function snapshotAccounts(kind, monthlyKey, year, month){
-  DB[kind].forEach(a=>{
-    DB[monthlyKey].push({
-      id: a.id,
-      name: a.name,
-      phone: a.contact||'',
-      snapYear: year,
-      snapMonth: month,
-      bal: Number(a.balance)||0,
-      closingBalance: Number(a.balance)||0
-    });
-  });
-}
-function startNewMonth(){
-  const oldY = DB.selectedYear, oldM = DB.selectedMonth;
-  const year = Number($('meYear').value);
-  const month = Number($('meMonth').value);
-  if(!year || month<1 || month>12){ toast('Invalid period','err'); return; }
-  // prevent dup carry if rows already exist
-  const exists = DB.stockRows.some(r=>r.year===year && r.month===month);
-  if(exists && !confirm('Stock rows already exist for that month. Continue and add carry-over rows?')) return;
-
-  // snapshots for closing month
-  snapshotAccounts('debtors','debtorsMonthly', oldY, oldM);
-  snapshotAccounts('creditors','creditorsMonthly', oldY, oldM);
-  snapshotAccounts('depositors','depositorsMonthly', oldY, oldM);
-
-  // KPI history
-  DB.kpiHistory.push({
-    year: oldY, month: oldM,
-    qtyIn: KPI_QtyIn(), qtyOut: KPI_QtyOut(), qtyRem: KPI_QtyRem(),
-    gross: GetGrossProfit_CurrentMonth(),
-    net: KPI_NetProfit(),
-    liquidCash: KPI_LiquidCash(),
-    debt: KPI_TotalOutstandingDebt(),
-    creditors: KPI_TotalCreditors(),
-    deposits: KPI_TotalDeposits()
-  });
-
-  // CarryOverStock: R STOCK > 0 → new month qtyIn/rStock
-  const carry = DB.stockRows.filter(r=>r.year===oldY && r.month===oldM && (Number(r.rStock)||0)>0);
-  carry.forEach(r=>{
-    DB.stockRows.push({
-      id: idStamp('STKIN-'),
-      productId: r.productId,
-      productName: r.productName,
-      category: r.category,
-      year, month,
-      qtyIn: Number(r.rStock)||0,
-      rStock: Number(r.rStock)||0,
-      uCost: Number(r.uCost)||0,
-      qtyOut: 0,
-      uPrice: Number(r.uPrice)||0,
-      disc: 0, tSales: 0, profit: 0, aPrice: 0,
-      carriedFrom: r.id
-    });
-  });
-
-  DB.selectedYear = year;
-  DB.selectedMonth = month;
-  saveDB();
-  toast(`New month opened: ${monthName(month)} ${year} · carried ${carry.length} batches`);
-  nav('dashboard');
-}
+/* ===== AUTOMATIC MONTH ROLLOVER =====
+   The rollover engine lives in js/auto-month-rollover.js.
+   It runs at startup, login, app resume and before stock/sale transactions.
+*/
 
 /* ===== REPORTS ===== */
 function viewReports(){
@@ -2049,7 +1957,7 @@ function viewReports(){
     <td class="mono right">${fmt(k.gross)}</td>
     <td class="mono right">${fmt(k.net)}</td>
     <td class="mono right">${fmt(k.liquidCash)}</td>
-  </tr>`).join('') || `<tr><td colspan="7" class="empty">No closed months yet — run Start New Month to archive KPIs</td></tr>`;
+  </tr>`).join('') || `<tr><td colspan="7" class="empty">No closed months yet — KPI history will be archived automatically when the calendar month changes</td></tr>`;
   const top = {};
   DB.sales.filter(s=>s.year===DB.selectedYear && s.month===DB.selectedMonth).forEach(s=>{
     (s.lines||[]).forEach(l=>{ top[l.product]=(top[l.product]||0)+l.amount; });
@@ -2114,9 +2022,9 @@ function viewSync(){
         <li>Upload the complete device as the initial cloud master copy.</li>
         <li>Sign in with the same cloud account on every additional device.</li>
         <li>Download the cloud master once, then enable Live Sync.</li>
-        <li>Saved transactions upload automatically; other online devices receive newer revisions.</li>
+        <li>Saved transactions upload automatically; other online devices receive and merge them.</li>
       </ol>
-      <p class="muted" style="font-size:11px">M3 prevents silent overwrites: simultaneous unsent changes create a conflict that must be resolved by an administrator.</p>
+      <p class="muted" style="font-size:11px">M4 merges independent transactions and rejects only operations that would overdraw shared stock or cash.</p>
     </div>
     <div class="card">
       <h3>Device status</h3>
@@ -2126,7 +2034,7 @@ function viewSync(){
       <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
       <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
       <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
-      <div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-m4-transaction-merge-20260724-r1</b></div>
+      <div class="statline"><span>Month rollover</span><b class="badge ok">AUTOMATIC</b></div><div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-auto-month-rollover-20260725-r1</b></div>
     </div>
   </div>`;
 }
@@ -3194,7 +3102,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260724-transaction-merge-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260725-auto-month-rollover-r1').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3216,7 +3124,8 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260724-transaction-merge-r1"></script>
+<script src="js/operations-update.js?v=20260725-auto-month-rollover-r1"></script>
+<script src="js/auto-month-rollover.js?v=20260725-auto-month-rollover-r1"></script>
 
 
 

@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone",
   "short_name": "TradeFlow Zola",
-  "description": "Offline-first sales, inventory, dual product-name and product-ID search, receipt reprinting, administrator transaction reversal, KPI charts, backup and authenticated transaction-level multi-device cloud merging for Zola Electronics Zone.",
-  "start_url": "./index.html?build=20260724-transaction-merge-r1",
+  "description": "Offline-first sales, inventory, automatic calendar-month stock rollover, receipt reprinting, administrator transaction reversal, KPI charts, backup and authenticated transaction-level multi-device cloud merging for Zola Electronics Zone.",
+  "start_url": "./index.html?build=20260725-auto-month-rollover-r1",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

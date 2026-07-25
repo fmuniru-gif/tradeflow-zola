@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260724-transaction-merge-r1';
+  const BUILD = '20260725-auto-month-rollover-r1';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -17,7 +17,7 @@
     'products', 'stockRows', 'debtors', 'creditors', 'depositors',
     'sales', 'receipts', 'saleLines', 'accountTxns', 'cashLog',
     'expenses', 'inventoryTxns', 'undoLog', 'debtorsMonthly',
-    'creditorsMonthly', 'depositorsMonthly', 'kpiHistory'
+    'creditorsMonthly', 'depositorsMonthly', 'kpiHistory', 'monthRollovers'
   ];
 
   const ADDITIVE_FIELDS = {
@@ -305,6 +305,8 @@
     const insert = function (collection) {
       return patches.find(function (patch) { return patch.action === 'insert' && patch.collection === collection; });
     };
+    const rollover = insert('monthRollovers');
+    if (rollover) return 'MONTH_ROLLOVER';
     const inventory = insert('inventoryTxns');
     if (inventory && inventory.value && inventory.value.type) return String(inventory.value.type).toUpperCase();
     if (insert('sales') || insert('receipts')) return 'SALE_OUT';
@@ -328,8 +330,14 @@
     if (!patches.length) return null;
     state.deviceSeq = (Number(state.deviceSeq) || 0) + 1;
     persistState();
+    const rolloverPatch = patches.find(function (patch) {
+      return patch.action === 'insert' && patch.collection === 'monthRollovers';
+    });
+    const operationId = rolloverPatch && rolloverPatch.key
+      ? 'AUTO-' + String(rolloverPatch.key)
+      : makeUUID();
     return {
-      opId: makeUUID(),
+      opId: operationId,
       deviceId: state.deviceId,
       deviceSeq: state.deviceSeq,
       createdAt: new Date().toISOString(),
@@ -663,6 +671,18 @@
     return rows[0] || null;
   }
 
+  async function rolloverAcceptedByAnotherDevice(operation) {
+    if (!operation || operation.kind !== 'MONTH_ROLLOVER' || !operation.opId) return false;
+    const response = await client
+      .from(OPERATIONS_TABLE)
+      .select('device_id')
+      .eq('owner_id', session.user.id)
+      .eq('op_id', operation.opId)
+      .maybeSingle();
+    if (response.error) throw response.error;
+    return !!(response.data && response.data.device_id && response.data.device_id !== state.deviceId);
+  }
+
   async function flushQueue(showNotice) {
     if (pushInFlight) return false;
     requireClient();
@@ -684,6 +704,22 @@
         const operation = queue[0];
         try {
           const result = await pushOne(operation);
+          const rolloverOwnedElsewhere = await rolloverAcceptedByAnotherDevice(operation);
+          if (rolloverOwnedElsewhere) {
+            // Another device completed the same deterministic monthly rollover first.
+            // Remove this device's duplicate local rollover, then download and apply
+            // the accepted cloud version so account/KPI snapshots have one authority.
+            applyInverseOperation(operation);
+            queue.shift();
+            persistQueue();
+            await pullNow(true);
+            setState({
+              lastPushAt: (result && result.created_at) || new Date().toISOString(),
+              status: state.liveSyncEnabled ? 'live' : 'ready',
+              lastError: ''
+            }, false);
+            continue;
+          }
           if (result && result.server_seq) state.cursor = Math.max(Number(state.cursor) || 0, Number(result.server_seq) || 0);
           queue.shift();
           persistQueue();
