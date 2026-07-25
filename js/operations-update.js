@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260725-auto-month-rollover-r1';
+  const BUILD = '20260725-invoice-waybill-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

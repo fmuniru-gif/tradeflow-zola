@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260725-auto-month-rollover-r1';
+  const BUILD = '20260725-invoice-waybill-r1';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -15,7 +15,7 @@
 
   const COLLECTIONS = [
     'products', 'stockRows', 'debtors', 'creditors', 'depositors',
-    'sales', 'receipts', 'saleLines', 'accountTxns', 'cashLog',
+    'sales', 'receipts', 'invoices', 'waybills', 'saleLines', 'accountTxns', 'cashLog',
     'expenses', 'inventoryTxns', 'undoLog', 'debtorsMonthly',
     'creditorsMonthly', 'depositorsMonthly', 'kpiHistory', 'monthRollovers'
   ];
@@ -309,6 +309,8 @@
     if (rollover) return 'MONTH_ROLLOVER';
     const inventory = insert('inventoryTxns');
     if (inventory && inventory.value && inventory.value.type) return String(inventory.value.type).toUpperCase();
+    if (insert('invoices')) return 'INVOICE';
+    if (insert('waybills')) return 'WAYBILL';
     if (insert('sales') || insert('receipts')) return 'SALE_OUT';
     const account = insert('accountTxns');
     if (account && account.value) return 'ACCOUNT_' + String(account.value.txnType || 'CHANGE').toUpperCase().replace(/\s+/g, '_');
