@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260726-invoice-vat-r1';
+  const BUILD = '20260726-mobile-responsive-r1';
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;

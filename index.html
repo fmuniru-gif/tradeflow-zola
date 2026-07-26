@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260726-invoice-vat-r1" />
-<title>Zola Electronics Zone · TradeFlow v3.4.4 · Invoice VAT</title>
+<meta name="zezms-build" content="20260726-mobile-responsive-r1" />
+<title>Zola Electronics Zone · TradeFlow v3.4.5 · Mobile Responsive</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 <style>
@@ -141,6 +141,84 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .pos-totals .statline b{font-size:15px}
 .credit-row td{background:rgba(255,199,206,.18)!important;color:#fca5a5}
 
+
+/* ---------- Responsive mobile shell v3.4.5 ---------- */
+body.menu-open{overflow:hidden;overscroll-behavior:none}
+.brand{position:relative}
+.sidebar-close{display:none;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;background:#1e293b;color:#fff;font-size:26px;line-height:1}
+
+@media(max-width:900px){
+  .app{min-height:100dvh;width:100%;overflow-x:hidden}
+  .sidebar{
+    position:fixed;inset:0 auto 0 0;top:0;width:min(86vw,320px);max-width:320px;height:100dvh;
+    transform:translateX(-104%);z-index:60;box-shadow:none;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+    transition:transform .22s ease,box-shadow .22s ease;will-change:transform;
+  }
+  .sidebar.open{transform:translateX(0);box-shadow:18px 0 42px rgba(0,0,0,.48)}
+  .sidebar-close{display:inline-flex;position:absolute;right:10px;top:calc(8px + env(safe-area-inset-top,0px));z-index:2}
+  .brand{padding-top:16px;padding-right:54px;min-height:76px}
+  .nav button{min-height:46px;padding:12px;font-size:14px}
+  .userbox{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .overlay{z-index:55;background:rgba(2,6,23,.68);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+  .overlay.show{display:block}
+  .main{width:100%;max-width:100vw;min-height:100dvh}
+  .topbar{
+    min-height:58px;padding:calc(7px + env(safe-area-inset-top,0px)) 10px 7px;
+    gap:8px;z-index:45
+  }
+  .burger{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;font-size:21px}
+  .topbar h2{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .topbar>.btn.sm{width:42px;height:42px;min-height:42px;padding:0;flex:0 0 42px}
+  .content{padding:12px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));overflow-x:hidden}
+  .sale-layout{grid-template-columns:minmax(0,1fr)}
+  .g2,.g3,.g4,.g6{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{padding:12px}
+  .btn{min-height:44px}
+  .btn.sm{min-height:38px}
+  .field input,.field select,.field textarea{min-height:44px;font-size:16px}
+  .table-wrap{max-width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-inline:contain}
+  .table-wrap table{min-width:640px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:3px;scrollbar-width:thin}
+  .tabs button{flex:0 0 auto;min-height:42px}
+  .suggest{max-height:min(42dvh,320px);-webkit-overflow-scrolling:touch}
+  .suggest div{padding:11px 12px;min-height:44px}
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal{width:100%;max-width:none;max-height:92dvh;border-radius:18px 18px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+  .toast-wrap{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  .toast{width:100%}
+}
+
+@media(max-width:560px){
+  .g2,.g3,.g4,.g6,.g1m{grid-template-columns:minmax(0,1fr)}
+  .topbar .pill{display:none}
+  .topbar h2{font-size:15px}
+  .content{padding:10px;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+  .card{border-radius:12px;padding:11px}
+  .row{gap:7px}
+  .row>.btn{flex:1 1 auto}
+  .statline{gap:12px;align-items:flex-start}
+  .statline span{min-width:0}
+  .statline b{text-align:right;overflow-wrap:anywhere}
+  .pos-totals .statline b{font-size:14px}
+  .login-screen{align-items:flex-start;overflow:auto;padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px))}
+  .login-card{padding:22px 16px;margin:auto 0}
+  .receipt-paper{padding:12px;overflow-x:auto}
+  .kpi{min-height:84px}
+  .kpi .val{font-size:20px}
+}
+
+@media(max-width:380px){
+  .sidebar{width:92vw}
+  .content{padding-left:8px;padding-right:8px}
+  .topbar{padding-left:8px;padding-right:8px}
+  .topbar h2{font-size:14px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .sidebar,.toast,.btn{transition:none!important;animation:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -151,7 +229,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.4 · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.5 · Mobile Responsive · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -168,10 +246,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <div class="overlay" id="sideOverlay" onclick="closeSide()"></div>
 
 <div class="app" id="appShell" style="display:none">
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
     <div class="brand">
+      <button type="button" class="sidebar-close" onclick="closeSide()" aria-label="Close menu">×</button>
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.4 · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.5 · Mobile Responsive · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -201,7 +280,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
   <div class="main">
     <div class="topbar">
-      <button class="burger" onclick="toggleSide()" aria-label="Menu">☰</button>
+      <button type="button" class="burger" onclick="toggleSide()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button>
       <h2 id="viewTitle">Dashboard KPIs</h2>
       <span class="pill mono" id="clockPill">—</span>
       <button class="btn sm ghost" onclick="refreshAll()" title="Refresh">↻</button>
@@ -216,38 +295,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/app.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/logger.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/diagnostics.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/registry.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/storage.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/dbservice.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/bootpatch.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/events.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/db-events.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/system-module.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/health-module.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/utils-module.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/lifecycle-module.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/notifications-module.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/product-search-module.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/product-search-adapter.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/product-search-service.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/product-search-controller.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/product-search-events.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/product-search-metrics.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/product-search-facade.js?v=20260726-invoice-vat-r1"></script>
+<script src="js/config.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/app.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/logger.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/diagnostics.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/registry.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/storage.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/dbservice.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/bootpatch.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/events.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/db-events.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/system-module.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/health-module.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/utils-module.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/lifecycle-module.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/notifications-module.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/product-search-module.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/product-search-adapter.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/product-search-service.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/product-search-controller.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/product-search-events.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/product-search-metrics.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/product-search-facade.js?v=20260726-mobile-responsive-r1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/backup-manager.js?v=20260726-invoice-vat-r1"></script>
+<script src="js/cloud-sync.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/backup-manager.js?v=20260726-mobile-responsive-r1"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.4 — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.5 — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.4';
+const APP_VERSION = '3.4.5';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -678,13 +757,50 @@ function nav(view){
   closeSide();
   render();
 }
-function toggleSide(){
-  $('sidebar').classList.toggle('open');
-  $('sideOverlay').classList.toggle('show');
+const MOBILE_MENU_MEDIA = window.matchMedia('(max-width: 900px)');
+function setSideOpen(open){
+  const sidebar = $('sidebar');
+  const overlay = $('sideOverlay');
+  const burger = document.querySelector('.burger');
+  if(!sidebar || !overlay) return;
+  const mobile = MOBILE_MENU_MEDIA.matches;
+  const nextOpen = mobile && !!open;
+  sidebar.classList.toggle('open', nextOpen);
+  overlay.classList.toggle('show', nextOpen);
+  document.body.classList.toggle('menu-open', nextOpen);
+  sidebar.setAttribute('aria-hidden', mobile && !nextOpen ? 'true' : 'false');
+  if(burger){
+    burger.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+    burger.setAttribute('aria-label', nextOpen ? 'Close menu' : 'Open menu');
+  }
+  if(nextOpen){
+    setTimeout(()=>{
+      const closeBtn = sidebar.querySelector('.sidebar-close');
+      if(closeBtn) closeBtn.focus({preventScroll:true});
+    }, 0);
+  }
 }
-function closeSide(){
-  $('sidebar').classList.remove('open');
-  $('sideOverlay').classList.remove('show');
+function toggleSide(){
+  const sidebar = $('sidebar');
+  setSideOpen(!(sidebar && sidebar.classList.contains('open')));
+}
+function closeSide(){ setSideOpen(false); }
+function syncResponsiveShell(){
+  const sidebar = $('sidebar');
+  if(!sidebar) return;
+  if(!MOBILE_MENU_MEDIA.matches){
+    sidebar.classList.remove('open');
+    $('sideOverlay').classList.remove('show');
+    document.body.classList.remove('menu-open');
+    sidebar.setAttribute('aria-hidden','false');
+    const burger = document.querySelector('.burger');
+    if(burger){
+      burger.setAttribute('aria-expanded','false');
+      burger.setAttribute('aria-label','Open menu');
+    }
+  }else{
+    sidebar.setAttribute('aria-hidden', sidebar.classList.contains('open') ? 'false' : 'true');
+  }
 }
 function updatePeriodUI(){
   $('uiPeriod').textContent = monthName(DB.selectedMonth) + ' ' + DB.selectedYear;
@@ -3139,7 +3255,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260726-invoice-vat-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260726-mobile-responsive-r1').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3156,14 +3272,42 @@ tick(); setInterval(tick, 1000);
 registerSW();
 // Enter key on login
 document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape' && $('sidebar') && $('sidebar').classList.contains('open')){
+    closeSide();
+    return;
+  }
   if(e.key==='Enter' && $('loginScreen').style.display!=='none'){
     doLogin();
   }
 });
+window.addEventListener('resize', syncResponsiveShell, {passive:true});
+window.addEventListener('orientationchange', ()=>setTimeout(syncResponsiveShell, 80), {passive:true});
+if(MOBILE_MENU_MEDIA.addEventListener){ MOBILE_MENU_MEDIA.addEventListener('change', syncResponsiveShell); }
+else if(MOBILE_MENU_MEDIA.addListener){ MOBILE_MENU_MEDIA.addListener(syncResponsiveShell); }
+const mobileNav = $('mainNav');
+if(mobileNav){
+  mobileNav.addEventListener('click', (event)=>{
+    if(MOBILE_MENU_MEDIA.matches && event.target.closest('button')) setTimeout(closeSide, 0);
+  });
+}
+let mobileSwipeStartX = null;
+const mobileSidebar = $('sidebar');
+if(mobileSidebar){
+  mobileSidebar.addEventListener('touchstart', (event)=>{
+    mobileSwipeStartX = event.touches && event.touches[0] ? event.touches[0].clientX : null;
+  }, {passive:true});
+  mobileSidebar.addEventListener('touchend', (event)=>{
+    if(mobileSwipeStartX == null) return;
+    const endX = event.changedTouches && event.changedTouches[0] ? event.changedTouches[0].clientX : mobileSwipeStartX;
+    if(endX - mobileSwipeStartX < -55) closeSide();
+    mobileSwipeStartX = null;
+  }, {passive:true});
+}
+syncResponsiveShell();
 </script>
-<script src="js/operations-update.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/auto-month-rollover.js?v=20260726-invoice-vat-r1"></script>
-<script src="js/invoice-waybill.js?v=20260726-invoice-vat-r1"></script>
+<script src="js/operations-update.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/auto-month-rollover.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/invoice-waybill.js?v=20260726-mobile-responsive-r1"></script>
 
 
 
