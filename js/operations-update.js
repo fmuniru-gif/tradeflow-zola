@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260726-mobile-responsive-r2';
+  const BUILD = '20260726-compact-mobile-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
