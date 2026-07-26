@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260725-invoice-waybill-r1" />
-<title>Zola Electronics Zone · TradeFlow v3.4.2 · Invoice & Waybill</title>
+<meta name="zezms-build" content="20260726-vat-commercial-eval-r1" />
+<title>Zola Electronics Zone · TradeFlow v3.4.3 · VAT Ready</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 <style>
@@ -151,7 +151,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.2 · Invoice & Waybill · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.3 · VAT Ready · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -171,7 +171,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.2 · Invoice & Waybill · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.3 · VAT Ready · Invoice & Waybill · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -216,40 +216,40 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/app.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/logger.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/diagnostics.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/registry.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/storage.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/dbservice.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/bootpatch.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/events.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/db-events.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/system-module.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/health-module.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/utils-module.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/lifecycle-module.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/notifications-module.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/product-search-module.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/product-search-adapter.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/product-search-service.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/product-search-controller.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/product-search-events.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/product-search-metrics.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/product-search-facade.js?v=20260725-invoice-waybill-r1"></script>
+<script src="js/config.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/app.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/logger.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/diagnostics.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/registry.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/storage.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/dbservice.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/bootpatch.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/events.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/db-events.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/system-module.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/health-module.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/utils-module.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/lifecycle-module.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/notifications-module.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/product-search-module.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/product-search-adapter.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/product-search-service.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/product-search-controller.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/product-search-events.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/product-search-metrics.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/product-search-facade.js?v=20260726-vat-commercial-eval-r1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/backup-manager.js?v=20260725-invoice-waybill-r1"></script>
+<script src="js/cloud-sync.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/backup-manager.js?v=20260726-vat-commercial-eval-r1"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.2 — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.3 — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.2';
+const APP_VERSION = '3.4.3';
 const DB_KEY = 'tradeflow_v321_zola';
-const VAT_RATE = 0;
+const VAT_RATE = 0; // Default invoice VAT rate. Sale Out uses an editable per-transaction percentage.
 const BUSINESS = {
   name: 'Zola Electronics Zone',
   address: 'Tamale, Northern Region, Ghana',
@@ -1095,7 +1095,8 @@ function viewPOS(){
   }).join('') || `<tr><td colspan="6" class="empty">No items added.</td></tr>`;
 
   const sub = cartSubtotal();
-  const vat = round2(sub * VAT_RATE);
+  const vatPercent = getCartVatPercent();
+  const vat = calculateCartVat(sub, vatPercent);
   const grand = round2(sub + vat);
   const paid = cart._paid != null ? cart._paid : 0;
   const balDisplay = round2(paid - grand);
@@ -1184,7 +1185,12 @@ function viewPOS(){
       <div class="card pos-totals">
         <h3>Payment summary</h3>
         <div class="statline"><span>Subtotal</span><b class="mono" id="posSubtotal">${fmtN(sub)}</b></div>
-        <div class="statline"><span>VAT (${VAT_RATE*100}%)</span><b class="mono" id="posVat">${fmtN(vat)}</b></div>
+        <div class="field" style="margin-top:10px"><label>VAT percentage (%)</label>
+          <input id="posVatPercent" type="number" min="0" max="100" step="0.01" value="${vatPercent}"
+            oninput="onVatPercentChange()" inputmode="decimal" />
+          <p class="muted" style="font-size:11px;margin:5px 0 0">Leave at 0 when VAT is not applicable. Enter the percentage for this sale when required.</p>
+        </div>
+        <div class="statline"><span id="posVatLabel">VAT (${fmtN(vatPercent)}%)</span><b class="mono" id="posVat">${fmtN(vat)}</b></div>
         <div class="statline"><span>Grand total</span><b class="mono" id="posGrand">${fmtN(grand)}</b></div>
         <div class="field" style="margin-top:10px"><label>Amount paid</label>
           <input id="posAmountPaid" type="number" min="0" step="0.01" value="${paid}"
@@ -1210,16 +1216,36 @@ function round2(n){ return Math.round((Number(n)||0)*100)/100; }
 function cartSubtotal(){
   return round2(cart.reduce((s,c)=> s + (c.qty*c.uPrice - (c.disc||0)), 0));
 }
+function normalizeVatPercent(value){
+  const numeric = Number(value);
+  if(!Number.isFinite(numeric)) return 0;
+  return round2(Math.max(0, Math.min(100, numeric)));
+}
+function getCartVatPercent(){
+  return normalizeVatPercent(cart._vatPct == null ? 0 : cart._vatPct);
+}
+function calculateCartVat(subtotal, vatPercent){
+  return round2((Number(subtotal)||0) * normalizeVatPercent(vatPercent) / 100);
+}
 function refreshSaleTotals(){
   const sub = cartSubtotal();
-  const vat = round2(sub * VAT_RATE);
+  const vatPercent = normalizeVatPercent(($('posVatPercent')&&$('posVatPercent').value) ?? cart._vatPct ?? 0);
+  cart._vatPct = vatPercent;
+  const vat = calculateCartVat(sub, vatPercent);
   const grand = round2(sub + vat);
   const paid = Number(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid || 0);
   cart._paid = paid;
   if($('posSubtotal')) $('posSubtotal').textContent = fmtN(sub);
+  if($('posVatLabel')) $('posVatLabel').textContent = 'VAT (' + fmtN(vatPercent) + '%)';
   if($('posVat')) $('posVat').textContent = fmtN(vat);
   if($('posGrand')) $('posGrand').textContent = fmtN(grand);
   if($('posBalance')) $('posBalance').textContent = fmtN(round2(paid - grand));
+}
+function onVatPercentChange(){
+  const input = $('posVatPercent');
+  cart._vatPct = normalizeVatPercent(input ? input.value : 0);
+  if(input && Number(input.value) !== cart._vatPct) input.value = cart._vatPct;
+  refreshSaleTotals();
 }
 function onAmountPaidChange(){
   cart._paid = Number($('posAmountPaid').value)||0;
@@ -1459,7 +1485,7 @@ function getOrCreateDebtorID(debtorName, contact){
 
 function resetSaleOutForm(){
   cart = [];
-  cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = 0;
+  cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = 0; cart._vatPct = 0;
   priceAdjUnlocked = false;
 }
 
@@ -1493,7 +1519,9 @@ function printReceiptSale(){
   if(!tel){ toast('Customer Tel required.', 'err'); return; }
 
   const subtotal = cartSubtotal();
-  const totalWithVAT = round2(subtotal + subtotal * VAT_RATE);
+  const vatRate = getCartVatPercent();
+  const vatAmount = calculateCartVat(subtotal, vatRate);
+  const totalWithVAT = round2(subtotal + vatAmount);
   const amountPaid = Number(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid || 0);
   const outstanding = round2(totalWithVAT - amountPaid); // for register/debtor
   const receiptBal = round2(amountPaid - totalWithVAT); // for printed receipt
@@ -1537,6 +1565,9 @@ function printReceiptSale(){
     customerName: customer,
     contact: tel,
     location,
+    subtotal,
+    vatRate,
+    vatAmount,
     totalAmount: totalWithVAT,
     amountPaid,
     balance: outstanding > 0 ? outstanding : 0,
@@ -1553,6 +1584,9 @@ function printReceiptSale(){
     customer,
     contact: tel,
     location,
+    subtotal,
+    vatRate,
+    vatAmount,
     total: totalWithVAT,
     paid: amountPaid,
     balance: outstanding,
@@ -1574,6 +1608,7 @@ function printReceiptSale(){
   saveDB();
   const saleSnap = {
     receiptNo, customer, location, contact: tel,
+    subtotal, vatRate, vatAmount,
     total: totalWithVAT, paid: amountPaid,
     balance: receiptBal, outstanding,
     cashier: session.cashier, cashierTel: session.tel,
@@ -1622,8 +1657,8 @@ function showReceiptModal(sale){
         <tbody style="color:#111">${lines}</tbody>
       </table>
       <div style="margin-top:10px;text-align:right;color:#111">
-        <div>Subtotal: ${fmtN(sale.total)}</div>
-        <div>VAT: ${fmtN(0)}</div>
+        <div>Subtotal: ${fmtN(sale.subtotal != null ? sale.subtotal : ((sale.lines||[]).reduce((sum,line)=>sum+(Number(line.total)||0),0)))}</div>
+        <div>VAT (${fmtN(sale.vatRate||0)}%): ${fmtN(sale.vatAmount||0)}</div>
         <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
         <div style="margin-top:6px">Amount Paid: ${fmtN(sale.paid)}</div>
         <div>Balance: ${fmtN(sale.balance)}</div>
@@ -2036,7 +2071,7 @@ function viewSync(){
       <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
       <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
       <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
-      <div class="statline"><span>Month rollover</span><b class="badge ok">AUTOMATIC</b></div><div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-invoice-waybill-20260725-r1</b></div>
+      <div class="statline"><span>Sale Out VAT entry</span><b class="badge ok">EDITABLE</b></div><div class="statline"><span>Month rollover</span><b class="badge ok">AUTOMATIC</b></div><div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-vat-commercial-eval-20260726-r1</b></div>
     </div>
   </div>`;
 }
@@ -3104,7 +3139,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260725-invoice-waybill-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260726-vat-commercial-eval-r1').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3126,9 +3161,9 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/auto-month-rollover.js?v=20260725-invoice-waybill-r1"></script>
-<script src="js/invoice-waybill.js?v=20260725-invoice-waybill-r1"></script>
+<script src="js/operations-update.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/auto-month-rollover.js?v=20260726-vat-commercial-eval-r1"></script>
+<script src="js/invoice-waybill.js?v=20260726-vat-commercial-eval-r1"></script>
 
 
 

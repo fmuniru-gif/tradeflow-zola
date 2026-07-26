@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260725-invoice-waybill-r1';
+  const BUILD = '20260726-vat-commercial-eval-r1';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 

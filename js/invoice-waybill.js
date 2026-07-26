@@ -1,10 +1,10 @@
-/* ZEZMS TradeFlow v3.4.2 — Electronic Invoice & Waybill
+/* ZEZMS TradeFlow v3.4.3 — Electronic Invoice & Waybill
    Creates printable commercial documents without posting stock or KPI changes.
    An invoice can be loaded into Sale Out; stock is deducted only when the sale is completed. */
 (function () {
   'use strict';
 
-  const BUILD = '20260725-invoice-waybill-r1';
+  const BUILD = '20260726-vat-commercial-eval-r1';
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;
@@ -720,7 +720,7 @@
   installNavigation();
   window.ZEZMS = window.ZEZMS || {};
   ZEZMS.commercialDocuments = {
-    version: '3.4.2', build: BUILD, ensureModel,
+    version: '3.4.3', build: BUILD, ensureModel,
     viewInvoices, viewWaybills, createInvoice, createWaybill,
     loadInvoiceToSale, prepareWaybillFromInvoice
   };

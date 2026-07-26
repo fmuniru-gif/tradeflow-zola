@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260725-invoice-waybill-r1';
+  const BUILD = '20260726-vat-commercial-eval-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -170,12 +170,20 @@
       total: Number(line.total != null ? line.total : line.amount) || 0
     }));
     const total = Number(sale.total != null ? sale.total : sale.totalAmount) || 0;
+    const lineSubtotal = round2(lines.reduce((sum, line) => sum + (Number(line.total) || 0), 0));
+    const subtotal = Number(sale.subtotal != null ? sale.subtotal : lineSubtotal) || 0;
+    const vatAmount = round2(Number(sale.vatAmount != null ? sale.vatAmount : total - subtotal) || 0);
+    const derivedRate = subtotal > 0 ? round2((vatAmount / subtotal) * 100) : 0;
+    const vatRate = normalizeVatPercent(sale.vatRate != null ? sale.vatRate : derivedRate);
     const paid = Number(sale.paid != null ? sale.paid : sale.amountPaid) || 0;
     return {
       receiptNo: sale.receiptNo || sale.id || '',
       customer: sale.customer || sale.customerName || '',
       location: sale.location || '',
       contact: sale.contact || '',
+      subtotal,
+      vatRate,
+      vatAmount,
       total,
       paid,
       balance: sale.balance != null && sale.total != null
@@ -203,8 +211,13 @@
         <td style="text-align:right">${fmtN(line.disc)}</td>
         <td style="text-align:right">${fmtN(line.total)}</td>
       </tr>`).join('');
-    const subtotal = sale.lines.reduce((sum, line) => sum + (Number(line.total) || 0), 0);
-    const vat = round2(sale.total - subtotal);
+    const subtotal = sale.subtotal != null
+      ? round2(sale.subtotal)
+      : round2(sale.lines.reduce((sum, line) => sum + (Number(line.total) || 0), 0));
+    const vat = sale.vatAmount != null ? round2(sale.vatAmount) : round2(sale.total - subtotal);
+    const vatRate = sale.vatRate != null
+      ? normalizeVatPercent(sale.vatRate)
+      : (subtotal > 0 ? round2((vat / subtotal) * 100) : 0);
 
     return `<div class="receipt-paper" id="receiptPrint" style="position:relative">
       ${sale.voided ? '<div style="position:absolute;inset:42% 0 auto;text-align:center;font-size:52px;font-weight:900;color:rgba(185,28,28,.23);transform:rotate(-20deg);letter-spacing:8px">VOID</div>' : ''}
@@ -228,7 +241,7 @@
       </table>
       <div style="margin-top:10px;text-align:right;color:#111">
         <div>Subtotal: ${fmtN(subtotal)}</div>
-        <div>VAT: ${fmtN(vat)}</div>
+        <div>VAT (${fmtN(vatRate)}%): ${fmtN(vat)}</div>
         <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
         <div style="margin-top:6px">Amount Paid: ${fmtN(sale.paid)}</div>
         <div>Balance: ${fmtN(sale.balance)}</div>
