@@ -7,10 +7,34 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260726-mobile-responsive-r1" />
-<title>Zola Electronics Zone · TradeFlow v3.4.5 · Mobile Responsive</title>
+<meta name="zezms-build" content="20260726-mobile-responsive-r2" />
+<title>Zola Electronics Zone · TradeFlow v3.4.6 · Mobile Responsive Fix</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
+<script>
+(function(){
+  function detectResponsiveMode(){
+    var docWidth = document.documentElement.clientWidth || window.innerWidth || 0;
+    var screenWidth = (window.screen && window.screen.width) || docWidth;
+    var screenHeight = (window.screen && window.screen.height) || window.innerHeight || docWidth;
+    var shortEdge = Math.min(screenWidth || docWidth, screenHeight || docWidth);
+    var coarse = false;
+    try { coarse = window.matchMedia('(hover: none) and (pointer: coarse)').matches; } catch (_) {}
+    coarse = coarse || (navigator.maxTouchPoints || 0) > 0;
+    var mobile = docWidth <= 900 || (coarse && shortEdge <= 1024);
+    var narrow = docWidth <= 560 || (coarse && shortEdge <= 560);
+    return { mobile: mobile, narrow: narrow, viewportWidth: docWidth, shortEdge: shortEdge, coarse: coarse };
+  }
+  function applyResponsiveMode(){
+    var state = detectResponsiveMode();
+    document.documentElement.classList.toggle('mobile-shell', state.mobile);
+    document.documentElement.classList.toggle('mobile-narrow', state.mobile && state.narrow);
+    return state;
+  }
+  window.ZEZMS_RESPONSIVE = { detect: detectResponsiveMode, apply: applyResponsiveMode };
+  applyResponsiveMode();
+})();
+</script>
 <style>
 :root{
   --bg:#0f172a; --panel:#1e293b; --panel2:#334155; --line:#475569;
@@ -48,7 +72,7 @@ a{color:var(--teal2)}
 .g4{grid-template-columns:repeat(4,1fr)}
 .g6{grid-template-columns:repeat(6,1fr)}
 @media(max-width:1100px){.g6{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:720px){
+@media(max-width:720px), (max-device-width:720px), (hover:none) and (pointer:coarse){
   .sidebar{position:fixed;transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0);box-shadow:var(--shadow)}
   .burger{display:inline-flex;align-items:center;justify-content:center}
@@ -130,7 +154,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .statline b{font-variant-numeric:tabular-nums}
 
 .sale-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
-@media(max-width:900px){.sale-layout{grid-template-columns:1fr}}
+@media(max-width:900px), (max-device-width:900px), (hover:none) and (pointer:coarse){.sale-layout{grid-template-columns:1fr}}
 .sale-theme{background:rgba(230,240,255,.04);border-color:#1e3a5f}
 .field input:disabled,.field input[readonly]{opacity:.75;cursor:not-allowed}
 .suggest{position:absolute;left:0;right:0;top:100%;z-index:30;background:#0b1220;border:1px solid #334155;border-radius:10px;max-height:160px;overflow:auto;display:none}
@@ -142,12 +166,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .credit-row td{background:rgba(255,199,206,.18)!important;color:#fca5a5}
 
 
-/* ---------- Responsive mobile shell v3.4.5 ---------- */
+/* ---------- Responsive mobile shell v3.4.6 ---------- */
 body.menu-open{overflow:hidden;overscroll-behavior:none}
 .brand{position:relative}
 .sidebar-close{display:none;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;background:#1e293b;color:#fff;font-size:26px;line-height:1}
 
-@media(max-width:900px){
+@media(max-width:900px), (max-device-width:900px), (hover:none) and (pointer:coarse){
   .app{min-height:100dvh;width:100%;overflow-x:hidden}
   .sidebar{
     position:fixed;inset:0 auto 0 0;top:0;width:min(86vw,320px);max-width:320px;height:100dvh;
@@ -189,7 +213,7 @@ body.menu-open{overflow:hidden;overscroll-behavior:none}
   .toast{width:100%}
 }
 
-@media(max-width:560px){
+@media(max-width:560px), (max-device-width:560px){
   .g2,.g3,.g4,.g6,.g1m{grid-template-columns:minmax(0,1fr)}
   .topbar .pill{display:none}
   .topbar h2{font-size:15px}
@@ -208,12 +232,61 @@ body.menu-open{overflow:hidden;overscroll-behavior:none}
   .kpi .val{font-size:20px}
 }
 
-@media(max-width:380px){
+@media(max-width:380px), (max-device-width:380px){
   .sidebar{width:92vw}
   .content{padding-left:8px;padding-right:8px}
   .topbar{padding-left:8px;padding-right:8px}
   .topbar h2{font-size:14px}
 }
+
+
+/* Class-based fallback for phone browsers/PWAs that report a desktop viewport. */
+html.mobile-shell body{overflow-x:hidden}
+html.mobile-shell .app{min-height:100dvh;width:100%;overflow-x:hidden}
+html.mobile-shell .sidebar{
+  position:fixed;inset:0 auto 0 0;top:0;width:min(86vw,320px);max-width:320px;height:100dvh;
+  transform:translateX(-104%);z-index:60;box-shadow:none;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  transition:transform .22s ease,box-shadow .22s ease;will-change:transform
+}
+html.mobile-shell .sidebar.open{transform:translateX(0);box-shadow:18px 0 42px rgba(0,0,0,.48)}
+html.mobile-shell .sidebar-close{display:inline-flex;position:absolute;right:10px;top:calc(8px + env(safe-area-inset-top,0px));z-index:2}
+html.mobile-shell .brand{padding-top:16px;padding-right:54px;min-height:76px}
+html.mobile-shell .nav button{min-height:46px;padding:12px;font-size:14px}
+html.mobile-shell .userbox{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+html.mobile-shell .overlay{z-index:55;background:rgba(2,6,23,.68);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+html.mobile-shell .overlay.show{display:block}
+html.mobile-shell .main{width:100%;max-width:100vw;min-height:100dvh}
+html.mobile-shell .topbar{min-height:58px;padding:calc(7px + env(safe-area-inset-top,0px)) 10px 7px;gap:8px;z-index:45}
+html.mobile-shell .burger{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;font-size:21px}
+html.mobile-shell .topbar h2{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+html.mobile-shell .topbar>.btn.sm{width:42px;height:42px;min-height:42px;padding:0;flex:0 0 42px}
+html.mobile-shell .content{padding:12px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));overflow-x:hidden}
+html.mobile-shell .sale-layout,html.mobile-shell .document-layout{grid-template-columns:minmax(0,1fr)!important}
+html.mobile-shell .g2,html.mobile-shell .g3,html.mobile-shell .g4,html.mobile-shell .g6{grid-template-columns:repeat(2,minmax(0,1fr))}
+html.mobile-shell .card{padding:12px}
+html.mobile-shell .btn{min-height:44px}
+html.mobile-shell .btn.sm{min-height:38px}
+html.mobile-shell .field input,html.mobile-shell .field select,html.mobile-shell .field textarea{min-height:44px;font-size:16px}
+html.mobile-shell .table-wrap{max-width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-inline:contain}
+html.mobile-shell .table-wrap table{min-width:640px}
+html.mobile-shell .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:3px;scrollbar-width:thin}
+html.mobile-shell .tabs button{flex:0 0 auto;min-height:42px}
+html.mobile-shell .suggest{max-height:min(42dvh,320px);-webkit-overflow-scrolling:touch}
+html.mobile-shell .suggest div{padding:11px 12px;min-height:44px}
+html.mobile-shell .modal-bg{align-items:flex-end;padding:0}
+html.mobile-shell .modal{width:100%;max-width:none;max-height:92dvh;border-radius:18px 18px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+html.mobile-shell .toast-wrap{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+html.mobile-shell .toast{width:100%}
+html.mobile-narrow .g2,html.mobile-narrow .g3,html.mobile-narrow .g4,html.mobile-narrow .g6,html.mobile-narrow .g1m{grid-template-columns:minmax(0,1fr)}
+html.mobile-narrow .topbar .pill{display:none}
+html.mobile-narrow .topbar h2{font-size:15px}
+html.mobile-narrow .content{padding:10px;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+html.mobile-narrow .card{border-radius:12px;padding:11px}
+html.mobile-narrow .row{gap:7px}
+html.mobile-narrow .row>.btn{flex:1 1 auto}
+html.mobile-narrow .login-screen{align-items:flex-start;overflow:auto;padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px))}
+html.mobile-narrow .login-card{padding:22px 16px;margin:auto 0}
 
 @media(prefers-reduced-motion:reduce){
   .sidebar,.toast,.btn{transition:none!important;animation:none!important}
@@ -229,7 +302,7 @@ body.menu-open{overflow:hidden;overscroll-behavior:none}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.5 · Mobile Responsive · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.6 · Mobile Responsive Fix · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -250,7 +323,7 @@ body.menu-open{overflow:hidden;overscroll-behavior:none}
     <div class="brand">
       <button type="button" class="sidebar-close" onclick="closeSide()" aria-label="Close menu">×</button>
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.5 · Mobile Responsive · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.6 · Mobile Responsive Fix · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -295,38 +368,38 @@ body.menu-open{overflow:hidden;overscroll-behavior:none}
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/app.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/logger.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/diagnostics.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/registry.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/storage.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/dbservice.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/bootpatch.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/events.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/db-events.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/system-module.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/health-module.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/utils-module.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/lifecycle-module.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/notifications-module.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/product-search-module.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/product-search-adapter.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/product-search-service.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/product-search-controller.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/product-search-events.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/product-search-metrics.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/product-search-facade.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/config.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/app.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/logger.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/diagnostics.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/registry.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/storage.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/dbservice.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/bootpatch.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/events.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/db-events.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/system-module.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/health-module.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/utils-module.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/lifecycle-module.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/notifications-module.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/product-search-module.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/product-search-adapter.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/product-search-service.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/product-search-controller.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/product-search-events.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/product-search-metrics.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/product-search-facade.js?v=20260726-mobile-responsive-r2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/backup-manager.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/cloud-sync.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/backup-manager.js?v=20260726-mobile-responsive-r2"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.5 — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.6 — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.5';
+const APP_VERSION = '3.4.6';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -757,13 +830,19 @@ function nav(view){
   closeSide();
   render();
 }
-const MOBILE_MENU_MEDIA = window.matchMedia('(max-width: 900px)');
+const MOBILE_MENU_MEDIA = window.matchMedia('(max-width: 900px), (max-device-width: 900px), (hover: none) and (pointer: coarse)');
+function isMobileShellActive(){
+  if(window.ZEZMS_RESPONSIVE && typeof window.ZEZMS_RESPONSIVE.apply === 'function'){
+    return !!window.ZEZMS_RESPONSIVE.apply().mobile;
+  }
+  return MOBILE_MENU_MEDIA.matches;
+}
 function setSideOpen(open){
   const sidebar = $('sidebar');
   const overlay = $('sideOverlay');
   const burger = document.querySelector('.burger');
   if(!sidebar || !overlay) return;
-  const mobile = MOBILE_MENU_MEDIA.matches;
+  const mobile = isMobileShellActive();
   const nextOpen = mobile && !!open;
   sidebar.classList.toggle('open', nextOpen);
   overlay.classList.toggle('show', nextOpen);
@@ -788,7 +867,7 @@ function closeSide(){ setSideOpen(false); }
 function syncResponsiveShell(){
   const sidebar = $('sidebar');
   if(!sidebar) return;
-  if(!MOBILE_MENU_MEDIA.matches){
+  if(!isMobileShellActive()){
     sidebar.classList.remove('open');
     $('sideOverlay').classList.remove('show');
     document.body.classList.remove('menu-open');
@@ -3255,7 +3334,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260726-mobile-responsive-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260726-mobile-responsive-r2').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3280,14 +3359,14 @@ document.addEventListener('keydown', (e)=>{
     doLogin();
   }
 });
-window.addEventListener('resize', syncResponsiveShell, {passive:true});
-window.addEventListener('orientationchange', ()=>setTimeout(syncResponsiveShell, 80), {passive:true});
+window.addEventListener('resize', ()=>{ if(window.ZEZMS_RESPONSIVE) window.ZEZMS_RESPONSIVE.apply(); syncResponsiveShell(); }, {passive:true});
+window.addEventListener('orientationchange', ()=>setTimeout(()=>{ if(window.ZEZMS_RESPONSIVE) window.ZEZMS_RESPONSIVE.apply(); syncResponsiveShell(); }, 80), {passive:true});
 if(MOBILE_MENU_MEDIA.addEventListener){ MOBILE_MENU_MEDIA.addEventListener('change', syncResponsiveShell); }
 else if(MOBILE_MENU_MEDIA.addListener){ MOBILE_MENU_MEDIA.addListener(syncResponsiveShell); }
 const mobileNav = $('mainNav');
 if(mobileNav){
   mobileNav.addEventListener('click', (event)=>{
-    if(MOBILE_MENU_MEDIA.matches && event.target.closest('button')) setTimeout(closeSide, 0);
+    if(isMobileShellActive() && event.target.closest('button')) setTimeout(closeSide, 0);
   });
 }
 let mobileSwipeStartX = null;
@@ -3305,9 +3384,9 @@ if(mobileSidebar){
 }
 syncResponsiveShell();
 </script>
-<script src="js/operations-update.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/auto-month-rollover.js?v=20260726-mobile-responsive-r1"></script>
-<script src="js/invoice-waybill.js?v=20260726-mobile-responsive-r1"></script>
+<script src="js/operations-update.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/auto-month-rollover.js?v=20260726-mobile-responsive-r2"></script>
+<script src="js/invoice-waybill.js?v=20260726-mobile-responsive-r2"></script>
 
 
 

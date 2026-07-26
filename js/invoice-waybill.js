@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260726-mobile-responsive-r1';
+  const BUILD = '20260726-mobile-responsive-r2';
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;
@@ -67,7 +67,7 @@
       .doc-void td{opacity:.7;background:rgba(100,116,139,.12)!important}
       .doc-converted td{background:rgba(34,197,94,.08)!important}
       .doc-help{border-left:4px solid var(--teal);padding:10px 12px;background:rgba(15,118,110,.08);border-radius:8px;font-size:12px;color:var(--muted)}
-      @media(max-width:900px){.document-layout{grid-template-columns:1fr}}
+      @media(max-width:900px), (max-device-width:900px), (hover:none) and (pointer:coarse){.document-layout{grid-template-columns:1fr}}
       @media print{.document-paper{box-shadow:none;padding:0}}
     `;
     document.head.appendChild(style);

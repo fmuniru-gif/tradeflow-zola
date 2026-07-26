@@ -2,7 +2,7 @@
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
   "description": "Responsive offline-first sales, VAT-ready invoices, inventory, waybills, automatic month rollover, receipt reprinting, transaction reversal, KPI charts, backup and transaction-level multi-device cloud merging.",
-  "start_url": "./index.html?build=20260726-mobile-responsive-r1",
+  "start_url": "./index.html?build=20260726-mobile-responsive-r2",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

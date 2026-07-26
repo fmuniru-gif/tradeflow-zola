@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260726-mobile-responsive-r1';
+  const BUILD = '20260726-mobile-responsive-r2';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -60,7 +60,7 @@
       .receipt-actions{display:flex;gap:5px;flex-wrap:wrap}
       .undo-note{border-left:4px solid var(--amber);padding:10px 12px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:var(--muted)}
       .status-undone{opacity:.6;text-decoration:line-through}
-      @media(max-width:720px){
+      @media(max-width:720px), (max-device-width:720px), (hover:none) and (pointer:coarse){
         .bar-row{grid-template-columns:1fr}
         .bar-value{text-align:left}
         .chart-card{min-height:0}
