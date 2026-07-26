@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260726-vat-commercial-eval-r1';
+  const BUILD = '20260726-invoice-vat-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

@@ -1,10 +1,10 @@
-/* ZEZMS TradeFlow v3.4.3 — Electronic Invoice & Waybill
+/* ZEZMS TradeFlow v3.4.4 — Electronic Invoice & Waybill
    Creates printable commercial documents without posting stock or KPI changes.
    An invoice can be loaded into Sale Out; stock is deducted only when the sale is completed. */
 (function () {
   'use strict';
 
-  const BUILD = '20260726-vat-commercial-eval-r1';
+  const BUILD = '20260726-invoice-vat-r1';
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;
@@ -13,7 +13,7 @@
 
   const invoiceDraft = {
     lines: [], customer: '', location: '', contact: '', tin: '', reference: '',
-    dueDate: '', terms: 'Payment due on or before the due date.', notes: ''
+    dueDate: '', terms: 'Payment due on or before the due date.', notes: '', vatRate: 0
   };
   const waybillDraft = {
     lines: [], consignee: '', location: '', contact: '', vehicleNo: '', driver: '',
@@ -29,6 +29,13 @@
       if (!item.invoiceNo) { item.invoiceNo = item.id; changed = true; }
       if (!item.status) { item.status = ACTIVE; changed = true; }
       if (!Array.isArray(item.lines)) { item.lines = []; changed = true; }
+      const lineSubtotal = invoiceSubtotal(item.lines);
+      if (item.subtotal == null) { item.subtotal = lineSubtotal; changed = true; }
+      const legacyVat = Number(item.vatAmount != null ? item.vatAmount : item.vat) || 0;
+      if (item.vatRate == null) { item.vatRate = item.subtotal > 0 ? normalizeVatPercent((legacyVat / item.subtotal) * 100) : 0; changed = true; }
+      if (item.vatAmount == null) { item.vatAmount = round2(Number(item.subtotal) * normalizeVatPercent(item.vatRate) / 100); changed = true; }
+      if (item.vat == null) { item.vat = item.vatAmount; changed = true; }
+      if (item.total == null) { item.total = round2(Number(item.subtotal) + Number(item.vatAmount)); changed = true; }
     });
     DB.waybills.forEach((item) => {
       if (!item.id) { item.id = idStamp('WB-'); changed = true; }
@@ -263,7 +270,7 @@
   function clearDraft(type) {
     if (!confirm('Clear all items and details from this draft?')) return;
     if (type === 'invoice') {
-      Object.assign(invoiceDraft, { lines: [], customer: '', location: '', contact: '', tin: '', reference: '', dueDate: '', terms: 'Payment due on or before the due date.', notes: '' });
+      Object.assign(invoiceDraft, { lines: [], customer: '', location: '', contact: '', tin: '', reference: '', dueDate: '', terms: 'Payment due on or before the due date.', notes: '', vatRate: 0 });
       invoicePriceAdjustmentUnlocked = false;
     } else {
       Object.assign(waybillDraft, { lines: [], consignee: '', location: '', contact: '', vehicleNo: '', driver: '', reference: '', notes: '' });
@@ -275,10 +282,33 @@
     return round2((lines || []).reduce((sum, line) => sum + (Number(line.total) || 0), 0));
   }
 
-  function invoiceTotals(lines) {
+  function invoiceTotals(lines, percent) {
     const subtotal = invoiceSubtotal(lines);
-    const vat = round2(subtotal * VAT_RATE);
-    return { subtotal, vat, total: round2(subtotal + vat) };
+    const vatRate = normalizeVatPercent(percent);
+    const vat = round2(subtotal * vatRate / 100);
+    return { subtotal, vatRate, vat, total: round2(subtotal + vat) };
+  }
+
+  function invoiceVatRateChanged(value) {
+    invoiceDraft.vatRate = normalizeVatPercent(value);
+    const totals = invoiceTotals(invoiceDraft.lines, invoiceDraft.vatRate);
+    const input = document.getElementById('invVatRate');
+    const label = document.getElementById('invVatRateLabel');
+    const subtotal = document.getElementById('invSubtotal');
+    const vat = document.getElementById('invVatAmount');
+    const grand = document.getElementById('invGrandTotal');
+    if (input && document.activeElement !== input) input.value = invoiceDraft.vatRate;
+    if (label) label.textContent = fmtN(totals.vatRate);
+    if (subtotal) subtotal.textContent = fmt(totals.subtotal);
+    if (vat) vat.textContent = fmt(totals.vat);
+    if (grand) grand.textContent = fmt(totals.total);
+  }
+
+  function clampInvoiceVatRate() {
+    invoiceDraft.vatRate = normalizeVatPercent((document.getElementById('invVatRate') || {}).value);
+    const input = document.getElementById('invVatRate');
+    if (input) input.value = invoiceDraft.vatRate;
+    invoiceVatRateChanged(invoiceDraft.vatRate);
   }
 
   function captureInvoiceFields() {
@@ -290,6 +320,7 @@
     invoiceDraft.dueDate = String((document.getElementById('invDueDate') || {}).value || invoiceDraft.dueDate || '').trim();
     invoiceDraft.terms = String((document.getElementById('invTerms') || {}).value || invoiceDraft.terms || '').trim();
     invoiceDraft.notes = String((document.getElementById('invNotes') || {}).value || invoiceDraft.notes || '').trim();
+    invoiceDraft.vatRate = normalizeVatPercent((document.getElementById('invVatRate') || {}).value != null ? (document.getElementById('invVatRate') || {}).value : invoiceDraft.vatRate);
   }
 
   function captureWaybillFields() {
@@ -307,21 +338,21 @@
     if (!invoiceDraft.customer) { toast('Customer name is required.', 'err'); return; }
     if (!invoiceDraft.contact) { toast('Customer telephone is required.', 'err'); return; }
     if (!invoiceDraft.lines.length) { toast('Add at least one product to the invoice.', 'err'); return; }
-    const totals = invoiceTotals(invoiceDraft.lines);
+    const totals = invoiceTotals(invoiceDraft.lines, invoiceDraft.vatRate);
     const id = idStamp('INV-');
     const record = {
       id, invoiceNo: id, date: nowISO(), dueDate: invoiceDraft.dueDate,
       customer: invoiceDraft.customer, location: invoiceDraft.location,
       contact: invoiceDraft.contact, tin: invoiceDraft.tin, reference: invoiceDraft.reference,
       terms: invoiceDraft.terms, notes: invoiceDraft.notes,
-      subtotal: totals.subtotal, vat: totals.vat, total: totals.total,
+      subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vat, vat: totals.vat, total: totals.total,
       status: ACTIVE, cashier: session.cashier, cashierTel: session.tel,
       year: getLatestMonth().year, month: getLatestMonth().month,
       lines: deepClone(invoiceDraft.lines)
     };
     DB.invoices.push(record);
     saveDB();
-    Object.assign(invoiceDraft, { lines: [], customer: '', location: '', contact: '', tin: '', reference: '', dueDate: '', terms: 'Payment due on or before the due date.', notes: '' });
+    Object.assign(invoiceDraft, { lines: [], customer: '', location: '', contact: '', tin: '', reference: '', dueDate: '', terms: 'Payment due on or before the due date.', notes: '', vatRate: 0 });
     invoicePriceAdjustmentUnlocked = false;
     toast('Invoice saved · ' + record.invoiceNo);
     showCommercialDocument('invoice', record);
@@ -356,7 +387,7 @@
 
   function invoicePaperHTML(record) {
     const biz = DB.business || BUSINESS;
-    const totals = invoiceTotals(record.lines || []);
+    const totals = invoiceTotals(record.lines || [], record.vatRate != null ? record.vatRate : 0);
     const rows = (record.lines || []).map((line, index) => `<tr>
       <td style="text-align:center">${index + 1}</td><td class="mono">${esc(line.productId || '—')}</td>
       <td>${esc(line.product)}</td><td style="text-align:right">${fmtN(line.qty)}</td>
@@ -376,7 +407,7 @@
       <table><thead><tr><th>#</th><th>Product ID</th><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Discount</th><th style="text-align:right">Total</th></tr></thead>
         <tbody>${rows}</tbody></table>
       <div class="doc-total"><div><span>Subtotal</span><b>GH₵ ${fmtN(record.subtotal != null ? record.subtotal : totals.subtotal)}</b></div>
-        <div><span>VAT (${VAT_RATE * 100}%)</span><b>GH₵ ${fmtN(record.vat != null ? record.vat : totals.vat)}</b></div>
+        <div><span>VAT (${fmtN(record.vatRate != null ? record.vatRate : totals.vatRate)}%)</span><b>GH₵ ${fmtN(record.vatAmount != null ? record.vatAmount : (record.vat != null ? record.vat : totals.vat))}</b></div>
         <div class="grand"><span>GRAND TOTAL</span><b>GH₵ ${fmtN(record.total != null ? record.total : totals.total)}</b></div></div>
       ${record.terms ? `<div style="margin-top:22px"><b>Terms:</b> ${esc(record.terms)}</div>` : ''}
       ${record.notes ? `<div style="margin-top:8px"><b>Notes:</b> ${esc(record.notes)}</div>` : ''}
@@ -498,6 +529,7 @@
     cart._loc = invoice.location || '';
     cart._tel = invoice.contact || '';
     cart._paid = 0;
+    cart._vatRate = normalizeVatPercent(invoice.vatRate != null ? invoice.vatRate : (Number(invoice.subtotal) > 0 ? ((Number(invoice.vatAmount != null ? invoice.vatAmount : invoice.vat) || 0) / Number(invoice.subtotal)) * 100 : 0));
     cart._sourceInvoiceId = invoice.id;
     nav('pos');
     toast('Invoice loaded into Sale Out. Complete payment and print the receipt to post stock and KPIs.');
@@ -522,7 +554,7 @@
 
   function invoiceBuilderHTML() {
     const lm = getLatestMonth();
-    const totals = invoiceTotals(invoiceDraft.lines);
+    const totals = invoiceTotals(invoiceDraft.lines, invoiceDraft.vatRate);
     const rows = invoiceDraft.lines.map((line, index) => `<tr>
       <td class="mono">${esc(line.productId || '—')}</td><td>${esc(line.product)}</td>
       <td class="right mono">${fmtN(line.qty)}</td><td class="right mono">${fmtN(line.unitPrice)}</td>
@@ -557,8 +589,9 @@
         <div class="field"><label>Terms</label><textarea id="invTerms" rows="2" oninput="invoiceDraftField('terms',this.value)">${esc(invoiceDraft.terms)}</textarea></div>
         <div class="field"><label>Notes</label><textarea id="invNotes" rows="2" oninput="invoiceDraftField('notes',this.value)">${esc(invoiceDraft.notes)}</textarea></div>
       </div>
-      <div class="card pos-totals"><h3>Invoice summary</h3><div class="statline"><span>Subtotal</span><b class="mono">${fmt(totals.subtotal)}</b></div>
-        <div class="statline"><span>VAT (${VAT_RATE * 100}%)</span><b class="mono">${fmt(totals.vat)}</b></div><div class="statline"><span>Grand total</span><b class="mono">${fmt(totals.total)}</b></div>
+      <div class="card pos-totals"><h3>Invoice summary</h3><div class="statline"><span>Subtotal</span><b class="mono" id="invSubtotal">${fmt(totals.subtotal)}</b></div>
+        <div class="field" style="margin-top:10px"><label>VAT percentage (%)</label><input id="invVatRate" type="number" min="0" max="100" step="0.01" value="${totals.vatRate}" oninput="invoiceVatRateChanged(this.value)" onchange="clampInvoiceVatRate()"></div>
+        <div class="statline"><span>VAT amount (<span id="invVatRateLabel">${fmtN(totals.vatRate)}</span>%)</span><b class="mono" id="invVatAmount">${fmt(totals.vat)}</b></div><div class="statline"><span>Grand total</span><b class="mono" id="invGrandTotal">${fmt(totals.total)}</b></div>
         <button class="btn ok" style="width:100%;margin-top:12px" onclick="saveElectronicInvoice()">Save & open invoice</button></div>
       </div></div>`;
   }
@@ -694,6 +727,8 @@
   window.removeCommercialLine = removeLine;
   window.clearCommercialDraft = clearDraft;
   window.invoiceDraftField = (field, value) => { invoiceDraft[field] = value; };
+  window.invoiceVatRateChanged = invoiceVatRateChanged;
+  window.clampInvoiceVatRate = clampInvoiceVatRate;
   window.waybillDraftField = (field, value) => { waybillDraft[field] = value; };
   window.saveElectronicInvoice = createInvoice;
   window.saveElectronicWaybill = createWaybill;
@@ -720,7 +755,7 @@
   installNavigation();
   window.ZEZMS = window.ZEZMS || {};
   ZEZMS.commercialDocuments = {
-    version: '3.4.3', build: BUILD, ensureModel,
+    version: '3.4.4', build: BUILD, ensureModel,
     viewInvoices, viewWaybills, createInvoice, createWaybill,
     loadInvoiceToSale, prepareWaybillFromInvoice
   };
