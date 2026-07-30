@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260730-a5-receipt-print-r1';
+  const BUILD = '20260730-mobile-reference-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
