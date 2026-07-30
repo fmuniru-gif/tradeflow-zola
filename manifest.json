@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS vertical-only mobile interface with responsive record cards, A5 receipt printing, inventory, VAT, invoices, waybills, automatic rollover, backup and transaction-level cloud sync.",
-  "start_url": "./index.html?build=20260730-vertical-only-mobile-r3",
+  "description": "ZEZMS sales and inventory system with readable portrait mobile pages, vertical scrolling, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
+  "start_url": "./index.html?build=20260730-portrait-readable-mobile-r4",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

@@ -38,12 +38,15 @@
     });
 
     var wrap = table.closest('.table-wrap');
-    if(isSaleItemsTable(headers)){
+    var portrait = false;
+    try { portrait = window.matchMedia('(orientation: portrait)').matches; } catch (_) {}
+
+    if(isSaleItemsTable(headers) && !portrait){
       table.classList.add('mobile-fit-table');
       if(wrap) wrap.classList.add('mobile-fit-wrap');
     }else{
-      table.classList.add('mobile-stacked-table');
-      if(wrap) wrap.classList.add('mobile-stack-wrap');
+      table.classList.add(isSaleItemsTable(headers) ? 'mobile-fit-table' : 'mobile-stacked-table');
+      if(wrap) wrap.classList.add(isSaleItemsTable(headers) ? 'mobile-fit-wrap' : 'mobile-stack-wrap');
     }
   }
 

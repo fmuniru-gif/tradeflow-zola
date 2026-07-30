@@ -7,37 +7,82 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260730-vertical-only-mobile-r3" /><meta name="zezms-mobile-engine" content="vertical-only-v3" />
-<title>Zola Electronics Zone · TradeFlow v3.4.13 · Vertical-Only Mobile</title>
+<meta name="zezms-build" content="20260730-portrait-readable-mobile-r4" /><meta name="zezms-mobile-engine" content="portrait-readable-v4" />
+<title>Zola Electronics Zone · TradeFlow v3.4.14 · Portrait Readable Mobile</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
 <script>
 (function(){
   'use strict';
+
+  function getScreenMetrics(){
+    var sw = Number(window.screen && window.screen.width) || 0;
+    var sh = Number(window.screen && window.screen.height) || 0;
+    return {
+      width: sw,
+      height: sh,
+      shortSide: sw && sh ? Math.min(sw, sh) : 0,
+      longSide: sw && sh ? Math.max(sw, sh) : 0
+    };
+  }
+
+  function normalizePhoneViewport(isTouchPhone, metrics){
+    if(!isTouchPhone) return;
+    var portrait = true;
+    try { portrait = window.matchMedia('(orientation: portrait)').matches; } catch (_) {}
+    var targetWidth = portrait ? metrics.shortSide : metrics.longSide;
+    if(!targetWidth) return;
+
+    var viewport = document.querySelector('meta[name="viewport"]');
+    if(viewport){
+      viewport.setAttribute(
+        'content',
+        'width=' + Math.round(targetWidth)
+          + ', initial-scale=1, minimum-scale=1, maximum-scale=5'
+          + ', user-scalable=yes, viewport-fit=cover'
+      );
+    }
+  }
+
   function applyZEZMSPhoneLayout(){
     var viewportNarrow = false;
     var coarsePointer = false;
     try { viewportNarrow = window.matchMedia('(max-width: 900px)').matches; } catch (_) {}
     try { coarsePointer = window.matchMedia('(pointer: coarse)').matches; } catch (_) {}
-    var sw = Number(window.screen && window.screen.width) || 0;
-    var sh = Number(window.screen && window.screen.height) || 0;
-    var shortSide = sw && sh ? Math.min(sw, sh) : 0;
-    var touchPhoneOrTablet = (navigator.maxTouchPoints || 0) > 0 && coarsePointer && shortSide > 0 && shortSide <= 900;
+
+    var metrics = getScreenMetrics();
+    var touchPhoneOrTablet =
+      (navigator.maxTouchPoints || 0) > 0
+      && coarsePointer
+      && metrics.shortSide > 0
+      && metrics.shortSide <= 900;
+
+    normalizePhoneViewport(touchPhoneOrTablet, metrics);
+
     var usePhoneLayout = viewportNarrow || touchPhoneOrTablet;
+    var portrait = false;
+    try { portrait = window.matchMedia('(orientation: portrait)').matches; } catch (_) {}
+
     document.documentElement.classList.toggle('zezms-phone-layout', usePhoneLayout);
-    document.documentElement.dataset.zezmsLayout = usePhoneLayout ? 'phone' : 'desktop';
+    document.documentElement.classList.toggle('zezms-phone-portrait', usePhoneLayout && portrait);
+    document.documentElement.dataset.zezmsLayout = usePhoneLayout
+      ? (portrait ? 'phone-portrait' : 'phone-landscape')
+      : 'desktop';
   }
+
   applyZEZMSPhoneLayout();
   window.addEventListener('resize', applyZEZMSPhoneLayout, {passive:true});
-  window.addEventListener('orientationchange', applyZEZMSPhoneLayout, {passive:true});
+  window.addEventListener('orientationchange', function(){
+    setTimeout(applyZEZMSPhoneLayout, 80);
+  }, {passive:true});
   window.ZEZMSApplyPhoneLayout = applyZEZMSPhoneLayout;
 }());
 </script>
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260730-vertical-only-mobile-r3';
+  const BUILD = '20260730-portrait-readable-mobile-r4';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -703,6 +748,222 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
 }
 
+
+/* ===== v3.4.14 portrait-readable mobile =====
+   Portrait prioritises readable text and vertical scrolling.
+   Landscape retains the wider five-column/table presentation. */
+@media (orientation:portrait){
+  html.zezms-phone-layout{
+    -webkit-text-size-adjust:100%;
+    text-size-adjust:100%;
+  }
+  html.zezms-phone-layout,
+  html.zezms-phone-layout body{
+    height:auto!important;
+    min-height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    touch-action:pan-y pinch-zoom!important;
+    overscroll-behavior-y:auto;
+  }
+  html.zezms-phone-layout body{
+    font-size:17px!important;
+  }
+  html.zezms-phone-layout .app,
+  html.zezms-phone-layout .main,
+  html.zezms-phone-layout #appShell,
+  html.zezms-phone-layout #viewRoot{
+    height:auto!important;
+    min-height:100svh!important;
+    overflow-y:visible!important;
+  }
+  html.zezms-phone-layout .content{
+    padding:15px 14px calc(40px + var(--safe-b))!important;
+    overflow-y:visible!important;
+  }
+  html.zezms-phone-layout .topbar{
+    min-height:68px!important;
+    padding:10px 14px!important;
+    grid-template-columns:48px minmax(0,1fr) 42px!important;
+    gap:10px!important;
+  }
+  html.zezms-phone-layout .burger{
+    width:48px!important;
+    height:48px!important;
+    font-size:23px!important;
+  }
+  html.zezms-phone-layout .topbar h2{
+    font-size:21px!important;
+  }
+  html.zezms-phone-layout .topbar>.btn.sm.ghost{
+    width:42px!important;
+    height:42px!important;
+  }
+
+  html.zezms-phone-layout .card{
+    padding:16px!important;
+    border-radius:16px!important;
+  }
+  html.zezms-phone-layout .card h3{
+    font-size:13px!important;
+    line-height:1.35!important;
+  }
+  html.zezms-phone-layout .field{
+    gap:6px!important;
+    margin-bottom:12px!important;
+  }
+  html.zezms-phone-layout .field label{
+    font-size:12px!important;
+    line-height:1.25!important;
+  }
+  html.zezms-phone-layout .field input,
+  html.zezms-phone-layout .field select,
+  html.zezms-phone-layout .field textarea{
+    min-height:54px!important;
+    padding:12px 13px!important;
+    font-size:17px!important;
+    line-height:1.3!important;
+  }
+  html.zezms-phone-layout .btn{
+    min-height:50px!important;
+    padding:11px 15px!important;
+    font-size:16px!important;
+  }
+  html.zezms-phone-layout .pill{
+    min-height:32px!important;
+    padding:5px 10px!important;
+    font-size:13px!important;
+  }
+
+  html.zezms-phone-layout .period-selector{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:10px!important;
+  }
+  html.zezms-phone-layout .dashboard-kpi-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+  }
+  html.zezms-phone-layout .dashboard-kpi-grid .kpi{
+    min-height:116px!important;
+    padding:14px!important;
+  }
+  html.zezms-phone-layout .kpi .val{
+    font-size:23px!important;
+    line-height:1.18!important;
+  }
+  html.zezms-phone-layout .kpi .sub{
+    font-size:12px!important;
+    line-height:1.3!important;
+  }
+
+  html.zezms-phone-layout .mobile-search-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:9px!important;
+  }
+  html.zezms-phone-layout .mobile-number-row,
+  html.zezms-phone-layout .waybill-number-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:9px!important;
+  }
+  html.zezms-phone-layout .waybill-number-row>.field:last-child{
+    grid-column:1/-1!important;
+  }
+  html.zezms-phone-layout .mobile-number-row .field label{
+    min-height:auto!important;
+  }
+  html.zezms-phone-layout .mobile-action-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:10px!important;
+  }
+
+  /* Do not squeeze Sale Out's five item columns into tiny text in portrait.
+     Each item becomes a readable vertical card. */
+  html.zezms-phone-layout table.mobile-fit-table,
+  html.zezms-phone-layout table.mobile-fit-table tbody,
+  html.zezms-phone-layout table.mobile-fit-table tr,
+  html.zezms-phone-layout table.mobile-fit-table td{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+  html.zezms-phone-layout table.mobile-fit-table thead{
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    margin:-1px!important;
+    overflow:hidden!important;
+    clip:rect(0,0,0,0)!important;
+    white-space:nowrap!important;
+  }
+  html.zezms-phone-layout table.mobile-fit-table tbody tr{
+    margin:0 0 12px!important;
+    padding:8px 12px!important;
+    border:1px solid #334155!important;
+    border-radius:13px!important;
+    background:#152136!important;
+  }
+  html.zezms-phone-layout table.mobile-fit-table td{
+    display:grid!important;
+    grid-template-columns:minmax(100px,42%) minmax(0,58%)!important;
+    gap:10px!important;
+    padding:9px 0!important;
+    border-bottom:1px dashed #334155!important;
+    text-align:right!important;
+    font-size:15px!important;
+    line-height:1.35!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+  }
+  html.zezms-phone-layout table.mobile-fit-table td:last-child{
+    border-bottom:0!important;
+  }
+  html.zezms-phone-layout table.mobile-fit-table td::before{
+    content:attr(data-label);
+    color:var(--muted);
+    font-size:12px!important;
+    line-height:1.3!important;
+    font-weight:700;
+    letter-spacing:.25px;
+    text-transform:uppercase;
+    text-align:left;
+  }
+  html.zezms-phone-layout table.mobile-fit-table td[colspan]{
+    display:block!important;
+    padding:22px 8px!important;
+    text-align:center!important;
+    font-size:15px!important;
+  }
+  html.zezms-phone-layout table.mobile-fit-table td[colspan]::before{
+    display:none!important;
+  }
+
+  html.zezms-phone-layout table.mobile-stacked-table td{
+    grid-template-columns:minmax(105px,42%) minmax(0,58%)!important;
+    font-size:15px!important;
+    line-height:1.35!important;
+  }
+  html.zezms-phone-layout table.mobile-stacked-table td::before{
+    font-size:12px!important;
+  }
+
+  html.zezms-phone-layout .login-screen{
+    position:fixed!important;
+    overflow-y:auto!important;
+    padding:18px!important;
+  }
+  html.zezms-phone-layout .login-card{
+    max-width:460px!important;
+    padding:30px 22px!important;
+  }
+  html.zezms-phone-layout .login-card h1{
+    font-size:24px!important;
+  }
+  html.zezms-phone-layout .login-card .sub{
+    font-size:14px!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -713,7 +974,7 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.13 · Vertical-Only Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.14 · Portrait Readable Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -733,7 +994,7 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.13 · Vertical-Only Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.14 · Portrait Readable Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -778,38 +1039,38 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/app.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/logger.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/diagnostics.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/registry.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/storage.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/dbservice.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/bootpatch.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/events.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/db-events.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/system-module.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/health-module.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/utils-module.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/lifecycle-module.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/notifications-module.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/product-search-module.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/product-search-adapter.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/product-search-service.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/product-search-controller.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/product-search-events.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/product-search-metrics.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/product-search-facade.js?v=20260730-vertical-only-mobile-r3"></script>
+<script src="js/config.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/app.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/logger.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/diagnostics.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/registry.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/storage.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/dbservice.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/bootpatch.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/events.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/db-events.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/system-module.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/health-module.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/utils-module.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/lifecycle-module.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/notifications-module.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/product-search-module.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/product-search-adapter.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/product-search-service.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/product-search-controller.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/product-search-events.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/product-search-metrics.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/product-search-facade.js?v=20260730-portrait-readable-mobile-r4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/backup-manager.js?v=20260730-vertical-only-mobile-r3"></script>
+<script src="js/cloud-sync.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/backup-manager.js?v=20260730-portrait-readable-mobile-r4"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.13 — Vertical-Only Mobile — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.14 — Portrait Readable Mobile — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.13';
+const APP_VERSION = '3.4.14';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -3705,7 +3966,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260730-vertical-only-mobile-r3').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260730-portrait-readable-mobile-r4').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3727,10 +3988,10 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/auto-month-rollover.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/invoice-waybill.js?v=20260730-vertical-only-mobile-r3"></script>
-<script src="js/mobile-vertical-layout.js?v=20260730-vertical-only-mobile-r3"></script>
+<script src="js/operations-update.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/auto-month-rollover.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/invoice-waybill.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/mobile-vertical-layout.js?v=20260730-portrait-readable-mobile-r4"></script>
 
 
 
