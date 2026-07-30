@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260730-mobile-layout-r1" />
+<meta name="zezms-build" content="20260730-mobile-layout-r2" />
 <title>Zola Electronics Zone · TradeFlow v3.4.8 · Classic Layout</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
@@ -15,7 +15,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260730-mobile-layout-r1';
+  const BUILD = '20260730-mobile-layout-r2';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -115,10 +115,14 @@ a{color:var(--teal2)}
   .topbar{min-height:58px;padding:8px 10px;gap:8px}
   .topbar h2{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #clockPill{display:none}
-  .content{padding:12px 10px calc(88px + var(--safe-b))}
-  .card{padding:12px;border-radius:12px}
-  .g2,.g3,.g4,.g6,.g1m{grid-template-columns:1fr}
-  .row{align-items:stretch}
+  .content{padding:20px 21px calc(28px + var(--safe-b))}
+  .card{padding:19px;border-radius:18px}
+  .g2,.g1m{grid-template-columns:1fr}
+  .g3,.g4,.g6{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{min-height:132px;padding:19px}
+  .kpi h3{font-size:12px;line-height:1.25}
+  .kpi .val{font-size:21px}
+  .row{align-items:center}
   .row>.btn{min-height:44px}
   .btn{min-height:44px;padding:10px 14px}
   .btn.sm{min-height:40px;padding:8px 11px}
@@ -130,20 +134,24 @@ a{color:var(--teal2)}
   .table-wrap table{min-width:680px}
   .modal-bg{padding:0;align-items:flex-end}
   .modal{width:100%;max-height:88dvh;border-radius:18px 18px 0 0;padding:18px 14px calc(18px + var(--safe-b))}
-  .login-screen{padding:0;align-items:stretch}
-  .login-card{width:100%;min-height:100dvh;border:0;border-radius:0;padding:calc(32px + env(safe-area-inset-top,0px)) 20px calc(24px + var(--safe-b));display:flex;flex-direction:column;justify-content:center}
-  .toast-wrap{left:10px;right:10px;bottom:calc(76px + var(--safe-b))}
+  .login-screen{padding:22px;align-items:center}
+  .login-card{width:100%;min-height:0;border:1px solid #334155;border-radius:24px;padding:38px 30px;display:block}
+  .login-card h1{font-size:20px}
+  .login-card>div:first-child>div{width:88px!important;height:88px!important;border-radius:21px!important;font-size:31px!important}
+  .toast-wrap{left:10px;right:10px;bottom:calc(14px + var(--safe-b))}
   .toast{width:100%}
-  .mobile-nav{
-    position:fixed;left:0;right:0;bottom:0;z-index:60;
-    display:grid;grid-template-columns:repeat(4,1fr);
-    gap:4px;padding:7px 8px calc(7px + var(--safe-b));
-    background:rgba(11,18,36,.97);border-top:1px solid #334155;
-    box-shadow:0 -8px 24px rgba(0,0,0,.3);backdrop-filter:blur(12px)
-  }
-  .mobile-nav button{min-height:52px;border-radius:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700}
-  .mobile-nav button .mobile-nav-icon{font-size:20px;line-height:1}
-  .mobile-nav button.active{background:rgba(15,118,110,.28);color:#5eead4}
+  .mobile-nav{display:none}
+  .sale-layout{gap:16px}
+  .sale-theme{padding:19px}
+  .sale-theme>.row:first-of-type{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .sale-theme>.row:nth-of-type(2){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .sale-theme>.row .field{min-width:0}
+  .sale-theme .pill{font-size:11px}
+}
+@media(max-width:420px){
+  .content{padding-left:14px;padding-right:14px}
+  .login-screen{padding:18px}
+  .login-card{padding:32px 22px}
 }
 .card{background:var(--panel);border:1px solid #273449;border-radius:var(--radius);padding:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
 .card h3{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
@@ -298,12 +306,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
     <div class="content" id="viewRoot"></div>
   </div>
-  <nav class="mobile-nav" aria-label="Mobile navigation">
-    <button data-view="pos" class="active" onclick="nav('pos')"><span class="mobile-nav-icon">🛒</span><span>Sale Out</span></button>
-    <button data-view="receipts" onclick="nav('receipts')"><span class="mobile-nav-icon">🧾</span><span>Receipts</span></button>
-    <button data-view="dashboard" data-admin-only onclick="nav('dashboard')"><span class="mobile-nav-icon">📊</span><span>Dashboard</span></button>
-    <button onclick="toggleSide()" aria-label="Open full menu"><span class="mobile-nav-icon">☰</span><span>Menu</span></button>
-  </nav>
 </div>
 
 <div class="toast-wrap" id="toasts"></div>
@@ -3235,7 +3237,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260730-mobile-layout-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260730-mobile-layout-r2').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);

@@ -1,5 +1,5 @@
 /* ZEZMS TradeFlow — Classic v3.4.4 layout restored; VAT, Invoice, Waybill, Auto Month and Cloud Sync M4 retained */
-const CACHE = 'zezms-mobile-layout-20260730-r1';
+const CACHE = 'zezms-mobile-layout-20260730-r2';
 const ASSETS = [
   './',
   './index.html',
