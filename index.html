@@ -7,82 +7,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260730-portrait-readable-mobile-r4" /><meta name="zezms-mobile-engine" content="portrait-readable-v4" />
-<title>Zola Electronics Zone · TradeFlow v3.4.14 · Portrait Readable Mobile</title>
+<meta name="zezms-build" content="20260730-mobile-layout-r1" />
+<title>Zola Electronics Zone · TradeFlow v3.4.8 · Classic Layout</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
 <script>
 (function(){
   'use strict';
-
-  function getScreenMetrics(){
-    var sw = Number(window.screen && window.screen.width) || 0;
-    var sh = Number(window.screen && window.screen.height) || 0;
-    return {
-      width: sw,
-      height: sh,
-      shortSide: sw && sh ? Math.min(sw, sh) : 0,
-      longSide: sw && sh ? Math.max(sw, sh) : 0
-    };
-  }
-
-  function normalizePhoneViewport(isTouchPhone, metrics){
-    if(!isTouchPhone) return;
-    var portrait = true;
-    try { portrait = window.matchMedia('(orientation: portrait)').matches; } catch (_) {}
-    var targetWidth = portrait ? metrics.shortSide : metrics.longSide;
-    if(!targetWidth) return;
-
-    var viewport = document.querySelector('meta[name="viewport"]');
-    if(viewport){
-      viewport.setAttribute(
-        'content',
-        'width=' + Math.round(targetWidth)
-          + ', initial-scale=1, minimum-scale=1, maximum-scale=5'
-          + ', user-scalable=yes, viewport-fit=cover'
-      );
-    }
-  }
-
-  function applyZEZMSPhoneLayout(){
-    var viewportNarrow = false;
-    var coarsePointer = false;
-    try { viewportNarrow = window.matchMedia('(max-width: 900px)').matches; } catch (_) {}
-    try { coarsePointer = window.matchMedia('(pointer: coarse)').matches; } catch (_) {}
-
-    var metrics = getScreenMetrics();
-    var touchPhoneOrTablet =
-      (navigator.maxTouchPoints || 0) > 0
-      && coarsePointer
-      && metrics.shortSide > 0
-      && metrics.shortSide <= 900;
-
-    normalizePhoneViewport(touchPhoneOrTablet, metrics);
-
-    var usePhoneLayout = viewportNarrow || touchPhoneOrTablet;
-    var portrait = false;
-    try { portrait = window.matchMedia('(orientation: portrait)').matches; } catch (_) {}
-
-    document.documentElement.classList.toggle('zezms-phone-layout', usePhoneLayout);
-    document.documentElement.classList.toggle('zezms-phone-portrait', usePhoneLayout && portrait);
-    document.documentElement.dataset.zezmsLayout = usePhoneLayout
-      ? (portrait ? 'phone-portrait' : 'phone-landscape')
-      : 'desktop';
-  }
-
-  applyZEZMSPhoneLayout();
-  window.addEventListener('resize', applyZEZMSPhoneLayout, {passive:true});
-  window.addEventListener('orientationchange', function(){
-    setTimeout(applyZEZMSPhoneLayout, 80);
-  }, {passive:true});
-  window.ZEZMSApplyPhoneLayout = applyZEZMSPhoneLayout;
-}());
-</script>
-<script>
-(function(){
-  'use strict';
-  const BUILD = '20260730-portrait-readable-mobile-r4';
+  const BUILD = '20260730-mobile-layout-r1';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -164,6 +97,7 @@ a{color:var(--teal2)}
 .topbar h2{margin:0;font-size:17px;flex:1}
 .burger{display:none;width:40px;height:40px;border-radius:10px;background:var(--panel);font-size:18px}
 .content{padding:16px;padding-bottom:calc(24px + var(--safe-b));flex:1}
+.mobile-nav{display:none}
 .grid{display:grid;gap:12px}
 .g2{grid-template-columns:repeat(2,1fr)}
 .g3{grid-template-columns:repeat(3,1fr)}
@@ -171,11 +105,45 @@ a{color:var(--teal2)}
 .g6{grid-template-columns:repeat(6,1fr)}
 @media(max-width:1100px){.g6{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){
-  .sidebar{position:fixed;transform:translateX(-100%)}
+  html,body{min-height:100%;height:auto;overflow-x:hidden}
+  .app{min-height:100dvh}
+  .sidebar{position:fixed;inset:0 auto 0 0;width:min(86vw,320px);height:100dvh;transform:translateX(-100%);z-index:80}
   .sidebar.open{transform:translateX(0);box-shadow:var(--shadow)}
+  .overlay{z-index:70}
   .burger{display:inline-flex;align-items:center;justify-content:center}
-  .g2,.g3,.g4,.g6{grid-template-columns:1fr 1fr}
-  .g1m{grid-template-columns:1fr}
+  .main{width:100%;min-width:0}
+  .topbar{min-height:58px;padding:8px 10px;gap:8px}
+  .topbar h2{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #clockPill{display:none}
+  .content{padding:12px 10px calc(88px + var(--safe-b))}
+  .card{padding:12px;border-radius:12px}
+  .g2,.g3,.g4,.g6,.g1m{grid-template-columns:1fr}
+  .row{align-items:stretch}
+  .row>.btn{min-height:44px}
+  .btn{min-height:44px;padding:10px 14px}
+  .btn.sm{min-height:40px;padding:8px 11px}
+  .field input,.field select,.field textarea{min-height:46px;font-size:16px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:0 0 auto;min-height:42px}
+  .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-wrap table{min-width:680px}
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal{width:100%;max-height:88dvh;border-radius:18px 18px 0 0;padding:18px 14px calc(18px + var(--safe-b))}
+  .login-screen{padding:0;align-items:stretch}
+  .login-card{width:100%;min-height:100dvh;border:0;border-radius:0;padding:calc(32px + env(safe-area-inset-top,0px)) 20px calc(24px + var(--safe-b));display:flex;flex-direction:column;justify-content:center}
+  .toast-wrap{left:10px;right:10px;bottom:calc(76px + var(--safe-b))}
+  .toast{width:100%}
+  .mobile-nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:4px;padding:7px 8px calc(7px + var(--safe-b));
+    background:rgba(11,18,36,.97);border-top:1px solid #334155;
+    box-shadow:0 -8px 24px rgba(0,0,0,.3);backdrop-filter:blur(12px)
+  }
+  .mobile-nav button{min-height:52px;border-radius:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700}
+  .mobile-nav button .mobile-nav-icon{font-size:20px;line-height:1}
+  .mobile-nav button.active{background:rgba(15,118,110,.28);color:#5eead4}
 }
 .card{background:var(--panel);border:1px solid #273449;border-radius:var(--radius);padding:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
 .card h3{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
@@ -263,707 +231,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .pos-totals .statline b{font-size:15px}
 .credit-row td{background:rgba(255,199,206,.18)!important;color:#fca5a5}
 
-
-/* ===== v3.4.11 reference mobile layout ===== */
-@media (max-width:900px){
-  html,body{width:100%;min-width:0;overflow-x:hidden;background:#0c1528}
-  body{font-size:16px}
-  .app{display:block;width:100%;min-height:100svh}
-  .main{width:100%;min-width:0;min-height:100svh}
-  .sidebar{
-    position:fixed;inset:0 auto 0 0;width:min(84vw,330px);height:100svh;
-    transform:translateX(-105%);transition:transform .22s ease;z-index:80;
-    box-shadow:none;border-right:1px solid #334155
-  }
-  .sidebar.open{transform:translateX(0);box-shadow:0 18px 50px rgba(0,0,0,.55)}
-  .overlay{z-index:70;background:rgba(2,6,23,.66);backdrop-filter:blur(2px)}
-  .brand{padding:22px 18px 14px}.brand h1{font-size:17px}.brand p{font-size:11px;line-height:1.45}
-  .nav{padding:12px 10px 24px}.nav button{min-height:48px;font-size:15px;padding:12px 14px}
-
-  .topbar{
-    min-height:78px;padding:14px 22px;display:grid;
-    grid-template-columns:56px minmax(0,1fr) 48px;align-items:center;gap:12px;
-    background:#0d172b;border-bottom:1px solid #26344c
-  }
-  .burger{display:inline-flex;width:56px;height:56px;border-radius:13px;background:#1d2a40;font-size:26px;align-items:center;justify-content:center}
-  .topbar h2{font-size:23px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #clockPill{display:none}
-  .topbar>.btn.sm.ghost{width:48px;height:48px;padding:0;border-radius:12px;font-size:20px}
-
-  .content{width:100%;max-width:100%;padding:20px 22px calc(34px + var(--safe-b));overflow-x:hidden}
-  .card{width:100%;min-width:0;border-radius:18px;padding:20px;border-color:#2c3b55;background:#1d2a40;box-shadow:0 2px 0 rgba(0,0,0,.18)}
-  .card h3{font-size:14px;letter-spacing:.55px;margin-bottom:12px}
-  .field{gap:7px;margin-bottom:12px;min-width:0}
-  .field label{font-size:12px;letter-spacing:.45px}
-  .field input,.field select,.field textarea{min-height:56px;border-radius:13px;padding:13px 15px;font-size:17px;background:#081221;border-color:#34445f}
-  .field textarea{min-height:92px}
-  .btn{min-height:52px;border-radius:12px;padding:12px 18px;font-size:16px}
-  .btn.sm{min-height:40px;padding:8px 12px;font-size:13px}
-  .pill{min-height:34px;padding:6px 12px;font-size:13px}
-  .row{gap:10px}
-
-  .period-selector{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:18px!important;align-items:end}
-  .period-selector .field{width:auto!important;min-width:0!important;margin:0!important}
-  .period-selector .pill{grid-column:1/-1;justify-self:start;margin:2px 0 0!important}
-  .dashboard-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px}
-  .dashboard-kpi-grid .kpi{min-height:132px;padding:18px 20px}
-  .kpi .val{font-size:29px;line-height:1.18;word-break:break-word}
-  .kpi .sub{font-size:13px;line-height:1.35;margin-top:7px}
-  .dashboard-secondary-grid{grid-template-columns:1fr!important;gap:14px}
-
-  .sale-layout{grid-template-columns:1fr!important;gap:16px}
-  .sale-layout>div{min-width:0;width:100%}
-  .mobile-primary-card{padding:20px}
-  .mobile-search-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
-  .mobile-search-row>.field{width:100%;margin:0 0 12px}
-  .mobile-number-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
-  .mobile-number-row>.field{width:100%;margin:0}
-  .waybill-number-row{grid-template-columns:minmax(0,.75fr) minmax(0,.75fr) minmax(0,2fr)}
-  .mobile-number-row .field label{min-height:45px;display:flex;align-items:flex-end;line-height:1.2}
-  .mobile-action-row{display:grid;grid-template-columns:auto auto;justify-content:start}
-  .mobile-action-row .btn{min-width:124px}
-  .mobile-customer-card,.mobile-cashier-card,.mobile-payment-card{margin-top:0}
-  .pos-totals .statline{padding:10px 0;font-size:15px}
-  .pos-totals .statline b{font-size:16px}
-
-  .table-wrap{max-width:100%;overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
-  .table-wrap table{min-width:560px}
-  th,td{padding:12px 10px}
-  th{font-size:12px}
-  td{font-size:14px}
-  .empty{padding:36px 18px;font-size:15px}
-
-  .login-screen{min-height:100svh;padding:22px;background:radial-gradient(850px 560px at 50% -8%,#0c5c59,transparent 65%),#0c1528}
-  .login-card{width:100%;max-width:500px;border-radius:22px;padding:38px 30px;background:#1d2a40;border-color:#34445f}
-  .login-card>div:first-child>div{width:88px!important;height:88px!important;border-radius:23px!important;font-size:34px!important}
-  .login-card h1{font-size:26px;line-height:1.25;text-transform:uppercase;margin-top:14px}
-  .login-card .sub{font-size:14px;line-height:1.45;margin:8px 0 24px}
-
-  .modal-bg{padding:0;align-items:flex-end}
-  .modal{width:100%;max-width:none;max-height:92svh;border-radius:22px 22px 0 0;padding:22px}
-  .toast-wrap{left:14px;right:14px}.toast{width:100%}
-
-  .document-layout{grid-template-columns:1fr!important;gap:16px!important}
-  .document-layout>div{min-width:0}
-  .doc-register-actions{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
-  .footer-note{font-size:11px;line-height:1.4}
-}
-@media (max-width:430px){
-  .content{padding-left:16px;padding-right:16px}
-  .topbar{padding-left:16px;padding-right:16px;grid-template-columns:52px minmax(0,1fr) 44px}
-  .burger{width:52px;height:52px}
-  .topbar h2{font-size:20px}
-  .mobile-number-row{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .waybill-number-row{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .waybill-number-row>.field:last-child{grid-column:1/-1}
-  .mobile-number-row .field label{min-height:auto}
-  .dashboard-kpi-grid{gap:10px}
-  .dashboard-kpi-grid .kpi{min-height:120px;padding:16px}
-  .kpi .val{font-size:24px}
-  .login-card{padding:32px 22px}
-}
-
-
-/* ===== v3.4.12 forced phone-layout fallback ===== */
-html.zezms-phone-layout,html.zezms-phone-layout body{width:100%;min-width:0;overflow-x:hidden;background:#0c1528}
-html.zezms-phone-layout body{font-size:16px}
-html.zezms-phone-layout .app{display:block;width:100%;min-height:100svh}
-html.zezms-phone-layout .main{width:100%;min-width:0;min-height:100svh}
-html.zezms-phone-layout .sidebar{position:fixed;inset:0 auto 0 0;width:min(84vw,330px);height:100svh;transform:translateX(-105%);transition:transform .22s ease;z-index:80;box-shadow:none;border-right:1px solid #334155}
-html.zezms-phone-layout .sidebar.open{transform:translateX(0);box-shadow:0 18px 50px rgba(0,0,0,.55)}
-html.zezms-phone-layout .overlay{z-index:70;background:rgba(2,6,23,.66);backdrop-filter:blur(2px)}
-html.zezms-phone-layout .brand{padding:22px 18px 14px}
-html.zezms-phone-layout .brand h1{font-size:17px}
-html.zezms-phone-layout .brand p{font-size:11px;line-height:1.45}
-html.zezms-phone-layout .nav{padding:12px 10px 24px}
-html.zezms-phone-layout .nav button{min-height:48px;font-size:15px;padding:12px 14px}
-html.zezms-phone-layout .topbar{min-height:78px;padding:14px 22px;display:grid;grid-template-columns:56px minmax(0,1fr) 48px;align-items:center;gap:12px;background:#0d172b;border-bottom:1px solid #26344c}
-html.zezms-phone-layout .burger{display:inline-flex;width:56px;height:56px;border-radius:13px;background:#1d2a40;font-size:26px;align-items:center;justify-content:center}
-html.zezms-phone-layout .topbar h2{font-size:23px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-html.zezms-phone-layout #clockPill{display:none}
-html.zezms-phone-layout .topbar>.btn.sm.ghost{width:48px;height:48px;padding:0;border-radius:12px;font-size:20px}
-html.zezms-phone-layout .content{width:100%;max-width:100%;padding:20px 22px calc(34px + var(--safe-b));overflow-x:hidden}
-html.zezms-phone-layout .card{width:100%;min-width:0;border-radius:18px;padding:20px;border-color:#2c3b55;background:#1d2a40;box-shadow:0 2px 0 rgba(0,0,0,.18)}
-html.zezms-phone-layout .card h3{font-size:14px;letter-spacing:.55px;margin-bottom:12px}
-html.zezms-phone-layout .field{gap:7px;margin-bottom:12px;min-width:0}
-html.zezms-phone-layout .field label{font-size:12px;letter-spacing:.45px}
-html.zezms-phone-layout .field input,html.zezms-phone-layout .field select,html.zezms-phone-layout .field textarea{min-height:56px;border-radius:13px;padding:13px 15px;font-size:17px;background:#081221;border-color:#34445f;min-width:0;width:100%}
-html.zezms-phone-layout .field textarea{min-height:92px}
-html.zezms-phone-layout .btn{min-height:52px;border-radius:12px;padding:12px 18px;font-size:16px}
-html.zezms-phone-layout .btn.sm{min-height:40px;padding:8px 12px;font-size:13px}
-html.zezms-phone-layout .pill{min-height:34px;padding:6px 12px;font-size:13px}
-html.zezms-phone-layout .row{gap:10px}
-html.zezms-phone-layout .period-selector{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:18px!important;align-items:end}
-html.zezms-phone-layout .period-selector .field{width:auto!important;min-width:0!important;margin:0!important}
-html.zezms-phone-layout .period-selector .pill{grid-column:1/-1;justify-self:start;margin:2px 0 0!important}
-html.zezms-phone-layout .dashboard-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px}
-html.zezms-phone-layout .dashboard-kpi-grid .kpi{min-height:132px;padding:18px 20px}
-html.zezms-phone-layout .kpi .val{font-size:29px;line-height:1.18;word-break:break-word}
-html.zezms-phone-layout .kpi .sub{font-size:13px;line-height:1.35;margin-top:7px}
-html.zezms-phone-layout .dashboard-secondary-grid{grid-template-columns:1fr!important;gap:14px}
-html.zezms-phone-layout .sale-layout{grid-template-columns:1fr!important;gap:16px}
-html.zezms-phone-layout .sale-layout>div{min-width:0;width:100%}
-html.zezms-phone-layout .mobile-primary-card{padding:20px}
-html.zezms-phone-layout .mobile-search-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
-html.zezms-phone-layout .mobile-search-row>.field{width:100%;margin:0 0 12px;min-width:0}
-html.zezms-phone-layout .mobile-number-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
-html.zezms-phone-layout .mobile-number-row>.field{width:100%;margin:0;min-width:0}
-html.zezms-phone-layout .waybill-number-row{grid-template-columns:minmax(0,.75fr) minmax(0,.75fr) minmax(0,2fr)}
-html.zezms-phone-layout .mobile-number-row .field label{min-height:45px;display:flex;align-items:flex-end;line-height:1.2}
-html.zezms-phone-layout .mobile-action-row{display:grid;grid-template-columns:auto auto;justify-content:start}
-html.zezms-phone-layout .mobile-action-row .btn{min-width:124px}
-html.zezms-phone-layout .mobile-customer-card,html.zezms-phone-layout .mobile-cashier-card,html.zezms-phone-layout .mobile-payment-card{margin-top:0}
-html.zezms-phone-layout .pos-totals .statline{padding:10px 0;font-size:15px}
-html.zezms-phone-layout .pos-totals .statline b{font-size:16px}
-html.zezms-phone-layout .table-wrap{max-width:100%;overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
-html.zezms-phone-layout .table-wrap table{min-width:560px}
-html.zezms-phone-layout th,html.zezms-phone-layout td{padding:12px 10px}
-html.zezms-phone-layout th{font-size:12px}
-html.zezms-phone-layout td{font-size:14px}
-html.zezms-phone-layout .empty{padding:36px 18px;font-size:15px}
-html.zezms-phone-layout .login-screen{min-height:100svh;padding:22px;background:radial-gradient(850px 560px at 50% -8%,#0c5c59,transparent 65%),#0c1528}
-html.zezms-phone-layout .login-card{width:100%;max-width:500px;border-radius:22px;padding:38px 30px;background:#1d2a40;border-color:#34445f}
-html.zezms-phone-layout .login-card>div:first-child>div{width:88px!important;height:88px!important;border-radius:23px!important;font-size:34px!important}
-html.zezms-phone-layout .login-card h1{font-size:26px;line-height:1.25;text-transform:uppercase;margin-top:14px}
-html.zezms-phone-layout .login-card .sub{font-size:14px;line-height:1.45;margin:8px 0 24px}
-html.zezms-phone-layout .modal-bg{padding:0;align-items:flex-end}
-html.zezms-phone-layout .modal{width:100%;max-width:none;max-height:92svh;border-radius:22px 22px 0 0;padding:22px}
-html.zezms-phone-layout .toast-wrap{left:14px;right:14px}
-html.zezms-phone-layout .toast{width:100%}
-html.zezms-phone-layout .document-layout{grid-template-columns:1fr!important;gap:16px!important}
-html.zezms-phone-layout .document-layout>div{min-width:0}
-html.zezms-phone-layout .doc-register-actions{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
-html.zezms-phone-layout .footer-note{font-size:11px;line-height:1.4}
-@media (max-width:430px){
-  html.zezms-phone-layout .content{padding-left:16px;padding-right:16px}
-  html.zezms-phone-layout .topbar{padding-left:16px;padding-right:16px;grid-template-columns:52px minmax(0,1fr) 44px}
-  html.zezms-phone-layout .burger{width:52px;height:52px}
-  html.zezms-phone-layout .topbar h2{font-size:20px}
-  html.zezms-phone-layout .mobile-number-row{grid-template-columns:repeat(2,minmax(0,1fr))}
-  html.zezms-phone-layout .waybill-number-row{grid-template-columns:repeat(2,minmax(0,1fr))}
-  html.zezms-phone-layout .waybill-number-row>.field:last-child{grid-column:1/-1}
-  html.zezms-phone-layout .mobile-number-row .field label{min-height:auto}
-  html.zezms-phone-layout .dashboard-kpi-grid{gap:10px}
-  html.zezms-phone-layout .dashboard-kpi-grid .kpi{min-height:120px;padding:16px}
-  html.zezms-phone-layout .kpi .val{font-size:24px}
-  html.zezms-phone-layout .login-card{padding:32px 22px}
-}
-
-
-
-/* ===== v3.4.13 vertical-only mobile containment ===== */
-html.zezms-phone-layout,
-html.zezms-phone-layout body{
-  width:100%!important;
-  max-width:100%!important;
-  min-width:0!important;
-  overflow-x:clip!important;
-  overscroll-behavior-x:none;
-}
-html.zezms-phone-layout body{
-  position:relative;
-  touch-action:pan-y;
-}
-html.zezms-phone-layout #appShell,
-html.zezms-phone-layout .app,
-html.zezms-phone-layout .main,
-html.zezms-phone-layout .content,
-html.zezms-phone-layout #viewRoot{
-  width:100%!important;
-  max-width:100%!important;
-  min-width:0!important;
-  overflow-x:clip!important;
-}
-html.zezms-phone-layout #viewRoot,
-html.zezms-phone-layout #viewRoot > *,
-html.zezms-phone-layout #viewRoot .grid,
-html.zezms-phone-layout #viewRoot .row,
-html.zezms-phone-layout #viewRoot .card,
-html.zezms-phone-layout #viewRoot .sale-layout,
-html.zezms-phone-layout #viewRoot .document-layout,
-html.zezms-phone-layout #viewRoot .field,
-html.zezms-phone-layout #viewRoot .table-wrap{
-  max-width:100%!important;
-  min-width:0!important;
-}
-html.zezms-phone-layout #viewRoot .grid > *,
-html.zezms-phone-layout #viewRoot .row > *,
-html.zezms-phone-layout #viewRoot .card > *,
-html.zezms-phone-layout #viewRoot .sale-layout > *,
-html.zezms-phone-layout #viewRoot .document-layout > *{
-  min-width:0!important;
-  max-width:100%;
-}
-html.zezms-phone-layout img,
-html.zezms-phone-layout svg,
-html.zezms-phone-layout canvas{
-  max-width:100%!important;
-  height:auto;
-}
-html.zezms-phone-layout .content{
-  padding-left:clamp(12px,4vw,22px)!important;
-  padding-right:clamp(12px,4vw,22px)!important;
-}
-html.zezms-phone-layout .topbar{
-  width:100%!important;
-  max-width:100%!important;
-  min-width:0!important;
-}
-html.zezms-phone-layout .topbar h2{
-  min-width:0!important;
-  max-width:100%;
-}
-html.zezms-phone-layout .tabs,
-html.zezms-phone-layout .doc-register-actions{
-  max-width:100%!important;
-  overflow-x:visible!important;
-  flex-wrap:wrap!important;
-}
-html.zezms-phone-layout .mobile-action-row{
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-  width:100%;
-}
-html.zezms-phone-layout .mobile-action-row .btn{
-  min-width:0!important;
-  width:100%;
-}
-html.zezms-phone-layout .period-selector{
-  width:100%;
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-}
-html.zezms-phone-layout .period-selector .field{
-  min-width:0!important;
-  width:100%!important;
-}
-html.zezms-phone-layout .dashboard-kpi-grid{
-  width:100%;
-  grid-template-columns:repeat(2,minmax(0,1fr))!important;
-}
-html.zezms-phone-layout .dashboard-kpi-grid .kpi{
-  min-width:0!important;
-  overflow:hidden;
-}
-html.zezms-phone-layout .kpi .val{
-  overflow-wrap:anywhere;
-  word-break:normal;
-}
-html.zezms-phone-layout .mobile-search-row,
-html.zezms-phone-layout .mobile-number-row,
-html.zezms-phone-layout .waybill-number-row{
-  width:100%!important;
-  max-width:100%!important;
-}
-html.zezms-phone-layout input,
-html.zezms-phone-layout select,
-html.zezms-phone-layout textarea,
-html.zezms-phone-layout button{
-  max-width:100%;
-}
-
-/* All mobile tables stay within the phone width. */
-html.zezms-phone-layout .table-wrap{
-  width:100%!important;
-  max-width:100%!important;
-  min-width:0!important;
-  overflow-x:hidden!important;
-  overflow-y:visible!important;
-  max-height:none!important;
-}
-html.zezms-phone-layout .table-wrap table{
-  width:100%!important;
-  max-width:100%!important;
-  min-width:0!important;
-}
-
-/* The Sale Out item table keeps its familiar five-column appearance. */
-html.zezms-phone-layout table.mobile-fit-table{
-  display:table!important;
-  table-layout:fixed!important;
-  width:100%!important;
-  min-width:0!important;
-  font-size:11px!important;
-}
-html.zezms-phone-layout table.mobile-fit-table thead{
-  display:table-header-group!important;
-}
-html.zezms-phone-layout table.mobile-fit-table tbody{
-  display:table-row-group!important;
-}
-html.zezms-phone-layout table.mobile-fit-table tr{
-  display:table-row!important;
-}
-html.zezms-phone-layout table.mobile-fit-table th,
-html.zezms-phone-layout table.mobile-fit-table td{
-  display:table-cell!important;
-  min-width:0!important;
-  padding:9px 4px!important;
-  font-size:10.5px!important;
-  line-height:1.25;
-  overflow-wrap:anywhere;
-  word-break:normal;
-  white-space:normal!important;
-  vertical-align:top;
-}
-html.zezms-phone-layout table.mobile-fit-table th:nth-child(1),
-html.zezms-phone-layout table.mobile-fit-table td:nth-child(1){width:34%}
-html.zezms-phone-layout table.mobile-fit-table th:nth-child(2),
-html.zezms-phone-layout table.mobile-fit-table td:nth-child(2){width:11%;text-align:center}
-html.zezms-phone-layout table.mobile-fit-table th:nth-child(3),
-html.zezms-phone-layout table.mobile-fit-table td:nth-child(3){width:19%;text-align:right}
-html.zezms-phone-layout table.mobile-fit-table th:nth-child(4),
-html.zezms-phone-layout table.mobile-fit-table td:nth-child(4){width:17%;text-align:right}
-html.zezms-phone-layout table.mobile-fit-table th:nth-child(5),
-html.zezms-phone-layout table.mobile-fit-table td:nth-child(5){width:19%;text-align:right}
-
-/* Wider registers become readable vertical record cards instead of horizontal tables. */
-html.zezms-phone-layout .mobile-stack-wrap{
-  border:0!important;
-  background:transparent!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table,
-html.zezms-phone-layout table.mobile-stacked-table tbody,
-html.zezms-phone-layout table.mobile-stacked-table tr,
-html.zezms-phone-layout table.mobile-stacked-table td{
-  display:block!important;
-  width:100%!important;
-  min-width:0!important;
-  max-width:100%!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table thead{
-  position:absolute!important;
-  width:1px!important;
-  height:1px!important;
-  padding:0!important;
-  margin:-1px!important;
-  overflow:hidden!important;
-  clip:rect(0,0,0,0)!important;
-  white-space:nowrap!important;
-  border:0!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table tbody{
-  border:0!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table tr{
-  margin:0 0 12px!important;
-  padding:8px 12px!important;
-  border:1px solid #334155!important;
-  border-radius:13px!important;
-  background:#152136!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table tr:hover td{
-  background:transparent!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table td{
-  display:grid!important;
-  grid-template-columns:minmax(96px,40%) minmax(0,60%)!important;
-  gap:10px!important;
-  align-items:start;
-  padding:9px 0!important;
-  border-bottom:1px dashed #334155!important;
-  text-align:right!important;
-  white-space:normal!important;
-  overflow-wrap:anywhere!important;
-  word-break:normal!important;
-  font-size:13px!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table td:last-child{
-  border-bottom:0!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table td::before{
-  content:attr(data-label);
-  color:var(--muted);
-  font-size:10.5px;
-  line-height:1.3;
-  font-weight:700;
-  letter-spacing:.35px;
-  text-transform:uppercase;
-  text-align:left;
-}
-html.zezms-phone-layout table.mobile-stacked-table td[colspan]{
-  display:block!important;
-  text-align:center!important;
-  padding:20px 8px!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table td[colspan]::before{
-  display:none!important;
-}
-html.zezms-phone-layout table.mobile-stacked-table td .btn{
-  margin:2px 0 4px 6px;
-  min-height:38px;
-}
-
-@media (max-width:430px){
-  html.zezms-phone-layout .content{
-    padding-left:12px!important;
-    padding-right:12px!important;
-  }
-  html.zezms-phone-layout .card{
-    padding:15px!important;
-  }
-  html.zezms-phone-layout .dashboard-kpi-grid{
-    gap:10px!important;
-  }
-  html.zezms-phone-layout .dashboard-kpi-grid .kpi{
-    padding:14px!important;
-    min-height:112px!important;
-  }
-  html.zezms-phone-layout .kpi .val{
-    font-size:22px!important;
-  }
-  html.zezms-phone-layout .mobile-search-row{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-    gap:8px!important;
-  }
-  html.zezms-phone-layout .mobile-number-row,
-  html.zezms-phone-layout .waybill-number-row{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-    gap:8px!important;
-  }
-}
-
-
-/* Forms and administrative grids use one column on phones; KPIs/search controls keep their dedicated layouts. */
-html.zezms-phone-layout #viewRoot .grid.g2,
-html.zezms-phone-layout #viewRoot .grid.g3,
-html.zezms-phone-layout #viewRoot .grid.g4,
-html.zezms-phone-layout #viewRoot .grid.g6{
-  grid-template-columns:minmax(0,1fr)!important;
-}
-html.zezms-phone-layout #viewRoot .dashboard-kpi-grid{
-  grid-template-columns:repeat(2,minmax(0,1fr))!important;
-}
-html.zezms-phone-layout #viewRoot p,
-html.zezms-phone-layout #viewRoot label,
-html.zezms-phone-layout #viewRoot .muted,
-html.zezms-phone-layout #viewRoot .mono,
-html.zezms-phone-layout #viewRoot code,
-html.zezms-phone-layout #viewRoot pre{
-  max-width:100%!important;
-  white-space:normal;
-  overflow-wrap:anywhere;
-  word-break:normal;
-}
-
-html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
-  grid-template-columns:repeat(2,minmax(0,1fr))!important;
-}
-
-
-/* ===== v3.4.14 portrait-readable mobile =====
-   Portrait prioritises readable text and vertical scrolling.
-   Landscape retains the wider five-column/table presentation. */
-@media (orientation:portrait){
-  html.zezms-phone-layout{
-    -webkit-text-size-adjust:100%;
-    text-size-adjust:100%;
-  }
-  html.zezms-phone-layout,
-  html.zezms-phone-layout body{
-    height:auto!important;
-    min-height:100%!important;
-    overflow-x:hidden!important;
-    overflow-y:auto!important;
-    touch-action:pan-y pinch-zoom!important;
-    overscroll-behavior-y:auto;
-  }
-  html.zezms-phone-layout body{
-    font-size:17px!important;
-  }
-  html.zezms-phone-layout .app,
-  html.zezms-phone-layout .main,
-  html.zezms-phone-layout #appShell,
-  html.zezms-phone-layout #viewRoot{
-    height:auto!important;
-    min-height:100svh!important;
-    overflow-y:visible!important;
-  }
-  html.zezms-phone-layout .content{
-    padding:15px 14px calc(40px + var(--safe-b))!important;
-    overflow-y:visible!important;
-  }
-  html.zezms-phone-layout .topbar{
-    min-height:68px!important;
-    padding:10px 14px!important;
-    grid-template-columns:48px minmax(0,1fr) 42px!important;
-    gap:10px!important;
-  }
-  html.zezms-phone-layout .burger{
-    width:48px!important;
-    height:48px!important;
-    font-size:23px!important;
-  }
-  html.zezms-phone-layout .topbar h2{
-    font-size:21px!important;
-  }
-  html.zezms-phone-layout .topbar>.btn.sm.ghost{
-    width:42px!important;
-    height:42px!important;
-  }
-
-  html.zezms-phone-layout .card{
-    padding:16px!important;
-    border-radius:16px!important;
-  }
-  html.zezms-phone-layout .card h3{
-    font-size:13px!important;
-    line-height:1.35!important;
-  }
-  html.zezms-phone-layout .field{
-    gap:6px!important;
-    margin-bottom:12px!important;
-  }
-  html.zezms-phone-layout .field label{
-    font-size:12px!important;
-    line-height:1.25!important;
-  }
-  html.zezms-phone-layout .field input,
-  html.zezms-phone-layout .field select,
-  html.zezms-phone-layout .field textarea{
-    min-height:54px!important;
-    padding:12px 13px!important;
-    font-size:17px!important;
-    line-height:1.3!important;
-  }
-  html.zezms-phone-layout .btn{
-    min-height:50px!important;
-    padding:11px 15px!important;
-    font-size:16px!important;
-  }
-  html.zezms-phone-layout .pill{
-    min-height:32px!important;
-    padding:5px 10px!important;
-    font-size:13px!important;
-  }
-
-  html.zezms-phone-layout .period-selector{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-    gap:10px!important;
-  }
-  html.zezms-phone-layout .dashboard-kpi-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:10px!important;
-  }
-  html.zezms-phone-layout .dashboard-kpi-grid .kpi{
-    min-height:116px!important;
-    padding:14px!important;
-  }
-  html.zezms-phone-layout .kpi .val{
-    font-size:23px!important;
-    line-height:1.18!important;
-  }
-  html.zezms-phone-layout .kpi .sub{
-    font-size:12px!important;
-    line-height:1.3!important;
-  }
-
-  html.zezms-phone-layout .mobile-search-row{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-    gap:9px!important;
-  }
-  html.zezms-phone-layout .mobile-number-row,
-  html.zezms-phone-layout .waybill-number-row{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-    gap:9px!important;
-  }
-  html.zezms-phone-layout .waybill-number-row>.field:last-child{
-    grid-column:1/-1!important;
-  }
-  html.zezms-phone-layout .mobile-number-row .field label{
-    min-height:auto!important;
-  }
-  html.zezms-phone-layout .mobile-action-row{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-    gap:10px!important;
-  }
-
-  /* Do not squeeze Sale Out's five item columns into tiny text in portrait.
-     Each item becomes a readable vertical card. */
-  html.zezms-phone-layout table.mobile-fit-table,
-  html.zezms-phone-layout table.mobile-fit-table tbody,
-  html.zezms-phone-layout table.mobile-fit-table tr,
-  html.zezms-phone-layout table.mobile-fit-table td{
-    display:block!important;
-    width:100%!important;
-    max-width:100%!important;
-    min-width:0!important;
-  }
-  html.zezms-phone-layout table.mobile-fit-table thead{
-    position:absolute!important;
-    width:1px!important;
-    height:1px!important;
-    margin:-1px!important;
-    overflow:hidden!important;
-    clip:rect(0,0,0,0)!important;
-    white-space:nowrap!important;
-  }
-  html.zezms-phone-layout table.mobile-fit-table tbody tr{
-    margin:0 0 12px!important;
-    padding:8px 12px!important;
-    border:1px solid #334155!important;
-    border-radius:13px!important;
-    background:#152136!important;
-  }
-  html.zezms-phone-layout table.mobile-fit-table td{
-    display:grid!important;
-    grid-template-columns:minmax(100px,42%) minmax(0,58%)!important;
-    gap:10px!important;
-    padding:9px 0!important;
-    border-bottom:1px dashed #334155!important;
-    text-align:right!important;
-    font-size:15px!important;
-    line-height:1.35!important;
-    white-space:normal!important;
-    overflow-wrap:anywhere!important;
-  }
-  html.zezms-phone-layout table.mobile-fit-table td:last-child{
-    border-bottom:0!important;
-  }
-  html.zezms-phone-layout table.mobile-fit-table td::before{
-    content:attr(data-label);
-    color:var(--muted);
-    font-size:12px!important;
-    line-height:1.3!important;
-    font-weight:700;
-    letter-spacing:.25px;
-    text-transform:uppercase;
-    text-align:left;
-  }
-  html.zezms-phone-layout table.mobile-fit-table td[colspan]{
-    display:block!important;
-    padding:22px 8px!important;
-    text-align:center!important;
-    font-size:15px!important;
-  }
-  html.zezms-phone-layout table.mobile-fit-table td[colspan]::before{
-    display:none!important;
-  }
-
-  html.zezms-phone-layout table.mobile-stacked-table td{
-    grid-template-columns:minmax(105px,42%) minmax(0,58%)!important;
-    font-size:15px!important;
-    line-height:1.35!important;
-  }
-  html.zezms-phone-layout table.mobile-stacked-table td::before{
-    font-size:12px!important;
-  }
-
-  html.zezms-phone-layout .login-screen{
-    position:fixed!important;
-    overflow-y:auto!important;
-    padding:18px!important;
-  }
-  html.zezms-phone-layout .login-card{
-    max-width:460px!important;
-    padding:30px 22px!important;
-  }
-  html.zezms-phone-layout .login-card h1{
-    font-size:24px!important;
-  }
-  html.zezms-phone-layout .login-card .sub{
-    font-size:14px!important;
-  }
-}
-
 </style>
 </head>
 <body>
@@ -974,7 +241,7 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.14 · Portrait Readable Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.8 · Classic Layout · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -994,13 +261,13 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.14 · Portrait Readable Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.8 · Classic Layout · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
       <button data-view="dashboard" data-admin-only onclick="nav('dashboard')">📊 Dashboard KPIs</button>
       <button data-view="pos" class="active" onclick="nav('pos')">🛒 Sale Out</button>
-      <button data-view="receipts" onclick="nav('receipts')">🧾 Sales Records</button>
+      <button data-view="receipts" onclick="nav('receipts')">🖨️ Receipts</button>
       <button data-view="stockin" data-admin-only id="navStockIn" onclick="nav('stockin')">📥 Stock In</button>
       <button data-view="products" data-admin-only onclick="nav('products')">📦 Products</button>
       <button data-view="stock" data-admin-only onclick="nav('stock')">📋 Stock Balance</button>
@@ -1031,6 +298,12 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
     </div>
     <div class="content" id="viewRoot"></div>
   </div>
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <button data-view="pos" class="active" onclick="nav('pos')"><span class="mobile-nav-icon">🛒</span><span>Sale Out</span></button>
+    <button data-view="receipts" onclick="nav('receipts')"><span class="mobile-nav-icon">🧾</span><span>Receipts</span></button>
+    <button data-view="dashboard" data-admin-only onclick="nav('dashboard')"><span class="mobile-nav-icon">📊</span><span>Dashboard</span></button>
+    <button onclick="toggleSide()" aria-label="Open full menu"><span class="mobile-nav-icon">☰</span><span>Menu</span></button>
+  </nav>
 </div>
 
 <div class="toast-wrap" id="toasts"></div>
@@ -1039,38 +312,38 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/app.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/logger.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/diagnostics.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/registry.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/storage.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/dbservice.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/bootpatch.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/events.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/db-events.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/system-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/health-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/utils-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/lifecycle-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/notifications-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-adapter.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-service.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-controller.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-events.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-metrics.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-facade.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/config.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/app.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/logger.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/diagnostics.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/registry.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/storage.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/dbservice.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/bootpatch.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/events.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/db-events.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/system-module.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/health-module.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/utils-module.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/lifecycle-module.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/notifications-module.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/product-search-module.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/product-search-adapter.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/product-search-service.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/product-search-controller.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/product-search-events.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/product-search-metrics.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/product-search-facade.js?v=20260726-classic-layout-restore-r1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/backup-manager.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/cloud-sync.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/backup-manager.js?v=20260726-classic-layout-restore-r1"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.14 — Portrait Readable Mobile — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.8 — Classic Layout Restore — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.14';
+const APP_VERSION = '3.4.8';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -1471,7 +744,7 @@ function promptPIN(title, expected, onOk){
 const TITLES = {
   dashboard:'Dashboard KPIs', pos:'Sale Out', stockin:'Stock In', products:'Products',
   stock:'Stock Balance', cash:'Cash Balances', expenses:'Expenses', accounts:'Accounts',
-  receipts:'Sales Records', reports:'Reports',
+  receipts:'Receipt Register', reports:'Reports',
   sync:'Sync / Backup', settings:'Settings'
 };
 const CASHIER2_ALLOWED = new Set(['pos','receipts']);
@@ -1494,7 +767,7 @@ function nav(view){
     view = 'pos';
   }
   currentView = view;
-  document.querySelectorAll('#mainNav button[data-view]').forEach(b=>{
+  document.querySelectorAll('button[data-view]').forEach(b=>{
     b.classList.toggle('active', b.dataset.view===view);
   });
   $('viewTitle').textContent = TITLES[view]||view;
@@ -1552,7 +825,7 @@ function periodSelectorHTML(){
   DB.kpiHistory.forEach(k=>years.add(k.year));
   const yOpts = [...years].sort((a,b)=>b-a).map(y=>`<option value="${y}" ${y===DB.selectedYear?'selected':''}>${y}</option>`).join('');
   const mOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}" ${m===DB.selectedMonth?'selected':''}>${monthName(m)}</option>`).join('');
-  return `<div class="row period-selector" style="margin-bottom:12px">
+  return `<div class="row" style="margin-bottom:12px">
     <div class="field" style="margin:0;min-width:120px"><label>Year</label>
       <select id="selYear" onchange="changePeriod()">${yOpts}</select></div>
     <div class="field" style="margin:0;min-width:140px"><label>Month</label>
@@ -1581,10 +854,10 @@ function viewDashboard(){
     {k:'Zakaat (2.5%)', v:fmt(KPI_Zakaat()), c:'pink', s:'Liquid Cash ÷ 40'},
   ];
   return periodSelectorHTML() +
-    `<div class="grid g3 dashboard-kpi-grid" style="margin-bottom:14px">` +
+    `<div class="grid g3" style="margin-bottom:14px">` +
     tiles.map(t=>`<div class="card kpi ${t.c}"><h3>${t.k}</h3><div class="val mono">${t.v}</div><div class="sub">${t.s}</div></div>`).join('') +
     `</div>
-    <div class="grid g2 dashboard-secondary-grid">
+    <div class="grid g2">
       <div class="card">
         <h3>Quick actions</h3>
         <div class="row">
@@ -1946,9 +1219,9 @@ function viewPOS(){
 
   return `<div class="sale-layout">
     <div>
-      <div class="card sale-theme mobile-primary-card" style="margin-bottom:12px">
+      <div class="card sale-theme" style="margin-bottom:12px">
         <h3>Product entry · Sale Out</h3>
-        <div class="row mobile-search-row">
+        <div class="row">
           <div class="field" style="position:relative;flex:1">
             <label>Search by product name</label>
             <input id="posSearchName" placeholder="Type product name…" autocomplete="off"
@@ -1970,7 +1243,7 @@ function viewPOS(){
           </select>
         </div>
         ${available.length?'':`<div class="empty" style="margin-bottom:10px">No available products in ${monthName(lm.month)} ${lm.year}.</div>`}
-        <div class="row mobile-number-row">
+        <div class="row">
           <div class="field" style="flex:1"><label>Qty</label>
             <input id="posQty" type="number" min="0.01" step="1" value="1" /></div>
           <div class="field" style="flex:1"><label>Unit price (locked)</label>
@@ -1986,7 +1259,7 @@ function viewPOS(){
           <span class="pill">Open month: ${monthName(lm.month)} ${lm.year}</span>
           <span class="pill">Cashier: ${esc(session.cashier||'')}</span>
         </div>
-        <div class="row mobile-action-row" style="margin-top:10px">
+        <div class="row" style="margin-top:10px">
           <button class="btn" onclick="addItemToList()">Add item</button>
           <button class="btn ghost" onclick="clearProductEntry()">Clear entry</button>
         </div>
@@ -2009,7 +1282,7 @@ function viewPOS(){
     </div>
 
     <div>
-      <div class="card mobile-customer-card" style="margin-bottom:12px">
+      <div class="card" style="margin-bottom:12px">
         <h3>Customer</h3>
         <div class="field"><label>Customer name *</label>
           <input id="posCust" placeholder="Required for Print Receipt" value="${escAttr(cart._cust||'')}" oninput="cart._cust=this.value" /></div>
@@ -2019,13 +1292,13 @@ function viewPOS(){
           <input id="posTel" placeholder="Required for Print Receipt" value="${escAttr(cart._tel||'')}" oninput="cart._tel=this.value" /></div>
       </div>
 
-      <div class="card mobile-cashier-card" style="margin-bottom:12px">
+      <div class="card" style="margin-bottom:12px">
         <h3>Cashier (display only)</h3>
         <div class="statline"><span>Name</span><b>${esc(session.cashier||'')}</b></div>
         <div class="statline"><span>Tel</span><b>${esc(session.tel||'')}</b></div>
       </div>
 
-      <div class="card pos-totals mobile-payment-card">
+      <div class="card pos-totals">
         <h3>Payment summary</h3>
         <div class="statline"><span>Subtotal</span><b class="mono" id="posSubtotal">${fmtN(sub)}</b></div>
         <div class="field" style="margin-top:10px"><label>VAT percentage (%)</label>
@@ -2398,9 +1671,7 @@ function printReceiptSale(){
     credit: outstanding > 0,
     cashier: session.cashier,
     cashierTel: session.tel,
-    lines: items,
-    saleType: 'RECEIPT',
-    status: 'ACTIVE'
+    lines: items
   });
 
   DB.sales.push({
@@ -2420,8 +1691,6 @@ function printReceiptSale(){
     date: nowISO(),
     year: getLatestMonth().year,
     month: getLatestMonth().month,
-    saleType: 'RECEIPT',
-    status: 'ACTIVE',
     lines: allocations.map(a=>({
       product: a.line.name,
       qty: a.line.qty,
@@ -2499,7 +1768,7 @@ function showReceiptModal(sale){
     <div class="row" style="margin-top:12px">
       <button class="btn" onclick="window.print()">Print</button>
       <button class="btn ghost" onclick="closeModal();render()">Close</button>
-      ${isElevated()?`<button class="btn ghost" onclick="closeModal();nav('receipts')">Sales Records</button>`:''}
+      ${isElevated()?`<button class="btn ghost" onclick="closeModal();nav('receipts')">Receipts</button>`:''}
     </div>
   `);
 }
@@ -2898,7 +2167,7 @@ function viewSync(){
       <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
       <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
       <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
-      <div class="statline"><span>Month rollover</span><b class="badge ok">AUTOMATIC</b></div><div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-a5-receipt-print-20260730-r1</b></div>
+      <div class="statline"><span>Month rollover</span><b class="badge ok">AUTOMATIC</b></div><div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-invoice-waybill-20260725-r1</b></div>
     </div>
   </div>`;
 }
@@ -3966,7 +3235,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260730-portrait-readable-mobile-r4').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260730-mobile-layout-r1').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3988,10 +3257,9 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/auto-month-rollover.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/invoice-waybill.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/mobile-vertical-layout.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/operations-update.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/auto-month-rollover.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/invoice-waybill.js?v=20260726-classic-layout-restore-r1"></script>
 
 
 

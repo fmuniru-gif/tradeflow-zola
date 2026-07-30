@@ -1,37 +1,36 @@
-/* ZEZMS TradeFlow — Vertical-only phone layout; A5 receipts, Sales Records, VAT, Invoice, Waybill, Auto Month and Cloud Sync M4 retained */
-const CACHE = 'zezms-portrait-readable-mobile-20260730-r4';
+/* ZEZMS TradeFlow — Classic v3.4.4 layout restored; VAT, Invoice, Waybill, Auto Month and Cloud Sync M4 retained */
+const CACHE = 'zezms-mobile-layout-20260730-r1';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './js/app.js?v=20260730-portrait-readable-mobile-r4',
-  './js/backup-manager.js?v=20260730-portrait-readable-mobile-r4',
-  './js/cloud-sync.js?v=20260730-portrait-readable-mobile-r4',
-  './js/bootpatch.js?v=20260730-portrait-readable-mobile-r4',
-  './js/config.js?v=20260730-portrait-readable-mobile-r4',
-  './js/db-events.js?v=20260730-portrait-readable-mobile-r4',
-  './js/dbservice.js?v=20260730-portrait-readable-mobile-r4',
-  './js/diagnostics.js?v=20260730-portrait-readable-mobile-r4',
-  './js/events.js?v=20260730-portrait-readable-mobile-r4',
-  './js/health-module.js?v=20260730-portrait-readable-mobile-r4',
-  './js/lifecycle-module.js?v=20260730-portrait-readable-mobile-r4',
-  './js/logger.js?v=20260730-portrait-readable-mobile-r4',
-  './js/notifications-module.js?v=20260730-portrait-readable-mobile-r4',
-  './js/operations-update.js?v=20260730-portrait-readable-mobile-r4',
-  './js/auto-month-rollover.js?v=20260730-portrait-readable-mobile-r4',
-  './js/invoice-waybill.js?v=20260730-portrait-readable-mobile-r4',
-  './js/product-search-adapter.js?v=20260730-portrait-readable-mobile-r4',
-  './js/product-search-controller.js?v=20260730-portrait-readable-mobile-r4',
-  './js/product-search-events.js?v=20260730-portrait-readable-mobile-r4',
-  './js/product-search-facade.js?v=20260730-portrait-readable-mobile-r4',
-  './js/product-search-metrics.js?v=20260730-portrait-readable-mobile-r4',
-  './js/product-search-module.js?v=20260730-portrait-readable-mobile-r4',
-  './js/product-search-service.js?v=20260730-portrait-readable-mobile-r4',
-  './js/registry.js?v=20260730-portrait-readable-mobile-r4',
-  './js/storage.js?v=20260730-portrait-readable-mobile-r4',
-  './js/system-module.js?v=20260730-portrait-readable-mobile-r4',
-  './js/utils-module.js?v=20260730-portrait-readable-mobile-r4',
-  './js/mobile-vertical-layout.js?v=20260730-portrait-readable-mobile-r4'
+  './js/app.js?v=20260726-classic-layout-restore-r1',
+  './js/backup-manager.js?v=20260726-classic-layout-restore-r1',
+  './js/cloud-sync.js?v=20260726-classic-layout-restore-r1',
+  './js/bootpatch.js?v=20260726-classic-layout-restore-r1',
+  './js/config.js?v=20260726-classic-layout-restore-r1',
+  './js/db-events.js?v=20260726-classic-layout-restore-r1',
+  './js/dbservice.js?v=20260726-classic-layout-restore-r1',
+  './js/diagnostics.js?v=20260726-classic-layout-restore-r1',
+  './js/events.js?v=20260726-classic-layout-restore-r1',
+  './js/health-module.js?v=20260726-classic-layout-restore-r1',
+  './js/lifecycle-module.js?v=20260726-classic-layout-restore-r1',
+  './js/logger.js?v=20260726-classic-layout-restore-r1',
+  './js/notifications-module.js?v=20260726-classic-layout-restore-r1',
+  './js/operations-update.js?v=20260726-classic-layout-restore-r1',
+  './js/auto-month-rollover.js?v=20260726-classic-layout-restore-r1',
+  './js/invoice-waybill.js?v=20260726-classic-layout-restore-r1',
+  './js/product-search-adapter.js?v=20260726-classic-layout-restore-r1',
+  './js/product-search-controller.js?v=20260726-classic-layout-restore-r1',
+  './js/product-search-events.js?v=20260726-classic-layout-restore-r1',
+  './js/product-search-facade.js?v=20260726-classic-layout-restore-r1',
+  './js/product-search-metrics.js?v=20260726-classic-layout-restore-r1',
+  './js/product-search-module.js?v=20260726-classic-layout-restore-r1',
+  './js/product-search-service.js?v=20260726-classic-layout-restore-r1',
+  './js/registry.js?v=20260726-classic-layout-restore-r1',
+  './js/storage.js?v=20260726-classic-layout-restore-r1',
+  './js/system-module.js?v=20260726-classic-layout-restore-r1',
+  './js/utils-module.js?v=20260726-classic-layout-restore-r1'
 ];
 
 self.addEventListener('install', (event) => {
@@ -65,7 +64,7 @@ self.addEventListener('fetch', (event) => {
 
   if (isAppCode) {
     event.respondWith(
-      fetch(request, { cache: 'no-store' })
+      fetch(request)
         .then((response) => {
           if (response && response.ok) {
             const clone = response.clone();

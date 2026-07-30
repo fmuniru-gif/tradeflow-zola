@@ -1,10 +1,10 @@
-/* ZEZMS TradeFlow v3.4.11 — Electronic Invoice & Waybill
+/* ZEZMS TradeFlow v3.4.8 — Electronic Invoice & Waybill
    Creates printable commercial documents without posting stock or KPI changes.
    An invoice can be loaded into Sale Out; stock is deducted only when the sale is completed. */
 (function () {
   'use strict';
 
-  const BUILD = '20260730-mobile-reference-r1';
+  const BUILD = '20260726-classic-layout-restore-r1';
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;
@@ -563,12 +563,12 @@
       '<tr><td colspan="7" class="empty">No products added to this invoice.</td></tr>';
     return `<div class="document-layout"><div>
       <div class="card sale-theme" style="margin-bottom:12px"><h3>Product entry · Invoice</h3>
-        <div class="row mobile-search-row"><div class="field" style="position:relative;flex:1"><label>Search by product name</label>
+        <div class="row"><div class="field" style="position:relative;flex:1"><label>Search by product name</label>
           <input id="invSearchName" placeholder="Type product name…" autocomplete="off" oninput="invoiceSearchName()" onkeydown="commercialSearchKey(event,'inv','name')"><div id="invSuggestName" class="suggest"></div></div>
           <div class="field" style="position:relative;flex:1"><label>Search by product ID</label>
           <input id="invSearchId" placeholder="Type product ID…" autocomplete="off" oninput="invoiceSearchId()" onkeydown="commercialSearchKey(event,'inv','id')"><div id="invSuggestId" class="suggest"></div></div></div>
         <div class="field"><label>Available product — ${monthName(lm.month)} ${lm.year}</label><select id="invProduct" onchange="commercialProductChanged('inv')">${productOptions()}</select></div>
-        <div class="row mobile-number-row"><div class="field" style="flex:1"><label>Qty</label><input id="invQty" type="number" min="0.01" step="1" value="1"></div>
+        <div class="row"><div class="field" style="flex:1"><label>Qty</label><input id="invQty" type="number" min="0.01" step="1" value="1"></div>
           <div class="field" style="flex:1"><label>Unit price (locked)</label><input id="invUPrice" type="number" step="0.01" value="0" readonly></div>
           <div class="field" style="flex:1"><label>Price adj (dbl-click / PIN)</label><input id="invPriceAdj" type="number" step="0.01" value="0" readonly ondblclick="unlockInvoicePriceAdjustment()"></div>
           <div class="field" style="flex:1"><label>Discount (GH₵)</label><input id="invDisc" type="number" min="0" step="0.01" value="0"></div></div>
@@ -621,10 +621,10 @@
       '<tr><td colspan="6" class="empty">No products added to this waybill.</td></tr>';
     return `<div class="document-layout"><div>
       <div class="card sale-theme" style="margin-bottom:12px"><h3>Product entry · Waybill</h3>
-        <div class="row mobile-search-row"><div class="field" style="position:relative;flex:1"><label>Search by product name</label><input id="wbSearchName" placeholder="Type product name…" autocomplete="off" oninput="waybillSearchName()" onkeydown="commercialSearchKey(event,'wb','name')"><div id="wbSuggestName" class="suggest"></div></div>
+        <div class="row"><div class="field" style="position:relative;flex:1"><label>Search by product name</label><input id="wbSearchName" placeholder="Type product name…" autocomplete="off" oninput="waybillSearchName()" onkeydown="commercialSearchKey(event,'wb','name')"><div id="wbSuggestName" class="suggest"></div></div>
           <div class="field" style="position:relative;flex:1"><label>Search by product ID</label><input id="wbSearchId" placeholder="Type product ID…" autocomplete="off" oninput="waybillSearchId()" onkeydown="commercialSearchKey(event,'wb','id')"><div id="wbSuggestId" class="suggest"></div></div></div>
         <div class="field"><label>Available product — ${monthName(lm.month)} ${lm.year}</label><select id="wbProduct" onchange="commercialProductChanged('wb')">${productOptions()}</select></div>
-        <div class="row mobile-number-row waybill-number-row"><div class="field" style="flex:1"><label>Quantity</label><input id="wbQty" type="number" min="0.01" step="1" value="1"></div>
+        <div class="row"><div class="field" style="flex:1"><label>Quantity</label><input id="wbQty" type="number" min="0.01" step="1" value="1"></div>
           <div class="field" style="flex:1"><label>Unit</label><input id="wbUnit" value="pcs" placeholder="pcs, boxes, sets…"></div>
           <div class="field" style="flex:2"><label>Line remarks</label><input id="wbLineRemarks" placeholder="Serial numbers or condition (optional)"></div></div>
         <div class="row"><span class="pill">Remaining qty: <b id="wbRemQty" class="mono">0</b></span><span class="pill">Open month: ${monthName(lm.month)} ${lm.year}</span></div>
@@ -755,7 +755,7 @@
   installNavigation();
   window.ZEZMS = window.ZEZMS || {};
   ZEZMS.commercialDocuments = {
-    version: '3.4.10', build: BUILD, ensureModel,
+    version: '3.4.8', build: BUILD, ensureModel,
     viewInvoices, viewWaybills, createInvoice, createWaybill,
     loadInvoiceToSale, prepareWaybillFromInvoice
   };
