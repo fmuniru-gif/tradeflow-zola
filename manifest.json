@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS classic desktop-style interface with VAT-ready sales and invoices, inventory, waybills, automatic month rollover, backup and transaction-level cloud merging.",
-  "start_url": "./index.html?build=20260726-classic-layout-restore-r1",
+  "description": "ZEZMS classic business interface with A5-optimized receipt printing, Sales Records, VAT, inventory, invoices, waybills, automatic month rollover, backup and transaction-level cloud sync.",
+  "start_url": "./index.html?build=20260730-a5-receipt-print-r1",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

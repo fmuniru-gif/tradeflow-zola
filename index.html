@@ -7,15 +7,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260726-classic-layout-restore-r1" />
-<title>Zola Electronics Zone · TradeFlow v3.4.8 · Classic Layout</title>
+<meta name="zezms-build" content="20260730-a5-receipt-print-r1" />
+<title>Zola Electronics Zone · TradeFlow v3.4.10 · Sales Records & A5 Receipt Print</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260726-classic-layout-restore-r1';
+  const BUILD = '20260730-a5-receipt-print-r1';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -206,7 +206,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.8 · Classic Layout · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.10 · Sales Records & A5 Receipt Print · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -226,13 +226,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.8 · Classic Layout · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.10 · Sales Records & A5 Receipt Print · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
       <button data-view="dashboard" data-admin-only onclick="nav('dashboard')">📊 Dashboard KPIs</button>
       <button data-view="pos" class="active" onclick="nav('pos')">🛒 Sale Out</button>
-      <button data-view="receipts" onclick="nav('receipts')">🖨️ Receipts</button>
+      <button data-view="receipts" onclick="nav('receipts')">🧾 Sales Records</button>
       <button data-view="stockin" data-admin-only id="navStockIn" onclick="nav('stockin')">📥 Stock In</button>
       <button data-view="products" data-admin-only onclick="nav('products')">📦 Products</button>
       <button data-view="stock" data-admin-only onclick="nav('stock')">📋 Stock Balance</button>
@@ -271,38 +271,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/app.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/logger.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/diagnostics.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/registry.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/storage.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/dbservice.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/bootpatch.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/events.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/db-events.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/system-module.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/health-module.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/utils-module.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/lifecycle-module.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/notifications-module.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/product-search-module.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/product-search-adapter.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/product-search-service.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/product-search-controller.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/product-search-events.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/product-search-metrics.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/product-search-facade.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/config.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/app.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/logger.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/diagnostics.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/registry.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/storage.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/dbservice.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/bootpatch.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/events.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/db-events.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/system-module.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/health-module.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/utils-module.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/lifecycle-module.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/notifications-module.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/product-search-module.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/product-search-adapter.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/product-search-service.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/product-search-controller.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/product-search-events.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/product-search-metrics.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/product-search-facade.js?v=20260730-a5-receipt-print-r1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/backup-manager.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/cloud-sync.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/backup-manager.js?v=20260730-a5-receipt-print-r1"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.8 — Classic Layout Restore — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.10 — Sales Records & A5 Receipt Print — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.8';
+const APP_VERSION = '3.4.10';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -703,7 +703,7 @@ function promptPIN(title, expected, onOk){
 const TITLES = {
   dashboard:'Dashboard KPIs', pos:'Sale Out', stockin:'Stock In', products:'Products',
   stock:'Stock Balance', cash:'Cash Balances', expenses:'Expenses', accounts:'Accounts',
-  receipts:'Receipt Register', reports:'Reports',
+  receipts:'Sales Records', reports:'Reports',
   sync:'Sync / Backup', settings:'Settings'
 };
 const CASHIER2_ALLOWED = new Set(['pos','receipts']);
@@ -1630,7 +1630,9 @@ function printReceiptSale(){
     credit: outstanding > 0,
     cashier: session.cashier,
     cashierTel: session.tel,
-    lines: items
+    lines: items,
+    saleType: 'RECEIPT',
+    status: 'ACTIVE'
   });
 
   DB.sales.push({
@@ -1650,6 +1652,8 @@ function printReceiptSale(){
     date: nowISO(),
     year: getLatestMonth().year,
     month: getLatestMonth().month,
+    saleType: 'RECEIPT',
+    status: 'ACTIVE',
     lines: allocations.map(a=>({
       product: a.line.name,
       qty: a.line.qty,
@@ -1727,7 +1731,7 @@ function showReceiptModal(sale){
     <div class="row" style="margin-top:12px">
       <button class="btn" onclick="window.print()">Print</button>
       <button class="btn ghost" onclick="closeModal();render()">Close</button>
-      ${isElevated()?`<button class="btn ghost" onclick="closeModal();nav('receipts')">Receipts</button>`:''}
+      ${isElevated()?`<button class="btn ghost" onclick="closeModal();nav('receipts')">Sales Records</button>`:''}
     </div>
   `);
 }
@@ -2126,7 +2130,7 @@ function viewSync(){
       <div class="statline"><span>Stock rows</span><b>${DB.stockRows.length}</b></div>
       <div class="statline"><span>Sales</span><b>${DB.sales.length}</b></div>
       <div class="statline"><span>Online</span><b>${navigator.onLine?'Yes':'Offline'}</b></div>
-      <div class="statline"><span>Month rollover</span><b class="badge ok">AUTOMATIC</b></div><div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-invoice-waybill-20260725-r1</b></div>
+      <div class="statline"><span>Month rollover</span><b class="badge ok">AUTOMATIC</b></div><div class="statline"><span>Cloud sync milestone</span><b class="badge ok">M4 TRANSACTION MERGE</b></div><div class="statline"><span>Backup milestone</span><b class="badge ok">M2 ACTIVE</b></div><div class="statline"><span>SW cache</span><b>zezms-a5-receipt-print-20260730-r1</b></div>
     </div>
   </div>`;
 }
@@ -3194,7 +3198,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260726-classic-layout-restore-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260730-a5-receipt-print-r1').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3216,9 +3220,9 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/auto-month-rollover.js?v=20260726-classic-layout-restore-r1"></script>
-<script src="js/invoice-waybill.js?v=20260726-classic-layout-restore-r1"></script>
+<script src="js/operations-update.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/auto-month-rollover.js?v=20260730-a5-receipt-print-r1"></script>
+<script src="js/invoice-waybill.js?v=20260730-a5-receipt-print-r1"></script>
 
 
 

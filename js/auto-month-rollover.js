@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260726-classic-layout-restore-r1';
+  const BUILD = '20260730-a5-receipt-print-r1';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 
