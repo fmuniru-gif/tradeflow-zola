@@ -1,36 +1,36 @@
 /* ZEZMS TradeFlow — Sales Records and receipt print matching; classic layout, VAT, Invoice, Waybill, Auto Month and Cloud Sync M4 retained */
-const CACHE = 'zezms-mobile-reference-20260730-r1';
+const CACHE = 'zezms-mobile-reference-force-20260730-r2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './js/app.js?v=20260730-mobile-reference-r1',
-  './js/backup-manager.js?v=20260730-mobile-reference-r1',
-  './js/cloud-sync.js?v=20260730-mobile-reference-r1',
-  './js/bootpatch.js?v=20260730-mobile-reference-r1',
-  './js/config.js?v=20260730-mobile-reference-r1',
-  './js/db-events.js?v=20260730-mobile-reference-r1',
-  './js/dbservice.js?v=20260730-mobile-reference-r1',
-  './js/diagnostics.js?v=20260730-mobile-reference-r1',
-  './js/events.js?v=20260730-mobile-reference-r1',
-  './js/health-module.js?v=20260730-mobile-reference-r1',
-  './js/lifecycle-module.js?v=20260730-mobile-reference-r1',
-  './js/logger.js?v=20260730-mobile-reference-r1',
-  './js/notifications-module.js?v=20260730-mobile-reference-r1',
-  './js/operations-update.js?v=20260730-mobile-reference-r1',
-  './js/auto-month-rollover.js?v=20260730-mobile-reference-r1',
-  './js/invoice-waybill.js?v=20260730-mobile-reference-r1',
-  './js/product-search-adapter.js?v=20260730-mobile-reference-r1',
-  './js/product-search-controller.js?v=20260730-mobile-reference-r1',
-  './js/product-search-events.js?v=20260730-mobile-reference-r1',
-  './js/product-search-facade.js?v=20260730-mobile-reference-r1',
-  './js/product-search-metrics.js?v=20260730-mobile-reference-r1',
-  './js/product-search-module.js?v=20260730-mobile-reference-r1',
-  './js/product-search-service.js?v=20260730-mobile-reference-r1',
-  './js/registry.js?v=20260730-mobile-reference-r1',
-  './js/storage.js?v=20260730-mobile-reference-r1',
-  './js/system-module.js?v=20260730-mobile-reference-r1',
-  './js/utils-module.js?v=20260730-mobile-reference-r1'
+  './js/app.js?v=20260730-mobile-reference-force-r2',
+  './js/backup-manager.js?v=20260730-mobile-reference-force-r2',
+  './js/cloud-sync.js?v=20260730-mobile-reference-force-r2',
+  './js/bootpatch.js?v=20260730-mobile-reference-force-r2',
+  './js/config.js?v=20260730-mobile-reference-force-r2',
+  './js/db-events.js?v=20260730-mobile-reference-force-r2',
+  './js/dbservice.js?v=20260730-mobile-reference-force-r2',
+  './js/diagnostics.js?v=20260730-mobile-reference-force-r2',
+  './js/events.js?v=20260730-mobile-reference-force-r2',
+  './js/health-module.js?v=20260730-mobile-reference-force-r2',
+  './js/lifecycle-module.js?v=20260730-mobile-reference-force-r2',
+  './js/logger.js?v=20260730-mobile-reference-force-r2',
+  './js/notifications-module.js?v=20260730-mobile-reference-force-r2',
+  './js/operations-update.js?v=20260730-mobile-reference-force-r2',
+  './js/auto-month-rollover.js?v=20260730-mobile-reference-force-r2',
+  './js/invoice-waybill.js?v=20260730-mobile-reference-force-r2',
+  './js/product-search-adapter.js?v=20260730-mobile-reference-force-r2',
+  './js/product-search-controller.js?v=20260730-mobile-reference-force-r2',
+  './js/product-search-events.js?v=20260730-mobile-reference-force-r2',
+  './js/product-search-facade.js?v=20260730-mobile-reference-force-r2',
+  './js/product-search-metrics.js?v=20260730-mobile-reference-force-r2',
+  './js/product-search-module.js?v=20260730-mobile-reference-force-r2',
+  './js/product-search-service.js?v=20260730-mobile-reference-force-r2',
+  './js/registry.js?v=20260730-mobile-reference-force-r2',
+  './js/storage.js?v=20260730-mobile-reference-force-r2',
+  './js/system-module.js?v=20260730-mobile-reference-force-r2',
+  './js/utils-module.js?v=20260730-mobile-reference-force-r2'
 ];
 
 self.addEventListener('install', (event) => {
@@ -64,7 +64,7 @@ self.addEventListener('fetch', (event) => {
 
   if (isAppCode) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           if (response && response.ok) {
             const clone = response.clone();

@@ -1,5 +1,5 @@
 window.ZEZMS_CONFIG={
-  version:"Developer Edition 0.4.11 — Reference Mobile Layout",
+  version:"Developer Edition 0.4.12 — Mobile Layout Force Fix",
   build:"20260730-mobile-reference-r1",
   debug:true,
   cloud:{

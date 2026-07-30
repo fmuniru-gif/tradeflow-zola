@@ -7,15 +7,37 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260730-mobile-reference-r1" />
-<title>Zola Electronics Zone · TradeFlow v3.4.11 · Reference Mobile Layout</title>
+<meta name="zezms-build" content="20260730-mobile-reference-force-r2" /><meta name="zezms-mobile-engine" content="forced-class-v2" />
+<title>Zola Electronics Zone · TradeFlow v3.4.12 · Mobile Layout Force Fix</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260730-mobile-reference-r1';
+  function applyZEZMSPhoneLayout(){
+    var viewportNarrow = false;
+    var coarsePointer = false;
+    try { viewportNarrow = window.matchMedia('(max-width: 900px)').matches; } catch (_) {}
+    try { coarsePointer = window.matchMedia('(pointer: coarse)').matches; } catch (_) {}
+    var sw = Number(window.screen && window.screen.width) || 0;
+    var sh = Number(window.screen && window.screen.height) || 0;
+    var shortSide = sw && sh ? Math.min(sw, sh) : 0;
+    var touchPhoneOrTablet = (navigator.maxTouchPoints || 0) > 0 && coarsePointer && shortSide > 0 && shortSide <= 900;
+    var usePhoneLayout = viewportNarrow || touchPhoneOrTablet;
+    document.documentElement.classList.toggle('zezms-phone-layout', usePhoneLayout);
+    document.documentElement.dataset.zezmsLayout = usePhoneLayout ? 'phone' : 'desktop';
+  }
+  applyZEZMSPhoneLayout();
+  window.addEventListener('resize', applyZEZMSPhoneLayout, {passive:true});
+  window.addEventListener('orientationchange', applyZEZMSPhoneLayout, {passive:true});
+  window.ZEZMSApplyPhoneLayout = applyZEZMSPhoneLayout;
+}());
+</script>
+<script>
+(function(){
+  'use strict';
+  const BUILD = '20260730-mobile-reference-force-r2';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -198,7 +220,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 
 /* ===== v3.4.11 reference mobile layout ===== */
-@media (max-width:760px){
+@media (max-width:900px){
   html,body{width:100%;min-width:0;overflow-x:hidden;background:#0c1528}
   body{font-size:16px}
   .app{display:block;width:100%;min-height:100svh}
@@ -296,6 +318,92 @@ tr:hover td{background:rgba(255,255,255,.02)}
   .login-card{padding:32px 22px}
 }
 
+
+/* ===== v3.4.12 forced phone-layout fallback ===== */
+html.zezms-phone-layout,html.zezms-phone-layout body{width:100%;min-width:0;overflow-x:hidden;background:#0c1528}
+html.zezms-phone-layout body{font-size:16px}
+html.zezms-phone-layout .app{display:block;width:100%;min-height:100svh}
+html.zezms-phone-layout .main{width:100%;min-width:0;min-height:100svh}
+html.zezms-phone-layout .sidebar{position:fixed;inset:0 auto 0 0;width:min(84vw,330px);height:100svh;transform:translateX(-105%);transition:transform .22s ease;z-index:80;box-shadow:none;border-right:1px solid #334155}
+html.zezms-phone-layout .sidebar.open{transform:translateX(0);box-shadow:0 18px 50px rgba(0,0,0,.55)}
+html.zezms-phone-layout .overlay{z-index:70;background:rgba(2,6,23,.66);backdrop-filter:blur(2px)}
+html.zezms-phone-layout .brand{padding:22px 18px 14px}
+html.zezms-phone-layout .brand h1{font-size:17px}
+html.zezms-phone-layout .brand p{font-size:11px;line-height:1.45}
+html.zezms-phone-layout .nav{padding:12px 10px 24px}
+html.zezms-phone-layout .nav button{min-height:48px;font-size:15px;padding:12px 14px}
+html.zezms-phone-layout .topbar{min-height:78px;padding:14px 22px;display:grid;grid-template-columns:56px minmax(0,1fr) 48px;align-items:center;gap:12px;background:#0d172b;border-bottom:1px solid #26344c}
+html.zezms-phone-layout .burger{display:inline-flex;width:56px;height:56px;border-radius:13px;background:#1d2a40;font-size:26px;align-items:center;justify-content:center}
+html.zezms-phone-layout .topbar h2{font-size:23px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.zezms-phone-layout #clockPill{display:none}
+html.zezms-phone-layout .topbar>.btn.sm.ghost{width:48px;height:48px;padding:0;border-radius:12px;font-size:20px}
+html.zezms-phone-layout .content{width:100%;max-width:100%;padding:20px 22px calc(34px + var(--safe-b));overflow-x:hidden}
+html.zezms-phone-layout .card{width:100%;min-width:0;border-radius:18px;padding:20px;border-color:#2c3b55;background:#1d2a40;box-shadow:0 2px 0 rgba(0,0,0,.18)}
+html.zezms-phone-layout .card h3{font-size:14px;letter-spacing:.55px;margin-bottom:12px}
+html.zezms-phone-layout .field{gap:7px;margin-bottom:12px;min-width:0}
+html.zezms-phone-layout .field label{font-size:12px;letter-spacing:.45px}
+html.zezms-phone-layout .field input,html.zezms-phone-layout .field select,html.zezms-phone-layout .field textarea{min-height:56px;border-radius:13px;padding:13px 15px;font-size:17px;background:#081221;border-color:#34445f;min-width:0;width:100%}
+html.zezms-phone-layout .field textarea{min-height:92px}
+html.zezms-phone-layout .btn{min-height:52px;border-radius:12px;padding:12px 18px;font-size:16px}
+html.zezms-phone-layout .btn.sm{min-height:40px;padding:8px 12px;font-size:13px}
+html.zezms-phone-layout .pill{min-height:34px;padding:6px 12px;font-size:13px}
+html.zezms-phone-layout .row{gap:10px}
+html.zezms-phone-layout .period-selector{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:18px!important;align-items:end}
+html.zezms-phone-layout .period-selector .field{width:auto!important;min-width:0!important;margin:0!important}
+html.zezms-phone-layout .period-selector .pill{grid-column:1/-1;justify-self:start;margin:2px 0 0!important}
+html.zezms-phone-layout .dashboard-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px}
+html.zezms-phone-layout .dashboard-kpi-grid .kpi{min-height:132px;padding:18px 20px}
+html.zezms-phone-layout .kpi .val{font-size:29px;line-height:1.18;word-break:break-word}
+html.zezms-phone-layout .kpi .sub{font-size:13px;line-height:1.35;margin-top:7px}
+html.zezms-phone-layout .dashboard-secondary-grid{grid-template-columns:1fr!important;gap:14px}
+html.zezms-phone-layout .sale-layout{grid-template-columns:1fr!important;gap:16px}
+html.zezms-phone-layout .sale-layout>div{min-width:0;width:100%}
+html.zezms-phone-layout .mobile-primary-card{padding:20px}
+html.zezms-phone-layout .mobile-search-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+html.zezms-phone-layout .mobile-search-row>.field{width:100%;margin:0 0 12px;min-width:0}
+html.zezms-phone-layout .mobile-number-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+html.zezms-phone-layout .mobile-number-row>.field{width:100%;margin:0;min-width:0}
+html.zezms-phone-layout .waybill-number-row{grid-template-columns:minmax(0,.75fr) minmax(0,.75fr) minmax(0,2fr)}
+html.zezms-phone-layout .mobile-number-row .field label{min-height:45px;display:flex;align-items:flex-end;line-height:1.2}
+html.zezms-phone-layout .mobile-action-row{display:grid;grid-template-columns:auto auto;justify-content:start}
+html.zezms-phone-layout .mobile-action-row .btn{min-width:124px}
+html.zezms-phone-layout .mobile-customer-card,html.zezms-phone-layout .mobile-cashier-card,html.zezms-phone-layout .mobile-payment-card{margin-top:0}
+html.zezms-phone-layout .pos-totals .statline{padding:10px 0;font-size:15px}
+html.zezms-phone-layout .pos-totals .statline b{font-size:16px}
+html.zezms-phone-layout .table-wrap{max-width:100%;overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
+html.zezms-phone-layout .table-wrap table{min-width:560px}
+html.zezms-phone-layout th,html.zezms-phone-layout td{padding:12px 10px}
+html.zezms-phone-layout th{font-size:12px}
+html.zezms-phone-layout td{font-size:14px}
+html.zezms-phone-layout .empty{padding:36px 18px;font-size:15px}
+html.zezms-phone-layout .login-screen{min-height:100svh;padding:22px;background:radial-gradient(850px 560px at 50% -8%,#0c5c59,transparent 65%),#0c1528}
+html.zezms-phone-layout .login-card{width:100%;max-width:500px;border-radius:22px;padding:38px 30px;background:#1d2a40;border-color:#34445f}
+html.zezms-phone-layout .login-card>div:first-child>div{width:88px!important;height:88px!important;border-radius:23px!important;font-size:34px!important}
+html.zezms-phone-layout .login-card h1{font-size:26px;line-height:1.25;text-transform:uppercase;margin-top:14px}
+html.zezms-phone-layout .login-card .sub{font-size:14px;line-height:1.45;margin:8px 0 24px}
+html.zezms-phone-layout .modal-bg{padding:0;align-items:flex-end}
+html.zezms-phone-layout .modal{width:100%;max-width:none;max-height:92svh;border-radius:22px 22px 0 0;padding:22px}
+html.zezms-phone-layout .toast-wrap{left:14px;right:14px}
+html.zezms-phone-layout .toast{width:100%}
+html.zezms-phone-layout .document-layout{grid-template-columns:1fr!important;gap:16px!important}
+html.zezms-phone-layout .document-layout>div{min-width:0}
+html.zezms-phone-layout .doc-register-actions{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+html.zezms-phone-layout .footer-note{font-size:11px;line-height:1.4}
+@media (max-width:430px){
+  html.zezms-phone-layout .content{padding-left:16px;padding-right:16px}
+  html.zezms-phone-layout .topbar{padding-left:16px;padding-right:16px;grid-template-columns:52px minmax(0,1fr) 44px}
+  html.zezms-phone-layout .burger{width:52px;height:52px}
+  html.zezms-phone-layout .topbar h2{font-size:20px}
+  html.zezms-phone-layout .mobile-number-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html.zezms-phone-layout .waybill-number-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html.zezms-phone-layout .waybill-number-row>.field:last-child{grid-column:1/-1}
+  html.zezms-phone-layout .mobile-number-row .field label{min-height:auto}
+  html.zezms-phone-layout .dashboard-kpi-grid{gap:10px}
+  html.zezms-phone-layout .dashboard-kpi-grid .kpi{min-height:120px;padding:16px}
+  html.zezms-phone-layout .kpi .val{font-size:24px}
+  html.zezms-phone-layout .login-card{padding:32px 22px}
+}
+
 </style>
 </head>
 <body>
@@ -306,7 +414,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.11 · Reference Mobile Layout · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.12 · Mobile Layout Force Fix · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -326,7 +434,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.11 · Reference Mobile Layout · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.12 · Mobile Layout Force Fix · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -371,38 +479,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/app.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/logger.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/diagnostics.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/registry.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/storage.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/dbservice.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/bootpatch.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/events.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/db-events.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/system-module.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/health-module.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/utils-module.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/lifecycle-module.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/notifications-module.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/product-search-module.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/product-search-adapter.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/product-search-service.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/product-search-controller.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/product-search-events.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/product-search-metrics.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/product-search-facade.js?v=20260730-mobile-reference-r1"></script>
+<script src="js/config.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/app.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/logger.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/diagnostics.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/registry.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/storage.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/dbservice.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/bootpatch.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/events.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/db-events.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/system-module.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/health-module.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/utils-module.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/lifecycle-module.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/notifications-module.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/product-search-module.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/product-search-adapter.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/product-search-service.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/product-search-controller.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/product-search-events.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/product-search-metrics.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/product-search-facade.js?v=20260730-mobile-reference-force-r2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/backup-manager.js?v=20260730-mobile-reference-r1"></script>
+<script src="js/cloud-sync.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/backup-manager.js?v=20260730-mobile-reference-force-r2"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.11 — Reference Mobile Layout — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.12 — Mobile Layout Force Fix — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.11';
+const APP_VERSION = '3.4.12';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -3298,7 +3406,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260730-mobile-reference-r1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260730-mobile-reference-force-r2').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3320,9 +3428,9 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/auto-month-rollover.js?v=20260730-mobile-reference-r1"></script>
-<script src="js/invoice-waybill.js?v=20260730-mobile-reference-r1"></script>
+<script src="js/operations-update.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/auto-month-rollover.js?v=20260730-mobile-reference-force-r2"></script>
+<script src="js/invoice-waybill.js?v=20260730-mobile-reference-force-r2"></script>
 
 
 

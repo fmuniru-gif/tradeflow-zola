@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS sales, inventory and cloud-sync PWA with a phone-optimized two-column mobile workspace.",
-  "start_url": "./index.html?build=20260730-mobile-reference-r1",
+  "description": "ZEZMS phone layout with forced mobile detection, two-column KPI cards, mobile drawer and compact transaction entry.",
+  "start_url": "./index.html?build=20260730-mobile-reference-force-r2",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
