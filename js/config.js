@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Developer Edition 0.4.15 — Frozen KPI Header & Top 5 Charts",
-  build:"20260731-kpi-freeze-top5-r5",
+  version:"Developer Edition 0.4.16 — Portrait KPI Freeze & Vertical Charts",
+  build:"20260731-kpi-portrait-freeze-vertical-r6",
   debug:true,
   cloud:{
     googleDrive:{

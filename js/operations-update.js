@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260731-kpi-freeze-top5-r5';
+  const BUILD = '20260731-kpi-portrait-freeze-vertical-r6';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -44,18 +44,76 @@
     const style = document.createElement('style');
     style.id = 'm3OperationsStyles';
     style.textContent = `
-      .chart-card{min-height:360px}
-      .bar-chart{display:flex;flex-direction:column;gap:14px;margin-top:14px}
-      .bar-row{display:grid;grid-template-columns:minmax(120px,180px) minmax(160px,1fr) minmax(110px,150px);gap:10px;align-items:center}
-      .bar-label{font-size:12px;font-weight:700;color:var(--text)}
-      .bar-track{height:28px;border-radius:8px;background:#0b1220;border:1px solid #334155;overflow:hidden;position:relative}
-      .bar-fill{height:100%;min-width:0;border-radius:7px;background:linear-gradient(90deg,var(--teal),var(--teal2));transition:width .35s ease}
-      .bar-fill.money-alt{background:linear-gradient(90deg,#2563eb,#60a5fa)}
-      .bar-fill.profit{background:linear-gradient(90deg,#15803d,#4ade80)}
-      .bar-fill.negative{background:linear-gradient(90deg,#991b1b,#ef4444)}
-      .bar-fill.qty{background:linear-gradient(90deg,#b45309,#f59e0b)}
-      .bar-value{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:700}
-      .chart-legend{font-size:11px;color:var(--muted);margin-top:12px}
+      .chart-card{min-height:390px}
+      .vertical-bar-chart{
+        display:grid;
+        grid-template-columns:repeat(var(--bar-count,4),minmax(0,1fr));
+        gap:12px;
+        align-items:end;
+        margin-top:16px;
+        min-height:292px;
+        padding:12px 8px 0;
+        border-bottom:1px solid #475569;
+        background:
+          repeating-linear-gradient(
+            to top,
+            transparent 0,
+            transparent 57px,
+            rgba(71,85,105,.24) 58px
+          );
+      }
+      .vertical-bar-item{
+        min-width:0;
+        height:278px;
+        display:grid;
+        grid-template-rows:minmax(0,1fr) auto;
+        gap:8px;
+        align-items:end;
+      }
+      .vertical-bar-stage{
+        height:228px;
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        justify-content:flex-end;
+        align-items:center;
+      }
+      .vertical-bar-value{
+        width:100%;
+        min-height:34px;
+        margin-bottom:6px;
+        text-align:center;
+        color:var(--text);
+        font-variant-numeric:tabular-nums;
+        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+        font-size:11px;
+        font-weight:800;
+        line-height:1.2;
+        overflow-wrap:anywhere;
+      }
+      .vertical-bar-column{
+        width:min(66px,76%);
+        min-height:0;
+        height:var(--bar-height,0%);
+        border-radius:9px 9px 3px 3px;
+        background:linear-gradient(180deg,var(--teal2),var(--teal));
+        box-shadow:0 0 0 1px rgba(255,255,255,.06) inset;
+        transition:height .35s ease;
+      }
+      .vertical-bar-column.money-alt{background:linear-gradient(180deg,#60a5fa,#2563eb)}
+      .vertical-bar-column.profit{background:linear-gradient(180deg,#4ade80,#15803d)}
+      .vertical-bar-column.negative{background:linear-gradient(180deg,#ef4444,#991b1b)}
+      .vertical-bar-column.qty{background:linear-gradient(180deg,#fbbf24,#b45309)}
+      .vertical-bar-label{
+        min-height:36px;
+        text-align:center;
+        color:var(--text);
+        font-size:11px;
+        font-weight:750;
+        line-height:1.2;
+        overflow-wrap:anywhere;
+      }
+      .chart-legend{font-size:11px;color:var(--muted);margin-top:14px}
       .void-row td{opacity:.72;text-decoration:none;background:rgba(100,116,139,.12)!important}
       .receipt-actions{display:flex;gap:5px;flex-wrap:wrap}
       .receipt-title{text-align:center;color:#00f;font-weight:800;font-size:18px;letter-spacing:1px}
@@ -79,9 +137,18 @@
       .undo-note{border-left:4px solid var(--amber);padding:10px 12px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:var(--muted)}
       .status-undone{opacity:.6;text-decoration:line-through}
       @media(max-width:720px){
-        .bar-row{grid-template-columns:1fr}
-        .bar-value{text-align:left}
         .chart-card{min-height:0}
+        .vertical-bar-chart{
+          gap:7px;
+          min-height:272px;
+          padding-left:2px;
+          padding-right:2px;
+        }
+        .vertical-bar-item{height:258px;gap:7px}
+        .vertical-bar-stage{height:208px}
+        .vertical-bar-value{font-size:9.5px;min-height:32px}
+        .vertical-bar-column{width:min(52px,78%)}
+        .vertical-bar-label{font-size:10px;min-height:38px}
       }
     `;
     document.head.appendChild(style);
@@ -111,25 +178,29 @@
   function barChartHTML(title, items, valueFormatter, legendText) {
     const safeItems = Array.isArray(items) ? items : [];
     const max = Math.max(1, ...safeItems.map((item) => Math.abs(Number(item.value) || 0)));
-    const rows = safeItems.length
+
+    const columns = safeItems.length
       ? safeItems.map((item) => {
           const raw = Number(item.value) || 0;
-          const width = raw === 0 ? 0 : Math.max(2, Math.min(100, (Math.abs(raw) / max) * 100));
-          const classes = ['bar-fill', item.className || '', raw < 0 ? 'negative' : ''].filter(Boolean).join(' ');
-          return `<div class="bar-row">
-            <div class="bar-label">${esc(item.label)}</div>
-            <div class="bar-track" title="${escAttr(item.label + ': ' + valueFormatter(raw))}">
-              <div class="${classes}" style="width:${width.toFixed(2)}%"></div>
+          const height = raw === 0 ? 0 : Math.max(3, Math.min(100, (Math.abs(raw) / max) * 100));
+          const classes = ['vertical-bar-column', item.className || '', raw < 0 ? 'negative' : '']
+            .filter(Boolean)
+            .join(' ');
+
+          return `<div class="vertical-bar-item" title="${escAttr(item.label + ': ' + valueFormatter(raw))}">
+            <div class="vertical-bar-stage">
+              <div class="vertical-bar-value">${esc(valueFormatter(raw))}</div>
+              <div class="${classes}" style="--bar-height:${height.toFixed(2)}%"></div>
             </div>
-            <div class="bar-value">${esc(valueFormatter(raw))}</div>
+            <div class="vertical-bar-label">${esc(item.label)}</div>
           </div>`;
         }).join('')
-      : '<div class="empty" style="padding:26px 8px">No quantity-sold data is available for this selection.</div>';
+      : '<div class="empty" style="grid-column:1/-1;padding:90px 8px">No quantity-sold data is available for this selection.</div>';
 
     return `<div class="card chart-card">
       <h3>${esc(title)}</h3>
-      <div class="bar-chart">${rows}</div>
-      <div class="chart-legend">${esc(legendText || 'Bars are scaled within this chart for the selected month and year.')}</div>
+      <div class="vertical-bar-chart" style="--bar-count:${Math.max(1, safeItems.length)}">${columns}</div>
+      <div class="chart-legend">${esc(legendText || 'Columns are scaled within this chart for the selected month and year.')}</div>
     </div>`;
   }
 
@@ -202,7 +273,7 @@
     const selectedPeriod = monthName(DB.selectedMonth) + ' ' + DB.selectedYear;
 
     return periodSelectorHTML(true) + `
-      <div class="grid g2 g1m">
+      <div class="grid kpi-chart-stack">
         ${barChartHTML('Financial KPI Bar Chart', moneyItems, (value) => fmt(value), 'Values use the selected month and year.')}
         ${barChartHTML('Stock Quantity Bar Chart', qtyItems, (value) => fmtN(value), 'Quantities use the selected month and year.')}
         ${barChartHTML('Top 5 Months by Quantity Sold — ' + DB.selectedYear, topMonths, (value) => fmtN(value), 'Ranks months within the selected year using QTY OUT. Closed-month KPI history is used when detailed stock rows are unavailable.')}
