@@ -1,10 +1,10 @@
 /* ZEZMS TradeFlow — Operations Update retained in M4
-   Receipt printing/reprinting, transaction reversal, account deletion,
+   Receipt print matching, Sales Records, transaction reversal, account deletion,
    and KPI bar-chart dashboard. */
 (function () {
   'use strict';
 
-  const BUILD = '20260726-classic-layout-restore-r1';
+  const BUILD = '20260730-mobile-reference-r1';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -58,6 +58,24 @@
       .chart-legend{font-size:11px;color:var(--muted);margin-top:12px}
       .void-row td{opacity:.72;text-decoration:none;background:rgba(100,116,139,.12)!important}
       .receipt-actions{display:flex;gap:5px;flex-wrap:wrap}
+      .receipt-title{text-align:center;color:#00f;font-weight:800;font-size:18px;letter-spacing:1px}
+      .receipt-business{margin-top:8px}
+      .receipt-meta{display:flex;justify-content:space-between;gap:16px;margin-top:8px}
+      .receipt-customer{margin-top:10px}
+      .receipt-items{width:100%;margin-top:10px;border-collapse:collapse;font-size:11px}
+      .receipt-items th,.receipt-items td{padding:6px 4px;border-bottom:1px solid #64748b;position:static}
+      .receipt-items th:first-child,.receipt-items td:first-child{text-align:left}
+      .receipt-items th:not(:first-child){text-align:right}
+      .receipt-table-head th{background:#1e293b!important;color:#fff!important;font-weight:700}
+      .receipt-num{text-align:right;font-variant-numeric:tabular-nums}
+      .receipt-center{text-align:center}
+      .receipt-summary{margin-top:10px;text-align:right;color:#111;font-variant-numeric:tabular-nums}
+      .receipt-paid{margin-top:6px}
+      .receipt-signature{margin-top:14px;color:#111}
+      .receipt-thanks{text-align:center;margin-top:14px;font-size:16px;font-weight:800;color:#111}
+      .receipt-void-watermark{position:absolute;inset:42% 0 auto;text-align:center;font-size:52px;font-weight:900;color:rgba(185,28,28,.23);transform:rotate(-20deg);letter-spacing:8px}
+      .receipt-void-label,.receipt-void-note{color:#b91c1c}
+      .receipt-void-note{margin-top:10px;font-size:10px}
       .undo-note{border-left:4px solid var(--amber);padding:10px 12px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:var(--muted)}
       .status-undone{opacity:.6;text-decoration:line-through}
       @media(max-width:720px){
@@ -206,10 +224,10 @@
     const lineRows = sale.lines.map((line) => `
       <tr>
         <td>${esc(line.product)}</td>
-        <td style="text-align:center">${fmtN(line.qty)}</td>
-        <td style="text-align:right">${fmtN(line.uPrice)}</td>
-        <td style="text-align:right">${fmtN(line.disc)}</td>
-        <td style="text-align:right">${fmtN(line.total)}</td>
+        <td class="receipt-num receipt-center">${fmtN(line.qty)}</td>
+        <td class="receipt-num">${fmtN(line.uPrice)}</td>
+        <td class="receipt-num">${fmtN(line.disc)}</td>
+        <td class="receipt-num">${fmtN(line.total)}</td>
       </tr>`).join('');
     const subtotal = sale.subtotal != null
       ? round2(sale.subtotal)
@@ -220,38 +238,38 @@
       : (subtotal > 0 ? round2((vat / subtotal) * 100) : 0);
 
     return `<div class="receipt-paper" id="receiptPrint" style="position:relative">
-      ${sale.voided ? '<div style="position:absolute;inset:42% 0 auto;text-align:center;font-size:52px;font-weight:900;color:rgba(185,28,28,.23);transform:rotate(-20deg);letter-spacing:8px">VOID</div>' : ''}
-      <div class="center" style="color:#00f;font-weight:800;font-size:18px;letter-spacing:1px">SALES RECEIPT</div>
-      <div style="margin-top:8px"><b>${esc(biz.name)}</b><br>${esc(biz.address)}<br>Tel: ${esc(biz.tel)}</div>
-      <div style="display:flex;justify-content:space-between;margin-top:8px">
-        <div>${sale.voided ? '<b style="color:#b91c1c">VOID RECEIPT</b>' : ''}</div>
+      ${sale.voided ? '<div class="receipt-void-watermark">VOID</div>' : ''}
+      <div class="receipt-title">SALES RECEIPT</div>
+      <div class="receipt-business"><b>${esc(biz.name)}</b><br>${esc(biz.address)}<br>Tel: ${esc(biz.tel)}</div>
+      <div class="receipt-meta">
+        <div>${sale.voided ? '<b class="receipt-void-label">VOID RECEIPT</b>' : ''}</div>
         <div>Receipt No: <b>${esc(sale.receiptNo)}</b><br>Date: ${formatOrdinalDate(sale.date)}</div>
       </div>
-      <div style="margin-top:10px">
+      <div class="receipt-customer">
         Customer: <b>${esc(sale.customer)}</b><br>
         Location: ${esc(sale.location)}<br>
         Telephone: ${esc(sale.contact)}
       </div>
-      <table style="width:100%;margin-top:10px;border-collapse:collapse;font-size:11px">
-        <thead><tr style="background:#e6e6e6;color:#111">
-          <th style="text-align:left;padding:4px">Product</th>
+      <table class="receipt-items">
+        <thead><tr class="receipt-table-head">
+          <th>Product</th>
           <th>Qty</th><th>Unit Price</th><th>Discount</th><th>Total</th>
         </tr></thead>
-        <tbody style="color:#111">${lineRows}</tbody>
+        <tbody>${lineRows}</tbody>
       </table>
-      <div style="margin-top:10px;text-align:right;color:#111">
+      <div class="receipt-summary">
         <div>Subtotal: ${fmtN(subtotal)}</div>
         <div>VAT (${fmtN(vatRate)}%): ${fmtN(vat)}</div>
         <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
-        <div style="margin-top:6px">Amount Paid: ${fmtN(sale.paid)}</div>
+        <div class="receipt-paid">Amount Paid: ${fmtN(sale.paid)}</div>
         <div>Balance: ${fmtN(sale.balance)}</div>
       </div>
-      <div style="margin-top:14px;color:#111">
+      <div class="receipt-signature">
         Cashier Signature: ........................<br>
         <i>${esc(sale.cashier)} (${esc(sale.cashierTel)})</i>
       </div>
-      ${sale.voided ? `<div style="margin-top:10px;color:#b91c1c;font-size:10px">Voided ${sale.voidedAt ? new Date(sale.voidedAt).toLocaleString() : ''}${sale.voidedBy ? ' by ' + esc(sale.voidedBy) : ''}</div>` : ''}
-      <div class="center" style="margin-top:14px;font-size:16px;font-weight:800;color:#111">Thank you for your business!</div>
+      ${sale.voided ? `<div class="receipt-void-note">Voided ${sale.voidedAt ? new Date(sale.voidedAt).toLocaleString() : ''}${sale.voidedBy ? ' by ' + esc(sale.voidedBy) : ''}</div>` : ''}
+      <div class="receipt-thanks">Thank you for your business!</div>
     </div>`;
   }
 
@@ -262,7 +280,7 @@
       <div class="row" style="margin-top:12px">
         <button class="btn" onclick="printActiveReceipt()">Print one copy</button>
         <button class="btn ghost" onclick="closeModal();render()">Close</button>
-        ${isElevated() ? '<button class="btn ghost" onclick="closeModal();nav(\'receipts\')">Receipts</button>' : ''}
+        ${isElevated() ? '<button class="btn ghost" onclick="closeModal();nav(\'receipts\')">Sales Records</button>' : ''}
       </div>`);
   };
 
@@ -292,14 +310,38 @@
     doc.open();
     doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(payload.receiptNo)}</title>
       <style>
-        @page{margin:8mm;size:auto}
-        *{box-sizing:border-box}
-        html,body{margin:0;padding:0;background:#fff;color:#111;font-family:ui-monospace,Menlo,Consolas,monospace}
-        body{display:flex;justify-content:center}
-        .receipt-paper{width:82mm;max-width:100%;padding:8mm;font-size:11px;line-height:1.45;background:#fff;color:#111}
-        .receipt-paper .center{text-align:center}
-        table{width:100%;border-collapse:collapse}
-        th,td{padding:4px 2px;border-bottom:1px solid #ddd}
+        @page{size:A5 portrait;margin:7mm}
+        *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+        html,body{margin:0;padding:0;width:100%;background:#fff;color:#111;font-family:"Courier New",ui-monospace,Menlo,Consolas,monospace}
+        body{display:block}
+        .receipt-paper{width:100%;max-width:none;margin:0;padding:5.5mm 6mm;background:#fff;color:#111;border:1px solid #cbd5e1;border-radius:2mm;font-size:9.6pt;line-height:1.42;overflow:hidden}
+        .receipt-title{text-align:center;color:#0000ff;font-weight:800;font-size:15pt;letter-spacing:1.1px}
+        .receipt-business{margin-top:4.5mm}
+        .receipt-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(58mm,auto);gap:5mm;margin-top:3mm;align-items:start}
+        .receipt-meta>div:last-child{overflow-wrap:anywhere;word-break:break-word}
+        .receipt-customer{margin-top:3.5mm}
+        .receipt-items{width:100%;margin-top:4mm;border-collapse:collapse;table-layout:fixed;font-size:8.8pt}
+        .receipt-items th,.receipt-items td{padding:2.2mm 1.25mm;border-bottom:1px solid #64748b;vertical-align:top;overflow-wrap:anywhere}
+        .receipt-items th:nth-child(1),.receipt-items td:nth-child(1){width:38%;text-align:left}
+        .receipt-items th:nth-child(2),.receipt-items td:nth-child(2){width:10%}
+        .receipt-items th:nth-child(3),.receipt-items td:nth-child(3){width:18%}
+        .receipt-items th:nth-child(4),.receipt-items td:nth-child(4){width:16%}
+        .receipt-items th:nth-child(5),.receipt-items td:nth-child(5){width:18%}
+        .receipt-items th:not(:first-child){text-align:right}
+        .receipt-table-head th{background:#1e293b!important;color:#fff!important;font-weight:700;white-space:normal}
+        .receipt-num{text-align:right;font-variant-numeric:tabular-nums}
+        .receipt-center{text-align:center}
+        .receipt-summary{margin-top:4mm;text-align:right;font-variant-numeric:tabular-nums}
+        .receipt-paid{margin-top:2.5mm}
+        .receipt-signature{margin-top:5mm}
+        .receipt-thanks{text-align:center;margin-top:5mm;font-size:12pt;font-weight:800}
+        .receipt-void-watermark{position:absolute;inset:42% 0 auto;text-align:center;font-size:36pt;font-weight:900;color:rgba(185,28,28,.22);transform:rotate(-20deg);letter-spacing:7px}
+        .receipt-void-label,.receipt-void-note{color:#b91c1c}
+        .receipt-void-note{margin-top:3mm;font-size:8.5pt}
+        @media print{
+          html,body{width:100%;height:auto}
+          .receipt-paper{break-inside:avoid;page-break-inside:avoid}
+        }
       </style></head><body>${receiptPaperHTML(payload)}</body></html>`);
     doc.close();
 
@@ -315,7 +357,7 @@
         cleanupPrintFrame(frame);
         toast('Receipt printing could not start.', 'err');
       }
-    }, 250);
+    }, 300);
   }
 
   window.printActiveReceipt = function () {
@@ -344,7 +386,44 @@
     printReceiptDocument(receipt);
   };
 
+  function quickSaleDetailsHTML(transaction) {
+    const lines = transaction && transaction.details && Array.isArray(transaction.details.lines)
+      ? transaction.details.lines
+      : [];
+    const rows = lines.map((line) => `<tr>
+      <td>${esc(line.product || '')}</td>
+      <td class="mono right">${fmtN(line.qty)}</td>
+      <td class="mono right">${fmtN(line.price)}</td>
+      <td class="mono right">${fmtN(line.disc || 0)}</td>
+      <td class="mono right">${fmtN(line.amount)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="empty">No item details were stored for this quick sale.</td></tr>';
+
+    return `<h3>Quick Sale Out</h3>
+      <div class="statline"><span>Transaction number</span><b class="mono">${esc(transaction.id || '')}</b></div>
+      <div class="statline"><span>Date</span><b>${transaction.date ? new Date(transaction.date).toLocaleString() : '—'}</b></div>
+      <div class="statline"><span>Cashier</span><b>${esc(transaction.cashier || '')}</b></div>
+      <div class="statline"><span>Total quantity</span><b class="mono">${fmtN(transaction.qty)}</b></div>
+      <div class="statline"><span>Sale amount</span><b class="mono">${fmt(transaction.amount)}</b></div>
+      <div class="statline"><span>Status</span><b>${transaction.status === UNDONE ? 'UNDONE' : 'COMPLETED'}</b></div>
+      <div class="table-wrap" style="margin-top:12px"><table>
+        <thead><tr><th>Product</th><th class="right">Qty</th><th class="right">Unit price</th><th class="right">Discount</th><th class="right">Total</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div class="row" style="margin-top:12px"><button class="btn ghost" onclick="closeModal()">Close</button></div>`;
+  }
+
+  window.showQuickSaleRecord = function (transactionId) {
+    ensureOperationsModel();
+    const transaction = DB.inventoryTxns.find((item) => item.id === transactionId && item.type === 'SALE_OUT' && item.subtype === 'QUICK');
+    if (!transaction) {
+      toast('Quick sale record not found.', 'err');
+      return;
+    }
+    openModal(quickSaleDetailsHTML(transaction));
+  };
+
   viewReceipts = function () {
+    ensureOperationsModel();
     const today = new Date();
     const isToday = (iso) => {
       const date = new Date(iso);
@@ -352,40 +431,87 @@
         && date.getMonth() === today.getMonth()
         && date.getDate() === today.getDate();
     };
-    let list = DB.receipts.slice().reverse();
-    let note = 'All receipts · credit sales red · voided receipts retained for audit';
+
+    const receiptRecords = DB.receipts.map((receipt) => ({
+      kind: 'RECEIPT',
+      id: receipt.receiptNo,
+      date: receipt.date,
+      cashier: receipt.cashier || '',
+      customer: receipt.customerName || '',
+      contact: receipt.contact || '',
+      total: Number(receipt.totalAmount) || 0,
+      balance: Number(receipt.balance) || 0,
+      status: receipt.voided || receipt.status === 'VOID' || receipt.status === UNDONE
+        ? 'VOID'
+        : ((receipt.credit || Number(receipt.balance) > 0) ? 'CREDIT' : 'PAID'),
+      source: receipt
+    }));
+
+    const quickRecords = DB.inventoryTxns
+      .filter((transaction) => transaction.type === 'SALE_OUT' && transaction.subtype === 'QUICK')
+      .map((transaction) => ({
+        kind: 'QUICK',
+        id: transaction.id,
+        date: transaction.date,
+        cashier: transaction.cashier || '',
+        customer: 'Walk-in / not captured',
+        contact: '',
+        total: Number(transaction.amount) || 0,
+        balance: 0,
+        status: transaction.status === UNDONE ? 'UNDONE' : 'COMPLETED',
+        source: transaction
+      }));
+
+    let list = receiptRecords.concat(quickRecords)
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    let note = 'All Sale Out transactions · printed receipts and quick sales';
+
     if (session.isCashier2 && !isElevated()) {
-      list = list.filter((receipt) => receipt.cashier === session.cashier && isToday(receipt.date));
-      note = 'Your receipts today only · credit sales red';
+      list = list.filter((record) => record.cashier === session.cashier && isToday(record.date));
+      note = 'Your Sale Out transactions today only';
     }
 
-    const rows = list.map((receipt) => {
-      const isVoid = receipt.voided || receipt.status === 'VOID' || receipt.status === UNDONE;
-      const isCredit = !isVoid && (receipt.credit || Number(receipt.balance) > 0);
+    const rows = list.map((record) => {
+      const isVoid = record.status === 'VOID' || record.status === 'UNDONE';
+      const isCredit = record.status === 'CREDIT';
+      const typeBadge = record.kind === 'QUICK'
+        ? '<span class="badge warn">QUICK SALE</span>'
+        : '<span class="badge ok">RECEIPT SALE</span>';
+      const statusBadge = isVoid
+        ? `<span class="badge bad">${esc(record.status)}</span>`
+        : (isCredit ? '<span class="badge bad">CREDIT</span>' : `<span class="badge ok">${esc(record.status)}</span>`);
+      const actions = record.kind === 'RECEIPT'
+        ? `<div class="receipt-actions">
+            <button class="btn sm ghost" onclick="showStoredReceipt('${escAttr(record.id)}')">View</button>
+            <button class="btn sm" onclick="printStoredReceipt('${escAttr(record.id)}')">🖨 Reprint</button>
+          </div>`
+        : `<div class="receipt-actions">
+            <button class="btn sm ghost" onclick="showQuickSaleRecord('${escAttr(record.id)}')">View details</button>
+          </div>`;
+
       return `<tr class="${isVoid ? 'void-row' : (isCredit ? 'credit-row' : '')}">
-        <td class="mono" style="font-size:11px">${esc(receipt.receiptNo)}</td>
-        <td>${esc(receipt.customerName)}</td>
-        <td>${esc(receipt.contact || '')}</td>
-        <td class="mono right">${fmt(receipt.totalAmount)}</td>
-        <td class="mono right">${receipt.balance ? fmt(receipt.balance) : '—'}</td>
-        <td style="font-size:11px">${new Date(receipt.date).toLocaleString()}</td>
-        <td>${esc(receipt.cashier || '')}</td>
-        <td>${isVoid ? '<span class="badge bad">VOID</span>' : (isCredit ? '<span class="badge bad">CREDIT</span>' : '<span class="badge ok">PAID</span>')}</td>
-        <td><div class="receipt-actions">
-          <button class="btn sm ghost" onclick="showStoredReceipt('${escAttr(receipt.receiptNo)}')">View</button>
-          <button class="btn sm" onclick="printStoredReceipt('${escAttr(receipt.receiptNo)}')">🖨 Reprint</button>
-        </div></td>
+        <td>${typeBadge}</td>
+        <td class="mono" style="font-size:11px">${esc(record.id)}</td>
+        <td>${esc(record.customer)}</td>
+        <td>${esc(record.contact || '—')}</td>
+        <td class="mono right">${fmt(record.total)}</td>
+        <td class="mono right">${record.balance > 0 ? fmt(record.balance) : '—'}</td>
+        <td style="font-size:11px">${record.date ? new Date(record.date).toLocaleString() : '—'}</td>
+        <td>${esc(record.cashier)}</td>
+        <td>${statusBadge}</td>
+        <td>${actions}</td>
       </tr>`;
-    }).join('') || `<tr><td colspan="9" class="empty">${session.isCashier2 && !isElevated() ? 'No receipts for you today yet.' : 'No receipts yet.'}</td></tr>`;
+    }).join('') || `<tr><td colspan="10" class="empty">${session.isCashier2 && !isElevated() ? 'No sales records for you today yet.' : 'No Sale Out records yet.'}</td></tr>`;
 
     return `<div class="card">
-      <h3>Receipt register <span class="muted" style="font-weight:400">(${esc(note)})</span></h3>
+      <h3>Sales records <span class="muted" style="font-weight:400">(${esc(note)})</span></h3>
       <div class="table-wrap"><table>
-        <thead><tr><th>Receipt #</th><th>Customer</th><th>Contact</th><th class="right">Total</th><th class="right">Balance (owed)</th><th>Date</th><th>Cashier</th><th>Flag</th><th>Receipt</th></tr></thead>
+        <thead><tr><th>Sale type</th><th>Record #</th><th>Customer</th><th>Contact</th><th class="right">Total</th><th class="right">Balance owed</th><th>Date</th><th>Cashier</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
     </div>`;
   };
+
 
   /* ---------------- Inventory transaction logging ---------------- */
   const baseDoStockIn = doStockIn;
@@ -449,6 +575,8 @@
     if (!cart.length) { toast('Please add at least one item for quick sale.', 'err'); return; }
 
     const transactionId = uid('QSALE-');
+    const saleDate = nowISO();
+    const currentPeriod = getLatestMonth();
     const cartSnapshot = cart.map((line) => deepClone(line));
     const undoStart = DB.undoLog.length;
     const lines = [];
@@ -480,17 +608,20 @@
       type: 'SALE_OUT',
       subtype: 'QUICK',
       status: ACTIVE,
-      date: nowISO(),
+      date: saleDate,
+      year: currentPeriod.year,
+      month: currentPeriod.month,
       cashier: session.cashier,
+      cashierTel: session.tel,
       product: lines.map((line) => line.product).join(', '),
       qty: lines.reduce((sum, line) => sum + (Number(line.qty) || 0), 0),
       amount: lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
       reference: transactionId,
-      details: { lines }
+      details: { lines, saleMode: 'QUICK' }
     });
     saveDB();
     resetSaleOutForm();
-    toast('Quick Sale Out recorded');
+    toast('Quick Sale Out recorded · ' + transactionId);
     render();
   };
 
