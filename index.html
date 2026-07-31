@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260730-portrait-readable-mobile-r4" /><meta name="zezms-mobile-engine" content="portrait-readable-v4" />
-<title>Zola Electronics Zone · TradeFlow v3.4.14 · Portrait Readable Mobile</title>
+<meta name="zezms-build" content="20260731-kpi-freeze-top5-r5" /><meta name="zezms-mobile-engine" content="portrait-readable-v5" />
+<title>Zola Electronics Zone · TradeFlow v3.4.15 · Frozen KPI Header & Top 5 Charts</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260730-portrait-readable-mobile-r4';
+  const BUILD = '20260731-kpi-freeze-top5-r5';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -964,6 +964,35 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
   }
 }
 
+
+/* ===== v3.4.15 KPI freeze pane ===== */
+:root{--zezms-topbar-height:58px}
+.kpi-freeze-pane{
+  position:sticky;
+  top:calc(var(--zezms-topbar-height,58px) - 1px);
+  z-index:14;
+  margin:-5px -6px 14px!important;
+  padding:10px 8px 12px;
+  background:rgba(15,23,42,.97);
+  border-bottom:1px solid #334155;
+  border-radius:0 0 12px 12px;
+  box-shadow:0 8px 16px rgba(2,6,23,.32);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.kpi-freeze-pane .field{margin-bottom:0!important}
+@media(max-width:720px){
+  .kpi-freeze-pane{
+    margin:-4px -4px 12px!important;
+    padding:8px 4px 10px;
+    border-radius:0 0 10px 10px;
+  }
+}
+html.zezms-phone-layout .kpi-freeze-pane{
+  margin:-4px -4px 12px!important;
+  padding:8px 4px 10px;
+}
+
 </style>
 </head>
 <body>
@@ -974,7 +1003,7 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.14 · Portrait Readable Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.15 · Frozen KPI Header & Top 5 Charts · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -994,7 +1023,7 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.14 · Portrait Readable Mobile · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.15 · Frozen KPI Header & Top 5 Charts · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1039,38 +1068,38 @@ html.zezms-phone-layout #viewRoot .grid.dashboard-kpi-grid{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/app.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/logger.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/diagnostics.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/registry.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/storage.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/dbservice.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/bootpatch.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/events.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/db-events.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/system-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/health-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/utils-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/lifecycle-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/notifications-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-module.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-adapter.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-service.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-controller.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-events.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-metrics.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/product-search-facade.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/config.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/app.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/logger.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/diagnostics.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/registry.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/storage.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/dbservice.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/bootpatch.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/events.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/db-events.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/system-module.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/health-module.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/utils-module.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/lifecycle-module.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/notifications-module.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/product-search-module.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/product-search-adapter.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/product-search-service.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/product-search-controller.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/product-search-events.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/product-search-metrics.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/product-search-facade.js?v=20260731-kpi-freeze-top5-r5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/backup-manager.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/cloud-sync.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/backup-manager.js?v=20260731-kpi-freeze-top5-r5"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.14 — Portrait Readable Mobile — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.15 — Frozen KPI Header & Top 5 Charts — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.14';
+const APP_VERSION = '3.4.15';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -1546,13 +1575,13 @@ function render(){
 }
 
 /* ===== DASHBOARD — 12 KPI tiles ===== */
-function periodSelectorHTML(){
+function periodSelectorHTML(sticky){
   const years = new Set([DB.selectedYear, new Date().getFullYear()]);
   DB.stockRows.forEach(r=>years.add(r.year));
   DB.kpiHistory.forEach(k=>years.add(k.year));
   const yOpts = [...years].sort((a,b)=>b-a).map(y=>`<option value="${y}" ${y===DB.selectedYear?'selected':''}>${y}</option>`).join('');
   const mOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}" ${m===DB.selectedMonth?'selected':''}>${monthName(m)}</option>`).join('');
-  return `<div class="row period-selector" style="margin-bottom:12px">
+  return `<div class="row period-selector${sticky ? ' kpi-freeze-pane' : ''}" style="margin-bottom:12px">
     <div class="field" style="margin:0;min-width:120px"><label>Year</label>
       <select id="selYear" onchange="changePeriod()">${yOpts}</select></div>
     <div class="field" style="margin:0;min-width:140px"><label>Month</label>
@@ -1580,7 +1609,7 @@ function viewDashboard(){
     {k:'Liquid Cash', v:fmt(KPI_LiquidCash()), c:'teal', s:'(CR+Debt+Cash)−(Cred+Dep)'},
     {k:'Zakaat (2.5%)', v:fmt(KPI_Zakaat()), c:'pink', s:'Liquid Cash ÷ 40'},
   ];
-  return periodSelectorHTML() +
+  return periodSelectorHTML(true) +
     `<div class="grid g3 dashboard-kpi-grid" style="margin-bottom:14px">` +
     tiles.map(t=>`<div class="card kpi ${t.c}"><h3>${t.k}</h3><div class="val mono">${t.v}</div><div class="sub">${t.s}</div></div>`).join('') +
     `</div>
@@ -3966,7 +3995,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260730-portrait-readable-mobile-r4').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260731-kpi-freeze-top5-r5').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -3988,10 +4017,11 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/auto-month-rollover.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/invoice-waybill.js?v=20260730-portrait-readable-mobile-r4"></script>
-<script src="js/mobile-vertical-layout.js?v=20260730-portrait-readable-mobile-r4"></script>
+<script src="js/operations-update.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/auto-month-rollover.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/invoice-waybill.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/mobile-vertical-layout.js?v=20260731-kpi-freeze-top5-r5"></script>
+<script src="js/kpi-freeze-pane.js?v=20260731-kpi-freeze-top5-r5"></script>
 
 
 

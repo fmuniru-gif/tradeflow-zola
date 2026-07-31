@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Developer Edition 0.4.14 — Portrait Readable Mobile",
-  build:"20260730-mobile-reference-r1",
+  version:"Developer Edition 0.4.15 — Frozen KPI Header & Top 5 Charts",
+  build:"20260731-kpi-freeze-top5-r5",
   debug:true,
   cloud:{
     googleDrive:{

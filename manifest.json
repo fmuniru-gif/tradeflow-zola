@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS sales and inventory system with readable portrait mobile pages, vertical scrolling, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
-  "start_url": "./index.html?build=20260730-portrait-readable-mobile-r4",
+  "description": "ZEZMS sales and inventory system with a frozen KPI filter pane, top-five quantity charts, readable mobile pages, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
+  "start_url": "./index.html?build=20260731-kpi-freeze-top5-r5",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

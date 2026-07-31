@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260730-mobile-reference-r1';
+  const BUILD = '20260731-kpi-freeze-top5-r5';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -108,26 +108,81 @@
     }
   }
 
-  function barChartHTML(title, items, valueFormatter) {
-    const max = Math.max(1, ...items.map((item) => Math.abs(Number(item.value) || 0)));
-    const rows = items.map((item) => {
-      const raw = Number(item.value) || 0;
-      const width = raw === 0 ? 0 : Math.max(2, Math.min(100, (Math.abs(raw) / max) * 100));
-      const classes = ['bar-fill', item.className || '', raw < 0 ? 'negative' : ''].filter(Boolean).join(' ');
-      return `<div class="bar-row">
-        <div class="bar-label">${esc(item.label)}</div>
-        <div class="bar-track" title="${escAttr(item.label + ': ' + valueFormatter(raw))}">
-          <div class="${classes}" style="width:${width.toFixed(2)}%"></div>
-        </div>
-        <div class="bar-value">${esc(valueFormatter(raw))}</div>
-      </div>`;
-    }).join('');
+  function barChartHTML(title, items, valueFormatter, legendText) {
+    const safeItems = Array.isArray(items) ? items : [];
+    const max = Math.max(1, ...safeItems.map((item) => Math.abs(Number(item.value) || 0)));
+    const rows = safeItems.length
+      ? safeItems.map((item) => {
+          const raw = Number(item.value) || 0;
+          const width = raw === 0 ? 0 : Math.max(2, Math.min(100, (Math.abs(raw) / max) * 100));
+          const classes = ['bar-fill', item.className || '', raw < 0 ? 'negative' : ''].filter(Boolean).join(' ');
+          return `<div class="bar-row">
+            <div class="bar-label">${esc(item.label)}</div>
+            <div class="bar-track" title="${escAttr(item.label + ': ' + valueFormatter(raw))}">
+              <div class="${classes}" style="width:${width.toFixed(2)}%"></div>
+            </div>
+            <div class="bar-value">${esc(valueFormatter(raw))}</div>
+          </div>`;
+        }).join('')
+      : '<div class="empty" style="padding:26px 8px">No quantity-sold data is available for this selection.</div>';
 
     return `<div class="card chart-card">
       <h3>${esc(title)}</h3>
       <div class="bar-chart">${rows}</div>
-      <div class="chart-legend">Bars are scaled within this chart for the selected month and year.</div>
+      <div class="chart-legend">${esc(legendText || 'Bars are scaled within this chart for the selected month and year.')}</div>
     </div>`;
+  }
+
+  function monthQtySold(year, month) {
+    const rows = DB.stockRows.filter((row) => Number(row.year) === Number(year) && Number(row.month) === Number(month));
+    if (rows.length) {
+      return rows.reduce((sum, row) => sum + (Number(row.qtyOut) || 0), 0);
+    }
+    const archived = DB.kpiHistory.find((item) => Number(item.year) === Number(year) && Number(item.month) === Number(month));
+    return archived ? (Number(archived.qtyOut) || 0) : 0;
+  }
+
+  function topFiveMonthsByQtySold(year) {
+    return Array.from({ length: 12 }, (_, index) => ({
+      month: index + 1,
+      label: monthName(index + 1),
+      value: monthQtySold(year, index + 1),
+      className: 'qty'
+    }))
+      .filter((item) => item.value > 0)
+      .sort((a, b) => (b.value - a.value) || (a.month - b.month))
+      .slice(0, 5)
+      .map((item, index) => Object.assign({}, item, { label: (index + 1) + '. ' + item.label }));
+  }
+
+  function stockRowCategory(row) {
+    const direct = String(row.category || '').trim();
+    if (direct) return direct;
+    const product = DB.products.find((item) =>
+      (row.productId && item.id === row.productId)
+      || String(item.name || '').trim().toLowerCase() === String(row.productName || '').trim().toLowerCase()
+    );
+    return product && String(product.category || '').trim()
+      ? String(product.category).trim()
+      : 'Uncategorised';
+  }
+
+  function topFiveCategoriesByQtySold(year, month) {
+    const totals = Object.create(null);
+    DB.stockRows
+      .filter((row) => Number(row.year) === Number(year) && Number(row.month) === Number(month))
+      .forEach((row) => {
+        const qty = Number(row.qtyOut) || 0;
+        if (qty <= 0) return;
+        const category = stockRowCategory(row);
+        totals[category] = (totals[category] || 0) + qty;
+      });
+
+    return Object.entries(totals)
+      .map(([label, value]) => ({ label, value, className: 'qty' }))
+      .sort((a, b) => (b.value - a.value) || a.label.localeCompare(b.label))
+      .slice(0, 5)
+      .map((item, index) => Object.assign({}, item, { label: (index + 1) + '. ' + item.label }));
   }
 
   function viewKPICharts() {
@@ -142,17 +197,22 @@
       { label: 'QTY OUT', value: KPI_QtyOut(), className: 'qty' },
       { label: 'REM QTY', value: KPI_QtyRem(), className: 'qty' }
     ];
+    const topMonths = topFiveMonthsByQtySold(DB.selectedYear);
+    const topCategories = topFiveCategoriesByQtySold(DB.selectedYear, DB.selectedMonth);
+    const selectedPeriod = monthName(DB.selectedMonth) + ' ' + DB.selectedYear;
 
-    return periodSelectorHTML() + `
+    return periodSelectorHTML(true) + `
       <div class="grid g2 g1m">
-        ${barChartHTML('Financial KPI Bar Chart', moneyItems, (value) => fmt(value))}
-        ${barChartHTML('Stock Quantity Bar Chart', qtyItems, (value) => fmtN(value))}
+        ${barChartHTML('Financial KPI Bar Chart', moneyItems, (value) => fmt(value), 'Values use the selected month and year.')}
+        ${barChartHTML('Stock Quantity Bar Chart', qtyItems, (value) => fmtN(value), 'Quantities use the selected month and year.')}
+        ${barChartHTML('Top 5 Months by Quantity Sold — ' + DB.selectedYear, topMonths, (value) => fmtN(value), 'Ranks months within the selected year using QTY OUT. Closed-month KPI history is used when detailed stock rows are unavailable.')}
+        ${barChartHTML('Top 5 Product Categories — ' + selectedPeriod, topCategories, (value) => fmtN(value), 'Ranks product categories in the selected month and year using QTY OUT.')}
       </div>
       <div class="card" style="margin-top:12px">
         <div class="row" style="justify-content:space-between">
           <div>
             <h3 style="margin-bottom:4px">Shared KPI source</h3>
-            <div class="muted" style="font-size:12px">This dashboard uses the same KPI formulas and Year/Month selection as the original KPI dashboard.</div>
+            <div class="muted" style="font-size:12px">All four charts use the same stock records, KPI formulas and Year/Month selections as the original KPI dashboard.</div>
           </div>
           <button class="btn ghost" onclick="nav('dashboard')">Open original KPI dashboard</button>
         </div>
