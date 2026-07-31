@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260731-kpi-portrait-scroll-fix-r7" /><meta name="zezms-mobile-engine" content="portrait-readable-v7" />
-<title>Zola Electronics Zone · TradeFlow v3.4.17 · Portrait KPI Scroll Fix</title>
+<meta name="zezms-build" content="20260731-stable-frozen-headers-r8" /><meta name="zezms-mobile-engine" content="portrait-readable-v8" />
+<title>Zola Electronics Zone · TradeFlow v3.4.18 · Stable Frozen Headers</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260731-kpi-portrait-scroll-fix-r7';
+  const BUILD = '20260731-stable-frozen-headers-r8';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -994,68 +994,96 @@ html.zezms-phone-layout .kpi-freeze-pane{
 }
 
 
-/* ===== v3.4.17 portrait KPI fixed header without locking page scroll =====
-   The phone keeps normal document scrolling. Only the title bar and period pane are fixed. */
-:root{
-  --zezms-topbar-height:78px;
-  --zezms-kpi-pane-height:122px;
+/* ===== v3.4.18 stable frozen mobile headers =====
+   No ResizeObserver, MutationObserver, blur or measured fixed heights are used.
+   The top title bar is fixed on every mobile view. The KPI period pane is fixed
+   in portrait and sticky in landscape. Both use solid opaque backgrounds. */
+html.zezms-phone-layout{
+  --zezms-mobile-topbar-height:78px;
+  --zezms-mobile-kpi-pane-height:140px;
+}
+html.zezms-phone-layout .topbar{
+  position:fixed!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  width:100%!important;
+  height:var(--zezms-mobile-topbar-height)!important;
+  min-height:var(--zezms-mobile-topbar-height)!important;
+  max-height:var(--zezms-mobile-topbar-height)!important;
+  z-index:60!important;
+  background:#0d172b!important;
+  background-color:#0d172b!important;
+  opacity:1!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  box-shadow:0 5px 14px rgba(2,6,23,.48)!important;
+  isolation:isolate;
+  backface-visibility:hidden;
+}
+html.zezms-phone-layout .content{
+  padding-top:calc(var(--zezms-mobile-topbar-height) + 15px)!important;
+}
+html.zezms-phone-layout .sidebar{z-index:80!important}
+html.zezms-phone-layout .overlay{z-index:70!important}
+html.zezms-phone-layout .kpi-freeze-pane{
+  top:var(--zezms-mobile-topbar-height)!important;
+  z-index:55!important;
+  background:#0f172a!important;
+  background-color:#0f172a!important;
+  opacity:1!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border-bottom:1px solid #334155!important;
+  box-shadow:0 8px 16px rgba(2,6,23,.42)!important;
+  isolation:isolate;
+  backface-visibility:hidden;
 }
 .kpi-freeze-spacer{display:none}
+
 @media (orientation:portrait){
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze,
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze body{
-    height:auto!important;
-    min-height:100%!important;
-    overflow-x:hidden!important;
-    overflow-y:auto!important;
-    touch-action:pan-y pinch-zoom!important;
+  html.zezms-phone-layout{
+    --zezms-mobile-topbar-height:68px;
+    --zezms-mobile-kpi-pane-height:140px;
   }
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze .app,
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze #appShell,
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze .main,
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze #viewRoot{
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    overflow:visible!important;
+  html.zezms-phone-layout .topbar{
+    padding:10px 14px!important;
   }
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze .main{
-    display:block!important;
-  }
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze .topbar{
+  html.zezms-phone-layout .kpi-freeze-pane{
     position:fixed!important;
-    top:0!important;
+    top:var(--zezms-mobile-topbar-height)!important;
     left:0!important;
     right:0!important;
     width:100%!important;
-    z-index:60!important;
-  }
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze .content{
-    height:auto!important;
-    min-height:100svh!important;
-    max-height:none!important;
-    padding-top:calc(var(--zezms-topbar-height,78px) + 15px)!important;
-    overflow:visible!important;
-  }
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze .kpi-freeze-pane{
-    position:fixed!important;
-    top:var(--zezms-topbar-height,78px)!important;
-    left:14px!important;
-    right:14px!important;
-    width:auto!important;
-    z-index:55!important;
+    height:var(--zezms-mobile-kpi-pane-height)!important;
+    min-height:var(--zezms-mobile-kpi-pane-height)!important;
+    max-height:var(--zezms-mobile-kpi-pane-height)!important;
     margin:0!important;
-    padding:12px 14px!important;
-    border-radius:0 0 12px 12px!important;
-    background:#0f172a!important;
-    border-bottom:1px solid #334155!important;
-    box-shadow:0 9px 18px rgba(2,6,23,.48)!important;
+    padding:10px 14px 12px!important;
+    border-radius:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    gap:8px 10px!important;
+    align-content:center!important;
+    overflow:hidden!important;
   }
-  html.zezms-phone-layout.zezms-kpi-portrait-freeze .kpi-freeze-spacer{
+  html.zezms-phone-layout .kpi-freeze-pane .field{
+    min-width:0!important;
+    width:100%!important;
+    margin:0!important;
+  }
+  html.zezms-phone-layout .kpi-freeze-pane .pill{
+    grid-column:1/-1!important;
+    justify-self:start!important;
+    margin:0!important;
+  }
+  html.zezms-phone-layout .kpi-freeze-spacer{
     display:block!important;
     width:100%!important;
-    height:var(--zezms-kpi-pane-height,122px)!important;
-    min-height:var(--zezms-kpi-pane-height,122px)!important;
+    height:var(--zezms-mobile-kpi-pane-height)!important;
+    min-height:var(--zezms-mobile-kpi-pane-height)!important;
+    margin:0 0 12px!important;
     pointer-events:none!important;
   }
 }
@@ -1076,7 +1104,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.17 · Portrait KPI Scroll Fix · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.18 · Stable Frozen Headers · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -1096,7 +1124,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.4.17 · Portrait KPI Scroll Fix · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.4.18 · Stable Frozen Headers · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1141,38 +1169,38 @@ html.zezms-phone-layout .kpi-freeze-pane{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/app.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/logger.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/diagnostics.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/registry.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/storage.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/dbservice.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/bootpatch.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/events.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/db-events.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/system-module.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/health-module.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/utils-module.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/lifecycle-module.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/notifications-module.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/product-search-module.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/product-search-adapter.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/product-search-service.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/product-search-controller.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/product-search-events.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/product-search-metrics.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/product-search-facade.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
+<script src="js/config.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/app.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/logger.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/diagnostics.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/registry.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/storage.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/dbservice.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/bootpatch.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/events.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/db-events.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/system-module.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/health-module.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/utils-module.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/lifecycle-module.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/notifications-module.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/product-search-module.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/product-search-adapter.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/product-search-service.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/product-search-controller.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/product-search-events.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/product-search-metrics.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/product-search-facade.js?v=20260731-stable-frozen-headers-r8"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/backup-manager.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
+<script src="js/cloud-sync.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/backup-manager.js?v=20260731-stable-frozen-headers-r8"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.17 — Portrait KPI Scroll Fix — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.18 — Stable Frozen Headers — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.17';
+const APP_VERSION = '3.4.18';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -1660,7 +1688,7 @@ function periodSelectorHTML(sticky){
     <div class="field" style="margin:0;min-width:140px"><label>Month</label>
       <select id="selMonth" onchange="changePeriod()">${mOpts}</select></div>
     <span class="pill" style="margin-top:18px">${isOpenMonth()?'● Live open month':'○ Snapshot / closed month'}</span>
-  </div>`;
+  </div>${sticky ? '<div class="kpi-freeze-spacer" aria-hidden="true"></div>' : ''}`;
 }
 function changePeriod(){
   DB.selectedYear = Number($('selYear').value);
@@ -4068,7 +4096,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260731-kpi-portrait-scroll-fix-r7').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260731-stable-frozen-headers-r8').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4090,11 +4118,11 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/auto-month-rollover.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/invoice-waybill.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/mobile-vertical-layout.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
-<script src="js/kpi-freeze-pane.js?v=20260731-kpi-portrait-scroll-fix-r7"></script>
+<script src="js/operations-update.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/auto-month-rollover.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/invoice-waybill.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/mobile-vertical-layout.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/kpi-freeze-pane.js?v=20260731-stable-frozen-headers-r8"></script>
 
 
 

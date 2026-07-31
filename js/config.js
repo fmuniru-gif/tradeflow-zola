@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Developer Edition 0.4.17 — Portrait KPI Scroll Fix",
-  build:"20260731-kpi-portrait-scroll-fix-r7",
+  version:"Developer Edition 0.4.18 — Stable Frozen Headers",
+  build:"20260731-stable-frozen-headers-r8",
   debug:true,
   cloud:{
     googleDrive:{
