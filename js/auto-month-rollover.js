@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260802-rollover-sync-repair-r10';
+  const BUILD = '20260802-historical-kpi-accuracy-r11';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 
@@ -221,12 +221,19 @@
         qtyIn: typeof KPI_QtyIn === 'function' ? KPI_QtyIn() : 0,
         qtyOut: typeof KPI_QtyOut === 'function' ? KPI_QtyOut() : 0,
         qtyRem: typeof KPI_QtyRem === 'function' ? KPI_QtyRem() : 0,
+        totalSales: typeof KPI_TotalSales === 'function' ? KPI_TotalSales() : 0,
+        crStock: typeof KPI_CRStock === 'function' ? KPI_CRStock() : 0,
         gross: typeof GetGrossProfit_CurrentMonth === 'function' ? GetGrossProfit_CurrentMonth() : 0,
+        expenses: typeof KPI_TotalExpenses_CurrentMonth === 'function' ? KPI_TotalExpenses_CurrentMonth() : 0,
         net: typeof KPI_NetProfit === 'function' ? KPI_NetProfit() : 0,
+        cashBuckets: typeof KPI_CashBuckets_Total === 'function' ? KPI_CashBuckets_Total() : 0,
+        cashBalances: typeof KPI_CashBalancesForDisplay === 'function' ? KPI_CashBalancesForDisplay() : {},
         liquidCash: typeof KPI_LiquidCash === 'function' ? KPI_LiquidCash() : 0,
+        zakaat: typeof KPI_Zakaat === 'function' ? KPI_Zakaat() : 0,
         debt: typeof KPI_TotalOutstandingDebt === 'function' ? KPI_TotalOutstandingDebt() : 0,
         creditors: typeof KPI_TotalCreditors === 'function' ? KPI_TotalCreditors() : 0,
-        deposits: typeof KPI_TotalDeposits === 'function' ? KPI_TotalDeposits() : 0
+        deposits: typeof KPI_TotalDeposits === 'function' ? KPI_TotalDeposits() : 0,
+        snapshotVersion: 2
       };
     });
 

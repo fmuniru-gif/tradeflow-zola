@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260802-rollover-sync-repair-r10';
+  const BUILD = '20260802-historical-kpi-accuracy-r11';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

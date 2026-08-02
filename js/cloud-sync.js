@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260802-rollover-sync-repair-r10';
+  const BUILD = '20260802-historical-kpi-accuracy-r11';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -73,7 +73,8 @@
       lastError: '',
       lastRejected: null,
       mergeWarnings: [],
-      announcedRollovers: []
+      announcedRollovers: [],
+      announcedKPIRepairs: []
     };
   }
 
@@ -247,6 +248,70 @@
     if (list.indexOf(id) < 0) list.push(id);
     state.announcedRollovers = list.slice(-36);
     persistState();
+  }
+
+  function markKPIRepairAnnounced(repairId) {
+    const id = String(repairId || '');
+    if (!id) return;
+    const list = Array.isArray(state.announcedKPIRepairs) ? state.announcedKPIRepairs.slice() : [];
+    if (list.indexOf(id) < 0) list.push(id);
+    state.announcedKPIRepairs = list.slice(-120);
+    persistState();
+  }
+
+  function buildHistoricalKPIRepairOperation(snapshot) {
+    if (!snapshot || !snapshot.id || Number(snapshot.snapshotVersion) < 2) return null;
+    const key = entityKey(snapshot);
+    if (!key) return null;
+    const repairId = 'KPI-V2-' + String(snapshot.year) + String(snapshot.month).padStart(2, '0');
+    const changes = Object.keys(snapshot).filter(function (field) {
+      return field !== '_syncId';
+    }).map(function (field) {
+      return { field: field, mode: 'set', value: clone(snapshot[field]), before: null };
+    });
+
+    state.deviceSeq = (Number(state.deviceSeq) || 0) + 1;
+    persistState();
+    return {
+      opId: repairId,
+      deviceId: state.deviceId,
+      deviceSeq: state.deviceSeq,
+      createdAt: new Date().toISOString(),
+      reason: 'historical-kpi-snapshot-repair',
+      kind: 'KPI_HISTORY_REPAIR',
+      appVersion: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
+      repairKPIId: repairId,
+      patches: [{
+        action: 'update',
+        collection: 'kpiHistory',
+        key: key,
+        fallback: clone(snapshot),
+        changes: changes
+      }]
+    };
+  }
+
+  async function publishHistoricalKPIRepairs() {
+    await waitUntilReady(9000);
+    if (!state.initialized) return false;
+    const database = getDatabase();
+    if (!database) return false;
+
+    const announced = Array.isArray(state.announcedKPIRepairs) ? state.announcedKPIRepairs : [];
+    (database.kpiHistory || []).forEach(function (snapshot) {
+      if (!snapshot || Number(snapshot.snapshotVersion) < 2) return;
+      const repairId = 'KPI-V2-' + String(snapshot.year) + String(snapshot.month).padStart(2, '0');
+      if (announced.indexOf(repairId) >= 0) return;
+      const operation = buildHistoricalKPIRepairOperation(snapshot);
+      if (operation && !queue.some(function (item) { return item && item.opId === operation.opId; })) {
+        queueOperation(operation);
+      }
+    });
+
+    if (navigator.onLine && session && configured() && queue.length) {
+      await flushQueue(false);
+    }
+    return true;
   }
 
   function buildRolloverRepairOperation(marker) {
@@ -553,6 +618,7 @@
       observedSnapshot = cleanSnapshot(getDatabase());
       const appliedRolloverId = rolloverIdFromOperation(operation) || operation.repairRolloverId;
       if (appliedRolloverId) markRolloverAnnounced(appliedRolloverId);
+      if (operation.repairKPIId) markKPIRepairAnnounced(operation.repairKPIId);
     } finally {
       applyingRemote = false;
     }
@@ -811,6 +877,7 @@
           const result = await pushOne(operation);
           const pushedRolloverId = rolloverIdFromOperation(operation) || operation.repairRolloverId;
           if (pushedRolloverId) markRolloverAnnounced(pushedRolloverId);
+          if (operation.repairKPIId) markKPIRepairAnnounced(operation.repairKPIId);
           const rolloverOwnedElsewhere = await rolloverAcceptedByAnotherDevice(operation);
           if (rolloverOwnedElsewhere) {
             // Another device completed the same deterministic monthly rollover first.
@@ -1288,6 +1355,7 @@
     waitUntilReady: waitUntilReady,
     isReadyForLocalOperations: isReadyForLocalOperations,
     publishMonthRollover: publishMonthRollover,
+    publishHistoricalKPIRepairs: publishHistoricalKPIRepairs,
     onLocalSave: onLocalSave,
     isApplyingRemote: function () { return applyingRemote; },
     getState: function () { return Object.assign({}, state, { queueLength: queue.length }); },
@@ -1304,6 +1372,7 @@
       ensureSyncIds: ensureSyncIds,
       cleanSnapshot: cleanSnapshot,
       buildRolloverRepairOperation: buildRolloverRepairOperation,
+      buildHistoricalKPIRepairOperation: buildHistoricalKPIRepairOperation,
       rolloverIdFromOperation: rolloverIdFromOperation
     }
   };

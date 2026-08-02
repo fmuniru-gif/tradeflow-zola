@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Developer Edition 0.4.20 — Rollover Sync Repair",
-  build:"20260802-rollover-sync-repair-r10",
+  version:"Developer Edition 0.4.21 — Historical KPI Accuracy Fix",
+  build:"20260802-historical-kpi-accuracy-r11",
   debug:true,
   cloud:{
     googleDrive:{
