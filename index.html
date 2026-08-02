@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260802-historical-kpi-accuracy-r11" /><meta name="zezms-mobile-engine" content="portrait-readable-v11" />
-<title>Zola Electronics Zone · TradeFlow v3.4.21 · Historical KPI Accuracy Fix</title>
+<meta name="zezms-build" content="20260802-safe-historical-kpi-recovery-r12" /><meta name="zezms-mobile-engine" content="portrait-readable-v12" />
+<title>Zola Electronics Zone · TradeFlow v3.4.22 · Safe Historical KPI Recovery</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260802-historical-kpi-accuracy-r11';
+  const BUILD = '20260802-safe-historical-kpi-recovery-r12';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1104,7 +1104,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.21 · Historical KPI Accuracy Fix · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.22 · Safe Historical KPI Recovery · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -1169,38 +1169,38 @@ html.zezms-phone-layout .kpi-freeze-pane{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/app.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/logger.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/diagnostics.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/registry.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/storage.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/dbservice.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/bootpatch.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/events.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/db-events.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/system-module.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/health-module.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/utils-module.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/lifecycle-module.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/notifications-module.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/product-search-module.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/product-search-adapter.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/product-search-service.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/product-search-controller.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/product-search-events.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/product-search-metrics.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/product-search-facade.js?v=20260802-historical-kpi-accuracy-r11"></script>
+<script src="js/config.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/app.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/logger.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/diagnostics.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/registry.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/storage.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/dbservice.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/bootpatch.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/events.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/db-events.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/system-module.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/health-module.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/utils-module.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/lifecycle-module.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/notifications-module.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/product-search-module.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/product-search-adapter.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/product-search-service.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/product-search-controller.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/product-search-events.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/product-search-metrics.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/product-search-facade.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/backup-manager.js?v=20260802-historical-kpi-accuracy-r11"></script>
+<script src="js/cloud-sync.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/backup-manager.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
 
 <script>
 /* =========================================================
    TradeFlow PWA v3.4.20 — Rollover Sync Repair — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.21';
+const APP_VERSION = '3.4.22';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -1368,10 +1368,9 @@ function loadDB(){
     if(!DB.selectedYear) DB.selectedYear = new Date().getFullYear();
     if(!DB.selectedMonth) DB.selectedMonth = new Date().getMonth()+1;
 
-    // Preserve manually entered product IDs and upgrade historical KPI snapshots.
-    let upgraded = migrateCompactAutoProductIds();
-    if(repairHistoricalKPISnapshots()) upgraded = true;
-    if(upgraded){
+    // v3.4.19: safely replace only legacy auto-generated PRD IDs.
+    // Manually entered product IDs remain unchanged.
+    if(migrateCompactAutoProductIds()){
       ZEZMS.db.save(DB_KEY, DB);
     }
   }catch(e){
@@ -1386,7 +1385,7 @@ function saveDB(){
   }
 }
 
-/* ---------- KPI engine (live open month + archived closed-month snapshots) ---------- */
+/* ---------- KPI engine (exact VBA formulas) ---------- */
 function isOpenMonth(){
   const latest = getLatestMonth();
   return DB.selectedYear===latest.year && DB.selectedMonth===latest.month;
@@ -1399,301 +1398,161 @@ function getLatestMonth(){
     if(year>best.year || (year===best.year && month>best.month)) best={year,month};
   }
   (DB.stockRows||[]).forEach(r=>consider(r.year,r.month));
+  // A completed rollover is authoritative even when no stock batch qualified
+  // for carry-forward. This keeps the new calendar month live on every device.
   (DB.monthRollovers||[]).forEach(r=>consider(r.targetYear,r.targetMonth));
   if(best.year) return best;
   return {year:DB.selectedYear, month:DB.selectedMonth};
 }
-function selectedKPISnapshot(year,month){
-  const y = Number(year==null?DB.selectedYear:year);
-  const m = Number(month==null?DB.selectedMonth:month);
-  return (DB.kpiHistory||[]).find(k=>Number(k.year)===y && Number(k.month)===m) || null;
+function selectedKPISnapshot(year, month){
+  const y = Number(year==null ? DB.selectedYear : year);
+  const m = Number(month==null ? DB.selectedMonth : month);
+  return (DB.kpiHistory||[]).find(k=>k && Number(k.year)===y && Number(k.month)===m) || null;
 }
-function periodStockRows(year,month){
-  const y = Number(year), m = Number(month);
-  return (DB.stockRows||[]).filter(r=>Number(r.year)===y && Number(r.month)===m);
+function selectedPeriodStockRows(){
+  return (DB.stockRows||[]).filter(r=>r && Number(r.year)===Number(DB.selectedYear) && Number(r.month)===Number(DB.selectedMonth));
 }
-function periodExpenseRecords(year,month){
-  const y = Number(year), m = Number(month);
+function selectedPeriodExpenses(){
   return (DB.expenses||[]).filter(e=>{
+    if(!e) return false;
     const d = new Date(e.date);
-    return !Number.isNaN(d.getTime()) && d.getFullYear()===y && (d.getMonth()+1)===m;
+    return !Number.isNaN(d.getTime()) && d.getFullYear()===Number(DB.selectedYear) && (d.getMonth()+1)===Number(DB.selectedMonth);
   });
 }
-function historicalSnapshotNumber(field, fallback){
+function historicalNumber(field, fallback){
   if(!isOpenMonth()){
     const snapshot = selectedKPISnapshot();
-    if(snapshot && snapshot[field] != null && snapshot[field] !== ''){
-      return Number(snapshot[field])||0;
-    }
+    if(snapshot && snapshot[field] != null && snapshot[field] !== '') return Number(snapshot[field])||0;
   }
-  return typeof fallback==='function' ? fallback() : (Number(fallback)||0);
-}
-function rawCRStock(year,month){
-  return periodStockRows(year,month)
-    .reduce((s,r)=>s+(Number(r.rStock)||0)*(Number(r.uCost)||0),0);
-}
-function rawQtyIn(year,month){
-  return periodStockRows(year,month).reduce((s,r)=>s+(Number(r.qtyIn)||0),0);
-}
-function rawQtyOut(year,month){
-  return periodStockRows(year,month).reduce((s,r)=>s+(Number(r.qtyOut)||0),0);
-}
-function rawQtyRem(year,month){
-  return periodStockRows(year,month).reduce((s,r)=>s+(Number(r.rStock)||0),0);
-}
-function rawTotalSales(year,month){
-  return periodStockRows(year,month).reduce((s,r)=>s+(Number(r.tSales)||0),0);
-}
-function rawGrossProfit(year,month){
-  return periodStockRows(year,month).reduce((s,r)=>s+(Number(r.profit)||0),0);
-}
-function rawExpenses(year,month){
-  return periodExpenseRecords(year,month).reduce((s,e)=>s+(Number(e.amount)||0),0);
-}
-function periodAccountSnapshotTotal(collection,year,month){
-  const y=Number(year), m=Number(month);
-  return (DB[collection]||[])
-    .filter(x=>Number(x.snapYear)===y && Number(x.snapMonth)===m)
-    .reduce((s,x)=>s+(Number(x.closingBalance!=null?x.closingBalance:x.bal)||0),0);
+  try{ return typeof fallback==='function' ? Number(fallback())||0 : Number(fallback)||0; }
+  catch(error){ console.warn('Historical KPI fallback failed for '+field, error); return 0; }
 }
 function KPI_CRStock(){
-  return historicalSnapshotNumber('crStock', ()=>rawCRStock(DB.selectedYear,DB.selectedMonth));
+  return historicalNumber('crStock', ()=>selectedPeriodStockRows()
+    .reduce((s,r)=> s + (Number(r.rStock)||0)*(Number(r.uCost)||0), 0));
 }
 function KPI_TotalOutstandingDebt(){
-  if(isOpenMonth()) return (DB.debtors||[]).reduce((s,d)=>s+(Number(d.balance)||0),0);
-  const monthly = periodAccountSnapshotTotal('debtorsMonthly',DB.selectedYear,DB.selectedMonth);
-  const snapshot = selectedKPISnapshot();
-  return monthly || (snapshot && Number(snapshot.debt)) || 0;
+  if(isOpenMonth()) return (DB.debtors||[]).reduce((s,d)=>s+(Number(d&&d.balance)||0),0);
+  const monthly=(DB.debtorsMonthly||[]).filter(x=>x && Number(x.snapYear)===Number(DB.selectedYear) && Number(x.snapMonth)===Number(DB.selectedMonth))
+    .reduce((s,x)=>s+(Number(x.closingBalance!=null?x.closingBalance:x.bal)||0),0);
+  const snapshot=selectedKPISnapshot();
+  return monthly || (snapshot ? Number(snapshot.debt)||0 : 0);
 }
 function KPI_TotalCreditors(){
-  if(isOpenMonth()) return (DB.creditors||[]).reduce((s,d)=>s+(Number(d.balance)||0),0);
-  const monthly = periodAccountSnapshotTotal('creditorsMonthly',DB.selectedYear,DB.selectedMonth);
-  const snapshot = selectedKPISnapshot();
-  return monthly || (snapshot && Number(snapshot.creditors)) || 0;
+  if(isOpenMonth()) return (DB.creditors||[]).reduce((s,d)=>s+(Number(d&&d.balance)||0),0);
+  const monthly=(DB.creditorsMonthly||[]).filter(x=>x && Number(x.snapYear)===Number(DB.selectedYear) && Number(x.snapMonth)===Number(DB.selectedMonth))
+    .reduce((s,x)=>s+(Number(x.closingBalance!=null?x.closingBalance:x.bal)||0),0);
+  const snapshot=selectedKPISnapshot();
+  return monthly || (snapshot ? Number(snapshot.creditors)||0 : 0);
 }
 function KPI_TotalDeposits(){
-  if(isOpenMonth()) return (DB.depositors||[]).reduce((s,d)=>s+(Number(d.balance)||0),0);
-  const monthly = periodAccountSnapshotTotal('depositorsMonthly',DB.selectedYear,DB.selectedMonth);
-  const snapshot = selectedKPISnapshot();
-  return monthly || (snapshot && Number(snapshot.deposits)) || 0;
+  if(isOpenMonth()) return (DB.depositors||[]).reduce((s,d)=>s+(Number(d&&d.balance)||0),0);
+  const monthly=(DB.depositorsMonthly||[]).filter(x=>x && Number(x.snapYear)===Number(DB.selectedYear) && Number(x.snapMonth)===Number(DB.selectedMonth))
+    .reduce((s,x)=>s+(Number(x.closingBalance!=null?x.closingBalance:x.bal)||0),0);
+  const snapshot=selectedKPISnapshot();
+  return monthly || (snapshot ? Number(snapshot.deposits)||0 : 0);
 }
 function KPI_CashBuckets_Total(){
-  return historicalSnapshotNumber('cashBuckets', ()=>{
-    return CASH_TYPES.reduce((s,t)=>s+(Number(DB.cashBalances[t])||0),0);
-  });
-}
-function KPI_CashBalancesForDisplay(){
-  if(!isOpenMonth()){
-    const snapshot = selectedKPISnapshot();
-    if(snapshot && snapshot.cashBalances && typeof snapshot.cashBalances==='object'){
-      const result={};
-      CASH_TYPES.forEach(t=>result[t]=Number(snapshot.cashBalances[t])||0);
-      return result;
-    }
+  if(isOpenMonth()) return CASH_TYPES.reduce((s,t)=>s+(Number(DB.cashBalances&&DB.cashBalances[t])||0),0);
+  const snapshot=selectedKPISnapshot();
+  if(snapshot && snapshot.cashBuckets!=null) return Number(snapshot.cashBuckets)||0;
+  if(snapshot && snapshot.liquidCash!=null){
+    return (Number(snapshot.liquidCash)||0) - KPI_CRStock() - KPI_TotalOutstandingDebt() + KPI_TotalCreditors() + KPI_TotalDeposits();
   }
-  const result={};
-  CASH_TYPES.forEach(t=>result[t]=Number(DB.cashBalances[t])||0);
-  return result;
+  return 0;
 }
 function KPI_TotalExpenses_CurrentMonth(){
-  return historicalSnapshotNumber('expenses', ()=>rawExpenses(DB.selectedYear,DB.selectedMonth));
+  if(!isOpenMonth()){
+    const snapshot=selectedKPISnapshot();
+    if(snapshot && snapshot.expenses!=null) return Number(snapshot.expenses)||0;
+    if(snapshot && snapshot.gross!=null && snapshot.net!=null) return (Number(snapshot.gross)||0)-(Number(snapshot.net)||0);
+  }
+  return selectedPeriodExpenses().reduce((s,e)=>s+(Number(e.amount)||0),0);
 }
 function GetGrossProfit_CurrentMonth(){
-  return historicalSnapshotNumber('gross', ()=>rawGrossProfit(DB.selectedYear,DB.selectedMonth));
+  return historicalNumber('gross', ()=>selectedPeriodStockRows().reduce((s,r)=>s+(Number(r.profit)||0),0));
 }
 function KPI_NetProfit(){
-  return historicalSnapshotNumber('net', ()=>GetGrossProfit_CurrentMonth()-KPI_TotalExpenses_CurrentMonth());
+  return historicalNumber('net', ()=>GetGrossProfit_CurrentMonth()-KPI_TotalExpenses_CurrentMonth());
 }
 function KPI_LiquidCash(){
-  return historicalSnapshotNumber('liquidCash', ()=>{
-    return (KPI_CRStock()+KPI_TotalOutstandingDebt()+KPI_CashBuckets_Total())
-      -(KPI_TotalCreditors()+KPI_TotalDeposits());
-  });
+  return historicalNumber('liquidCash', ()=>(KPI_CRStock()+KPI_TotalOutstandingDebt()+KPI_CashBuckets_Total())-(KPI_TotalCreditors()+KPI_TotalDeposits()));
 }
 function KPI_Zakaat(){
-  return historicalSnapshotNumber('zakaat', ()=>KPI_LiquidCash()/40);
+  return historicalNumber('zakaat', ()=>KPI_LiquidCash()/40);
 }
 function KPI_QtyIn(){
-  return historicalSnapshotNumber('qtyIn', ()=>rawQtyIn(DB.selectedYear,DB.selectedMonth));
+  return historicalNumber('qtyIn', ()=>selectedPeriodStockRows().reduce((s,r)=>s+(Number(r.qtyIn)||0),0));
 }
 function KPI_QtyOut(){
-  return historicalSnapshotNumber('qtyOut', ()=>rawQtyOut(DB.selectedYear,DB.selectedMonth));
+  return historicalNumber('qtyOut', ()=>selectedPeriodStockRows().reduce((s,r)=>s+(Number(r.qtyOut)||0),0));
 }
 function KPI_QtyRem(){
-  return historicalSnapshotNumber('qtyRem', ()=>rawQtyRem(DB.selectedYear,DB.selectedMonth));
+  return historicalNumber('qtyRem', ()=>selectedPeriodStockRows().reduce((s,r)=>s+(Number(r.rStock)||0),0));
 }
 function KPI_TotalSales(){
-  return historicalSnapshotNumber('totalSales', ()=>rawTotalSales(DB.selectedYear,DB.selectedMonth));
+  return historicalNumber('totalSales', ()=>selectedPeriodStockRows().reduce((s,r)=>s+(Number(r.tSales)||0),0));
 }
 function localDateKey(value){
   const d = value instanceof Date ? value : new Date(value);
   if(Number.isNaN(d.getTime())) return '';
-  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
 }
 function isActiveSaleRecord(record){
   if(!record || record.voided) return false;
-  const status=String(record.status||'ACTIVE').trim().toUpperCase();
-  return status!=='VOID' && status!=='UNDONE' && status!=='CANCELLED';
+  const status = String(record.status || 'ACTIVE').trim().toUpperCase();
+  return status !== 'VOID' && status !== 'UNDONE' && status !== 'CANCELLED';
 }
 function receiptSalesBaseValue(record){
   if(!record) return 0;
-  if(record.subtotal!=null && record.subtotal!=='') return Number(record.subtotal)||0;
+  if(record.subtotal != null && record.subtotal !== '') return Number(record.subtotal)||0;
   if(Array.isArray(record.lines) && record.lines.length){
     return record.lines.reduce((sum,line)=>{
-      if(line.amount!=null && line.amount!=='') return sum+(Number(line.amount)||0);
-      if(line.total!=null && line.total!=='') return sum+(Number(line.total)||0);
-      const qty=Number(line.qty)||0;
-      const price=Number(line.price!=null?line.price:line.uPrice)||0;
-      const disc=Number(line.disc)||0;
-      return sum+(qty*price-disc);
+      if(line.amount != null && line.amount !== '') return sum + (Number(line.amount)||0);
+      if(line.total != null && line.total !== '') return sum + (Number(line.total)||0);
+      const qty = Number(line.qty)||0;
+      const price = Number(line.price != null ? line.price : line.uPrice)||0;
+      const disc = Number(line.disc)||0;
+      return sum + (qty * price - disc);
     },0);
   }
-  const gross=Number(record.total!=null?record.total:record.totalAmount)||0;
-  const vat=Number(record.vatAmount)||0;
-  return Math.max(0,gross-vat);
-}
-function salesValueForPeriod(year,month){
-  const y=Number(year), m=Number(month);
-  let total=0;
-  const counted=new Set();
-
-  (DB.sales||[]).forEach(sale=>{
-    if(!isActiveSaleRecord(sale) || Number(sale.year)!==y || Number(sale.month)!==m) return;
-    const key=String(sale.receiptNo||sale.id||'').trim().toLowerCase();
-    if(key) counted.add(key);
-    total+=receiptSalesBaseValue(sale);
-  });
-
-  (DB.receipts||[]).forEach(receipt=>{
-    if(!isActiveSaleRecord(receipt)) return;
-    const d=new Date(receipt.date);
-    if(Number.isNaN(d.getTime()) || d.getFullYear()!==y || (d.getMonth()+1)!==m) return;
-    const key=String(receipt.receiptNo||receipt.id||'').trim().toLowerCase();
-    if(key && counted.has(key)) return;
-    if(key) counted.add(key);
-    total+=receiptSalesBaseValue(receipt);
-  });
-
-  (DB.inventoryTxns||[]).forEach(txn=>{
-    if(!isActiveSaleRecord(txn)) return;
-    if(String(txn.type||'').toUpperCase()!=='SALE_OUT') return;
-    if(String(txn.subtype||'').toUpperCase()!=='QUICK') return;
-    if(Number(txn.year)!==y || Number(txn.month)!==m) return;
-    total+=Number(txn.amount)||0;
-  });
-  return round2(total);
+  const gross = Number(record.total != null ? record.total : record.totalAmount)||0;
+  const vat = Number(record.vatAmount)||0;
+  return Math.max(0, gross - vat);
 }
 function KPI_DailySalesValue(referenceDate){
-  const today=referenceDate instanceof Date?referenceDate:new Date(referenceDate||Date.now());
+  const today = referenceDate instanceof Date ? referenceDate : new Date(referenceDate || Date.now());
   if(Number.isNaN(today.getTime())) return 0;
-
-  // Daily Sales is a live current-day KPI. A closed/historical month must not
-  // repeat today's value merely because its selector is active.
-  if(!isOpenMonth()
-      || DB.selectedYear!==today.getFullYear()
-      || DB.selectedMonth!==(today.getMonth()+1)){
-    return 0;
-  }
-
-  const targetKey=localDateKey(today);
-  let total=0;
-  const countedReceipts=new Set();
-
-  (DB.sales||[]).forEach(sale=>{
+  if(!isOpenMonth() || Number(DB.selectedYear)!==today.getFullYear() || Number(DB.selectedMonth)!==(today.getMonth()+1)) return 0;
+  const targetKey = localDateKey(today);
+  let total = 0;
+  const countedReceipts = new Set();
+  (DB.sales || []).forEach(sale=>{
     if(!isActiveSaleRecord(sale) || localDateKey(sale.date)!==targetKey) return;
     const key=String(sale.receiptNo||sale.id||'').trim().toLowerCase();
     if(key) countedReceipts.add(key);
-    total+=receiptSalesBaseValue(sale);
+    total += receiptSalesBaseValue(sale);
   });
-  (DB.receipts||[]).forEach(receipt=>{
+  (DB.receipts || []).forEach(receipt=>{
     if(!isActiveSaleRecord(receipt) || localDateKey(receipt.date)!==targetKey) return;
     const key=String(receipt.receiptNo||receipt.id||'').trim().toLowerCase();
     if(key && countedReceipts.has(key)) return;
-    if(key) countedReceipts.add(key);
-    total+=receiptSalesBaseValue(receipt);
+    total += receiptSalesBaseValue(receipt);
   });
-  (DB.inventoryTxns||[]).forEach(txn=>{
+  (DB.inventoryTxns || []).forEach(txn=>{
     if(!isActiveSaleRecord(txn)) return;
-    if(String(txn.type||'').toUpperCase()!=='SALE_OUT') return;
-    if(String(txn.subtype||'').toUpperCase()!=='QUICK') return;
+    if(String(txn.type||'').toUpperCase()!=='SALE_OUT' || String(txn.subtype||'').toUpperCase()!=='QUICK') return;
     if(localDateKey(txn.date)!==targetKey) return;
-    total+=Number(txn.amount)||0;
+    total += Number(txn.amount)||0;
   });
   return round2(total);
 }
-function cashBalanceBreakdownAtPeriodEnd(year,month){
-  const end=new Date(Number(year),Number(month),1,0,0,0,0).getTime()-1;
-  const result={};
-  let foundAny=false;
-  CASH_TYPES.forEach(type=>{
-    let latest=null;
-    (DB.cashLog||[]).forEach(entry=>{
-      if(String(entry.cashType||'')!==type) return;
-      const at=new Date(entry.at||entry.date).getTime();
-      if(Number.isNaN(at) || at>end) return;
-      if(!latest || at>latest.at) latest={at,after:Number(entry.after)||0};
-    });
-    if(latest){ result[type]=latest.after; foundAny=true; }
-    else result[type]=0;
-  });
-  return foundAny?result:null;
+
+/* ---------- auth / roles (Excel ApplyRibbonVisibility) ---------- */
+function isElevated(){
+  // Muniru (ADMIN login) always elevated; Cashier2 only when Admin Mode ON
+  return session.role === 'ADMIN' || !!session.adminMode;
 }
-function repairHistoricalKPISnapshots(){
-  let changed=false;
-  (DB.kpiHistory||[]).forEach(snapshot=>{
-    const year=Number(snapshot.year), month=Number(snapshot.month);
-    if(!year || !month) return;
-    if(!snapshot.id){ snapshot.id='KPI-'+year+pad(month); changed=true; }
-
-    const rows=periodStockRows(year,month);
-    const detailedSales=rawTotalSales(year,month);
-    const txnSales=salesValueForPeriod(year,month);
-    const gross=rawGrossProfit(year,month);
-    const expenseRecords=periodExpenseRecords(year,month);
-    const expenses=expenseRecords.length
-      ? rawExpenses(year,month)
-      : Math.max(0,(Number(snapshot.gross)||gross)-(Number(snapshot.net)||0));
-    const crStock=rawCRStock(year,month);
-
-    const values={
-      qtyIn: rows.length?rawQtyIn(year,month):(Number(snapshot.qtyIn)||0),
-      qtyOut: rows.length?rawQtyOut(year,month):(Number(snapshot.qtyOut)||0),
-      qtyRem: rows.length?rawQtyRem(year,month):(Number(snapshot.qtyRem)||0),
-      totalSales: rows.length?detailedSales:txnSales,
-      crStock: crStock,
-      gross: rows.length?gross:(Number(snapshot.gross)||0),
-      expenses: expenses,
-      net: snapshot.net!=null?(Number(snapshot.net)||0):((rows.length?gross:0)-expenses),
-      debt: snapshot.debt!=null?(Number(snapshot.debt)||0):periodAccountSnapshotTotal('debtorsMonthly',year,month),
-      creditors: snapshot.creditors!=null?(Number(snapshot.creditors)||0):periodAccountSnapshotTotal('creditorsMonthly',year,month),
-      deposits: snapshot.deposits!=null?(Number(snapshot.deposits)||0):periodAccountSnapshotTotal('depositorsMonthly',year,month)
-    };
-
-    if(snapshot.liquidCash!=null) values.liquidCash=Number(snapshot.liquidCash)||0;
-    else values.liquidCash=(values.crStock+values.debt)-(values.creditors+values.deposits);
-
-    if(snapshot.cashBuckets!=null) values.cashBuckets=Number(snapshot.cashBuckets)||0;
-    else {
-      values.cashBuckets=values.liquidCash-values.crStock-values.debt+values.creditors+values.deposits;
-      if(Math.abs(values.cashBuckets)<1e-9) values.cashBuckets=0;
-    }
-
-    const breakdown=cashBalanceBreakdownAtPeriodEnd(year,month);
-    if(breakdown && !snapshot.cashBalances) values.cashBalances=breakdown;
-    values.zakaat=values.liquidCash/40;
-    values.snapshotVersion=2;
-
-    Object.keys(values).forEach(key=>{
-      const next=values[key];
-      if(JSON.stringify(snapshot[key])!==JSON.stringify(next)){
-        snapshot[key]=next;
-        changed=true;
-      }
-    });
-  });
-  return changed;
-}
-
 function populateLoginCashiers(){
   const sel = $('loginCashier');
   if(!sel) return;
@@ -1873,28 +1732,32 @@ function closeModal(){ $('modalBg').classList.remove('show'); $('modalBody').inn
 
 /* ---------- RENDER ---------- */
 function render(){
-  updatePeriodUI();
-  applyRoleUI();
-  // Safety: if locked cashier somehow on admin view, bounce to pos
-  if(!isElevated() && !CASHIER2_ALLOWED.has(currentView)){
-    currentView = 'pos';
-    $('viewTitle').textContent = TITLES.pos;
-  }
   const root = $('viewRoot');
-  switch(currentView){
-    case 'dashboard': root.innerHTML = viewDashboard(); break;
-    case 'pos': root.innerHTML = viewPOS(); bindPOS(); break;
-    case 'stockin': root.innerHTML = viewStockIn(); break;
-    case 'products': root.innerHTML = viewProducts(); break;
-    case 'stock': root.innerHTML = viewStock(); break;
-    case 'cash': root.innerHTML = viewCash(); break;
-    case 'expenses': root.innerHTML = viewExpenses(); break;
-    case 'accounts': root.innerHTML = viewAccounts(); break;
-    case 'receipts': root.innerHTML = viewReceipts(); break;
-    case 'reports': root.innerHTML = viewReports(); break;
-    case 'sync': root.innerHTML = viewSync(); break;
-    case 'settings': root.innerHTML = viewSettings(); break;
-    default: root.innerHTML = '<div class="empty">Unknown view</div>';
+  try{
+    updatePeriodUI();
+    applyRoleUI();
+    if(!isElevated() && !CASHIER2_ALLOWED.has(currentView)){
+      currentView='pos';
+      $('viewTitle').textContent=TITLES.pos;
+    }
+    switch(currentView){
+      case 'dashboard': root.innerHTML=viewDashboard(); break;
+      case 'pos': root.innerHTML=viewPOS(); bindPOS(); break;
+      case 'stockin': root.innerHTML=viewStockIn(); break;
+      case 'products': root.innerHTML=viewProducts(); break;
+      case 'stock': root.innerHTML=viewStock(); break;
+      case 'cash': root.innerHTML=viewCash(); break;
+      case 'expenses': root.innerHTML=viewExpenses(); break;
+      case 'accounts': root.innerHTML=viewAccounts(); break;
+      case 'receipts': root.innerHTML=viewReceipts(); break;
+      case 'reports': root.innerHTML=viewReports(); break;
+      case 'sync': root.innerHTML=viewSync(); break;
+      case 'settings': root.innerHTML=viewSettings(); break;
+      default: root.innerHTML='<div class="empty">Unknown view</div>';
+    }
+  }catch(error){
+    console.error('ZEZMS view rendering failed:', currentView, error);
+    if(root) root.innerHTML='<div class="card"><h3>View could not open</h3><p class="muted">The app protected your data, but this page encountered an error.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;color:#fca5a5">'+esc(error&&error.message?error.message:String(error))+'</pre><button class="btn" onclick="currentView=&quot;pos&quot;;render()">Return to Sale Out</button></div>';
   }
 }
 
@@ -1924,7 +1787,7 @@ function viewDashboard(){
     {k:'Expenses', v:fmt(KPI_TotalExpenses_CurrentMonth()), c:'red', s:'EXPENSES this month'},
     {k:'Net Profit', v:fmt(KPI_NetProfit()), c:'teal', s:'Gross − Expenses'},
     {k:'Total Sales', v:fmt(KPI_TotalSales()), c:'blue', s:'Σ T SALES'},
-    {k:'Daily Sales Value', v:fmt(KPI_DailySalesValue()), c:'green', s:(isOpenMonth() && DB.selectedYear===new Date().getFullYear() && DB.selectedMonth===(new Date().getMonth()+1))?'Today · resets automatically at midnight':'Current-day KPI · closed month'},
+    {k:'Daily Sales Value', v:fmt(KPI_DailySalesValue()), c:'green', s:(isOpenMonth() && Number(DB.selectedYear)===new Date().getFullYear() && Number(DB.selectedMonth)===(new Date().getMonth()+1))?'Today · resets automatically at midnight':'Current-day KPI · closed month'},
     {k:'CR Stock (value)', v:fmt(KPI_CRStock()), c:'amber', s:'R STOCK × U COST'},
     {k:'Qty In / Out / Rem', v:`${fmtN(KPI_QtyIn())} / ${fmtN(KPI_QtyOut())} / ${fmtN(KPI_QtyRem())}`, c:'blue', s:'Units this month'},
     {k:'Outstanding Debt', v:fmt(KPI_TotalOutstandingDebt()), c:'red', s:isOpenMonth()?'Live DEBTORS':'Monthly snapshot'},
@@ -1951,7 +1814,7 @@ function viewDashboard(){
       </div>
       <div class="card">
         <h3>Cash wallets</h3>
-        ${(()=>{const balances=KPI_CashBalancesForDisplay();return CASH_TYPES.map(t=>`<div class="statline"><span>${t}</span><b class="mono">${fmt(balances[t])}</b></div>`).join('')})()}
+        ${CASH_TYPES.map(t=>`<div class="statline"><span>${t}</span><b class="mono">${fmt(DB.cashBalances[t])}</b></div>`).join('')}
       </div>
     </div>
     <p class="footer-note">Formulas match your Excel KPI module · Zola Electronics Zone · Tamale · v${APP_VERSION}</p>`;
@@ -4469,7 +4332,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260802-historical-kpi-accuracy-r11').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260802-safe-historical-kpi-recovery-r12').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4491,12 +4354,11 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/auto-month-rollover.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/invoice-waybill.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/mobile-vertical-layout.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/kpi-freeze-pane.js?v=20260802-historical-kpi-accuracy-r11"></script>
-<script src="js/historical-kpi-repair.js?v=20260802-historical-kpi-accuracy-r11"></script>
+<script src="js/operations-update.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/auto-month-rollover.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/invoice-waybill.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/mobile-vertical-layout.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
+<script src="js/kpi-freeze-pane.js?v=20260802-safe-historical-kpi-recovery-r12"></script>
 
 
 

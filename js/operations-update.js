@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260802-historical-kpi-accuracy-r11';
+  const BUILD = '20260802-safe-historical-kpi-recovery-r12';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

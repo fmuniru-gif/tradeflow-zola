@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260802-historical-kpi-accuracy-r11';
+  const BUILD = '20260802-safe-historical-kpi-recovery-r12';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 
@@ -227,7 +227,6 @@
         expenses: typeof KPI_TotalExpenses_CurrentMonth === 'function' ? KPI_TotalExpenses_CurrentMonth() : 0,
         net: typeof KPI_NetProfit === 'function' ? KPI_NetProfit() : 0,
         cashBuckets: typeof KPI_CashBuckets_Total === 'function' ? KPI_CashBuckets_Total() : 0,
-        cashBalances: typeof KPI_CashBalancesForDisplay === 'function' ? KPI_CashBalancesForDisplay() : {},
         liquidCash: typeof KPI_LiquidCash === 'function' ? KPI_LiquidCash() : 0,
         zakaat: typeof KPI_Zakaat === 'function' ? KPI_Zakaat() : 0,
         debt: typeof KPI_TotalOutstandingDebt === 'function' ? KPI_TotalOutstandingDebt() : 0,
