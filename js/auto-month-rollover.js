@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260802-safe-historical-kpi-recovery-r12';
+  const BUILD = '20260802-confirmed-july-snapshot-r13';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 

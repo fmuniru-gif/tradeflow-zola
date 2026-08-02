@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260802-safe-historical-kpi-recovery-r12';
+  const BUILD = '20260802-confirmed-july-snapshot-r13';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';

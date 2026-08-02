@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS safe historical KPI recovery with current-day-only Daily Sales, rollover synchronization repair, stable frozen mobile headers, vertical charts, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
-  "start_url": "./index.html?build=20260802-safe-historical-kpi-recovery-r12",
+  "description": "ZEZMS with an authoritative confirmed July 2026 month-end KPI snapshot, aligned login and in-app version labels, rollover synchronization repair, stable frozen mobile headers, vertical charts, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
+  "start_url": "./index.html?build=20260802-confirmed-july-snapshot-r13",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
