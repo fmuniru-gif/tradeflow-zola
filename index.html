@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260731-stable-frozen-headers-r8" /><meta name="zezms-mobile-engine" content="portrait-readable-v8" />
-<title>Zola Electronics Zone · TradeFlow v3.4.18 · Stable Frozen Headers</title>
+<meta name="zezms-build" content="20260802-daily-sales-dynamic-stock-short-ids-r9" /><meta name="zezms-mobile-engine" content="portrait-readable-v9" />
+<title>Zola Electronics Zone · TradeFlow v3.4.19 · Daily Sales, Dynamic Stock & Short IDs</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260731-stable-frozen-headers-r8';
+  const BUILD = '20260802-daily-sales-dynamic-stock-short-ids-r9';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1104,7 +1104,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.18 · Stable Frozen Headers · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.19 · Daily Sales, Dynamic Stock & Short IDs · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -1169,38 +1169,38 @@ html.zezms-phone-layout .kpi-freeze-pane{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/app.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/logger.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/diagnostics.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/registry.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/storage.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/dbservice.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/bootpatch.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/events.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/db-events.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/system-module.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/health-module.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/utils-module.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/lifecycle-module.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/notifications-module.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/product-search-module.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/product-search-adapter.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/product-search-service.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/product-search-controller.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/product-search-events.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/product-search-metrics.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/product-search-facade.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/config.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/app.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/logger.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/diagnostics.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/registry.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/storage.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/dbservice.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/bootpatch.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/events.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/db-events.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/system-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/health-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/utils-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/lifecycle-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/notifications-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-adapter.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-service.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-controller.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-events.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-metrics.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-facade.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/backup-manager.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/cloud-sync.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/backup-manager.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
 
 <script>
 /* =========================================================
    TradeFlow PWA v3.4.18 — Stable Frozen Headers — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.18';
+const APP_VERSION = '3.4.19';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -1260,6 +1260,7 @@ let session = { cashier: null, tel: null, role: null, adminMode: false, sig: nul
 let cart = [];
 let currentView = 'pos';
 let priceAdjUnlocked = false;
+let lastKPIDayKey = '';
 
 
 /* ---------- utils ---------- */
@@ -1363,8 +1364,15 @@ function loadDB(){
     if(Array.isArray(DB.cashiers) && DB.cashiers.length && DB.security.cashiers.length === DEFAULT_SECURITY.cashiers.length){
       // keep security as source of truth
     }
+    if(!DB.settings || typeof DB.settings!=='object') DB.settings = { priceAdjEnabled:false };
     if(!DB.selectedYear) DB.selectedYear = new Date().getFullYear();
     if(!DB.selectedMonth) DB.selectedMonth = new Date().getMonth()+1;
+
+    // v3.4.19: safely replace only legacy auto-generated PRD IDs.
+    // Manually entered product IDs remain unchanged.
+    if(migrateCompactAutoProductIds()){
+      ZEZMS.db.save(DB_KEY, DB);
+    }
   }catch(e){
     console.error(e);
     DB = defaultDB();
@@ -1464,6 +1472,67 @@ function KPI_QtyRem(){
 function KPI_TotalSales(){
   return DB.stockRows.filter(r=>r.year===DB.selectedYear && r.month===DB.selectedMonth)
     .reduce((s,r)=>s+(Number(r.tSales)||0),0);
+}
+function localDateKey(value){
+  const d = value instanceof Date ? value : new Date(value);
+  if(Number.isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+function isActiveSaleRecord(record){
+  if(!record || record.voided) return false;
+  const status = String(record.status || 'ACTIVE').trim().toUpperCase();
+  return status !== 'VOID' && status !== 'UNDONE' && status !== 'CANCELLED';
+}
+function receiptSalesBaseValue(record){
+  if(!record) return 0;
+  if(record.subtotal != null && record.subtotal !== '') return Number(record.subtotal)||0;
+  if(Array.isArray(record.lines) && record.lines.length){
+    return record.lines.reduce((sum,line)=>{
+      if(line.amount != null && line.amount !== '') return sum + (Number(line.amount)||0);
+      if(line.total != null && line.total !== '') return sum + (Number(line.total)||0);
+      const qty = Number(line.qty)||0;
+      const price = Number(line.price != null ? line.price : line.uPrice)||0;
+      const disc = Number(line.disc)||0;
+      return sum + (qty * price - disc);
+    },0);
+  }
+  const gross = Number(record.total != null ? record.total : record.totalAmount)||0;
+  const vat = Number(record.vatAmount)||0;
+  return Math.max(0, gross - vat);
+}
+function KPI_DailySalesValue(referenceDate){
+  const targetKey = localDateKey(referenceDate || new Date());
+  if(!targetKey) return 0;
+
+  let total = 0;
+  const countedReceipts = new Set();
+
+  (DB.sales || []).forEach(sale=>{
+    if(!isActiveSaleRecord(sale) || localDateKey(sale.date)!==targetKey) return;
+    const key = String(sale.receiptNo || sale.id || '').trim().toLowerCase();
+    if(key) countedReceipts.add(key);
+    total += receiptSalesBaseValue(sale);
+  });
+
+  // Fallback for imported/legacy receipt records that are not present in DB.sales.
+  (DB.receipts || []).forEach(receipt=>{
+    if(!isActiveSaleRecord(receipt) || localDateKey(receipt.date)!==targetKey) return;
+    const key = String(receipt.receiptNo || receipt.id || '').trim().toLowerCase();
+    if(key && countedReceipts.has(key)) return;
+    if(key) countedReceipts.add(key);
+    total += receiptSalesBaseValue(receipt);
+  });
+
+  // Quick Sale Out transactions are stored separately from printed receipt sales.
+  (DB.inventoryTxns || []).forEach(txn=>{
+    if(!isActiveSaleRecord(txn)) return;
+    if(String(txn.type||'').toUpperCase()!=='SALE_OUT') return;
+    if(String(txn.subtype||'').toUpperCase()!=='QUICK') return;
+    if(localDateKey(txn.date)!==targetKey) return;
+    total += Number(txn.amount)||0;
+  });
+
+  return round2(total);
 }
 
 /* ---------- auth / roles (Excel ApplyRibbonVisibility) ---------- */
@@ -1675,7 +1744,7 @@ function render(){
   }
 }
 
-/* ===== DASHBOARD — 12 KPI tiles ===== */
+/* ===== DASHBOARD — 13 KPI tiles ===== */
 function periodSelectorHTML(sticky){
   const years = new Set([DB.selectedYear, new Date().getFullYear()]);
   DB.stockRows.forEach(r=>years.add(r.year));
@@ -1701,6 +1770,7 @@ function viewDashboard(){
     {k:'Expenses', v:fmt(KPI_TotalExpenses_CurrentMonth()), c:'red', s:'EXPENSES this month'},
     {k:'Net Profit', v:fmt(KPI_NetProfit()), c:'teal', s:'Gross − Expenses'},
     {k:'Total Sales', v:fmt(KPI_TotalSales()), c:'blue', s:'Σ T SALES'},
+    {k:'Daily Sales Value', v:fmt(KPI_DailySalesValue()), c:'green', s:'Today · resets automatically at midnight'},
     {k:'CR Stock (value)', v:fmt(KPI_CRStock()), c:'amber', s:'R STOCK × U COST'},
     {k:'Qty In / Out / Rem', v:`${fmtN(KPI_QtyIn())} / ${fmtN(KPI_QtyOut())} / ${fmtN(KPI_QtyRem())}`, c:'blue', s:'Units this month'},
     {k:'Outstanding Debt', v:fmt(KPI_TotalOutstandingDebt()), c:'red', s:isOpenMonth()?'Live DEBTORS':'Monthly snapshot'},
@@ -1736,24 +1806,25 @@ function viewDashboard(){
 /* ===== PRODUCTS ===== */
 function viewProducts(){
   const rows = DB.products.map((p,i)=>`<tr>
-    <td>${esc(p.name)}</td><td>${esc(p.category||'')}</td>
+    <td class="mono">${esc(p.id||'—')}</td><td>${esc(p.name)}</td><td>${esc(p.category||'')}</td>
     <td class="mono right">${fmtN(p.uPrice)}</td>
     <td class="mono right">${fmtN(stockOnHand(p.name))}</td>
     <td><button class="btn sm ghost" onclick="editProduct(${i})">Edit</button>
         <button class="btn sm danger" onclick="delProduct(${i})">Del</button></td>
-  </tr>`).join('') || `<tr><td colspan="5" class="empty">No products yet — add one below.</td></tr>`;
+  </tr>`).join('') || `<tr><td colspan="6" class="empty">No products yet — add one below.</td></tr>`;
   return `<div class="grid g2">
     <div class="card">
       <h3>Add product</h3>
-      <div class="field"><label>Product name</label><input id="pName" placeholder="e.g. Cement 50kg" /></div>
-      <div class="field"><label>Category</label><input id="pCat" placeholder="e.g. Building" /></div>
+      <div class="field"><label>Product name</label><input id="pName" placeholder="e.g. Mooved 32&quot;" /></div>
+      <div class="field"><label>Product ID (optional)</label><input id="pId" placeholder="Leave blank for a short automatic ID, e.g. MV-32" autocomplete="off" /></div>
+      <div class="field"><label>Category</label><input id="pCat" placeholder="e.g. Television" /></div>
       <div class="field"><label>Unit price (GH₵)</label><input id="pPrice" type="number" min="0" step="0.01" value="0" /></div>
       <button class="btn" onclick="addProduct()">Save product</button>
     </div>
     <div class="card">
       <h3>Catalog (${DB.products.length})</h3>
       <div class="table-wrap"><table>
-        <thead><tr><th>Name</th><th>Category</th><th class="right">U Price</th><th class="right">On hand</th><th></th></tr></thead>
+        <thead><tr><th>Product ID</th><th>Name</th><th>Category</th><th class="right">U Price</th><th class="right">On hand</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
     </div>
@@ -1780,14 +1851,19 @@ function getBaseUnitPrice(name){
 }
 function addProduct(){
   const name = ($('pName').value||'').trim();
+  const requestedId = normalizeProductId(($('pId')&&$('pId').value)||'');
   const category = ($('pCat').value||'').trim();
   const uPrice = Number($('pPrice').value)||0;
   if(!name){ toast('Product name required','err'); return; }
   if(DB.products.some(p=>p.name.toLowerCase()===name.toLowerCase())){
     toast('Product already exists','warn'); return;
   }
-  DB.products.push({ id:'PRD-'+Date.now(), name, category, uPrice });
-  saveDB(); toast('Product saved'); render();
+  if(requestedId && findProductById(requestedId)){
+    toast('Product ID already exists. Enter a different ID.','err'); return;
+  }
+  const productId = requestedId || generateCompactProductId(name);
+  DB.products.push({ id:productId, name, category, uPrice });
+  saveDB(); toast('Product saved · '+productId); render();
 }
 function editProduct(i){
   const p = DB.products[i];
@@ -1834,6 +1910,115 @@ function resolveProductId(productName, preferredId){
   if(direct) return direct;
   const product = findProductByName(productName);
   return product ? normalizeProductId(product.id) : '';
+}
+function isLegacyAutoProductId(productId){
+  return /^PRD-(?:IMP-)?\d/i.test(normalizeProductId(productId));
+}
+function compactProductPrefix(productName){
+  const words = String(productName||'').toUpperCase().match(/[A-Z]+/g) || [];
+  const word = words[0] || 'P';
+  const first = word.charAt(0) || 'P';
+  if('AEIOU'.includes(first)) return first;
+
+  let prefix = first;
+  for(let i=1;i<word.length;i++){
+    const ch = word.charAt(i);
+    if(!'AEIOU'.includes(ch) && ch!==first){
+      prefix += ch;
+      break;
+    }
+  }
+  if(prefix.length<2){
+    for(let i=1;i<word.length;i++){
+      const ch = word.charAt(i);
+      if(ch!==first){
+        prefix += ch;
+        break;
+      }
+    }
+  }
+  return (prefix || 'P').slice(0,2);
+}
+function generateCompactProductId(productName, occupiedIds){
+  const used = occupiedIds instanceof Set
+    ? occupiedIds
+    : new Set((DB.products||[]).map(p=>normalizeProductId(p.id).toLowerCase()).filter(Boolean));
+  const prefix = compactProductPrefix(productName);
+  const numberMatch = String(productName||'').match(/\d{1,4}/);
+  let start = numberMatch ? Math.abs(parseInt(numberMatch[0],10)||0) : 15;
+  if(start===0) start = 15;
+  if(start>999) start = start % 1000 || 15;
+
+  for(let offset=0;offset<985;offset++){
+    let candidate = start + offset;
+    if(candidate>999) candidate = 15 + ((candidate-1000) % 985);
+    const suffix = candidate < 10 ? pad(candidate) : String(candidate);
+    const id = prefix + '-' + suffix;
+    if(!used.has(id.toLowerCase())){
+      used.add(id.toLowerCase());
+      return id;
+    }
+  }
+
+  // Extremely unlikely fallback after exhausting the compact numeric range.
+  let fallback = prefix + '-' + Math.random().toString(36).slice(2,5).toUpperCase();
+  while(used.has(fallback.toLowerCase())){
+    fallback = prefix + '-' + Math.random().toString(36).slice(2,5).toUpperCase();
+  }
+  used.add(fallback.toLowerCase());
+  return fallback;
+}
+function migrateCompactAutoProductIds(){
+  if(!DB || !Array.isArray(DB.products)) return false;
+
+  let changed = false;
+  const occupied = new Set();
+  const replacements = new Map();
+  const canonicalByName = new Map();
+
+  // Protect every manually entered/non-legacy ID before generating replacements.
+  DB.products.forEach(product=>{
+    const current = normalizeProductId(product.id);
+    if(current && !isLegacyAutoProductId(current)) occupied.add(current.toLowerCase());
+  });
+
+  DB.products.forEach(product=>{
+    const oldId = normalizeProductId(product.id);
+    let newId = oldId;
+    if(!oldId || isLegacyAutoProductId(oldId)){
+      newId = generateCompactProductId(product.name, occupied);
+      product.id = newId;
+      changed = true;
+      if(oldId) replacements.set(oldId.toLowerCase(), newId);
+    }else{
+      occupied.add(oldId.toLowerCase());
+    }
+    canonicalByName.set(String(product.name||'').trim().toLowerCase(), newId);
+  });
+
+  function replacementFor(currentId, productName){
+    const oldKey = normalizeProductId(currentId).toLowerCase();
+    if(oldKey && replacements.has(oldKey)) return replacements.get(oldKey);
+    if((!oldKey || isLegacyAutoProductId(currentId))){
+      return canonicalByName.get(String(productName||'').trim().toLowerCase()) || '';
+    }
+    return '';
+  }
+  function updateReference(record, idKey, nameKey){
+    if(!record || typeof record!=='object') return;
+    const replacement = replacementFor(record[idKey], record[nameKey]);
+    if(replacement && normalizeProductId(record[idKey])!==replacement){
+      record[idKey] = replacement;
+      changed = true;
+    }
+  }
+
+  (DB.stockRows||[]).forEach(row=>updateReference(row,'productId','productName'));
+  (DB.undoLog||[]).forEach(entry=>updateReference(entry,'productId','product'));
+  (DB.invoices||[]).forEach(doc=>(doc.lines||[]).forEach(line=>updateReference(line,'productId','product')));
+  (DB.waybills||[]).forEach(doc=>(doc.lines||[]).forEach(line=>updateReference(line,'productId','product')));
+
+  return changed;
 }
 function rowRemainingQty(row){
   if(row.rStock!=null && row.rStock!=='') return Number(row.rStock)||0;
@@ -1889,9 +2074,9 @@ function viewStockIn(){
         <h3 style="margin:0 0 8px;font-size:13px">Or create a new product</h3>
         <div class="row">
           <div class="field" style="flex:1"><label>New product name</label><input id="siNewName" placeholder="Product name" /></div>
-          <div class="field" style="flex:1"><label>New product ID</label><input id="siNewId" placeholder="e.g. TV-001 (optional)" autocomplete="off" /></div>
+          <div class="field" style="flex:1"><label>New product ID</label><input id="siNewId" placeholder="e.g. MV-32 (optional)" autocomplete="off" /></div>
         </div>
-        <p class="muted" style="font-size:11px;margin:0">Product IDs must be unique. When left blank, ZEZMS generates an ID automatically.</p>
+        <p class="muted" style="font-size:11px;margin:0">Product IDs must be unique. When left blank, ZEZMS generates a short ID automatically from the product name.</p>
       </div>
       <div class="field"><label>Category</label><input id="siCat" /></div>
       <div class="row">
@@ -1947,7 +2132,7 @@ function doStockIn(){
       }
       prod = byName;
     }else{
-      const productId = requestedId || idStamp('PRD-');
+      const productId = requestedId || generateCompactProductId(enteredName);
       if(findProductById(productId)){
         toast('Product ID already exists. Enter a different ID.','err'); return;
       }
@@ -1997,15 +2182,35 @@ function filterStockBalanceRows(){
   const idQuery = (($('stockSearchId')&&$('stockSearchId').value)||'').trim().toLowerCase();
   const rows = [...document.querySelectorAll('#stockBalanceBody tr.stock-balance-row')];
   let visible = 0;
+  let visibleValue = 0;
+  let visibleQty = 0;
+
   rows.forEach(row=>{
     const matchesName = !nameQuery || String(row.dataset.productName||'').includes(nameQuery);
     const matchesId = !idQuery || String(row.dataset.productId||'').includes(idQuery);
     const show = matchesName && matchesId;
     row.style.display = show ? '' : 'none';
-    if(show) visible++;
+    if(show){
+      visible++;
+      visibleValue += Number(row.dataset.stockValue)||0;
+      visibleQty += Number(row.dataset.stockQty)||0;
+    }
   });
+
   const empty = $('stockBalanceNoMatch');
   if(empty) empty.style.display = rows.length && !visible ? '' : 'none';
+
+  const valueNode = $('stockBalanceValue');
+  const qtyNode = $('stockBalanceQty');
+  const countNode = $('stockBalanceMatchCount');
+  if(valueNode) valueNode.textContent = fmt(visibleValue);
+  if(qtyNode) qtyNode.textContent = fmtN(visibleQty);
+  if(countNode){
+    const filtered = !!(nameQuery || idQuery);
+    countNode.textContent = filtered
+      ? visible + (visible===1 ? ' matching product' : ' matching products')
+      : visible + (visible===1 ? ' product' : ' products');
+  }
 }
 function clearStockBalanceSearch(){
   if($('stockSearchName')) $('stockSearchName').value='';
@@ -2024,17 +2229,23 @@ function viewStock(){
     if((Number(r.rStock)||0)>0) map[k].tiers.push({cost:r.uCost, qty:r.rStock});
   });
   const list = Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
-  const rows = list.map(p=>`<tr class="stock-balance-row" data-product-name="${escAttr(p.name.toLowerCase())}" data-product-id="${escAttr(String(p.id||'').toLowerCase())}">
+  const rows = list.map(p=>`<tr class="stock-balance-row" data-product-name="${escAttr(p.name.toLowerCase())}" data-product-id="${escAttr(String(p.id||'').toLowerCase())}" data-stock-value="${Number(p.value)||0}" data-stock-qty="${Number(p.qty)||0}">
     <td class="mono">${esc(p.id||'—')}</td><td>${esc(p.name)}</td><td>${esc(p.cat||'')}</td>
     <td class="mono right">${fmtN(p.qty)}</td>
     <td class="mono right">${fmt(p.value)}</td>
     <td style="font-size:11px;color:var(--muted)">${p.tiers.map(t=>fmtN(t.qty)+'@'+fmtN(t.cost)).join(', ')||'—'}</td>
   </tr>`).join('');
   const tableRows = rows || `<tr><td colspan="6" class="empty">No stock in ${monthName(DB.selectedMonth)} ${DB.selectedYear}</td></tr>`;
+  const visibleStockValue = list.reduce((sum,item)=>sum+(Number(item.value)||0),0);
+  const visibleStockQty = list.reduce((sum,item)=>sum+(Number(item.qty)||0),0);
   return periodSelectorHTML() + `<div class="card">
     <div class="row" style="justify-content:space-between;margin-bottom:8px">
       <h3 style="margin:0">Current stock balance</h3>
-      <span class="pill">CR value: <b class="mono">${fmt(KPI_CRStock())}</b></span>
+      <div class="row">
+        <span class="pill">Visible stock value: <b id="stockBalanceValue" class="mono">${fmt(visibleStockValue)}</b></span>
+        <span class="pill">Visible qty: <b id="stockBalanceQty" class="mono">${fmtN(visibleStockQty)}</b></span>
+        <span id="stockBalanceMatchCount" class="pill">${list.length} ${list.length===1?'product':'products'}</span>
+      </div>
     </div>
     <div class="grid g2" style="margin-bottom:10px">
       <div class="field" style="margin:0"><label>Search by product name</label>
@@ -3705,7 +3916,7 @@ function importWorkbookToDB(wb, mode){
       }
 
       if(!productSet.has(productName.toLowerCase())){
-        const p = { id: 'PRD-IMP-'+Date.now()+'-'+r, name: productName, category, uPrice: uPrice||0 };
+        const p = { id: generateCompactProductId(productName), name: productName, category, uPrice: uPrice||0 };
         DB.products.push(p);
         productSet.set(productName.toLowerCase(), p);
       } else {
@@ -4048,7 +4259,7 @@ function importWorkbookToDB(wb, mode){
       const k = (r.productName||'').toLowerCase();
       if(!k || seen.has(k)) return;
       seen.add(k);
-      DB.products.push({ id: r.productId||idStamp('PRD-'), name: r.productName, category: r.category||'', uPrice: r.uPrice||0 });
+      DB.products.push({ id: r.productId||generateCompactProductId(r.productName), name: r.productName, category: r.category||'', uPrice: r.uPrice||0 });
     });
   }
 
@@ -4091,12 +4302,20 @@ function tick(){
   const d = new Date();
   const el = $('clockPill');
   if(el) el.textContent = d.toLocaleString('en-GH',{hour12:false});
+
+  const dayKey = localDateKey(d);
+  if(lastKPIDayKey && dayKey && dayKey!==lastKPIDayKey){
+    if(currentView==='dashboard' && $('appShell') && $('appShell').style.display!=='none'){
+      render();
+    }
+  }
+  if(dayKey) lastKPIDayKey = dayKey;
 }
 function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260731-stable-frozen-headers-r8').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4118,11 +4337,11 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/auto-month-rollover.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/invoice-waybill.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/mobile-vertical-layout.js?v=20260731-stable-frozen-headers-r8"></script>
-<script src="js/kpi-freeze-pane.js?v=20260731-stable-frozen-headers-r8"></script>
+<script src="js/operations-update.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/auto-month-rollover.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/invoice-waybill.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/mobile-vertical-layout.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/kpi-freeze-pane.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
 
 
 

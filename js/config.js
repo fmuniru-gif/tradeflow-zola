@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Developer Edition 0.4.18 — Stable Frozen Headers",
-  build:"20260731-stable-frozen-headers-r8",
+  version:"Developer Edition 0.4.19 — Daily Sales, Dynamic Stock & Short IDs",
+  build:"20260802-daily-sales-dynamic-stock-short-ids-r9",
   debug:true,
   cloud:{
     googleDrive:{

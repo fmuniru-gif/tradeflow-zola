@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260731-kpi-portrait-freeze-vertical-r6';
+  const BUILD = '20260802-daily-sales-dynamic-stock-short-ids-r9';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
