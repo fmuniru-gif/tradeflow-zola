@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260730-mobile-reference-r1';
+  const BUILD = '20260802-rollover-sync-repair-r10';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -43,6 +43,8 @@
   let pushInFlight = false;
   let pullInFlight = false;
   let applyingRemote = false;
+  let initPromise = null;
+  let initSettled = false;
 
   function makeUUID() {
     if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
@@ -70,7 +72,8 @@
       signedInEmail: '',
       lastError: '',
       lastRejected: null,
-      mergeWarnings: []
+      mergeWarnings: [],
+      announcedRollovers: []
     };
   }
 
@@ -226,6 +229,83 @@
     const copy = clone(database || {});
     LOCAL_ONLY_ROOTS.forEach(function (key) { delete copy[key]; });
     return copy;
+  }
+
+  function rolloverIdFromOperation(operation) {
+    if (!operation || !Array.isArray(operation.patches)) return '';
+    const patch = operation.patches.find(function (item) {
+      return item && item.action === 'insert' && item.collection === 'monthRollovers'
+        && item.value && item.value.id;
+    });
+    return patch && patch.value ? String(patch.value.id || '') : '';
+  }
+
+  function markRolloverAnnounced(rolloverId) {
+    const id = String(rolloverId || '');
+    if (!id) return;
+    const list = Array.isArray(state.announcedRollovers) ? state.announcedRollovers.slice() : [];
+    if (list.indexOf(id) < 0) list.push(id);
+    state.announcedRollovers = list.slice(-36);
+    persistState();
+  }
+
+  function buildRolloverRepairOperation(marker) {
+    const database = getDatabase();
+    if (!database || !marker || !marker.id) return null;
+    const patches = [];
+    const sourceYear = Number(marker.sourceYear) || 0;
+    const sourceMonth = Number(marker.sourceMonth) || 0;
+    const targetYear = Number(marker.targetYear) || 0;
+    const targetMonth = Number(marker.targetMonth) || 0;
+
+    function addInsert(collection, item) {
+      if (!item || !entityKey(item)) return;
+      patches.push({
+        action: 'insert', collection: collection,
+        key: entityKey(item), value: clone(item)
+      });
+    }
+
+    ['debtorsMonthly', 'creditorsMonthly', 'depositorsMonthly'].forEach(function (collection) {
+      (database[collection] || []).forEach(function (item) {
+        if (Number(item.snapYear) === sourceYear && Number(item.snapMonth) === sourceMonth) {
+          addInsert(collection, item);
+        }
+      });
+    });
+
+    (database.kpiHistory || []).forEach(function (item) {
+      if (Number(item.year) === sourceYear && Number(item.month) === sourceMonth) {
+        addInsert('kpiHistory', item);
+      }
+    });
+
+    (database.stockRows || []).forEach(function (row) {
+      const belongs = String(row.rolloverId || '') === String(marker.id)
+        || (row.automaticRollover === true
+          && Number(row.year) === targetYear
+          && Number(row.month) === targetMonth
+          && !!row.carriedFrom);
+      if (belongs) addInsert('stockRows', row);
+    });
+
+    addInsert('monthRollovers', marker);
+    patches.push({ action: 'root-set', root: 'selectedYear', value: targetYear, before: clone(database.selectedYear) });
+    patches.push({ action: 'root-set', root: 'selectedMonth', value: targetMonth, before: clone(database.selectedMonth) });
+
+    state.deviceSeq = (Number(state.deviceSeq) || 0) + 1;
+    persistState();
+    return {
+      opId: 'AUTO-' + String(marker.id),
+      deviceId: state.deviceId,
+      deviceSeq: state.deviceSeq,
+      createdAt: marker.completedAt || new Date().toISOString(),
+      reason: 'month-rollover-repair',
+      kind: 'MONTH_ROLLOVER_REPAIR',
+      appVersion: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
+      repairRolloverId: String(marker.id),
+      patches: patches
+    };
   }
 
   function additiveField(collection, field) {
@@ -471,6 +551,8 @@
       ensureSyncIds(getDatabase());
       rawSaveDatabase();
       observedSnapshot = cleanSnapshot(getDatabase());
+      const appliedRolloverId = rolloverIdFromOperation(operation) || operation.repairRolloverId;
+      if (appliedRolloverId) markRolloverAnnounced(appliedRolloverId);
     } finally {
       applyingRemote = false;
     }
@@ -673,6 +755,27 @@
     return rows[0] || null;
   }
 
+  async function publishMonthRollover(marker, options) {
+    if (!marker || !marker.id) return false;
+    const rolloverId = String(marker.id);
+    const announced = Array.isArray(state.announcedRollovers) ? state.announcedRollovers : [];
+    if (announced.indexOf(rolloverId) >= 0) return true;
+
+    await waitUntilReady(7000);
+    if (!state.initialized) return false;
+
+    const operation = buildRolloverRepairOperation(marker);
+    if (!operation) return false;
+    if (!queue.some(function (item) { return item && item.opId === operation.opId; })) {
+      queueOperation(operation);
+    }
+
+    if (navigator.onLine && session && configured()) {
+      await flushQueue(false);
+    }
+    return true;
+  }
+
   async function rolloverAcceptedByAnotherDevice(operation) {
     if (!operation || operation.kind !== 'MONTH_ROLLOVER' || !operation.opId) return false;
     const response = await client
@@ -706,6 +809,8 @@
         const operation = queue[0];
         try {
           const result = await pushOne(operation);
+          const pushedRolloverId = rolloverIdFromOperation(operation) || operation.repairRolloverId;
+          if (pushedRolloverId) markRolloverAnnounced(pushedRolloverId);
           const rolloverOwnedElsewhere = await rolloverAcceptedByAnotherDevice(operation);
           if (rolloverOwnedElsewhere) {
             // Another device completed the same deterministic monthly rollover first.
@@ -1022,7 +1127,7 @@
     notify('Cloud sync error: ' + message, 'err');
   }
 
-  async function init() {
+  async function initCore() {
     state = loadState();
     queue = loadJSON(QUEUE_KEY, []);
     rejected = loadJSON(REJECTED_KEY, []);
@@ -1050,6 +1155,37 @@
       handleError(error);
       return false;
     }
+  }
+
+  function dispatchCloudReady() {
+    try { window.dispatchEvent(new CustomEvent('zezms-cloud-ready')); } catch (_) {}
+  }
+
+  function init() {
+    if (initPromise) return initPromise;
+    initPromise = Promise.resolve().then(initCore).then(function (result) {
+      initSettled = true;
+      dispatchCloudReady();
+      return result;
+    }, function (error) {
+      initSettled = true;
+      dispatchCloudReady();
+      throw error;
+    });
+    return initPromise;
+  }
+
+  function waitUntilReady(timeoutMs) {
+    if (!initPromise) init();
+    const wait = initPromise.catch(function () { return false; });
+    const timeout = new Promise(function (resolve) {
+      setTimeout(function () { resolve(false); }, Math.max(250, Number(timeoutMs) || 5000));
+    });
+    return Promise.race([wait, timeout]);
+  }
+
+  function isReadyForLocalOperations() {
+    return !!observedSnapshot && initSettled;
   }
 
   function recentQueueHtml() {
@@ -1149,6 +1285,9 @@
     version: 4,
     build: BUILD,
     init: init,
+    waitUntilReady: waitUntilReady,
+    isReadyForLocalOperations: isReadyForLocalOperations,
+    publishMonthRollover: publishMonthRollover,
     onLocalSave: onLocalSave,
     isApplyingRemote: function () { return applyingRemote; },
     getState: function () { return Object.assign({}, state, { queueLength: queue.length }); },
@@ -1163,7 +1302,9 @@
       applyOperation: applyOperation,
       inversePatch: inversePatch,
       ensureSyncIds: ensureSyncIds,
-      cleanSnapshot: cleanSnapshot
+      cleanSnapshot: cleanSnapshot,
+      buildRolloverRepairOperation: buildRolloverRepairOperation,
+      rolloverIdFromOperation: rolloverIdFromOperation
     }
   };
 }());

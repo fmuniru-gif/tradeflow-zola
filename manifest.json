@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS with stable frozen mobile headers, a live daily-sales KPI, search-responsive Stock Balance value, compact product IDs, upright KPI charts, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
-  "start_url": "./index.html?build=20260802-daily-sales-dynamic-stock-short-ids-r9",
+  "description": "ZEZMS with reliable multi-device automatic month rollover reconciliation, correct live-month KPI status, stable frozen headers, daily sales KPI, dynamic stock balance, compact product IDs, A5 printing and Cloud Sync M4.",
+  "start_url": "./index.html?build=20260802-rollover-sync-repair-r10",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
