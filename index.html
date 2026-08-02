@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260802-rollover-sync-repair-r10" /><meta name="zezms-mobile-engine" content="portrait-readable-v10" />
-<title>Zola Electronics Zone · TradeFlow v3.4.20 · Rollover Sync Repair</title>
+<meta name="zezms-build" content="20260802-daily-sales-dynamic-stock-short-ids-r9" /><meta name="zezms-mobile-engine" content="portrait-readable-v9" />
+<title>Zola Electronics Zone · TradeFlow v3.4.19 · Daily Sales, Dynamic Stock & Short IDs</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260802-rollover-sync-repair-r10';
+  const BUILD = '20260802-daily-sales-dynamic-stock-short-ids-r9';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1104,7 +1104,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.4.20 · Rollover Sync Repair · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.4.19 · Daily Sales, Dynamic Stock & Short IDs · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div class="field">
       <label>Cashier</label>
       <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
@@ -1169,38 +1169,38 @@ html.zezms-phone-layout .kpi-freeze-pane{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/app.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/logger.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/diagnostics.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/registry.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/storage.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/dbservice.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/bootpatch.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/events.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/db-events.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/system-module.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/health-module.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/utils-module.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/lifecycle-module.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/notifications-module.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/product-search-module.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/product-search-adapter.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/product-search-service.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/product-search-controller.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/product-search-events.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/product-search-metrics.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/product-search-facade.js?v=20260802-rollover-sync-repair-r10"></script>
+<script src="js/config.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/app.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/logger.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/diagnostics.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/registry.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/storage.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/dbservice.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/bootpatch.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/events.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/db-events.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/system-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/health-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/utils-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/lifecycle-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/notifications-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-module.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-adapter.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-service.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-controller.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-events.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-metrics.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/product-search-facade.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/backup-manager.js?v=20260802-rollover-sync-repair-r10"></script>
+<script src="js/cloud-sync.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/backup-manager.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.4.20 — Rollover Sync Repair — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.4.18 — Stable Frozen Headers — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.4.20';
+const APP_VERSION = '3.4.19';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -1391,18 +1391,16 @@ function isOpenMonth(){
   return DB.selectedYear===latest.year && DB.selectedMonth===latest.month;
 }
 function getLatestMonth(){
-  let best = {year:0,month:0};
-  function consider(year,month){
-    year = Number(year)||0;
-    month = Number(month)||0;
-    if(year>best.year || (year===best.year && month>best.month)) best={year,month};
+  let y = DB.selectedYear, m = DB.selectedMonth;
+  if(DB.stockRows.length){
+    let best = {year:0,month:0};
+    DB.stockRows.forEach(r=>{
+      if(r.year>best.year || (r.year===best.year && r.month>best.month)) best={year:r.year,month:r.month};
+    });
+    if(best.year) { y=best.year; m=best.month; }
   }
-  (DB.stockRows||[]).forEach(r=>consider(r.year,r.month));
-  // A completed rollover is authoritative even when no stock batch qualified
-  // for carry-forward. This keeps the new calendar month live on every device.
-  (DB.monthRollovers||[]).forEach(r=>consider(r.targetYear,r.targetMonth));
-  if(best.year) return best;
-  return {year:DB.selectedYear, month:DB.selectedMonth};
+  // also consider sales / expenses dates
+  return {year:y, month:m};
 }
 function KPI_CRStock(){
   return DB.stockRows
@@ -4317,7 +4315,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260802-rollover-sync-repair-r10').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4339,11 +4337,11 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/auto-month-rollover.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/invoice-waybill.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/mobile-vertical-layout.js?v=20260802-rollover-sync-repair-r10"></script>
-<script src="js/kpi-freeze-pane.js?v=20260802-rollover-sync-repair-r10"></script>
+<script src="js/operations-update.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/auto-month-rollover.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/invoice-waybill.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/mobile-vertical-layout.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
+<script src="js/kpi-freeze-pane.js?v=20260802-daily-sales-dynamic-stock-short-ids-r9"></script>
 
 
 

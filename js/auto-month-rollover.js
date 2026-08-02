@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260802-rollover-sync-repair-r10';
+  const BUILD = '20260730-mobile-reference-r1';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 
@@ -84,6 +84,8 @@
     }
 
     (database.stockRows || []).forEach(function (row) { add(row.year, row.month); });
+    (database.sales || []).forEach(function (sale) { add(sale.year, sale.month); });
+    (database.inventoryTxns || []).forEach(function (txn) { add(txn.year, txn.month); });
     (database.monthRollovers || []).forEach(function (rollover) {
       add(rollover.targetYear, rollover.targetMonth);
     });
@@ -91,53 +93,6 @@
     if (!candidates.length) add(database.selectedYear, database.selectedMonth);
     if (!candidates.length) return calendarPeriod();
 
-    return candidates.reduce(function (best, current) {
-      return comparePeriods(current, best) > 0 ? current : best;
-    });
-  }
-
-  function markerForTarget(database, target) {
-    return (database.monthRollovers || []).find(function (entry) {
-      return entry && Number(entry.targetYear) === target.year
-        && Number(entry.targetMonth) === target.month;
-    }) || null;
-  }
-
-  function latestRolloverMarker(database) {
-    const list = (database.monthRollovers || []).filter(Boolean);
-    if (!list.length) return null;
-    return list.reduce(function (best, current) {
-      if (!best) return current;
-      const a = { year: Number(current.targetYear) || 0, month: Number(current.targetMonth) || 0 };
-      const b = { year: Number(best.targetYear) || 0, month: Number(best.targetMonth) || 0 };
-      return comparePeriods(a, b) > 0 ? current : best;
-    }, null);
-  }
-
-  function rolloverSourcePeriod(database, target) {
-    const candidates = [];
-    function addBefore(year, month) {
-      if (!validPeriod(year, month)) return;
-      const period = { year: Number(year), month: Number(month) };
-      if (comparePeriods(period, target) < 0) candidates.push(period);
-    }
-
-    // A marker or stock row in an earlier month is valid evidence of the
-    // previous working period. Current-month sales/transactions are deliberately
-    // ignored because they must never suppress a missing rollover.
-    (database.monthRollovers || []).forEach(function (entry) {
-      addBefore(entry.targetYear, entry.targetMonth);
-    });
-    (database.stockRows || []).forEach(function (row) {
-      addBefore(row.year, row.month);
-    });
-    if (!candidates.length) {
-      (database.sales || []).forEach(function (sale) { addBefore(sale.year, sale.month); });
-      (database.inventoryTxns || []).forEach(function (txn) { addBefore(txn.year, txn.month); });
-    }
-    addBefore(database.selectedYear, database.selectedMonth);
-
-    if (!candidates.length) return target;
     return candidates.reduce(function (best, current) {
       return comparePeriods(current, best) > 0 ? current : best;
     });
@@ -161,9 +116,7 @@
   function hasCurrentRolloverDue(now) {
     const database = getDatabase();
     if (!ensureModel(database)) return false;
-    const target = calendarPeriod(now);
-    if (markerForTarget(database, target)) return false;
-    return comparePeriods(rolloverSourcePeriod(database, target), target) < 0;
+    return comparePeriods(latestBusinessPeriod(database), calendarPeriod(now)) < 0;
   }
 
   function withSelectedPeriod(database, period, callback) {
@@ -357,19 +310,9 @@
         && ZEZMS.cloudSync.isApplyingRemote()) {
       return { changed: false, deferred: true, count: 0, carried: 0 };
     }
-    if (window.ZEZMS.cloudSync && typeof ZEZMS.cloudSync.getState === 'function'
-        && typeof ZEZMS.cloudSync.isReadyForLocalOperations === 'function') {
-      const syncState = ZEZMS.cloudSync.getState();
-      if (syncState && syncState.initialized && !ZEZMS.cloudSync.isReadyForLocalOperations()) {
-        return { changed: false, deferred: true, count: 0, carried: 0 };
-      }
-    }
 
     const target = calendarPeriod(options && options.now);
-    if (markerForTarget(database, target)) {
-      return { changed: false, count: 0, carried: 0, target: target, alreadyCompleted: true };
-    }
-    let source = rolloverSourcePeriod(database, target);
+    let source = latestBusinessPeriod(database);
     if (comparePeriods(source, target) >= 0) return { changed: false, count: 0, carried: 0 };
 
     running = true;
@@ -404,38 +347,18 @@
   }
 
   async function prepareFromCloudThenRollover() {
-    const cloud = window.ZEZMS && ZEZMS.cloudSync;
     try {
-      if (cloud && typeof cloud.waitUntilReady === 'function') {
-        await cloud.waitUntilReady(7000);
-      }
-      if (cloud && typeof cloud.getState === 'function') {
-        const state = cloud.getState();
+      if (window.ZEZMS.cloudSync && typeof ZEZMS.cloudSync.getState === 'function') {
+        const state = ZEZMS.cloudSync.getState();
         if (navigator.onLine && state.initialized && state.signedInEmail
-            && typeof cloud.pullNow === 'function') {
-          await cloud.pullNow(true);
+            && typeof ZEZMS.cloudSync.pullNow === 'function') {
+          await ZEZMS.cloudSync.pullNow(true);
         }
       }
     } catch (error) {
       console.warn('Cloud refresh before automatic month rollover was unavailable', error);
     }
-
-    const result = ensureAutomaticMonthRollover({ silent: false });
-
-    // Repair the first-day startup race from earlier releases. If a rollover
-    // exists locally but its deterministic operation was never uploaded, this
-    // republishes the complete rollover once. Supabase deduplicates it safely
-    // when the operation already exists.
-    try {
-      const database = getDatabase();
-      const marker = database ? latestRolloverMarker(database) : null;
-      if (marker && cloud && typeof cloud.publishMonthRollover === 'function') {
-        await cloud.publishMonthRollover(marker, { silent: true });
-      }
-    } catch (error) {
-      console.warn('Automatic rollover cloud reconciliation was deferred', error);
-    }
-    return result;
+    return ensureAutomaticMonthRollover({ silent: false });
   }
 
   function wrapTransactionFunction(name, before) {
@@ -444,11 +367,6 @@
     const wrapped = function () {
       if (hasCurrentRolloverDue()) {
         const result = ensureAutomaticMonthRollover({ silent: false, render: false });
-        if (result && result.deferred) {
-          prepareFromCloudThenRollover();
-          if (typeof toast === 'function') toast('Preparing the new working month. Please try the transaction again in a moment.', 'warn');
-          return false;
-        }
         if (before) before(result);
       }
       return original.apply(this, arguments);
@@ -473,7 +391,7 @@
     if (typeof originalLogin === 'function' && !originalLogin.__autoMonthWrapped) {
       const wrappedLogin = function () {
         const result = originalLogin.apply(this, arguments);
-        setTimeout(function () { prepareFromCloudThenRollover(); }, 0);
+        ensureAutomaticMonthRollover({ silent: false });
         return result;
       };
       wrappedLogin.__autoMonthWrapped = true;
@@ -506,7 +424,9 @@
       const database = getDatabase();
       ensureModel(database);
       const latest = database ? latestBusinessPeriod(database) : calendarPeriod();
-      const last = database ? latestRolloverMarker(database) : null;
+      const last = database && database.monthRollovers.length
+        ? database.monthRollovers[database.monthRollovers.length - 1]
+        : null;
       const latestLabel = typeof monthName === 'function' ? monthName(latest.month) + ' ' + latest.year : periodKey(latest.year, latest.month);
       const lastLabel = last
         ? (typeof monthName === 'function' ? monthName(last.targetMonth) + ' ' + last.targetYear : periodKey(last.targetYear, last.targetMonth))
@@ -534,13 +454,10 @@
       if (!document.hidden) prepareFromCloudThenRollover();
     });
     window.addEventListener('focus', function () {
-      prepareFromCloudThenRollover();
+      ensureAutomaticMonthRollover({ silent: false });
     });
     window.addEventListener('online', function () {
       setTimeout(prepareFromCloudThenRollover, 500);
-    });
-    window.addEventListener('zezms-cloud-ready', function () {
-      setTimeout(prepareFromCloudThenRollover, 100);
     });
   }
 
@@ -553,11 +470,11 @@
     installGuards();
     addSettingsStatus();
     scheduleChecks();
-    setTimeout(prepareFromCloudThenRollover, 1500);
+    setTimeout(prepareFromCloudThenRollover, 1200);
   }
 
   ZEZMS.autoMonth = {
-    version: '3.4.20',
+    version: '3.4.1',
     build: BUILD,
     ensure: ensureAutomaticMonthRollover,
     isDue: hasCurrentRolloverDue,
@@ -569,8 +486,6 @@
       nextPeriod: nextPeriod,
       comparePeriods: comparePeriods,
       latestBusinessPeriod: latestBusinessPeriod,
-      rolloverSourcePeriod: rolloverSourcePeriod,
-      markerForTarget: markerForTarget,
       markerId: markerId,
       carryStock: carryStock,
       performOneRollover: performOneRollover

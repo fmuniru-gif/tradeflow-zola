@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260802-rollover-sync-repair-r10';
+  const BUILD = '20260802-daily-sales-dynamic-stock-short-ids-r9';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
