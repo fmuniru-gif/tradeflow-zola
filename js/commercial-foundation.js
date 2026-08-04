@@ -1,10 +1,10 @@
-/* ZEZMS v3.5.1 — M5A-1 SQL Ambiguity Fix */
+/* ZEZMS v3.6.0 — M5A-1 Foundation retained for M5A-2 */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260804-m5a1-sql-ambiguity-fix-r17';
+  const BUILD = '20260804-m5a2-auth-staff-security-r18';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();
@@ -94,7 +94,7 @@
       p_device_id: String(syncState.deviceId || ''),
       p_device_name: String(syncState.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.5.1'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.0'
     };
   }
 

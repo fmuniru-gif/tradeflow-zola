@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260804-m5a1-sql-ambiguity-fix-r17" /><meta name="zezms-mobile-engine" content="portrait-readable-v17" />
-<title>Zola Electronics Zone · TradeFlow v3.5.1 · M5A-1 SQL Ambiguity Fix</title>
+<meta name="zezms-build" content="20260804-m5a2-auth-staff-security-r18" /><meta name="zezms-mobile-engine" content="portrait-readable-v18" />
+<title>Zola Electronics Zone · TradeFlow v3.6.0 · M5A-2 Auth & Staff Security</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260804-m5a1-sql-ambiguity-fix-r17';
+  const BUILD = '20260804-m5a2-auth-staff-security-r18';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1104,17 +1104,39 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.5.1 · M5A-1 SQL Ambiguity Fix · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
-    <div class="field">
-      <label>Cashier</label>
-      <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
+    <div class="sub">TradeFlow v3.6.0 · M5A-2 Auth & Staff Security · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div id="m5a2SecureLoginPanel" style="display:none">
+      <div class="field">
+        <label>Staff email</label>
+        <input id="m5a2LoginEmail" type="email" placeholder="name@example.com" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="m5a2LoginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" />
+      </div>
+      <button class="btn" style="width:100%;margin-top:6px" onclick="m5a2SecureSignIn()">Secure staff sign in</button>
+      <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn sm ghost" onclick="m5a2ForgotPassword()">Forgot password</button>
+        <button class="btn sm ghost" onclick="m5a2OpenInvitation()">Accept invitation</button>
+      </div>
+      <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">
+        Individual Supabase Auth identity · role and device verified.
+      </p>
     </div>
-    <div class="field">
-      <label>Password</label>
-      <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" />
+    <div id="m5a2LegacyLoginPanel">
+      <div class="field">
+        <label>Cashier</label>
+        <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" />
+      </div>
+      <button class="btn" style="width:100%;margin-top:6px" onclick="doLogin()">Legacy sign in</button>
+      <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">
+        Temporary legacy access until M5A-2 is activated by the business owner.
+      </p>
     </div>
-    <button class="btn" style="width:100%;margin-top:6px" onclick="doLogin()">Sign in</button>
-    <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">Offline-first: local saves continue without internet; configured devices sync when online.</p>
   </div>
 </div>
 
@@ -1124,7 +1146,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.5.1 · M5A-1 SQL Ambiguity Fix · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.6.0 · M5A-2 Auth & Staff Security · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1169,38 +1191,38 @@ html.zezms-phone-layout .kpi-freeze-pane{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/app.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/logger.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/diagnostics.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/registry.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/storage.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/dbservice.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/bootpatch.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/events.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/db-events.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/system-module.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/health-module.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/utils-module.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/lifecycle-module.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/notifications-module.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/product-search-module.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/product-search-adapter.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/product-search-service.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/product-search-controller.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/product-search-events.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/product-search-metrics.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/product-search-facade.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
+<script src="js/config.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/app.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/logger.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/diagnostics.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/registry.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/storage.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/dbservice.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/bootpatch.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/events.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/db-events.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/system-module.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/health-module.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/utils-module.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/lifecycle-module.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/notifications-module.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/product-search-module.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/product-search-adapter.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/product-search-service.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/product-search-controller.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/product-search-events.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/product-search-metrics.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/product-search-facade.js?v=20260804-m5a2-auth-staff-security-r18"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/cloud-sync.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/backup-manager.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
+<script src="js/cloud-sync.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/backup-manager.js?v=20260804-m5a2-auth-staff-security-r18"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.5.1 — M5A-1 SQL Ambiguity Fix — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.6.0 — M5A-2 Auth & Staff Security — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.5.1';
+const APP_VERSION = '3.6.0';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -1228,23 +1250,20 @@ const BUSINESS = {
   address: 'Tamale, Northern Region, Ghana',
   tel: '0553486788'
 };
-/* Default security seed — live values live in DB.security (editable by admin) */
+/* M5A-2: no passwords or PINs are seeded in source code.
+   Existing legacy credentials remain only in an already-created local database
+   until the OWNER activates secure staff login. */
 const DEFAULT_SECURITY = {
-  adminPIN: '055348',
-  pricePIN: '0000',
-  cashiers: [
-    { id: 'USR-ADMIN', name: 'Muniru Fuseini', tel: '0553486788', role: 'ADMIN', password: 'trnat330', sig: 'Sig_Mun.jpg', active: true },
-    { id: 'USR-C2', name: 'Abdul-Basit', tel: '0508223452', role: 'CASHIER2', password: '6522558', sig: 'Sig_Bas.jpg', active: true }
-  ]
+  adminPIN: '',
+  pricePIN: '',
+  cashiers: []
 };
 function getSecurity(){
   if(!DB) return deepClone(DEFAULT_SECURITY);
-  if(!DB.security) DB.security = deepClone(DEFAULT_SECURITY);
-  if(!Array.isArray(DB.security.cashiers) || !DB.security.cashiers.length){
-    DB.security.cashiers = deepClone(DEFAULT_SECURITY.cashiers);
-  }
-  if(!DB.security.adminPIN) DB.security.adminPIN = DEFAULT_SECURITY.adminPIN;
-  if(!DB.security.pricePIN) DB.security.pricePIN = DEFAULT_SECURITY.pricePIN;
+  if(!DB.security || typeof DB.security!=='object') DB.security = deepClone(DEFAULT_SECURITY);
+  if(!Array.isArray(DB.security.cashiers)) DB.security.cashiers = [];
+  if(typeof DB.security.adminPIN!=='string') DB.security.adminPIN = '';
+  if(typeof DB.security.pricePIN!=='string') DB.security.pricePIN = '';
   return DB.security;
 }
 function getCashiers(){ return getSecurity().cashiers.filter(c => c.active !== false); }
@@ -1567,7 +1586,9 @@ function KPI_DailySalesValue(referenceDate){
 
 /* ---------- auth / roles (Excel ApplyRibbonVisibility) ---------- */
 function isElevated(){
-  // Muniru (ADMIN login) always elevated; Cashier2 only when Admin Mode ON
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    return ZEZMS.staffAuth.isElevatedForViewing();
+  }
   return session.role === 'ADMIN' || !!session.adminMode;
 }
 function populateLoginCashiers(){
@@ -1582,6 +1603,9 @@ function populateLoginCashiers(){
   if(prev && list.some(c=>c.name===prev)) sel.value = prev;
 }
 function doLogin(){
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    return ZEZMS.staffAuth.signInFromLogin();
+  }
   const name = $('loginCashier').value;
   const pass = $('loginPass').value;
   const c = getCashierByName(name);
@@ -1608,6 +1632,9 @@ function doLogin(){
   toast('Welcome, ' + c.name.split(' ')[0] + '!');
 }
 function doLogout(){
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    return ZEZMS.staffAuth.signOut();
+  }
   session = { cashier:null, tel:null, role:null, adminMode:false, sig:null, isCashier2:false };
   cart = [];
   priceAdjUnlocked = false;
@@ -1621,6 +1648,9 @@ function requireAdmin(msg){
   return false;
 }
 function updateUserBadge(){
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    return ZEZMS.staffAuth.updateUserBadge();
+  }
   $('uiUserName').textContent = session.cashier || '—';
   const elevated = isElevated();
   if(session.isCashier2 && session.adminMode){
@@ -1635,6 +1665,9 @@ function updateUserBadge(){
   }
 }
 function applyRoleUI(){
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    return ZEZMS.staffAuth.applyRoleUI();
+  }
   const elevated = isElevated();
   // Hide admin-only nav items for locked Cashier2
   document.querySelectorAll('[data-admin-only]').forEach(el=>{
@@ -1657,6 +1690,10 @@ function applyRoleUI(){
   updateUserBadge();
 }
 function toggleAdminModeBtn(){
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    toast('Admin Mode PIN is retired. Access is controlled by your verified staff role.','warn');
+    return;
+  }
   if(session.adminMode){
     // Turning OFF
     session.adminMode = false;
@@ -1676,6 +1713,10 @@ function toggleAdminModeBtn(){
   });
 }
 function promptPIN(title, expected, onOk){
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    ZEZMS.staffAuth.confirmSensitive(title).then(ok=>{ if(ok) onOk(); });
+    return;
+  }
   openModal(`
     <h3>${title}</h3>
     <div class="field"><label>PIN</label><input id="pinInput" type="password" inputmode="numeric" maxlength="12" /></div>
@@ -1705,8 +1746,12 @@ const TITLES = {
 };
 const CASHIER2_ALLOWED = new Set(['pos','receipts']);
 function nav(view){
-  // Hard gate — Excel Cashier2 locked ribbon
-  if(!isElevated() && !CASHIER2_ALLOWED.has(view)){
+  if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+    if(!ZEZMS.staffAuth.canView(view)){
+      toast('Your staff role cannot open this page.','err');
+      view = ZEZMS.staffAuth.fallbackView();
+    }
+  } else if(!isElevated() && !CASHIER2_ALLOWED.has(view)){
     const msgs = {
       dashboard: 'Only admin can view KPI dashboard.',
       stockin: 'Only ADMIN can perform Stock In.',
@@ -1753,7 +1798,12 @@ function render(){
   try{
     updatePeriodUI();
     applyRoleUI();
-    if(!isElevated() && !CASHIER2_ALLOWED.has(currentView)){
+    if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+      if(!ZEZMS.staffAuth.canView(currentView)){
+        currentView=ZEZMS.staffAuth.fallbackView();
+        $('viewTitle').textContent=TITLES[currentView]||currentView;
+      }
+    } else if(!isElevated() && !CASHIER2_ALLOWED.has(currentView)){
       currentView='pos';
       $('viewTitle').textContent=TITLES.pos;
     }
@@ -1771,6 +1821,9 @@ function render(){
       case 'sync': root.innerHTML=viewSync(); break;
       case 'settings': root.innerHTML=viewSettings(); break;
       default: root.innerHTML='<div class="empty">Unknown view</div>';
+    }
+    if(window.ZEZMS && ZEZMS.staffAuth && ZEZMS.staffAuth.isActive()){
+      ZEZMS.staffAuth.afterRender();
     }
   }catch(error){
     console.error('ZEZMS view rendering failed:', currentView, error);
@@ -2352,7 +2405,7 @@ function viewPOS(){
             <input id="posUPrice" type="number" step="0.01" value="0" readonly /></div>
           <div class="field" style="flex:1"><label>Price adj (dbl-click / PIN)</label>
             <input id="posPriceAdj" type="number" step="0.01" value="0" readonly
-              ondblclick="unlockPriceAdj()" title="Double-click to unlock with PIN 0000" /></div>
+              ondblclick="unlockPriceAdj()" title="Double-click to request authorised price adjustment" /></div>
           <div class="field" style="flex:1"><label>Discount (GH₵)</label>
             <input id="posDisc" type="number" min="0" step="0.01" value="0" /></div>
         </div>
@@ -2567,7 +2620,7 @@ function addItemToList(){
   const adj = Number($('posPriceAdj').value)||0;
   // Excel: if adj field used without unlock and non-zero, block
   if(Math.abs(adj) > 1e-9 && !priceAdjUnlocked){
-    toast('Price adjustment is locked. Double-click Price adj and enter PIN 0000.', 'warn');
+    toast('Price adjustment is locked. Double-click Price adj and complete authorised verification.', 'warn');
     return;
   }
   const uPrice = base + adj; // effective
@@ -3331,7 +3384,7 @@ function viewSettings(){
       <div class="field"><label>Tel</label><input id="biTel" value="${escAttr(DB.business.tel)}" /></div>
       <button class="btn" onclick="saveBiz()">Save business</button>
     </div>
-    <div class="card">
+    <div class="card" id="legacyPinSecurityCard">
       <h3>PINs (Admin only)</h3>
       <p class="muted" style="font-size:12px">These replace Excel frmAdminPIN / frmPriceAdjPIN defaults.</p>
       <div class="field"><label>Admin Mode PIN</label>
@@ -3348,7 +3401,7 @@ function viewSettings(){
     </div>
   </div>
 
-  <div class="card" style="margin-top:12px">
+  <div class="card" id="legacyLocalUsersCard" style="margin-top:12px">
     <h3>Users / cashiers</h3>
     <p class="muted" style="font-size:12px">Add staff with unique passwords. Role ADMIN = full access. Any other role = Cashier 2 rules (Sale Out + own receipts unless Admin Mode).</p>
     <div class="table-wrap"><table>
@@ -4349,7 +4402,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260804-m5a1-sql-ambiguity-fix-r17').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260804-m5a2-auth-staff-security-r18').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4371,13 +4424,14 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/auto-month-rollover.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/invoice-waybill.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/mobile-vertical-layout.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/kpi-freeze-pane.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/confirmed-july-snapshot.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
-<script src="js/commercial-foundation.js?v=20260804-m5a1-sql-ambiguity-fix-r17"></script>
+<script src="js/operations-update.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/auto-month-rollover.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/invoice-waybill.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/mobile-vertical-layout.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/kpi-freeze-pane.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/confirmed-july-snapshot.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/commercial-foundation.js?v=20260804-m5a2-auth-staff-security-r18"></script>
+<script src="js/staff-auth.js?v=20260804-m5a2-auth-staff-security-r18"></script>
 
 
 

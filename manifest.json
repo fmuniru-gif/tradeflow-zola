@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS commercial pilot M5A-1 with corrected PostgreSQL RPC column qualification, tenant, membership, branch, device and audit foundation, Cloud Sync M4 and Google Drive backup.",
-  "start_url": "./index.html?build=20260804-m5a1-sql-ambiguity-fix-r17",
+  "description": "ZEZMS commercial pilot with M5A-2 individual Supabase Auth staff identities, invitation-code onboarding, password recovery, role permissions, device checks, optional TOTP MFA, Cloud Sync M4 and Google Drive backup.",
+  "start_url": "./index.html?build=20260804-m5a2-auth-staff-security-r18",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

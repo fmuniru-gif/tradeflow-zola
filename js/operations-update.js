@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260804-m5a1-sql-ambiguity-fix-r17';
+  const BUILD = '20260804-m5a2-auth-staff-security-r18';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
