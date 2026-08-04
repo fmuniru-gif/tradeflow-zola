@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260802-confirmed-july-snapshot-r13';
+  const BUILD = '20260804-receipt-name-search-account-undo-r14';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -136,7 +136,17 @@
       .receipt-void-note{margin-top:10px;font-size:10px}
       .undo-note{border-left:4px solid var(--amber);padding:10px 12px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:var(--muted)}
       .status-undone{opacity:.6;text-decoration:line-through}
+      .sales-record-search{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:10px;align-items:end;margin:12px 0}
+      .sales-record-search .field{margin:0}
+      .account-undo-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+      .account-select-cell{text-align:center;width:52px}
+      .account-select-cell input{width:20px;height:20px;accent-color:var(--teal);cursor:pointer}
+      .account-txn-selected td{background:rgba(20,184,166,.12)!important}
       @media(max-width:720px){
+        .sales-record-search{grid-template-columns:minmax(0,1fr) auto}
+        .sales-record-search .search-count{grid-column:1/-1;justify-self:start}
+        .account-undo-toolbar{width:100%}
+        .account-undo-toolbar .btn{flex:1 1 150px}
         .chart-card{min-height:0}
         .vertical-bar-chart{
           gap:7px;
@@ -553,6 +563,38 @@
     openModal(quickSaleDetailsHTML(transaction));
   };
 
+  window.filterSalesRecordsByName = function () {
+    const input = document.getElementById('receiptNameSearch');
+    const query = String(input && input.value || '').trim().toLowerCase();
+    const rows = Array.from(document.querySelectorAll('#salesRecordsBody tr.sales-record-row'));
+    let visible = 0;
+
+    rows.forEach((row) => {
+      const customer = String(row.dataset.customerName || '').toLowerCase();
+      const show = !query || customer.includes(query);
+      row.style.display = show ? '' : 'none';
+      if (show) visible += 1;
+    });
+
+    const noMatch = document.getElementById('salesRecordsNoMatch');
+    if (noMatch) noMatch.style.display = rows.length && !visible ? '' : 'none';
+    const count = document.getElementById('salesRecordsSearchCount');
+    if (count) {
+      count.textContent = query
+        ? visible + (visible === 1 ? ' matching receipt' : ' matching receipts')
+        : rows.length + (rows.length === 1 ? ' sales record' : ' sales records');
+    }
+  };
+
+  window.clearSalesRecordsNameSearch = function () {
+    const input = document.getElementById('receiptNameSearch');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    filterSalesRecordsByName();
+  };
+
   viewReceipts = function () {
     ensureOperationsModel();
     const today = new Date();
@@ -620,7 +662,7 @@
             <button class="btn sm ghost" onclick="showQuickSaleRecord('${escAttr(record.id)}')">View details</button>
           </div>`;
 
-      return `<tr class="${isVoid ? 'void-row' : (isCredit ? 'credit-row' : '')}">
+      return `<tr class="sales-record-row ${isVoid ? 'void-row' : (isCredit ? 'credit-row' : '')}" data-customer-name="${escAttr(record.customer)}">
         <td>${typeBadge}</td>
         <td class="mono" style="font-size:11px">${esc(record.id)}</td>
         <td>${esc(record.customer)}</td>
@@ -632,17 +674,28 @@
         <td>${statusBadge}</td>
         <td>${actions}</td>
       </tr>`;
-    }).join('') || `<tr><td colspan="10" class="empty">${session.isCashier2 && !isElevated() ? 'No sales records for you today yet.' : 'No Sale Out records yet.'}</td></tr>`;
+    }).join('');
+
+    const emptyRow = list.length
+      ? ''
+      : `<tr><td colspan="10" class="empty">${session.isCashier2 && !isElevated() ? 'No sales records for you today yet.' : 'No Sale Out records yet.'}</td></tr>`;
 
     return `<div class="card">
       <h3>Sales records <span class="muted" style="font-weight:400">(${esc(note)})</span></h3>
+      <div class="sales-record-search">
+        <div class="field">
+          <label>Search receipt by customer name</label>
+          <input id="receiptNameSearch" type="search" placeholder="Type all or part of the customer name" autocomplete="off" oninput="filterSalesRecordsByName()" />
+        </div>
+        <button class="btn ghost" type="button" onclick="clearSalesRecordsNameSearch()">Clear</button>
+        <span id="salesRecordsSearchCount" class="pill search-count">${list.length} ${list.length === 1 ? 'sales record' : 'sales records'}</span>
+      </div>
       <div class="table-wrap"><table>
         <thead><tr><th>Sale type</th><th>Record #</th><th>Customer</th><th>Contact</th><th class="right">Total</th><th class="right">Balance owed</th><th>Date</th><th>Cashier</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody id="salesRecordsBody">${rows}${emptyRow}<tr id="salesRecordsNoMatch" style="display:none"><td colspan="10" class="empty">No receipt matches that customer name.</td></tr></tbody>
       </table></div>
     </div>`;
   };
-
 
   /* ---------------- Inventory transaction logging ---------------- */
   const baseDoStockIn = doStockIn;
@@ -1106,6 +1159,22 @@
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
   }
 
+
+  function accountTransactionKind(txn) {
+    return (txn && txn.meta && txn.meta.kind) || normalizeAccountKind(txn && txn.accountType);
+  }
+
+  function activeAccountTransactionsForTab(kind) {
+    return activeAccountTransactions().filter((txn) => accountTransactionKind(txn) === kind);
+  }
+
+  window.highlightSelectedAccountEntry = function (radio) {
+    document.querySelectorAll('#accountTransactionBody tr.account-transaction-row').forEach((row) => {
+      row.classList.remove('account-txn-selected');
+    });
+    if (radio && radio.closest('tr')) radio.closest('tr').classList.add('account-txn-selected');
+  };
+
   function reverseCashForAccountTxn(txn) {
     const meta = txn.meta || {};
     if (!meta.wallet || !meta.cashAction || !meta.cashAmount) return;
@@ -1127,13 +1196,14 @@
     }
   }
 
-  function performAccountUndo(transactionId) {
+  function performAccountUndo(transactionId, reason) {
     const txn = DB.accountTxns.find((item) => item.id === transactionId);
     if (!txn) throw new Error('Account transaction not found.');
     if (txn.status === UNDONE) throw new Error('This account transaction has already been undone.');
 
     if (String(txn.txnType || '').toLowerCase().includes('credit sale') && txn.receiptNo) {
       const message = reverseReceiptSale(txn.receiptNo);
+      txn.undoReason = String(reason || '').trim();
       saveDB();
       toast(message);
       render();
@@ -1162,6 +1232,7 @@
     txn.status = UNDONE;
     txn.undoneAt = nowISO();
     txn.undoneBy = session.cashier;
+    txn.undoReason = String(reason || '').trim();
     saveDB();
     toast('Account transaction undone.');
     render();
@@ -1174,21 +1245,32 @@
     promptPIN('Admin PIN to undo account transaction', getAdminPIN(), () => {
       const legacy = !txn.meta || !Object.keys(txn.meta).length;
       const warning = legacy ? '\n\nThis legacy entry has no stored wallet link; only the account balance can be reversed.' : '';
-      if (!confirm('Undo ' + txn.txnType + ' for ' + txn.name + ' (' + fmtN(txn.amount) + ')?' + warning)) return;
-      try { performAccountUndo(transactionId); }
+      const saleWarning = String(txn.txnType || '').toLowerCase().includes('credit sale')
+        ? '\n\nThis entry is linked to a credit sale. Undoing it will reverse the whole sale, restore stock and mark the receipt VOID.'
+        : '';
+      if (!confirm('Undo ' + txn.txnType + ' for ' + txn.name + ' (' + fmtN(txn.amount) + ')?' + warning + saleWarning)) return;
+      const reason = String(prompt('Reason for undo (optional)', 'Incorrect entry') || '').trim();
+      try { performAccountUndo(transactionId, reason); }
       catch (error) { console.error(error); toast(error.message || String(error), 'err'); }
     });
   };
 
   window.undoLastAccountTransaction = function () {
-    const last = activeAccountTransactions()[0];
-    if (!last) { toast('No active account transaction is available to undo.', 'warn'); return; }
+    const last = activeAccountTransactionsForTab(accTab)[0];
+    if (!last) { toast('No active ' + accTab.slice(0, -1) + ' entry is available to undo.', 'warn'); return; }
     undoAccountTransaction(last.id);
+  };
+
+  window.undoSelectedAccountTransaction = function () {
+    const selected = document.querySelector('input[name="accountTxnSelection"]:checked');
+    if (!selected) { toast('Select an active account entry first.', 'warn'); return; }
+    undoAccountTransaction(selected.value);
   };
 
   viewAccounts = function () {
     const tabs = [['debtors', 'Debtors'], ['creditors', 'Creditors'], ['depositors', 'Depositors']];
     const list = DB[accTab] || [];
+    const singular = accTab.slice(0, -1);
     const accountRows = list.map((account) => `<tr>
       <td class="mono" style="font-size:11px">${esc(account.id)}</td>
       <td>${esc(account.name)}</td><td>${esc(account.contact || '')}</td>
@@ -1201,22 +1283,35 @@
       </div></td>
     </tr>`).join('') || `<tr><td colspan="7" class="empty">No ${esc(accTab)}</td></tr>`;
 
-    const transactionRows = DB.accountTxns.slice().reverse().slice(0, 40).map((txn) => {
+    const tabTransactions = DB.accountTxns
+      .filter((txn) => accountTransactionKind(txn) === accTab)
+      .slice()
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      .slice(0, 100);
+
+    const transactionRows = tabTransactions.map((txn) => {
       const undone = txn.status === UNDONE;
-      return `<tr class="${undone ? 'status-undone' : ''}">
+      const status = undone
+        ? `<span class="badge warn">UNDONE</span>${txn.undoReason ? `<div class="muted" style="font-size:10px;margin-top:3px">${esc(txn.undoReason)}</div>` : ''}`
+        : '<span class="badge ok">ACTIVE</span>';
+      return `<tr class="account-transaction-row ${undone ? 'status-undone' : ''}">
+        <td class="account-select-cell"><input type="radio" name="accountTxnSelection" value="${escAttr(txn.id)}" ${undone ? 'disabled' : ''} onchange="highlightSelectedAccountEntry(this)" aria-label="Select ${escAttr(txn.txnType)} entry for ${escAttr(txn.name)}" /></td>
+        <td style="font-size:11px">${txn.date ? new Date(txn.date).toLocaleString() : '—'}</td>
         <td class="mono" style="font-size:11px">${esc(txn.id)}</td>
-        <td>${esc(txn.accountType)}</td><td>${esc(txn.name)}</td><td>${esc(txn.txnType)}</td>
+        <td>${esc(txn.name)}</td><td>${esc(txn.txnType)}</td>
         <td class="mono right">${fmtN(txn.amount)}</td>
         <td class="mono right">${fmtN(txn.balanceAfter)}</td>
         <td>${esc(txn.receiptNo || '')}</td>
-        <td>${undone ? '<span class="badge warn">UNDONE</span>' : `<button class="btn sm ghost" onclick="undoAccountTransaction('${escAttr(txn.id)}')">Undo</button>`}</td>
+        <td>${esc(txn.cashier || '')}</td>
+        <td>${status}</td>
+        <td>${undone ? '—' : `<button class="btn sm ghost" onclick="undoAccountTransaction('${escAttr(txn.id)}')">Undo</button>`}</td>
       </tr>`;
-    }).join('') || '<tr><td colspan="8" class="empty">None</td></tr>';
+    }).join('') || '<tr><td colspan="11" class="empty">No account entries for this register.</td></tr>';
 
     return `<div class="tabs">${tabs.map(([key, label]) => `<button class="${accTab === key ? 'active' : ''}" onclick="accTab='${key}';render()">${label}</button>`).join('')}</div>
       <div class="grid g2">
         <div class="card">
-          <h3>Add ${esc(accTab.slice(0, -1))}</h3>
+          <h3>Add ${esc(singular)}</h3>
           <div class="field"><label>Name</label><input id="acName" /></div>
           <div class="field"><label>Contact / Phone</label><input id="acContact" /></div>
           <div class="field"><label>Description</label><input id="acDesc" /></div>
@@ -1233,15 +1328,19 @@
       </div>
       <div class="card" style="margin-top:12px">
         <div class="row" style="justify-content:space-between;margin-bottom:8px">
-          <h3 style="margin:0">Recent account transactions</h3>
-          <div class="row">
-            <button class="btn sm ghost" onclick="undoLastAccountTransaction()">Undo last account transaction</button>
+          <div>
+            <h3 style="margin:0">${esc(singular.charAt(0).toUpperCase() + singular.slice(1))} entry history</h3>
+            <div class="muted" style="font-size:11px;margin-top:4px">Select any active entry below, or undo the most recent active entry in this register. Reversed entries remain visible for audit.</div>
+          </div>
+          <div class="account-undo-toolbar">
+            <button class="btn sm warn" onclick="undoLastAccountTransaction()">Undo last entry</button>
+            <button class="btn sm danger" onclick="undoSelectedAccountTransaction()">Undo selected entry</button>
             <button class="btn sm ghost" onclick="nav('undo')">Open full Undo tab</button>
           </div>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>ID</th><th>Type</th><th>Name</th><th>Txn</th><th class="right">Amount</th><th class="right">Bal after</th><th>Receipt</th><th>Action</th></tr></thead>
-          <tbody>${transactionRows}</tbody>
+          <thead><tr><th>Select</th><th>When</th><th>ID</th><th>Name</th><th>Entry</th><th class="right">Amount</th><th class="right">Balance after</th><th>Receipt/Note</th><th>Cashier</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="accountTransactionBody">${transactionRows}</tbody>
         </table></div>
       </div>`;
   };
