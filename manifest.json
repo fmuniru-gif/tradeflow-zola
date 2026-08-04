@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS with customer-name receipt search, selectable account-entry undo, confirmed July snapshot, stable frozen headers, vertical KPI charts, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
-  "start_url": "./index.html?build=20260804-receipt-name-search-account-undo-r14",
+  "description": "ZEZMS with receipt customer-name search, account and cash-balance undo workflows, confirmed July KPI snapshot, stable frozen mobile headers, vertical charts, A5 receipt printing, Cloud Sync M4 and Google Drive backup.",
+  "start_url": "./index.html?build=20260804-cash-balance-undo-r15",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260804-receipt-name-search-account-undo-r14';
+  const BUILD = '20260804-cash-balance-undo-r15';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -27,6 +27,15 @@
     DB.accountTxns.forEach((txn) => {
       if (!txn.status) { txn.status = ACTIVE; changed = true; }
       if (!txn.meta || typeof txn.meta !== 'object') { txn.meta = {}; changed = true; }
+    });
+    if (!Array.isArray(DB.cashLog)) { DB.cashLog = []; changed = true; }
+    DB.cashLog.forEach((entry) => {
+      if (!entry.status) { entry.status = ACTIVE; changed = true; }
+      if (!entry.meta || typeof entry.meta !== 'object') { entry.meta = {}; changed = true; }
+    });
+    if (!Array.isArray(DB.expenses)) { DB.expenses = []; changed = true; }
+    DB.expenses.forEach((expense) => {
+      if (!expense.status) { expense.status = ACTIVE; changed = true; }
     });
     DB.sales.forEach((sale) => {
       if (!sale.status) { sale.status = ACTIVE; changed = true; }
@@ -142,11 +151,16 @@
       .account-select-cell{text-align:center;width:52px}
       .account-select-cell input{width:20px;height:20px;accent-color:var(--teal);cursor:pointer}
       .account-txn-selected td{background:rgba(20,184,166,.12)!important}
+      .cash-undo-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+      .cash-select-cell{text-align:center;width:52px}
+      .cash-select-cell input{width:20px;height:20px;accent-color:var(--teal);cursor:pointer}
+      .cash-txn-selected td{background:rgba(20,184,166,.12)!important}
+      .cash-link-note{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.25}
       @media(max-width:720px){
         .sales-record-search{grid-template-columns:minmax(0,1fr) auto}
         .sales-record-search .search-count{grid-column:1/-1;justify-self:start}
-        .account-undo-toolbar{width:100%}
-        .account-undo-toolbar .btn{flex:1 1 150px}
+        .account-undo-toolbar,.cash-undo-toolbar{width:100%}
+        .account-undo-toolbar .btn,.cash-undo-toolbar .btn{flex:1 1 150px}
         .chart-card{min-height:0}
         .vertical-bar-chart{
           gap:7px;
@@ -1020,10 +1034,19 @@
 
   /* ---------------- Account transaction undo and deletion ---------------- */
   adjustCash = (function (baseAdjustCash) {
-    return function (type, action, amount, note) {
+    return function (type, action, amount, note, meta) {
       const beforeLength = DB.cashLog.length;
       baseAdjustCash(type, action, amount, note);
-      return DB.cashLog.length > beforeLength ? DB.cashLog[DB.cashLog.length - 1] : null;
+      const entry = DB.cashLog.length > beforeLength ? DB.cashLog[DB.cashLog.length - 1] : null;
+      if (entry) {
+        entry.status = ACTIVE;
+        entry.meta = Object.assign(
+          { source: 'DIRECT_CASH' },
+          entry.meta && typeof entry.meta === 'object' ? entry.meta : {},
+          meta && typeof meta === 'object' ? meta : {}
+        );
+      }
+      return entry;
     };
   }(adjustCash));
 
@@ -1109,7 +1132,7 @@
 
     account.balance = round2(before + signed);
     account.date = nowISO();
-    logAccountTxn(id, kind.slice(0, -1).toUpperCase(), account.name, direction === 'REDUCE' ? 'SETTLE' : 'INCREASE', signed, account.balance, '', {
+    const accountTxn = logAccountTxn(id, kind.slice(0, -1).toUpperCase(), account.name, direction === 'REDUCE' ? 'SETTLE' : 'INCREASE', signed, account.balance, '', {
       kind,
       source: 'ACCOUNT_ADJUSTMENT',
       beforeBalance: before,
@@ -1120,9 +1143,64 @@
       cashLogId: cashEntry ? cashEntry.id : '',
       note
     });
+    if (cashEntry) {
+      cashEntry.meta = Object.assign({}, cashEntry.meta || {}, {
+        source: 'ACCOUNT_TRANSACTION',
+        accountTxnId: accountTxn.id,
+        accountKind: kind,
+        accountId: id
+      });
+    }
     saveDB();
     closeModal();
     toast('Settlement posted');
+    render();
+  };
+
+
+  addExpense = function () {
+    const description = ($('exDesc').value || '').trim();
+    const category = $('exCat').value;
+    const amount = Number($('exAmt').value) || 0;
+    const date = $('exDate').value || new Date().toISOString().slice(0, 10);
+    const wallet = $('exWallet').value;
+    if (!description) { toast('Description required', 'err'); return; }
+    if (amount <= 0) { toast('Amount must be > 0', 'err'); return; }
+
+    const expenseId = idStamp('EXP-');
+    let cashEntry = null;
+    if (wallet) {
+      if (amount > (Number(DB.cashBalances[wallet]) || 0) + 1e-9) {
+        toast('Insufficient wallet balance', 'err');
+        return;
+      }
+      cashEntry = adjustCash(wallet, 'Deduct', amount, 'Expense: ' + description, {
+        source: 'EXPENSE',
+        expenseId
+      });
+    }
+
+    DB.expenses.push({
+      id: expenseId,
+      description,
+      category,
+      amount,
+      date: new Date(date).toISOString(),
+      cashier: session.cashier,
+      status: ACTIVE,
+      wallet: wallet || '',
+      cashLogId: cashEntry ? cashEntry.id : ''
+    });
+
+    if (cashEntry) {
+      cashEntry.meta = Object.assign({}, cashEntry.meta || {}, {
+        source: 'EXPENSE',
+        expenseId
+      });
+    }
+
+    saveDB();
+    toast('Expense saved');
     render();
   };
 
@@ -1175,7 +1253,7 @@
     if (radio && radio.closest('tr')) radio.closest('tr').classList.add('account-txn-selected');
   };
 
-  function reverseCashForAccountTxn(txn) {
+  function reverseCashForAccountTxn(txn, reason) {
     const meta = txn.meta || {};
     if (!meta.wallet || !meta.cashAction || !meta.cashAmount) return;
     const amount = Number(meta.cashAmount) || 0;
@@ -1193,6 +1271,10 @@
       cashLog.status = UNDONE;
       cashLog.undoneAt = nowISO();
       cashLog.undoneBy = session.cashier;
+      cashLog.undoReason = String(reason || '').trim();
+      cashLog.undoSource = 'ACCOUNT_TRANSACTION';
+      cashLog.linkedUndoId = txn.id;
+      cashLog.balanceAfterUndo = Number(DB.cashBalances[meta.wallet]) || 0;
     }
   }
 
@@ -1223,7 +1305,7 @@
       if (!kind) throw new Error('The account type could not be identified.');
       const account = DB[kind].find((item) => item.id === txn.accountID);
       if (!account) throw new Error('The account holder no longer exists. Restore the holder first if it was deleted.');
-      reverseCashForAccountTxn(txn);
+      reverseCashForAccountTxn(txn, reason);
       account.balance = round2((Number(account.balance) || 0) - (Number(txn.amount) || 0));
       if (Math.abs(account.balance) < 0.005) account.balance = 0;
       account.date = nowISO();
@@ -1265,6 +1347,234 @@
     const selected = document.querySelector('input[name="accountTxnSelection"]:checked');
     if (!selected) { toast('Select an active account entry first.', 'warn'); return; }
     undoAccountTransaction(selected.value);
+  };
+
+
+  /* ---------------- Cash balance transaction undo ---------------- */
+  function activeCashTransactions() {
+    ensureOperationsModel();
+    return DB.cashLog
+      .filter((entry) => entry && entry.status !== UNDONE)
+      .slice()
+      .sort((a, b) => new Date(b.at || b.date || 0) - new Date(a.at || a.date || 0));
+  }
+
+  function accountTransactionForCash(cashLogId, activeOnly) {
+    return DB.accountTxns.find((txn) => {
+      if (!txn || !txn.meta || String(txn.meta.cashLogId || '') !== String(cashLogId || '')) return false;
+      return !activeOnly || txn.status !== UNDONE;
+    }) || null;
+  }
+
+  function expenseForCash(cashLogId, activeOnly) {
+    return DB.expenses.find((expense) => {
+      if (!expense) return false;
+      const linked = String(expense.cashLogId || '') === String(cashLogId || '')
+        || String(expense.meta && expense.meta.cashLogId || '') === String(cashLogId || '');
+      return linked && (!activeOnly || expense.status !== UNDONE);
+    }) || null;
+  }
+
+  function reverseStandaloneCashBalance(entry) {
+    const wallet = String(entry.cashType || '');
+    if (!wallet || !Object.prototype.hasOwnProperty.call(DB.cashBalances, wallet)) {
+      throw new Error('The cash wallet for this entry could not be identified.');
+    }
+
+    const amount = Math.abs(Number(entry.amount) || 0);
+    if (amount <= 0) throw new Error('The cash amount is invalid.');
+
+    const action = String(entry.action || '').trim().toLowerCase();
+    const current = Number(DB.cashBalances[wallet]) || 0;
+
+    if (action === 'add') {
+      if (current + 1e-9 < amount) {
+        throw new Error(
+          'This cash addition cannot be undone because ' + wallet
+          + ' currently contains less than ' + fmt(amount) + '.'
+        );
+      }
+      DB.cashBalances[wallet] = round2(current - amount);
+    } else if (action === 'deduct') {
+      DB.cashBalances[wallet] = round2(current + amount);
+    } else {
+      throw new Error('Only Add and Deduct cash entries can be undone.');
+    }
+
+    return Number(DB.cashBalances[wallet]) || 0;
+  }
+
+  function markCashEntryUndone(entry, reason, source, linkedId) {
+    entry.status = UNDONE;
+    entry.undoneAt = nowISO();
+    entry.undoneBy = session.cashier;
+    entry.undoReason = String(reason || '').trim();
+    entry.undoSource = source || 'CASH_BALANCE';
+    entry.linkedUndoId = linkedId || '';
+    entry.balanceAfterUndo = Number(DB.cashBalances[entry.cashType]) || 0;
+  }
+
+  function performCashUndo(cashLogId, reason) {
+    const entry = DB.cashLog.find((item) => item && item.id === cashLogId);
+    if (!entry) throw new Error('Cash entry not found.');
+    if (entry.status === UNDONE) throw new Error('This cash entry has already been undone.');
+
+    const linkedAccount = accountTransactionForCash(cashLogId, true);
+    if (linkedAccount) {
+      performAccountUndo(linkedAccount.id, reason);
+      const updated = DB.cashLog.find((item) => item && item.id === cashLogId);
+      if (updated) {
+        updated.undoReason = String(reason || '').trim();
+        updated.undoSource = 'ACCOUNT_TRANSACTION';
+        updated.linkedUndoId = linkedAccount.id;
+      }
+      saveDB();
+      return;
+    }
+
+    const linkedExpense = expenseForCash(cashLogId, true);
+    if (linkedExpense) {
+      reverseStandaloneCashBalance(entry);
+      linkedExpense.status = UNDONE;
+      linkedExpense.undoneAt = nowISO();
+      linkedExpense.undoneBy = session.cashier;
+      linkedExpense.undoReason = String(reason || '').trim();
+      markCashEntryUndone(entry, reason, 'EXPENSE', linkedExpense.id);
+      saveDB();
+      toast('Cash movement and linked expense undone.');
+      render();
+      return;
+    }
+
+    reverseStandaloneCashBalance(entry);
+    markCashEntryUndone(entry, reason, 'CASH_BALANCE', '');
+    saveDB();
+    toast('Cash entry undone.');
+    render();
+  }
+
+  window.highlightSelectedCashEntry = function (radio) {
+    document.querySelectorAll('#cashTransactionBody tr.cash-transaction-row').forEach((row) => {
+      row.classList.remove('cash-txn-selected');
+    });
+    if (radio && radio.closest('tr')) radio.closest('tr').classList.add('cash-txn-selected');
+  };
+
+  window.undoCashTransaction = function (cashLogId) {
+    if (!isElevated()) { toast('Only admin can undo cash entries.', 'err'); return; }
+    const entry = activeCashTransactions().find((item) => item.id === cashLogId);
+    if (!entry) { toast('Cash entry not found or already undone.', 'err'); return; }
+
+    const linkedAccount = accountTransactionForCash(cashLogId, true);
+    const linkedExpense = expenseForCash(cashLogId, true);
+    let linkedWarning = '';
+
+    if (linkedAccount) {
+      linkedWarning = '\n\nThis movement belongs to an account entry. The account entry and its cash effect will be reversed together.';
+    } else if (linkedExpense) {
+      linkedWarning = '\n\nThis movement belongs to an expense. The cash movement and the linked expense will both be marked UNDONE.';
+    } else if (!entry.meta || !Object.keys(entry.meta).length) {
+      linkedWarning = '\n\nThis is a legacy cash entry without a stored source link. Only the wallet balance will be reversed.';
+    }
+
+    promptPIN('Admin PIN to undo cash entry', getAdminPIN(), () => {
+      const label = String(entry.action || '') + ' ' + fmt(entry.amount)
+        + ' in ' + String(entry.cashType || 'cash wallet');
+      if (!confirm('Undo ' + label + '?' + linkedWarning)) return;
+      const reason = String(prompt('Reason for undo (optional)', 'Incorrect cash entry') || '').trim();
+      try {
+        performCashUndo(cashLogId, reason);
+      } catch (error) {
+        console.error(error);
+        toast(error.message || String(error), 'err');
+      }
+    });
+  };
+
+  window.undoLastCashTransaction = function () {
+    const last = activeCashTransactions()[0];
+    if (!last) { toast('No active cash entry is available to undo.', 'warn'); return; }
+    undoCashTransaction(last.id);
+  };
+
+  window.undoSelectedCashTransaction = function () {
+    const selected = document.querySelector('input[name="cashTxnSelection"]:checked');
+    if (!selected) { toast('Select an active cash entry first.', 'warn'); return; }
+    undoCashTransaction(selected.value);
+  };
+
+  viewCash = function () {
+    const wallets = CASH_TYPES.map((type) => `<div class="card kpi teal">
+      <h3>${esc(type)}</h3>
+      <div class="val mono">${fmt(DB.cashBalances[type])}</div>
+    </div>`).join('');
+
+    const entries = DB.cashLog
+      .slice()
+      .sort((a, b) => new Date(b.at || b.date || 0) - new Date(a.at || a.date || 0))
+      .slice(0, 100);
+
+    const rows = entries.map((entry) => {
+      const undone = entry.status === UNDONE;
+      const accountTxn = accountTransactionForCash(entry.id, false);
+      const expense = expenseForCash(entry.id, false);
+      let source = 'Direct cash entry';
+      if (accountTxn) source = 'Account: ' + accountTxn.name + ' · ' + accountTxn.txnType;
+      else if (expense) source = 'Expense: ' + expense.description;
+      else if (entry.note) source = entry.note;
+
+      const status = undone
+        ? `<span class="badge warn">UNDONE</span>${entry.undoReason ? `<div class="cash-link-note">${esc(entry.undoReason)}</div>` : ''}`
+        : '<span class="badge ok">ACTIVE</span>';
+
+      return `<tr class="cash-transaction-row ${undone ? 'status-undone' : ''}">
+        <td class="cash-select-cell"><input type="radio" name="cashTxnSelection" value="${escAttr(entry.id)}" ${undone ? 'disabled' : ''} onchange="highlightSelectedCashEntry(this)" aria-label="Select cash entry ${escAttr(entry.id)}" /></td>
+        <td class="mono" style="font-size:11px">${esc(entry.id)}</td>
+        <td>${esc(entry.cashType || '')}</td>
+        <td>${esc(entry.action || '')}</td>
+        <td class="mono right">${fmtN(entry.amount)}</td>
+        <td class="mono right">${entry.before != null ? fmtN(entry.before) : '—'}</td>
+        <td class="mono right">${entry.after != null ? fmtN(entry.after) : '—'}</td>
+        <td>${esc(source)}${entry.note && source !== entry.note ? `<div class="cash-link-note">${esc(entry.note)}</div>` : ''}</td>
+        <td style="font-size:11px">${entry.at ? new Date(entry.at).toLocaleString() : '—'}</td>
+        <td>${esc(entry.cashier || '')}</td>
+        <td>${status}</td>
+        <td>${undone ? '—' : `<button class="btn sm ghost" onclick="undoCashTransaction('${escAttr(entry.id)}')">Undo</button>`}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="12" class="empty">No cash movements yet.</td></tr>';
+
+    return `<div class="grid g4" style="margin-bottom:12px">${wallets}</div>
+      <div class="grid g2">
+        <div class="card">
+          <h3>Add / Deduct</h3>
+          <div class="field"><label>Wallet</label>
+            <select id="cbType">${CASH_TYPES.map((type) => `<option>${esc(type)}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label>Action</label>
+            <select id="cbAction"><option>Add</option><option>Deduct</option></select>
+          </div>
+          <div class="field"><label>Amount (GH₵)</label><input id="cbAmt" type="number" min="0" step="0.01" value="0" /></div>
+          <div class="field"><label>Note</label><input id="cbNote" placeholder="optional" /></div>
+          <button class="btn" onclick="doCashMove()">Post</button>
+          <div class="statline" style="margin-top:12px"><span>Total buckets</span><b class="mono">${fmt(KPI_CashBuckets_Total())}</b></div>
+        </div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between;margin-bottom:8px">
+            <div>
+              <h3 style="margin:0">Cash entry history</h3>
+              <div class="muted" style="font-size:11px;margin-top:4px">Select an active movement or undo the latest movement. Reversed entries remain visible for audit.</div>
+            </div>
+            <div class="cash-undo-toolbar">
+              <button class="btn sm warn" onclick="undoLastCashTransaction()">Undo last entry</button>
+              <button class="btn sm danger" onclick="undoSelectedCashTransaction()">Undo selected entry</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Select</th><th>ID</th><th>Wallet</th><th>Action</th><th class="right">Amount</th><th class="right">Before</th><th class="right">After</th><th>Source / Note</th><th>When</th><th>Who</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="cashTransactionBody">${rows}</tbody>
+          </table></div>
+        </div>
+      </div>`;
   };
 
   viewAccounts = function () {
@@ -1348,6 +1658,7 @@
   function viewUndoTransactions() {
     const inventory = activeInventoryTransactions().slice(0, 60);
     const accounts = activeAccountTransactions().slice(0, 60);
+    const cash = activeCashTransactions().slice(0, 60);
     const inventoryRows = inventory.map((txn) => `<tr>
       <td style="font-size:11px">${txn.date ? new Date(txn.date).toLocaleString() : ''}</td>
       <td>${esc(txn.type === 'STOCK_IN' ? 'Stock In' : (txn.subtype === 'QUICK' ? 'Quick Sale Out' : 'Sale Out'))}${txn.legacy ? ' <span class="badge warn">LEGACY</span>' : ''}</td>
@@ -1369,6 +1680,16 @@
       <td>${esc(txn.receiptNo || '')}</td>
       <td><button class="btn sm danger" onclick="undoAccountTransaction('${escAttr(txn.id)}')">Undo selected</button></td>
     </tr>`).join('') || '<tr><td colspan="8" class="empty">No active account transaction is available.</td></tr>';
+
+    const cashRows = cash.map((entry) => `<tr>
+      <td style="font-size:11px">${entry.at ? new Date(entry.at).toLocaleString() : ''}</td>
+      <td>${esc(entry.cashType || '')}</td>
+      <td>${esc(entry.action || '')}</td>
+      <td class="mono right">${fmtN(entry.amount)}</td>
+      <td>${esc(entry.note || '')}</td>
+      <td>${esc(entry.cashier || '')}</td>
+      <td><button class="btn sm danger" onclick="undoCashTransaction('${escAttr(entry.id)}')">Undo selected</button></td>
+    </tr>`).join('') || '<tr><td colspan="7" class="empty">No active cash entry is available.</td></tr>';
 
     return `<div class="undo-note">
       Reversal is restricted to administrators and requires the Admin PIN. Sale reversal restores FIFO stock, adjusts sales/profit values, reverses linked debtor credit, and marks the receipt VOID. Stock In reversal is blocked if the units have already been sold.
@@ -1392,6 +1713,16 @@
         <thead><tr><th>When</th><th>Account type</th><th>Holder</th><th>Transaction</th><th class="right">Amount</th><th class="right">Balance after</th><th>Receipt</th><th>Action</th></tr></thead>
         <tbody>${accountRows}</tbody>
       </table></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h3 style="margin:0">Cash Balances</h3>
+        <button class="btn warn" onclick="undoLastCashTransaction()">Undo last cash entry</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>When</th><th>Wallet</th><th>Action</th><th class="right">Amount</th><th>Note</th><th>Cashier</th><th>Action</th></tr></thead>
+        <tbody>${cashRows}</tbody>
+      </table></div>
     </div>`;
   }
 
@@ -1403,7 +1734,8 @@
     version: 'M3.1',
     printReceiptDocument,
     activeInventoryTransactions,
-    activeAccountTransactions
+    activeAccountTransactions,
+    activeCashTransactions
   };
 
   ensureOperationsModel();
