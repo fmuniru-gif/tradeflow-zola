@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260804-cash-balance-undo-r15';
+  const BUILD = '20260804-m5a1-commercial-foundation-r16';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260804-cash-balance-undo-r15';
+  const BUILD = '20260804-m5a1-commercial-foundation-r16';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 
