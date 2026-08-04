@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260804-m5a1-commercial-foundation-r16';
+  const BUILD = '20260804-m5a1-sql-ambiguity-fix-r17';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';

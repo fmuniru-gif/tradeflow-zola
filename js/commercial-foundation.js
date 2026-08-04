@@ -1,10 +1,10 @@
-/* ZEZMS v3.5.0 — M5A-1 Commercial Foundation */
+/* ZEZMS v3.5.1 — M5A-1 SQL Ambiguity Fix */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260804-m5a1-commercial-foundation-r16';
+  const BUILD = '20260804-m5a1-sql-ambiguity-fix-r17';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();
@@ -94,7 +94,7 @@
       p_device_id: String(syncState.deviceId || ''),
       p_device_name: String(syncState.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.5.0'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.5.1'
     };
   }
 
@@ -109,6 +109,10 @@
   }
 
   function friendlyError(error) {
+    const rawMessage = String(error && (error.message || error.details || error.hint) || error || '');
+    if (/column reference ["']business_id["'] is ambiguous/i.test(rawMessage)) {
+      return 'The original M5A-1 RPC needs the v3.5.1 correction. Run SUPABASE_M5A1_FIX_AMBIGUOUS_BUSINESS_ID.sql once, then press Check SQL/status.';
+    }
     if (sqlMissing(error)) {
       return 'M5A-1 SQL has not been installed. Run SUPABASE_M5A1_COMMERCIAL_FOUNDATION.sql in the Supabase SQL Editor.';
     }
