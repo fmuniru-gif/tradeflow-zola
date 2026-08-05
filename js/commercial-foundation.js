@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-cross-device-staff-access-r27';
+  const BUILD = '20260805-secure-device-enrollment-r28';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();
@@ -94,7 +94,7 @@
       p_device_id: String(syncState.deviceId || ''),
       p_device_name: String(syncState.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.0'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.0'
     };
   }
 
@@ -149,10 +149,32 @@
         p_business_id: state.businessId || null
       }, deviceArgs());
 
-      const result = await pair.client.rpc('zezms_commercial_context', args);
+      const syncState = cloudState();
+      const result = syncState.deviceAccessMode === 'PAIRED'
+        ? await pair.client.rpc('zezms_m5a3_device_context', {
+            p_device_id: String(syncState.deviceId || ''),
+            p_device_name: String(syncState.deviceName || 'ZEZMS Device'),
+            p_platform: String(navigator.userAgent || '').slice(0, 240),
+            p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.0'
+          })
+        : await pair.client.rpc('zezms_commercial_context', args);
       if (result.error) throw result.error;
 
-      const context = normalizeRow(result.data);
+      let context = normalizeRow(result.data);
+      if (context && syncState.deviceAccessMode === 'PAIRED') {
+        context = {
+          business_id: context.business_id,
+          trading_name: context.trading_name,
+          legal_name: '',
+          business_status: 'ACTIVE',
+          member_role: 'PAIRED_DEVICE',
+          member_status: 'ACTIVE',
+          branch_id: context.branch_id,
+          branch_name: context.branch_name,
+          branch_code: context.branch_code,
+          device_status: context.device_status
+        };
+      }
       if (!context) {
         devices = [];
         setState({

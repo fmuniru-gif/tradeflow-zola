@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Commercial Pilot 0.6.9 — Cross-Device Staff Access",
-  build:"20260805-cross-device-staff-access-r27",
+  version:"Commercial Pilot 0.7.0 — Secure Device Enrollment",
+  build:"20260805-secure-device-enrollment-r28",
   debug:true,
   cloud:{
     googleDrive:{

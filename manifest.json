@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS shared-counter system with an owner-scoped staff directory synchronised across authorised devices, persistent Cloud Sync M4 and local staff switching.",
-  "start_url": "./index.html?build=20260805-cross-device-staff-access-r27",
+  "description": "ZEZMS secure one-time device enrollment with anonymous device identities, branch assignment, automatic M4 master and staff-directory download, revocation and shared-terminal staff login.",
+  "start_url": "./index.html?build=20260805-secure-device-enrollment-r28",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

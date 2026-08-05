@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-cross-device-staff-access-r27';
+  const BUILD = '20260805-secure-device-enrollment-r28';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -71,6 +71,12 @@
       lastPullAt: '',
       lastRemoteAt: '',
       signedInEmail: '',
+      syncOwnerId: '',
+      businessId: '',
+      branchId: '',
+      deviceAccessMode: 'OWNER',
+      deviceAccessStatus: '',
+      pairingId: '',
       lastError: '',
       lastRejected: null,
       mergeWarnings: [],
@@ -656,7 +662,54 @@
 
   function requireClient() {
     if (!client) throw new Error('Save the Supabase configuration first.');
-    if (!session || !session.user) throw new Error('Sign in to the ZEZMS cloud account first.');
+    if (!session || !session.user) throw new Error(
+      state.deviceAccessMode === 'PAIRED'
+        ? 'The paired-device session is missing. Pair this device again.'
+        : 'Sign in to the ZEZMS cloud account first.'
+    );
+    if (state.deviceAccessMode === 'PAIRED' && !state.syncOwnerId) {
+      throw new Error('The paired device has no owner sync context. Pair this device again.');
+    }
+  }
+
+  function currentSyncOwnerId() {
+    if (state.deviceAccessMode === 'PAIRED' && state.syncOwnerId) {
+      return String(state.syncOwnerId);
+    }
+    return session && session.user ? String(session.user.id || '') : '';
+  }
+
+  function isAnonymousSession(value) {
+    const active = value || session;
+    return !!(active && active.user && (
+      active.user.is_anonymous === true
+      || active.user.app_metadata && active.user.app_metadata.provider === 'anonymous'
+    ));
+  }
+
+  async function validatePairedAccess() {
+    if (state.deviceAccessMode !== 'PAIRED') return null;
+    requireClient();
+    const result = await client.rpc('zezms_m5a3_device_context', {
+      p_device_id: state.deviceId,
+      p_device_name: state.deviceName,
+      p_platform: String(navigator.userAgent || '').slice(0, 240),
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.0'
+    });
+    if (result.error) throw result.error;
+    const context = Array.isArray(result.data) ? result.data[0] : result.data;
+    if (!context || String(context.device_status || '').toUpperCase() !== 'ACTIVE') {
+      throw new Error('ZEZMS_DEVICE_REVOKED');
+    }
+    setState({
+      syncOwnerId: String(context.owner_id || state.syncOwnerId || ''),
+      businessId: String(context.business_id || state.businessId || ''),
+      branchId: String(context.branch_id || state.branchId || ''),
+      deviceAccessStatus: 'ACTIVE',
+      status: state.initialized ? (state.liveSyncEnabled ? 'connecting' : 'ready') : 'master-available',
+      lastError: ''
+    }, false);
+    return context;
   }
 
   async function fetchMaster() {
@@ -664,7 +717,7 @@
     const response = await client
       .from(SNAPSHOT_TABLE)
       .select('owner_id,payload,revision,operation_cursor,sync_mode,updated_at,updated_by')
-      .eq('owner_id', session.user.id)
+      .eq('owner_id', currentSyncOwnerId())
       .maybeSingle();
     if (response.error) throw response.error;
     return response.data || null;
@@ -677,6 +730,9 @@
 
   async function bootstrapFromThisDevice() {
     requireClient();
+    if (state.deviceAccessMode === 'PAIRED') {
+      throw new Error('Only the primary OWNER cloud session may activate or replace the M4 cloud master.');
+    }
     const confirmed = confirm(
       'Activate transaction-level merging using the COMPLETE records on this device as the cloud baseline?\n\n'
       + 'All devices must be upgraded to M4. Other devices must then download this cloud master before recording new transactions.'
@@ -832,7 +888,7 @@
     const response = await client
       .from(OPERATIONS_TABLE)
       .select('device_id')
-      .eq('owner_id', session.user.id)
+      .eq('owner_id', currentSyncOwnerId())
       .eq('op_id', operation.opId)
       .maybeSingle();
     if (response.error) throw response.error;
@@ -916,7 +972,7 @@
     const response = await client
       .from(OPERATIONS_TABLE)
       .select('seq,op_id,device_id,device_seq,kind,payload,client_created_at,created_at')
-      .eq('owner_id', session.user.id)
+      .eq('owner_id', currentSyncOwnerId())
       .gt('seq', Number(cursor) || 0)
       .order('seq', { ascending: true })
       .limit(PULL_PAGE_SIZE);
@@ -1045,10 +1101,10 @@
     requireClient();
     stopRealtime();
     channel = client
-      .channel('zezms-m4-' + session.user.id + '-' + state.deviceId)
+      .channel('zezms-m4-' + currentSyncOwnerId() + '-' + state.deviceId)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: OPERATIONS_TABLE,
-        filter: 'owner_id=eq.' + session.user.id
+        filter: 'owner_id=eq.' + currentSyncOwnerId()
       }, function (event) {
         const row = event && event.new ? event.new : null;
         if (!row || Number(row.seq) <= (Number(state.cursor) || 0)) return;
@@ -1230,6 +1286,9 @@
   }
 
   async function signOut() {
+    if (state.deviceAccessMode === 'PAIRED') {
+      throw new Error('This is a paired device identity. Revoke the device from an OWNER device instead of signing it out locally.');
+    }
     stopRealtime();
     if (client) {
       const result = await client.auth.signOut({ scope: 'local' });
@@ -1238,6 +1297,160 @@
     session = null;
     setState({ signedInEmail: '', liveSyncEnabled: false, status: 'signed-out' });
     notify('Signed out of cloud sync on this device.');
+  }
+
+
+  function normalizeEnrollmentText(value) {
+    return String(value == null ? '' : value).trim();
+  }
+
+  async function enrollPairedDevice(options) {
+    const values = options || {};
+    const url = normalizeEnrollmentText(values.supabaseUrl).replace(/\/$/, '');
+    const key = normalizeEnrollmentText(values.publishableKey);
+    const code = normalizeEnrollmentText(values.pairingCode);
+    const name = normalizeEnrollmentText(values.deviceName) || 'New ZEZMS Device';
+
+    if (!/^https:\/\/.+\.supabase\.co$/i.test(url)) {
+      throw new Error('Enter the Supabase project URL included in the pairing setup.');
+    }
+    if (!key) throw new Error('Enter the Supabase publishable key included in the pairing setup.');
+    if (!code) throw new Error('Enter the one-time device pairing code.');
+
+    stopRealtime();
+    setState({
+      supabaseUrl: url,
+      publishableKey: key,
+      deviceName: name,
+      deviceAccessMode: 'PAIRING',
+      deviceAccessStatus: 'PAIRING',
+      syncOwnerId: '',
+      businessId: '',
+      branchId: '',
+      initialized: false,
+      cursor: 0,
+      liveSyncEnabled: false,
+      status: 'connecting',
+      lastError: ''
+    }, false);
+
+    await buildClient();
+    if (!client) throw new Error('The Supabase client could not be created.');
+
+    if (session && session.user && !isAnonymousSession(session)) {
+      throw new Error('This browser already contains a permanent cloud login. Use a fresh browser profile for new-device pairing.');
+    }
+
+    if (!session || !session.user) {
+      const anonymous = await client.auth.signInAnonymously({
+        options: {
+          data: {
+            purpose: 'zezms_device_pairing',
+            device_id: state.deviceId,
+            device_name: name
+          }
+        }
+      });
+      if (anonymous.error) {
+        const message = String(anonymous.error.message || anonymous.error);
+        if (/anonymous.*disabled|signups.*disabled|provider.*disabled/i.test(message)) {
+          throw new Error('Anonymous Sign-Ins are disabled in Supabase. Enable Authentication → Providers → Anonymous Sign-Ins, then retry.');
+        }
+        throw anonymous.error;
+      }
+      session = anonymous.data && anonymous.data.session ? anonymous.data.session : null;
+    }
+
+    if (!session || !session.user || !isAnonymousSession(session)) {
+      throw new Error('Supabase did not create the required anonymous device identity.');
+    }
+
+    const claim = await client.rpc('zezms_m5a3_claim_device_pairing', {
+      p_pairing_code: code,
+      p_device_id: state.deviceId,
+      p_device_name: name,
+      p_platform: String(navigator.userAgent || '').slice(0, 240),
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.0'
+    });
+    if (claim.error) throw claim.error;
+    const context = Array.isArray(claim.data) ? claim.data[0] : claim.data;
+    if (!context || !context.owner_id) throw new Error('The pairing claim did not return an owner sync context.');
+
+    setState({
+      syncOwnerId: String(context.owner_id),
+      businessId: String(context.business_id || ''),
+      branchId: String(context.branch_id || ''),
+      pairingId: String(context.pairing_id || ''),
+      deviceAccessMode: 'PAIRED',
+      deviceAccessStatus: String(context.device_status || 'ACTIVE'),
+      signedInEmail: 'Paired device',
+      status: 'master-available',
+      lastError: ''
+    }, false);
+
+    await validatePairedAccess();
+    const master = await fetchMaster();
+    if (!master || !master.payload) {
+      throw new Error('The OWNER has not activated an M4 cloud master yet.');
+    }
+    if (master.sync_mode !== 'operations') {
+      throw new Error('The cloud account is not operating in M4 transaction-merge mode.');
+    }
+
+    queue = [];
+    persistQueue();
+    persistMasterDatabase(master.payload);
+    setState({
+      initialized: true,
+      cursor: Number(master.operation_cursor) || 0,
+      status: 'syncing',
+      lastPullAt: new Date().toISOString(),
+      lastError: ''
+    }, false);
+
+    await pullNow(true);
+    setState({ liveSyncEnabled: true, status: 'connecting' }, false);
+    await startLiveSync(false);
+
+    try {
+      localStorage.setItem('zezms_commercial_m5a1_state', JSON.stringify({
+        version: 1,
+        build: BUILD,
+        status: 'ready',
+        businessId: String(context.business_id || ''),
+        context: {
+          business_id: String(context.business_id || ''),
+          trading_name: String(context.trading_name || ''),
+          legal_name: '',
+          business_status: 'ACTIVE',
+          member_role: 'PAIRED_DEVICE',
+          member_status: 'ACTIVE',
+          branch_id: String(context.branch_id || ''),
+          branch_name: String(context.branch_name || ''),
+          branch_code: String(context.branch_code || ''),
+          device_status: 'ACTIVE'
+        },
+        lastCheckedAt: new Date().toISOString(),
+        lastError: ''
+      }));
+    } catch (_) {}
+
+    try { window.dispatchEvent(new CustomEvent('zezms-device-enrollment-complete', { detail: context })); } catch (_) {}
+    return context;
+  }
+
+  async function repairPairedDeviceSession() {
+    if (state.deviceAccessMode !== 'PAIRED') return false;
+    await buildClient();
+    await validatePairedAccess();
+    if (!state.initialized) {
+      const master = await fetchMaster();
+      if (!master || !master.payload) throw new Error('No M4 cloud master is available.');
+      persistMasterDatabase(master.payload);
+      setState({ initialized: true, cursor: Number(master.operation_cursor) || 0 }, false);
+    }
+    await startLiveSync(false);
+    return true;
   }
 
   function statusLabel() {
@@ -1283,6 +1496,11 @@
     try {
       await buildClient();
       if (session) {
+        if (state.deviceAccessMode === 'PAIRED') {
+          await validatePairedAccess();
+        } else if (!state.syncOwnerId && session.user) {
+          setState({ syncOwnerId: String(session.user.id || ''), deviceAccessMode: 'OWNER' }, false);
+        }
         const master = await fetchMaster().catch(function () { return null; });
         if (master && master.sync_mode === 'operations' && !state.initialized) {
           setState({ status: 'master-available' }, false);
@@ -1349,7 +1567,7 @@
       + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Transaction-Level Cloud Sync</h3><span class="badge ok">M4 ACTIVE</span></div>'
       + '<p class="muted" style="font-size:13px">Each saved transaction is uploaded as an idempotent operation. Transactions from different devices are merged instead of replacing the complete database.</p>'
       + '<div class="statline"><span>Status</span><b>' + esc(statusLabel()) + '</b></div>'
-      + '<div class="statline"><span>Cloud account</span><b>' + esc(state.signedInEmail || 'Not signed in') + '</b></div>'
+      + '<div class="statline"><span>Cloud account</span><b>' + esc(state.signedInEmail || (state.deviceAccessMode === 'PAIRED' ? 'Paired device' : 'Not signed in')) + '</b></div>'
       + '<div class="statline"><span>Device</span><b>' + esc(state.deviceName) + '</b></div>'
       + '<div class="statline"><span>Last cloud operation</span><b class="mono">' + esc(state.cursor || 0) + '</b></div>'
       + '<div class="statline"><span>Queued transactions</span><b>' + esc(queue.length) + '</b></div>'
@@ -1369,6 +1587,22 @@
   }
 
   function settingsHtml() {
+    if (state.deviceAccessMode === 'PAIRED') {
+      return '<div class="card" style="margin-top:12px">'
+        + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Cloud Sync M4</h3><span class="badge ok">PAIRED DEVICE</span></div>'
+        + '<p class="muted" style="font-size:12px">This device has its own anonymous Supabase identity and does not store the OWNER cloud password.</p>'
+        + '<div class="statline"><span>Status</span><b>' + esc(statusLabel()) + '</b></div>'
+        + '<div class="statline"><span>Device</span><b>' + esc(state.deviceName) + '</b></div>'
+        + '<div class="statline"><span>Device ID</span><b class="mono" style="font-size:10px">' + esc(state.deviceId) + '</b></div>'
+        + '<div class="statline"><span>Tenant</span><b class="mono" style="font-size:10px">' + esc(state.businessId || '—') + '</b></div>'
+        + '<div class="statline"><span>Branch</span><b class="mono" style="font-size:10px">' + esc(state.branchId || '—') + '</b></div>'
+        + '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">'
+        + '<button class="btn ghost" onclick="m4PullNow()">Receive transactions now</button>'
+        + '<button class="btn ghost" onclick="m4StartLiveSync()">Reconnect live sync</button>'
+        + '</div>'
+        + '<p class="muted" style="font-size:11px;margin-top:10px">To remove this device, use Revoke on an OWNER-authenticated device.</p>'
+        + '</div>';
+    }
     return '<div class="card" style="margin-top:12px">'
       + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Cloud Sync M4</h3><span class="badge ok">TRANSACTION MERGE</span></div>'
       + '<p class="muted" style="font-size:12px">Run <code>SUPABASE_UPGRADE_M4.sql</code> once in the same Supabase project. Upgrade every device before recording new transactions.</p>'
@@ -1441,6 +1675,10 @@
     pullNow: pullNow,
     start: startLiveSync,
     stop: stopLiveSync,
+    enrollPairedDevice: enrollPairedDevice,
+    validatePairedAccess: validatePairedAccess,
+    repairPairedDeviceSession: repairPairedDeviceSession,
+    currentSyncOwnerId: currentSyncOwnerId,
     _test: {
       buildOperation: buildOperation,
       applyOperation: applyOperation,

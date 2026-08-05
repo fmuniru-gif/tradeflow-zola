@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-cross-device-staff-access-r27';
+  const BUILD = '20260805-secure-device-enrollment-r28';
   const MAX_CATCHUP_MONTHS = 120;
   const CHECK_INTERVAL_MS = 60 * 1000;
 
