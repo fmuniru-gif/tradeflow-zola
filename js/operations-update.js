@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260805-shared-device-recovery-r24';
+  const BUILD = '20260805-embedded-recovery-controller-r25';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

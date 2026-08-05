@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS commercial pilot with secure shared-device staff passwords, fast staff switching, persistent Cloud Sync M4, tenant/device foundation, MFA-protected owner recovery and backups.",
-  "start_url": "./index.html?build=20260805-shared-device-recovery-r24",
+  "description": "ZEZMS shared-counter system with an embedded Owner recovery controller, multiple staff passwords on one device, persistent Cloud Sync M4 and backups.",
+  "start_url": "./index.html?build=20260805-embedded-recovery-controller-r25",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
