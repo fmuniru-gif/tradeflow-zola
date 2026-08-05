@@ -1,10 +1,10 @@
-/* ZEZMS v3.6.2 — Staged MFA Login Recovery */
+/* ZEZMS v3.6.3 — Unique MFA Factor Names */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-staged-mfa-login-r20';
+  const BUILD = '20260805-unique-mfa-factor-names-r21';
   const STATE_KEY = 'zezms_m5a2_staff_auth_state';
   const PENDING_INVITE_KEY = 'zezms_m5a2_pending_invite';
   const AUTH_STORAGE_KEY = 'zezms-m5a2-staff-auth';
@@ -181,7 +181,7 @@
       p_device_id: String(cs.deviceId || ''),
       p_device_name: String(cs.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.2'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.3'
     };
   }
 
@@ -310,6 +310,7 @@
       [/ZEZMS_PERMISSION_DENIED|ROLE_DENIED/i, 'Your staff role does not permit this action.'],
       [/ZEZMS_LAST_OWNER_PROTECTED/i, 'The final active Owner cannot be suspended or revoked.'],
       [/MFA_REQUIRED/i, 'Authenticator verification is required for this action.'],
+      [/mfa_factor_name_conflict|factor with a friendly name.*exist/i, 'An authenticator with that label already exists. This release generates a unique label automatically; press Add authenticator app again.'],
       [/invalid.*(totp|verification code)|challenge.*expired|code.*invalid/i, 'The authenticator code was not accepted. Wait for a fresh code and try again.'],
       [/session.*missing|refresh_token.*not found|invalid refresh token/i, 'The secure session is stale. Select Reset secure login session only, then sign in again.'],
       [/PGRST202|could not find the function|does not exist/i, 'M5A-2 SQL has not been installed. Run SUPABASE_M5A2_AUTH_STAFF_SECURITY.sql once.']
@@ -1052,14 +1053,86 @@
     }
   }
 
+  function safeFactorLabelPart(value, fallback) {
+    const cleaned = String(value || '')
+      .replace(/[\u0000-\u001f\u007f]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return (cleaned || fallback || '').slice(0, 42);
+  }
+
+  function allTotpFactors(data) {
+    const list = data && data.totp ? data.totp : [];
+    return Array.isArray(list) ? list.filter(Boolean) : [];
+  }
+
+  async function uniqueMfaFriendlyName() {
+    const businessName = safeFactorLabelPart(
+      context && context.trading_name,
+      'ZEZMS Business'
+    );
+    const cloudDevice = cloudState();
+    const deviceName = safeFactorLabelPart(
+      cloudDevice && cloudDevice.deviceName,
+      'Backup'
+    );
+
+    const base = 'ZEZMS ' + businessName;
+    const preferred = base + ' · ' + deviceName;
+
+    const listed = await client.auth.mfa.listFactors();
+    if (listed.error) throw listed.error;
+
+    const used = new Set(
+      allTotpFactors(listed.data || {}).map(function (factor) {
+        return String(factor.friendly_name || '').trim().toLowerCase();
+      }).filter(Boolean)
+    );
+
+    if (!used.has(preferred.toLowerCase())) return preferred;
+
+    for (let number = 2; number <= 20; number++) {
+      const candidate = preferred + ' ' + number;
+      if (!used.has(candidate.toLowerCase())) return candidate;
+    }
+
+    return preferred + ' ' + Date.now().toString(36).toUpperCase().slice(-6);
+  }
+
+  async function enrollTotpWithUniqueName() {
+    let friendlyName = await uniqueMfaFriendlyName();
+    let result = await client.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: friendlyName
+    });
+
+    const conflict = result.error && (
+      String(result.error.code || '').toLowerCase() === 'mfa_factor_name_conflict'
+      || /factor with a friendly name.*exist/i.test(String(result.error.message || ''))
+    );
+
+    if (conflict) {
+      friendlyName = await uniqueMfaFriendlyName();
+      friendlyName += ' ' + Date.now().toString(36).toUpperCase().slice(-4);
+      result = await client.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: friendlyName
+      });
+    }
+
+    return {
+      result: result,
+      friendlyName: friendlyName
+    };
+  }
+
   async function enrollMfa(required) {
     try {
       await waitForClient(10000);
       if (!authSession) throw new Error('Sign in before enrolling an authenticator.');
-      const enrolled = await client.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: 'ZEZMS ' + (context && context.trading_name || 'Staff')
-      });
+      const enrollment = await enrollTotpWithUniqueName();
+      const enrolled = enrollment.result;
+      const friendlyName = enrollment.friendlyName;
       if (enrolled.error) throw enrolled.error;
       const data = enrolled.data || {};
       const qr = data.totp && data.totp.qr_code ? data.totp.qr_code : '';
@@ -1070,6 +1143,7 @@
         openModal(
           '<h3>Set up an authenticator app</h3>'
           + '<p class="muted">Scan the QR code using an authenticator app, then enter its six-digit code.</p>'
+          + '<div class="statline"><span>Factor label</span><b>' + esc(friendlyName) + '</b></div>'
           + (qr ? '<div style="text-align:center"><img alt="MFA QR code" src="' + attr(qr) + '" style="width:210px;max-width:100%;background:white;padding:10px;border-radius:12px"></div>' : '')
           + (secret ? '<div class="field"><label>Manual secret</label><input value="' + attr(secret) + '" readonly class="mono"></div>' : '')
           + '<div class="field"><label>Verification code</label><input id="m5a2EnrollMfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></div>'
@@ -1095,7 +1169,7 @@
             if (verify.error) throw verify.error;
             closeModal();
             await listMfaFactors();
-            if (typeof toast === 'function') toast('Authenticator MFA enabled.');
+            if (typeof toast === 'function') toast('Authenticator MFA enabled: ' + friendlyName);
             renderSettingsSafely();
             resolve(true);
           } catch (error) {
