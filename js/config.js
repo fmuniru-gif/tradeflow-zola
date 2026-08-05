@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Commercial Pilot 0.6.7 — Embedded Recovery Controller",
-  build:"20260805-embedded-recovery-controller-r25",
+  version:"Commercial Pilot 0.6.8 — Recovery Modal Layer Fix",
+  build:"20260805-recovery-modal-layer-fix-r26",
   debug:true,
   cloud:{
     googleDrive:{

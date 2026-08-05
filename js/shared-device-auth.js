@@ -1,8 +1,8 @@
-/* ZEZMS v3.6.7 — Embedded Recovery Controller */
+/* ZEZMS v3.6.8 — Recovery Modal Layer Fix */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260805-embedded-recovery-controller-r25';
+const BUILD='20260805-recovery-modal-layer-fix-r26';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery';
 const ROLES={
  OWNER:['*'],
@@ -55,7 +55,7 @@ async function addUser(){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner
 function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;const rs=u.role==='OWNER'?['OWNER']:['ADMIN','MANAGER','CASHIER','READ_ONLY','AUDITOR'];sharedModal(`<h3>Manage shared-device staff</h3><div class="field"><label>Full name</label><input id="sharedEditName" value="${attr(u.name)}"></div><div class="field"><label>Telephone</label><input id="sharedEditTel" value="${attr(u.tel||'')}"></div><div class="field"><label>Role</label><select id="sharedEditRole">${rs.map(x=>`<option value="${x}" ${x===u.role?'selected':''}>${x.replace('_',' ')}</option>`).join('')}</select></div><div class="field"><label>Status</label><select id="sharedEditActive"><option value="1" ${u.active!==false?'selected':''}>ACTIVE</option><option value="0" ${u.active===false?'selected':''}>INACTIVE</option></select></div><div class="field"><label>New password / secure PIN</label><input id="sharedEditPassword" type="password" placeholder="Leave blank to keep current password" autocomplete="new-password"></div><div class="row"><button class="btn" onclick="sharedDeviceSaveUser('${attr(u.id)}')">Save</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>`);}
 async function saveUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can manage staff.');if(!await reauth('Confirm staff-account change'))return;const u=model().users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(role()==='ADMIN'&&u.role==='OWNER')throw new Error('An Admin cannot modify the Owner account.');await upsert({name:String((document.getElementById('sharedEditName')||{}).value||''),tel:String((document.getElementById('sharedEditTel')||{}).value||''),role:String((document.getElementById('sharedEditRole')||{}).value||u.role),password:String((document.getElementById('sharedEditPassword')||{}).value||''),active:String((document.getElementById('sharedEditActive')||{}).value||'1')==='1'},id);closeModal();audit('STAFF_ACCOUNT_UPDATED',{userId:id});render();refreshUsers();toast('Staff account updated.');}catch(e){toast(e.message||String(e),'err');}}
 function cloud(){const s=ZEZMS.cloudSync;return s&&typeof s.getState==='function'?s.getState():{};}
-function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.6.7'};}
+function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.6.8'};}
 function recovery(){const s=cloud();if(!s.supabaseUrl||!s.publishableKey||!window.supabase)throw new Error('Supabase configuration is unavailable on this device.');if(!recoveryClient)recoveryClient=window.supabase.createClient(String(s.supabaseUrl).replace(/\/$/,''),String(s.publishableKey),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:RECOVERY_KEY}});return recoveryClient;}
 
 function sharedModal(html){
