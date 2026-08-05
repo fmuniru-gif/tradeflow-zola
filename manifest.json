@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS shared-counter system with Owner recovery displayed above the login screen, multiple staff passwords, persistent Cloud Sync M4 and backups.",
-  "start_url": "./index.html?build=20260805-recovery-modal-layer-fix-r26",
+  "description": "ZEZMS shared-counter system with an owner-scoped staff directory synchronised across authorised devices, persistent Cloud Sync M4 and local staff switching.",
+  "start_url": "./index.html?build=20260805-cross-device-staff-access-r27",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

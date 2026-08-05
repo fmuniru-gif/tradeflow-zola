@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-recovery-modal-layer-fix-r26';
+  const BUILD = '20260805-cross-device-staff-access-r27';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();

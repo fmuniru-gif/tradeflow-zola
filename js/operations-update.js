@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260805-recovery-modal-layer-fix-r26';
+  const BUILD = '20260805-cross-device-staff-access-r27';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

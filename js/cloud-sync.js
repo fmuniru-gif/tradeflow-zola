@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-recovery-modal-layer-fix-r26';
+  const BUILD = '20260805-cross-device-staff-access-r27';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -375,7 +375,7 @@
       }
     });
 
-    ['selectedYear', 'selectedMonth', 'business', 'settings', 'security'].forEach(function (root) {
+    ['selectedYear', 'selectedMonth', 'business', 'settings', 'security', 'sharedDeviceDirectory'].forEach(function (root) {
       if (!equal(before[root], after[root])) {
         patches.push({ action: 'root-set', root: root, value: clone(after[root]), before: clone(before[root]) });
       }
@@ -383,6 +383,10 @@
   }
 
   function inferKind(patches) {
+    if (patches.some(function (patch) {
+      return patch.action === 'root-set' && patch.root === 'sharedDeviceDirectory';
+    })) return 'SHARED_DEVICE_DIRECTORY';
+
     const insert = function (collection) {
       return patches.find(function (patch) { return patch.action === 'insert' && patch.collection === collection; });
     };
@@ -558,6 +562,14 @@
       applyingRemote = false;
     }
     try { if (typeof populateLoginCashiers === 'function') populateLoginCashiers(); } catch (_) {}
+    try { if (typeof sharedDeviceRefreshUsers === 'function') sharedDeviceRefreshUsers(false); } catch (_) {}
+    try {
+      if (operation.patches.some(function (patch) {
+        return patch.action === 'root-set' && patch.root === 'sharedDeviceDirectory';
+      })) {
+        window.dispatchEvent(new CustomEvent('zezms-shared-device-directory-updated'));
+      }
+    } catch (_) {}
     try { if (!(options && options.silent) && typeof render === 'function') render(); } catch (_) {}
     return true;
   }
@@ -712,6 +724,8 @@
       applyingRemote = false;
     }
     try { if (typeof populateLoginCashiers === 'function') populateLoginCashiers(); } catch (_) {}
+    try { if (typeof sharedDeviceRefreshUsers === 'function') sharedDeviceRefreshUsers(false); } catch (_) {}
+    try { window.dispatchEvent(new CustomEvent('zezms-shared-device-directory-updated')); } catch (_) {}
     try { if (typeof render === 'function') render(); } catch (_) {}
   }
 
@@ -754,6 +768,42 @@
     if (response.error) throw response.error;
     const rows = Array.isArray(response.data) ? response.data : [response.data];
     return rows[0] || null;
+  }
+
+  async function publishRoot(root, value, kind) {
+    const rootName = String(root || '').trim();
+    if (!rootName) throw new Error('A cloud root name is required.');
+
+    await waitUntilReady(7000);
+    if (!state.initialized) {
+      throw new Error('Activate or download the M4 cloud master first.');
+    }
+
+    state.deviceSeq = (Number(state.deviceSeq) || 0) + 1;
+    persistState();
+
+    const database = getDatabase();
+    const operation = {
+      opId: makeUUID(),
+      deviceId: state.deviceId,
+      deviceSeq: state.deviceSeq,
+      createdAt: new Date().toISOString(),
+      reason: 'publish-' + rootName,
+      kind: String(kind || 'ROOT_PUBLISH'),
+      appVersion: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
+      patches: [{
+        action: 'root-set',
+        root: rootName,
+        value: clone(value),
+        before: clone(database ? database[rootName] : undefined)
+      }]
+    };
+
+    queueOperation(operation);
+    if (navigator.onLine && session && configured()) {
+      await flushQueue(false);
+    }
+    return true;
   }
 
   async function publishMonthRollover(marker, options) {
@@ -1378,6 +1428,7 @@
     waitUntilReady: waitUntilReady,
     isReadyForLocalOperations: isReadyForLocalOperations,
     publishMonthRollover: publishMonthRollover,
+    publishRoot: publishRoot,
     onLocalSave: onLocalSave,
     isApplyingRemote: function () { return applyingRemote; },
     getState: function () { return Object.assign({}, state, { queueLength: queue.length }); },

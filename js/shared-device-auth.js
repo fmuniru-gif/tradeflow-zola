@@ -1,9 +1,9 @@
-/* ZEZMS v3.6.8 — Recovery Modal Layer Fix */
+/* ZEZMS v3.6.9 — Cross-Device Staff Access */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260805-recovery-modal-layer-fix-r26';
-const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery';
+const BUILD='20260805-cross-device-staff-access-r27';
+const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
  ADMIN:['LOGIN','VIEW_DASHBOARD','SALE_OUT','VIEW_RECEIPTS','STOCK_IN','VIEW_PRODUCTS','MANAGE_PRODUCTS','VIEW_STOCK','VIEW_CASH','MANAGE_CASH','VIEW_EXPENSES','MANAGE_EXPENSES','VIEW_ACCOUNTS','MANAGE_ACCOUNTS','VIEW_REPORTS','MANAGE_SYNC','MANAGE_SETTINGS','MANAGE_STAFF','UNDO_TRANSACTION','PRICE_ADJUSTMENT','EXPORT_BACKUP','IMPORT_DATA','RESET_DATA','MANAGE_DOCUMENTS','VIEW_AUDIT'],
@@ -28,6 +28,96 @@ async function makePassword(password){const salt=crypto.getRandomValues(new Uint
 async function verify(user,password){if(!user||!user.passwordHash||!user.passwordSalt)return false;return equal(await derive(password,unb64(user.passwordSalt),user.passwordIterations||ITER),unb64(user.passwordHash));}
 function businessId(){try{if(DB&&DB.sharedDeviceAuth&&DB.sharedDeviceAuth.businessId)return String(DB.sharedDeviceAuth.businessId);if(DB&&DB.commercialSecurity&&DB.commercialSecurity.businessId)return String(DB.commercialSecurity.businessId);const f=JSON.parse(localStorage.getItem('zezms_commercial_m5a1_state')||'{}');return String(f.businessId||(f.context&&f.context.business_id)||'');}catch(_){return '';}}
 function model(){if(!DB.sharedDeviceAuth||typeof DB.sharedDeviceAuth!=='object')DB.sharedDeviceAuth={version:1,enabled:false,businessId:businessId(),users:[],audit:[],createdAt:'',updatedAt:''};const m=DB.sharedDeviceAuth;if(!Array.isArray(m.users))m.users=[];if(!Array.isArray(m.audit))m.audit=[];if(!m.businessId)m.businessId=businessId();m.users.forEach(u=>{if(!u.id)u.id=uid();if(!u.role)u.role='CASHIER';if(typeof u.active!=='boolean')u.active=true;});return m;}
+
+function directoryUser(u){
+  return {
+    id:String(u.id||''),
+    name:String(u.name||''),
+    tel:String(u.tel||''),
+    role:String(u.role||'CASHIER').toUpperCase(),
+    active:u.active!==false,
+    signatureFile:String(u.signatureFile||''),
+    passwordAlgorithm:String(u.passwordAlgorithm||'PBKDF2-SHA256'),
+    passwordIterations:Number(u.passwordIterations)||ITER,
+    passwordSalt:String(u.passwordSalt||''),
+    passwordHash:String(u.passwordHash||''),
+    passwordChangedAt:String(u.passwordChangedAt||''),
+    createdAt:String(u.createdAt||''),
+    updatedAt:String(u.updatedAt||'')
+  };
+}
+
+function directoryPayload(){
+  const m=model();
+  return {
+    version:1,
+    businessId:String(m.businessId||businessId()),
+    enabled:!!m.enabled,
+    updatedAt:String(m.updatedAt||stamp()),
+    users:m.users.map(directoryUser)
+  };
+}
+
+function directoryFingerprint(value){
+  const text=JSON.stringify(value||directoryPayload());
+  let hash=2166136261;
+  for(let i=0;i<text.length;i++){
+    hash^=text.charCodeAt(i);
+    hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0).toString(16);
+}
+
+function writeDirectoryRoot(){
+  DB.sharedDeviceDirectory=directoryPayload();
+  return DB.sharedDeviceDirectory;
+}
+
+function importDirectory(){
+  const root=DB&&DB.sharedDeviceDirectory;
+  if(!root||!Array.isArray(root.users)||!root.users.length)return false;
+  const m=model();
+  const localById=new Map(m.users.map(u=>[String(u.id||''),u]));
+  m.users=root.users.map(remote=>{
+    const local=localById.get(String(remote.id||''))||{};
+    return Object.assign({},remote,{
+      failedAttempts:Number(local.failedAttempts)||0,
+      lockedUntil:String(local.lockedUntil||''),
+      lastLoginAt:String(local.lastLoginAt||'')
+    });
+  });
+  m.enabled=root.enabled!==false;
+  m.businessId=String(root.businessId||m.businessId||businessId());
+  m.directoryUpdatedAt=String(root.updatedAt||'');
+  return true;
+}
+
+async function publishDirectory(showNotice){
+  const sync=window.ZEZMS&&ZEZMS.cloudSync;
+  if(!sync||typeof sync.publishRoot!=='function'){
+    if(showNotice!==false)status('Cloud Sync M4 is not ready to publish staff access.','error');
+    return false;
+  }
+  const payload=writeDirectoryRoot();
+  saveDB();
+  await sync.publishRoot('sharedDeviceDirectory',payload,'SHARED_DEVICE_DIRECTORY');
+  try{localStorage.setItem(DIRECTORY_MARKER_KEY,directoryFingerprint(payload));}catch(_){}
+  if(showNotice!==false)toast('Staff access published to the other authorised devices.');
+  return true;
+}
+
+async function autoPublishDirectory(){
+  if(!['OWNER','ADMIN'].includes(role()))return false;
+  const payload=directoryPayload();
+  const fingerprint=directoryFingerprint(payload);
+  let previous='';
+  try{previous=localStorage.getItem(DIRECTORY_MARKER_KEY)||'';}catch(_){}
+  if(previous===fingerprint)return true;
+  try{return await publishDirectory(false);}catch(error){
+    console.warn('Shared-device directory could not be auto-published',error);
+    return false;
+  }
+}
 function users(){return model().users.filter(u=>u&&u.active!==false&&u.passwordHash).slice().sort((a,b)=>(a.role==='OWNER'?0:1)-(b.role==='OWNER'?0:1)||String(a.name||'').localeCompare(String(b.name||'')));}
 function current(){return model().users.find(u=>u.id===session.sharedUserId)||null;}
 function role(){return String((session&&session.commercialRole)||(current()&&current().role)||'').toUpperCase();}
@@ -37,8 +127,34 @@ function fallback(){if(canView('pos'))return'pos';if(canView('dashboard'))return
 function elevated(){return ['OWNER','ADMIN','MANAGER','READ_ONLY','AUDITOR'].includes(role());}
 function audit(type,payload={}){const m=model();m.audit.push({id:uid('AUTH-'),at:stamp(),eventType:type,staffId:session.sharedUserId||'',staffName:session.cashier||'',role:role(),payload});if(m.audit.length>500)m.audit.splice(0,m.audit.length-500);m.updatedAt=stamp();saveDB();}
 function status(message,type='info'){const e=document.getElementById('sharedLoginStatus');if(!e)return;const s={ok:['#052e2b','#2dd4bf','#ccfbf1'],error:['#3f1017','#fb7185','#ffe4e6'],working:['#172554','#60a5fa','#dbeafe'],info:['#1e293b','#475569','#cbd5e1']}[type]||['#1e293b','#475569','#cbd5e1'];e.style.background=s[0];e.style.borderColor=s[1];e.style.color=s[2];e.textContent=String(message||'');}
-function refreshUsers(){const s=document.getElementById('sharedLoginUser');if(!s)return;const list=users(),old=s.value;s.innerHTML=list.map(u=>`<option value="${attr(u.id)}">${esc(u.name)} (${esc(u.role.replace('_',' '))})</option>`).join('');if(old&&list.some(u=>u.id===old))s.value=old;if(!list.length){s.innerHTML='<option value="">Owner setup required</option>';status('No shared-device password is available. Select Owner recovery / first setup.','working');}else status(`${list.length} active staff account${list.length===1?'':'s'} available. Cloud Sync remains connected.`,'info');}
-async function login(){const id=String((document.getElementById('sharedLoginUser')||{}).value||''),password=String((document.getElementById('sharedLoginPassword')||{}).value||''),u=model().users.find(x=>x.id===id),btn=document.getElementById('sharedLoginButton');if(!u||!u.passwordHash){status('Select Owner recovery / first setup to create staff passwords.','error');return;}if(!password){status('Enter the selected staff member’s password.','error');return;}const lock=u.lockedUntil?new Date(u.lockedUntil).getTime():0;if(lock>Date.now()){status(`Too many failed attempts. Try again in ${Math.ceil((lock-Date.now())/1000)} seconds.`,'error');return;}if(btn){btn.disabled=true;btn.textContent='Checking password…';}status('Checking the local staff password…','working');try{if(!await verify(u,password)){u.failedAttempts=Number(u.failedAttempts||0)+1;if(u.failedAttempts>=5){u.failedAttempts=0;u.lockedUntil=new Date(Date.now()+30000).toISOString();}saveDB();status(`Incorrect password for ${u.name}.`,'error');return;}u.failedAttempts=0;u.lockedUntil='';u.lastLoginAt=stamp();saveDB();session.cashier=u.name;session.tel=u.tel||'';session.role=['OWNER','ADMIN','MANAGER','READ_ONLY','AUDITOR'].includes(u.role)?'ADMIN':'CASHIER2';session.sig=u.signatureFile||'';session.isCashier2=u.role==='CASHIER';session.adminMode=false;session.commercialRole=u.role;session.sharedUserId=u.id;session.businessId=model().businessId;cart=[];priceAdjUnlocked=false;document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';updateUserBadge();applyRoleUI();updatePeriodUI();audit('STAFF_SIGNED_IN',{userId:u.id});nav(fallback());toast('Welcome, '+String(u.name).split(' ')[0]+'!');}catch(e){console.error(e);status(e.message||String(e),'error');}finally{if(btn){btn.disabled=false;btn.textContent='Sign in to this shared device';}}}
+function refreshUsers(){importDirectory();const s=document.getElementById('sharedLoginUser');if(!s)return;const list=users(),old=s.value;s.innerHTML=list.map(u=>`<option value="${attr(u.id)}">${esc(u.name)} (${esc(u.role.replace('_',' '))})</option>`).join('');if(old&&list.some(u=>u.id===old))s.value=old;if(!list.length){s.innerHTML='<option value="">Owner setup required</option>';status('No staff directory is stored on this device yet. Select Refresh staff list to receive it from Cloud Sync M4.','working');}else status(`${list.length} active staff account${list.length===1?'':'s'} available. Cloud Sync remains connected.`,'info');}
+
+async function refreshUsersFromCloud(showNotice){
+  refreshUsers();
+  const sync=window.ZEZMS&&ZEZMS.cloudSync;
+  if(!sync||typeof sync.pullNow!=='function'){
+    if(showNotice!==false)status('Cloud Sync M4 has not loaded on this device.','error');
+    return false;
+  }
+  try{
+    status('Checking Cloud Sync M4 for the shared staff directory…','working');
+    if(typeof sync.waitUntilReady==='function')await sync.waitUntilReady(7000);
+    await sync.pullNow(true);
+    importDirectory();
+    refreshUsers();
+    if(users().length){
+      if(showNotice!==false)status('Shared staff access received from Cloud Sync M4.','ok');
+      return true;
+    }
+    if(showNotice!==false)status('No published staff directory was found. Sign in on the main device and publish staff access first.','error');
+    return false;
+  }catch(error){
+    console.error('Shared staff directory refresh failed',error);
+    if(showNotice!==false)status('Could not receive staff access: '+(error&&error.message||error),'error');
+    return false;
+  }
+}
+async function login(){const id=String((document.getElementById('sharedLoginUser')||{}).value||''),password=String((document.getElementById('sharedLoginPassword')||{}).value||''),u=model().users.find(x=>x.id===id),btn=document.getElementById('sharedLoginButton');if(!u||!u.passwordHash){status('Select Owner recovery / first setup to create staff passwords.','error');return;}if(!password){status('Enter the selected staff member’s password.','error');return;}const lock=u.lockedUntil?new Date(u.lockedUntil).getTime():0;if(lock>Date.now()){status(`Too many failed attempts. Try again in ${Math.ceil((lock-Date.now())/1000)} seconds.`,'error');return;}if(btn){btn.disabled=true;btn.textContent='Checking password…';}status('Checking the local staff password…','working');try{if(!await verify(u,password)){u.failedAttempts=Number(u.failedAttempts||0)+1;if(u.failedAttempts>=5){u.failedAttempts=0;u.lockedUntil=new Date(Date.now()+30000).toISOString();}saveDB();status(`Incorrect password for ${u.name}.`,'error');return;}u.failedAttempts=0;u.lockedUntil='';u.lastLoginAt=stamp();saveDB();session.cashier=u.name;session.tel=u.tel||'';session.role=['OWNER','ADMIN','MANAGER','READ_ONLY','AUDITOR'].includes(u.role)?'ADMIN':'CASHIER2';session.sig=u.signatureFile||'';session.isCashier2=u.role==='CASHIER';session.adminMode=false;session.commercialRole=u.role;session.sharedUserId=u.id;session.businessId=model().businessId;cart=[];priceAdjUnlocked=false;document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';updateUserBadge();applyRoleUI();updatePeriodUI();audit('STAFF_SIGNED_IN',{userId:u.id});nav(fallback());toast('Welcome, '+String(u.name).split(' ')[0]+'!');if(['OWNER','ADMIN'].includes(u.role))setTimeout(()=>{autoPublishDirectory();},800);}catch(e){console.error(e);status(e.message||String(e),'error');}finally{if(btn){btn.disabled=false;btn.textContent='Sign in to this shared device';}}}
 async function logout(){if(session.sharedUserId)audit('STAFF_SIGNED_OUT',{userId:session.sharedUserId});session={cashier:null,tel:null,role:null,adminMode:false,sig:null,isCashier2:false};cart=[];priceAdjUnlocked=false;document.getElementById('appShell').style.display='none';document.getElementById('loginScreen').style.display='flex';const p=document.getElementById('sharedLoginPassword');if(p)p.value='';refreshUsers();}
 function badge(){const n=document.getElementById('uiUserName'),b=document.getElementById('uiUserRole');if(n)n.textContent=session.cashier||'—';if(b){b.textContent=role().replace('_',' ');b.className=role()==='CASHIER'?'badge cashier':'badge admin';}}
 function roleUI(){document.querySelectorAll('#mainNav button[data-view]').forEach(b=>b.style.display=canView(b.dataset.view)?'':'none');const sw=document.getElementById('navAdminMode');if(sw){sw.style.display='';sw.textContent='⇄ Switch Staff';sw.style.background='rgba(20,184,166,.18)';sw.style.color='#99f6e4';}document.querySelectorAll('[data-admin-only]').forEach(e=>{if(e.id==='navAdminMode')return;const v=e.dataset&&e.dataset.view;e.style.display=v?(canView(v)?'':'none'):'';});badge();}
@@ -47,15 +163,15 @@ async function reauth(title){const u=current();if(!u)return false;return new Pro
 async function sensitive(title){if(!['OWNER','ADMIN','MANAGER'].includes(role())){toast('Your role cannot perform this action.','err');return false;}return reauth(title);}
 function wrap(name,action){const original=window[name];if(typeof original!=='function'||original.__sharedDeviceWrapped)return;const fn=async function(){if(!can(action)){toast('Your staff role cannot perform this action.','err');return false;}if(REAUTH.has(action)&&!await reauth('Confirm '+action.replace(/_/g,' ').toLowerCase()))return false;return original.apply(this,arguments);};fn.__sharedDeviceWrapped=true;window[name]=fn;}
 function guards(){if(wrapped)return;Object.keys(WRAP).forEach(n=>wrap(n,WRAP[n]));wrapped=true;}
-async function upsert(values,id){const m=model(),name=String(values.name||'').trim(),tel=String(values.tel||'').trim(),r=String(values.role||'CASHIER').toUpperCase(),password=String(values.password||'');if(!name)throw new Error('Staff name is required.');if(!ROLES[r])throw new Error('Invalid role.');let u=id?m.users.find(x=>x.id===id):null;if(!u){u={id:uid(),createdAt:stamp()};m.users.push(u);}if(u.role==='OWNER'&&r!=='OWNER')throw new Error('The Owner role cannot be removed here.');u.name=name;u.tel=tel;u.role=r;u.active=values.active!==false;u.updatedAt=stamp();if(password){if(password.length<6)throw new Error('Password or secure PIN must contain at least 6 characters.');const rec=await makePassword(password);u.passwordAlgorithm=rec.algorithm;u.passwordIterations=rec.iterations;u.passwordSalt=rec.salt;u.passwordHash=rec.hash;u.passwordChangedAt=stamp();}else if(!u.passwordHash)throw new Error('A password is required for a new staff account.');m.enabled=true;m.updatedAt=stamp();if(!m.createdAt)m.createdAt=stamp();if(DB.security&&Array.isArray(DB.security.cashiers))DB.security.cashiers.forEach(c=>{if(c&&Object.prototype.hasOwnProperty.call(c,'password'))delete c.password;});if(DB.security){DB.security.adminPIN='';DB.security.pricePIN='';DB.security.sharedDevicePasswordsActive=true;}saveDB();return u;}
+async function upsert(values,id){const m=model(),name=String(values.name||'').trim(),tel=String(values.tel||'').trim(),r=String(values.role||'CASHIER').toUpperCase(),password=String(values.password||'');if(!name)throw new Error('Staff name is required.');if(!ROLES[r])throw new Error('Invalid role.');let u=id?m.users.find(x=>x.id===id):null;if(!u){u={id:uid(),createdAt:stamp()};m.users.push(u);}if(u.role==='OWNER'&&r!=='OWNER')throw new Error('The Owner role cannot be removed here.');u.name=name;u.tel=tel;u.role=r;u.active=values.active!==false;u.updatedAt=stamp();if(password){if(password.length<6)throw new Error('Password or secure PIN must contain at least 6 characters.');const rec=await makePassword(password);u.passwordAlgorithm=rec.algorithm;u.passwordIterations=rec.iterations;u.passwordSalt=rec.salt;u.passwordHash=rec.hash;u.passwordChangedAt=stamp();}else if(!u.passwordHash)throw new Error('A password is required for a new staff account.');m.enabled=true;m.updatedAt=stamp();if(!m.createdAt)m.createdAt=stamp();if(DB.security&&Array.isArray(DB.security.cashiers))DB.security.cashiers.forEach(c=>{if(c&&Object.prototype.hasOwnProperty.call(c,'password'))delete c.password;});if(DB.security){DB.security.adminPIN='';DB.security.pricePIN='';DB.security.sharedDevicePasswordsActive=true;}writeDirectoryRoot();saveDB();return u;}
 function rows(){return model().users.slice().sort((a,b)=>(a.role==='OWNER'?0:1)-(b.role==='OWNER'?0:1)||String(a.name||'').localeCompare(String(b.name||''))).map(u=>`<tr><td>${esc(u.name)}${u.active===false?' <span class="badge bad">INACTIVE</span>':''}</td><td>${esc(u.tel||'')}</td><td><span class="badge ${u.role==='CASHIER'?'cashier':'admin'}">${esc(u.role.replace('_',' '))}</span></td><td>${u.passwordHash?'PBKDF2 protected':'Password required'}</td><td style="font-size:11px">${esc(u.lastLoginAt?new Date(u.lastLoginAt).toLocaleString():'Never')}</td><td><button class="btn sm ghost" onclick="sharedDeviceEditUser('${attr(u.id)}')">Manage</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">No shared-device users.</td></tr>';}
-function card(){if(!can('MANAGE_SETTINGS'))return'';return `<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Shared-Device Staff Access</h3><span class="badge ok">ACTIVE</span></div><p class="muted" style="font-size:12px;line-height:1.55">Several staff members can use this same registered device. Staff switching does not sign out Cloud Sync M4. Passwords are stored only as salted PBKDF2 hashes.</p><div class="table-wrap"><table><thead><tr><th>Name</th><th>Telephone</th><th>Role</th><th>Password</th><th>Last login</th><th>Action</th></tr></thead><tbody>${rows()}</tbody></table></div><hr class="hr"><h3>Add staff member</h3><div class="grid g2"><div class="field"><label>Full name</label><input id="sharedNewName"></div><div class="field"><label>Telephone</label><input id="sharedNewTel"></div><div class="field"><label>Role</label><select id="sharedNewRole"><option value="ADMIN">ADMIN</option><option value="MANAGER">MANAGER</option><option value="CASHIER" selected>CASHIER</option><option value="READ_ONLY">READ ONLY</option><option value="AUDITOR">AUDITOR</option></select></div><div class="field"><label>Password / secure PIN</label><input id="sharedNewPassword" type="password" autocomplete="new-password"></div></div><button class="btn" onclick="sharedDeviceAddUser()">Add staff member</button><button class="btn ghost" style="margin-left:8px" onclick="sharedDeviceOwnerRecovery()">Owner recovery</button><p class="muted" style="font-size:11px;margin-top:10px">The experimental one-user-per-browser login is disabled. Its Supabase records remain for future migration.</p></div>`;}
+function card(){if(!can('MANAGE_SETTINGS'))return'';return `<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Shared-Device Staff Access</h3><span class="badge ok">ACTIVE</span></div><p class="muted" style="font-size:12px;line-height:1.55">Several staff members can use this same registered device. Staff switching does not sign out Cloud Sync M4. Passwords are stored only as salted PBKDF2 hashes.</p><div class="table-wrap"><table><thead><tr><th>Name</th><th>Telephone</th><th>Role</th><th>Password</th><th>Last login</th><th>Action</th></tr></thead><tbody>${rows()}</tbody></table></div><hr class="hr"><h3>Add staff member</h3><div class="grid g2"><div class="field"><label>Full name</label><input id="sharedNewName"></div><div class="field"><label>Telephone</label><input id="sharedNewTel"></div><div class="field"><label>Role</label><select id="sharedNewRole"><option value="ADMIN">ADMIN</option><option value="MANAGER">MANAGER</option><option value="CASHIER" selected>CASHIER</option><option value="READ_ONLY">READ ONLY</option><option value="AUDITOR">AUDITOR</option></select></div><div class="field"><label>Password / secure PIN</label><input id="sharedNewPassword" type="password" autocomplete="new-password"></div></div><button class="btn" onclick="sharedDeviceAddUser()">Add staff member</button><button class="btn ghost" style="margin-left:8px" onclick="sharedDevicePublishAccess()">Publish staff access to devices</button><button class="btn ghost" style="margin-left:8px" onclick="sharedDeviceOwnerRecovery()">Owner recovery</button><p class="muted" style="font-size:11px;margin-top:10px">The experimental one-user-per-browser login is disabled. Its Supabase records remain for future migration.</p></div>`;}
 function installCard(){const original=window.viewSettings;if(typeof original!=='function'||original.__sharedDeviceWrapped)return;const fn=function(){return original.apply(this,arguments)+card();};fn.__sharedDeviceWrapped=true;window.viewSettings=fn;}
 async function addUser(){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can add staff.');if(!await reauth('Confirm new staff account'))return;const name=String((document.getElementById('sharedNewName')||{}).value||''),r=String((document.getElementById('sharedNewRole')||{}).value||'CASHIER');await upsert({name,tel:String((document.getElementById('sharedNewTel')||{}).value||''),role:r,password:String((document.getElementById('sharedNewPassword')||{}).value||''),active:true});audit('STAFF_ACCOUNT_CREATED',{name,role:r});render();refreshUsers();toast('Shared-device staff account created.');}catch(e){toast(e.message||String(e),'err');}}
 function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;const rs=u.role==='OWNER'?['OWNER']:['ADMIN','MANAGER','CASHIER','READ_ONLY','AUDITOR'];sharedModal(`<h3>Manage shared-device staff</h3><div class="field"><label>Full name</label><input id="sharedEditName" value="${attr(u.name)}"></div><div class="field"><label>Telephone</label><input id="sharedEditTel" value="${attr(u.tel||'')}"></div><div class="field"><label>Role</label><select id="sharedEditRole">${rs.map(x=>`<option value="${x}" ${x===u.role?'selected':''}>${x.replace('_',' ')}</option>`).join('')}</select></div><div class="field"><label>Status</label><select id="sharedEditActive"><option value="1" ${u.active!==false?'selected':''}>ACTIVE</option><option value="0" ${u.active===false?'selected':''}>INACTIVE</option></select></div><div class="field"><label>New password / secure PIN</label><input id="sharedEditPassword" type="password" placeholder="Leave blank to keep current password" autocomplete="new-password"></div><div class="row"><button class="btn" onclick="sharedDeviceSaveUser('${attr(u.id)}')">Save</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>`);}
 async function saveUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can manage staff.');if(!await reauth('Confirm staff-account change'))return;const u=model().users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(role()==='ADMIN'&&u.role==='OWNER')throw new Error('An Admin cannot modify the Owner account.');await upsert({name:String((document.getElementById('sharedEditName')||{}).value||''),tel:String((document.getElementById('sharedEditTel')||{}).value||''),role:String((document.getElementById('sharedEditRole')||{}).value||u.role),password:String((document.getElementById('sharedEditPassword')||{}).value||''),active:String((document.getElementById('sharedEditActive')||{}).value||'1')==='1'},id);closeModal();audit('STAFF_ACCOUNT_UPDATED',{userId:id});render();refreshUsers();toast('Staff account updated.');}catch(e){toast(e.message||String(e),'err');}}
 function cloud(){const s=ZEZMS.cloudSync;return s&&typeof s.getState==='function'?s.getState():{};}
-function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.6.8'};}
+function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.6.9'};}
 function recovery(){const s=cloud();if(!s.supabaseUrl||!s.publishableKey||!window.supabase)throw new Error('Supabase configuration is unavailable on this device.');if(!recoveryClient)recoveryClient=window.supabase.createClient(String(s.supabaseUrl).replace(/\/$/,''),String(s.publishableKey),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:RECOVERY_KEY}});return recoveryClient;}
 
 function sharedModal(html){
@@ -103,15 +219,23 @@ async function verifyMembership(){const c=recovery(),bid=businessId();if(!bid)th
 function owner(){return model().users.find(u=>u.role==='OWNER')||null;}
 function legacy(){const a=[];if(DB.security&&Array.isArray(DB.security.cashiers))DB.security.cashiers.forEach(c=>{const n=String(c&&c.name||'').trim();if(n&&!a.includes(n))a.push(n);});return a;}
 function openSetup(ctx){const o=owner(),name=(o&&o.name)||ctx.display_name||'Business Owner',tel=(o&&o.tel)||ctx.telephone||'';sharedModal(`<h3>Restore shared-device staff access</h3><p class="muted">Create the local OWNER password used on this counter device. The cloud connection remains separate.</p><div class="field"><label>Owner display name</label><input id="sharedSetupOwnerName" value="${attr(name)}"></div><div class="field"><label>Telephone</label><input id="sharedSetupOwnerTel" value="${attr(tel)}"></div><div class="field"><label>New local password / secure PIN</label><input id="sharedSetupOwnerPassword" type="password" autocomplete="new-password"></div><div class="field"><label>Confirm password</label><input id="sharedSetupOwnerConfirm" type="password" autocomplete="new-password"></div>${legacy().length?`<p class="muted" style="font-size:11px">Known former staff names will be preserved as inactive placeholders: ${esc(legacy().join(', '))}.</p>`:''}<div class="row"><button class="btn" onclick="sharedDeviceCompleteOwnerSetup()">Restore shared-device access</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>`);}
-async function completeSetup(){try{const name=String((document.getElementById('sharedSetupOwnerName')||{}).value||'').trim(),tel=String((document.getElementById('sharedSetupOwnerTel')||{}).value||'').trim(),password=String((document.getElementById('sharedSetupOwnerPassword')||{}).value||''),confirm=String((document.getElementById('sharedSetupOwnerConfirm')||{}).value||'');if(password!==confirm)throw new Error('The two passwords do not match.');const m=model(),o=await upsert({name,tel,role:'OWNER',password,active:true},owner()&&owner().id);legacy().forEach(n=>{if(n===o.name||m.users.some(u=>String(u.name||'').toLowerCase()===n.toLowerCase()))return;m.users.push({id:uid(),name:n,tel:'',role:'CASHIER',active:false,createdAt:stamp(),updatedAt:stamp(),needsPasswordSetup:true});});m.enabled=true;m.businessId=businessId();m.recoveredAt=stamp();m.updatedAt=stamp();saveDB();try{await recoveryClient.auth.signOut({scope:'local'});}catch(_){}recoverySession=null;closeModal();refreshUsers();status(`Shared-device access restored. Select ${o.name} and enter the new local password.`,'ok');toast('Shared-device staff access restored.');}catch(e){toast(e.message||String(e),'err');}}
+async function completeSetup(){try{const name=String((document.getElementById('sharedSetupOwnerName')||{}).value||'').trim(),tel=String((document.getElementById('sharedSetupOwnerTel')||{}).value||'').trim(),password=String((document.getElementById('sharedSetupOwnerPassword')||{}).value||''),confirm=String((document.getElementById('sharedSetupOwnerConfirm')||{}).value||'');if(password!==confirm)throw new Error('The two passwords do not match.');const m=model(),o=await upsert({name,tel,role:'OWNER',password,active:true},owner()&&owner().id);legacy().forEach(n=>{if(n===o.name||m.users.some(u=>String(u.name||'').toLowerCase()===n.toLowerCase()))return;m.users.push({id:uid(),name:n,tel:'',role:'CASHIER',active:false,createdAt:stamp(),updatedAt:stamp(),needsPasswordSetup:true});});m.enabled=true;m.businessId=businessId();m.recoveredAt=stamp();m.updatedAt=stamp();writeDirectoryRoot();saveDB();try{await recoveryClient.auth.signOut({scope:'local'});}catch(_){}recoverySession=null;closeModal();refreshUsers();status(`Shared-device access restored. Select ${o.name} and enter the new local password.`,'ok');toast('Shared-device staff access restored.');}catch(e){toast(e.message||String(e),'err');}}
 
 function init(){
   try{
     model();
+    importDirectory();
     installCard();
     guards();
     window.toggleAdminModeBtn=logout;
     refreshUsers();
+    window.addEventListener('zezms-shared-device-directory-updated',function(){
+      importDirectory();
+      refreshUsers();
+    });
+    window.addEventListener('zezms-cloud-ready',function(){
+      if(!users().length)refreshUsersFromCloud(false);
+    });
     document.documentElement.setAttribute('data-zezms-shared-device-auth','ready');
   }catch(error){
     console.error('Shared-device controller boot failed',error);
@@ -123,13 +247,15 @@ function init(){
 
 window.__ZEZMS_SHARED_DEVICE_CONTROLLER__=BUILD;
 
-window.sharedDeviceRefreshUsers=function(){
-  try{
-    refreshUsers();
-  }catch(error){
-    console.error('Shared-device refresh failed',error);
-    status('Staff-list refresh failed: '+(error&&error.message||error),'error');
-  }
+window.sharedDeviceRefreshUsers=function(showNotice){
+  return refreshUsersFromCloud(showNotice!==false);
+};
+
+window.sharedDevicePublishAccess=function(){
+  publishDirectory(true).catch(function(error){
+    console.error('Staff-access publication failed',error);
+    status('Could not publish staff access: '+(error&&error.message||error),'error');
+  });
 };
 
 window.sharedDeviceOwnerRecovery=function(){
@@ -151,6 +277,6 @@ window.sharedDeviceAddUser=function(){ addUser(); };
 window.sharedDeviceEditUser=editUser;
 window.sharedDeviceSaveUser=function(id){ saveUser(id); };
 
-ZEZMS.staffAuth={version:'M5A-2-SHARED-DEVICE',build:BUILD,isActive:()=>true,can,canView,fallbackView:fallback,isElevatedForViewing:elevated,signInFromLogin:login,signOut:logout,confirmSensitive:sensitive,applyRoleUI:roleUI,updateUserBadge:badge,afterRender,getContext:()=>({authMode:'SHARED_DEVICE',businessId:model().businessId,role:role(),user:current()}),getState:()=>({enabled:!!model().enabled,businessId:model().businessId,users:model().users.map(u=>({id:u.id,name:u.name,tel:u.tel,role:u.role,active:u.active,lastLoginAt:u.lastLoginAt}))})};
+ZEZMS.staffAuth={version:'M5A-2-SHARED-DEVICE',build:BUILD,isActive:()=>true,can,canView,fallbackView:fallback,isElevatedForViewing:elevated,signInFromLogin:login,signOut:logout,confirmSensitive:sensitive,applyRoleUI:roleUI,updateUserBadge:badge,afterRender,getContext:()=>({authMode:'SHARED_DEVICE',businessId:model().businessId,role:role(),user:current()}),getState:()=>({enabled:!!model().enabled,businessId:model().businessId,directoryPublished:!!DB.sharedDeviceDirectory,users:model().users.map(u=>({id:u.id,name:u.name,tel:u.tel,role:u.role,active:u.active,lastLoginAt:u.lastLoginAt}))})};
 setTimeout(init,250);
 })();
