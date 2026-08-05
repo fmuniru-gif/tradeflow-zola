@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS M5A-2 with single-flight authenticator login recovery, device-local sign-out, separate M4 cloud MFA verification, individual staff roles, transaction sync and backups.",
-  "start_url": "./index.html?build=20260805-mfa-login-recovery-r19",
+  "description": "ZEZMS M5A-2 with visible password and authenticator stages, pinned Supabase JS, device-local sign-out, staff roles, Cloud Sync M4 and Google Drive backup.",
+  "start_url": "./index.html?build=20260805-staged-mfa-login-r20",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

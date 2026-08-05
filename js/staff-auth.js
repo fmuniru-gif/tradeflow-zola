@@ -1,10 +1,10 @@
-/* ZEZMS v3.6.1 — MFA Login Recovery */
+/* ZEZMS v3.6.2 — Staged MFA Login Recovery */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-mfa-login-recovery-r19';
+  const BUILD = '20260805-staged-mfa-login-r20';
   const STATE_KEY = 'zezms_m5a2_staff_auth_state';
   const PENDING_INVITE_KEY = 'zezms_m5a2_pending_invite';
   const AUTH_STORAGE_KEY = 'zezms-m5a2-staff-auth';
@@ -117,6 +117,8 @@
   let mfaPromptPromise = null;
   let authEventTimer = null;
   let explicitPasswordSignIn = false;
+  let pendingInlineFactorId = '';
+  let pendingInlineEmail = '';
   let state = loadState();
 
   function defaults() {
@@ -179,7 +181,7 @@
       p_device_id: String(cs.deviceId || ''),
       p_device_name: String(cs.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.1'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.2'
     };
   }
 
@@ -243,14 +245,12 @@
         return;
       }
 
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')
-          && authSession && localAuthActive() && !explicitPasswordSignIn) {
-        scheduleSignedInContinuation();
-      }
-
+      // Login continuation is intentionally controlled by the visible staged
+      // buttons. Auth events only keep the stored session current.
       if (event === 'SIGNED_OUT') {
         context = null;
         showLoginMode();
+        showPasswordStage('The secure session is signed out. Enter your password to continue.');
       }
     });
     authSubscription = listener && listener.data ? listener.data.subscription : null;
@@ -324,6 +324,7 @@
     const message = friendlyError(error);
     console.error('M5A-2:', error);
     saveState({ lastError: message });
+    setLoginStatus(message, 'error');
     if (typeof toast === 'function') toast(message, 'err');
   }
 
@@ -333,6 +334,64 @@
     const active = localAuthActive();
     if (secure) secure.style.display = active ? '' : 'none';
     if (legacy) legacy.style.display = active ? 'none' : '';
+  }
+
+  function setLoginStatus(message, type) {
+    const box = document.getElementById('m5a2LoginStatus');
+    if (!box) return;
+    const styles = {
+      ok: ['#052e2b', '#2dd4bf', '#ccfbf1'],
+      error: ['#3f1017', '#fb7185', '#ffe4e6'],
+      working: ['#172554', '#60a5fa', '#dbeafe'],
+      info: ['#1e293b', '#475569', '#cbd5e1']
+    };
+    const chosen = styles[type] || styles.info;
+    box.style.background = chosen[0];
+    box.style.borderColor = chosen[1];
+    box.style.color = chosen[2];
+    box.textContent = String(message || '');
+  }
+
+  function showPasswordStage(message) {
+    const passwordStage = document.getElementById('m5a2PasswordStage');
+    const mfaStage = document.getElementById('m5a2AuthenticatorStage');
+    if (passwordStage) passwordStage.style.display = '';
+    if (mfaStage) mfaStage.style.display = 'none';
+    pendingInlineFactorId = '';
+    if (message) setLoginStatus(message, 'info');
+  }
+
+  function showAuthenticatorStage(factorId, email) {
+    pendingInlineFactorId = String(factorId || '');
+    pendingInlineEmail = String(email || '');
+    const passwordStage = document.getElementById('m5a2PasswordStage');
+    const mfaStage = document.getElementById('m5a2AuthenticatorStage');
+    if (passwordStage) passwordStage.style.display = 'none';
+    if (mfaStage) mfaStage.style.display = '';
+    const code = document.getElementById('m5a2InlineMfaCode');
+    if (code) {
+      code.value = '';
+      setTimeout(function () { code.focus(); }, 50);
+    }
+    setLoginStatus(
+      'Password accepted for ' + (pendingInlineEmail || 'this account')
+      + '. Enter the current code from the authenticator app.',
+      'working'
+    );
+  }
+
+  function setPasswordButtonBusy(busy) {
+    const button = document.getElementById('m5a2PasswordSignInBtn');
+    if (!button) return;
+    button.disabled = !!busy;
+    button.textContent = busy ? 'Checking password…' : 'Continue with password';
+  }
+
+  function setMfaButtonBusy(busy) {
+    const button = document.getElementById('m5a2InlineMfaBtn');
+    if (!button) return;
+    button.disabled = !!busy;
+    button.textContent = busy ? 'Verifying authenticator…' : 'Verify authenticator and open app';
   }
 
   function purgeLegacySecrets() {
@@ -478,6 +537,60 @@
     return factors;
   }
 
+  async function prepareInlineMfaOrContinue() {
+    const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) throw assurance.error;
+    const level = assurance.data || {};
+
+    if (level.currentLevel === 'aal2' || level.nextLevel !== 'aal2') {
+      setLoginStatus('Password accepted. Verifying business membership and device…', 'working');
+      return continueAfterVerifiedMfa();
+    }
+
+    const existing = await listMfaFactors();
+    if (!existing.length) {
+      throw new Error(
+        'The account reports that MFA is required, but no verified authenticator factor was returned.'
+      );
+    }
+
+    showAuthenticatorStage(
+      existing[0].id,
+      authSession && authSession.user ? authSession.user.email || pendingInlineEmail : pendingInlineEmail
+    );
+    return false;
+  }
+
+  async function continueAfterVerifiedMfa() {
+    const pendingRaw = localStorage.getItem(PENDING_INVITE_KEY);
+    if (pendingRaw) {
+      const pending = JSON.parse(pendingRaw);
+      if (pending && pending.code) {
+        const claim = await client.rpc(
+          'zezms_m5a2_claim_invitation',
+          Object.assign({ p_invite_code: pending.code }, deviceArgs())
+        );
+        if (claim.error) throw claim.error;
+        localStorage.removeItem(PENDING_INVITE_KEY);
+        context = normalizeRow(claim.data);
+        saveState({
+          active: true,
+          businessId: context.business_id,
+          contextCache: context
+        });
+      }
+    }
+
+    const ctx = await contextForSession();
+    const mfaOk = await ensureMfa(ctx, false);
+    if (!mfaOk) return false;
+    const refreshed = await contextForSession();
+
+    setLoginStatus('Identity, role and device verified. Opening ZEZMS…', 'ok');
+    await establishAppSession(refreshed);
+    return true;
+  }
+
   async function challengeFactor(factorId, title) {
     if (mfaPromptPromise) return mfaPromptPromise;
 
@@ -603,70 +716,18 @@
     if (typeof toast === 'function') toast('Welcome, ' + String(session.cashier).split(' ')[0] + '!');
   }
 
-  function scheduleSignedInContinuation() {
-    if (authEventTimer) clearTimeout(authEventTimer);
-    authEventTimer = setTimeout(function () {
-      authEventTimer = null;
-      continueSignedInFlow().catch(handleError);
-    }, 180);
-  }
-
-  async function runSignedInFlow() {
-    if (!localAuthActive() || !authSession) return false;
-
-    // Complete any already-enrolled factor before reading tenant context.
-    const firstFactorOk = await ensureExistingFactorMfa();
-    if (!firstFactorOk) return false;
-
-    const pendingRaw = localStorage.getItem(PENDING_INVITE_KEY);
-    if (pendingRaw) {
-      const pending = JSON.parse(pendingRaw);
-      if (pending && pending.code) {
-        const result = await client.rpc(
-          'zezms_m5a2_claim_invitation',
-          Object.assign({ p_invite_code: pending.code }, deviceArgs())
-        );
-        if (result.error) throw result.error;
-        localStorage.removeItem(PENDING_INVITE_KEY);
-        context = normalizeRow(result.data);
-        saveState({
-          active: true,
-          businessId: context.business_id,
-          contextCache: context
-        });
-      }
+  async function signInFromLogin() {
+    if (running) {
+      setLoginStatus('A login request is already in progress. Please wait.', 'working');
+      return;
     }
 
-    const ctx = context || await contextForSession();
-    const mfaOk = await ensureMfa(ctx, false);
-    if (!mfaOk) return false;
-
-    const refreshed = await contextForSession();
-    await establishAppSession(refreshed);
-    return true;
-  }
-
-  function continueSignedInFlow() {
-    if (signInFlowPromise) return signInFlowPromise;
-
-    signInFlowPromise = runSignedInFlow()
-      .catch(function (error) {
-        handleError(error);
-        return false;
-      })
-      .finally(function () {
-        signInFlowPromise = null;
-      });
-
-    return signInFlowPromise;
-  }
-
-  async function signInFromLogin() {
-    if (running) return;
     running = true;
     explicitPasswordSignIn = true;
+    setPasswordButtonBusy(true);
 
     try {
+      setLoginStatus('Connecting to the secure authentication service…', 'working');
       await waitForClient(10000);
       if (!client) throw new Error('Supabase configuration is unavailable on this device.');
 
@@ -674,24 +735,97 @@
       const password = String((document.getElementById('m5a2LoginPassword') || {}).value || '');
       if (!email || !password) throw new Error('Enter your staff email and password.');
 
+      pendingInlineEmail = email;
+      setLoginStatus('Checking the email and password…', 'working');
+
       const result = await client.auth.signInWithPassword({
         email: email,
         password: password
       });
       if (result.error) throw result.error;
+      if (!result.data || !result.data.session) {
+        throw new Error('Password authentication did not return a usable session.');
+      }
 
       authSession = result.data.session;
-      await continueSignedInFlow();
+      saveState({ signedInEmail: email, lastError: '' });
+      setLoginStatus('Password accepted. Checking authenticator requirements…', 'ok');
+      await prepareInlineMfaOrContinue();
     } catch (error) {
+      const message = friendlyError(error);
+      setLoginStatus(message, 'error');
       handleError(error);
+      showPasswordStage();
     } finally {
       explicitPasswordSignIn = false;
       running = false;
+      setPasswordButtonBusy(false);
+    }
+  }
+
+  async function verifyInlineMfa() {
+    if (running) {
+      setLoginStatus('A verification request is already in progress. Please wait.', 'working');
+      return;
+    }
+
+    const code = String((document.getElementById('m5a2InlineMfaCode') || {}).value || '').trim();
+    if (!pendingInlineFactorId) {
+      setLoginStatus('The authenticator challenge is missing. Use password again.', 'error');
+      showPasswordStage();
+      return;
+    }
+    if (!/^\d{6,8}$/.test(code)) {
+      setLoginStatus('Enter the current six-digit code from the authenticator app.', 'error');
+      return;
+    }
+
+    running = true;
+    setMfaButtonBusy(true);
+    setLoginStatus('Verifying the authenticator code…', 'working');
+
+    try {
+      const verified = await client.auth.mfa.challengeAndVerify({
+        factorId: pendingInlineFactorId,
+        code: code
+      });
+      if (verified.error) throw verified.error;
+
+      if (verified.data && verified.data.session) {
+        authSession = verified.data.session;
+      } else {
+        const current = await client.auth.getSession();
+        if (current.error) throw current.error;
+        authSession = current.data && current.data.session ? current.data.session : authSession;
+      }
+
+      const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assurance.error) throw assurance.error;
+      if (!assurance.data || assurance.data.currentLevel !== 'aal2') {
+        throw new Error('Authenticator verification completed, but the session was not promoted to aal2.');
+      }
+
+      pendingInlineFactorId = '';
+      setLoginStatus('Authenticator accepted. Verifying business membership and device…', 'ok');
+      await continueAfterVerifiedMfa();
+    } catch (error) {
+      const message = friendlyError(error);
+      setLoginStatus(message, 'error');
+      handleError(error);
+      const field = document.getElementById('m5a2InlineMfaCode');
+      if (field) {
+        field.value = '';
+        field.focus();
+      }
+    } finally {
+      running = false;
+      setMfaButtonBusy(false);
     }
   }
 
   async function resumeSignIn() {
     try {
+      setLoginStatus('Checking the existing secure session…', 'working');
       await waitForClient(10000);
       const current = await client.auth.getSession();
       if (current.error) throw current.error;
@@ -701,10 +835,20 @@
         throw new Error('No pending secure session exists. Enter your email and password first.');
       }
 
-      await continueSignedInFlow();
+      pendingInlineEmail = authSession.user && authSession.user.email
+        ? authSession.user.email
+        : pendingInlineEmail;
+      await prepareInlineMfaOrContinue();
     } catch (error) {
+      const message = friendlyError(error);
+      setLoginStatus(message, 'error');
       handleError(error);
+      showPasswordStage();
     }
+  }
+
+  function returnToPassword() {
+    showPasswordStage('Enter the password again to create a fresh authenticator challenge.');
   }
 
   function clearStaffAuthStorage() {
@@ -737,6 +881,7 @@
     mfaPromptPromise = null;
     saveState({ signedInEmail: '', lastError: '' });
     showLoginMode();
+    showPasswordStage('Secure login session reset on this device. Enter your email and password.');
 
     if (typeof toast === 'function') {
       toast('Secure login session reset on this device.');
@@ -765,6 +910,7 @@
     const pass = document.getElementById('m5a2LoginPassword');
     if (pass) pass.value = '';
     showLoginMode();
+    showPasswordStage('Signed out on this device. Enter your email and password to continue.');
   }
 
   async function forgotPassword() {
@@ -1412,7 +1558,12 @@
       if (!client) return;
 
       if (authSession && localAuthActive()) {
-        await continueSignedInFlow();
+        setLoginStatus(
+          'A secure session exists on this device. Press Continue with password or Continue authenticator verification.',
+          'info'
+        );
+      } else {
+        showPasswordStage('Ready for secure staff sign-in.');
       }
     } catch (error) {
       saveState({ lastError: friendlyError(error) });
@@ -1421,6 +1572,8 @@
   }
 
   window.m5a2SecureSignIn = function () { signInFromLogin(); };
+  window.m5a2VerifyInlineMfa = function () { verifyInlineMfa(); };
+  window.m5a2ReturnToPassword = function () { returnToPassword(); };
   window.m5a2ResumeSignIn = function () { resumeSignIn(); };
   window.m5a2ResetSecureSession = function () { resetSecureSession(); };
   window.m5a2ForgotPassword = function () { forgotPassword(); };
@@ -1448,6 +1601,8 @@
     fallbackView: fallbackView,
     isElevatedForViewing: isElevatedForViewing,
     signInFromLogin: signInFromLogin,
+    verifyInlineMfa: verifyInlineMfa,
+    returnToPassword: returnToPassword,
     resumeSignIn: resumeSignIn,
     resetSecureSession: resetSecureSession,
     signOut: signOut,
