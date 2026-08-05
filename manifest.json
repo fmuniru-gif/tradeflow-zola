@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS M5A-2 with explicit authenticator-factor selection, staged MFA login, unique factor labels, device-local sign-out, staff roles, Cloud Sync M4 and backups.",
-  "start_url": "./index.html?build=20260805-mfa-factor-selector-r22",
+  "description": "ZEZMS commercial pilot with secure shared-device staff passwords, fast staff switching, persistent Cloud Sync M4, tenant/device foundation, MFA-protected owner recovery and backups.",
+  "start_url": "./index.html?build=20260805-shared-device-recovery-r24",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

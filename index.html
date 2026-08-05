@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260805-mfa-factor-selector-r22" /><meta name="zezms-mobile-engine" content="portrait-readable-v22" />
-<title>Zola Electronics Zone · TradeFlow v3.6.4 · MFA Factor Selector</title>
+<meta name="zezms-build" content="20260805-shared-device-recovery-r24" /><meta name="zezms-mobile-engine" content="portrait-readable-v24" />
+<title>Zola Electronics Zone · TradeFlow v3.6.6 · Shared-Device Recovery</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260805-mfa-factor-selector-r22';
+  const BUILD = '20260805-shared-device-recovery-r24';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1104,62 +1104,26 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.6.4 · MFA Factor Selector · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
-    <div id="m5a2SecureLoginPanel" style="display:none">
-      <div id="m5a2PasswordStage">
-        <div class="field">
-          <label>Staff email</label>
-          <input id="m5a2LoginEmail" type="email" placeholder="name@example.com" autocomplete="username" />
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input id="m5a2LoginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" />
-        </div>
-        <button id="m5a2PasswordSignInBtn" class="btn" style="width:100%;margin-top:6px" onclick="m5a2SecureSignIn()">Continue with password</button>
+    <div class="sub">TradeFlow v3.6.6 · Shared-Device Recovery · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div id="sharedDeviceLoginPanel">
+      <div class="field">
+        <label>Staff member</label>
+        <select id="sharedLoginUser"></select>
       </div>
-
-      <div id="m5a2AuthenticatorStage" style="display:none">
-        <div class="field">
-          <label>Authenticator entry</label>
-          <select id="m5a2InlineFactorSelect" onchange="m5a2SelectInlineFactor()"></select>
-        </div>
-        <div id="m5a2SelectedFactorHint" class="muted" style="font-size:11px;line-height:1.45;margin:-2px 0 10px">
-          Select the exact named entry whose code you will use.
-        </div>
-        <div class="field">
-          <label>Authenticator code</label>
-          <input id="m5a2InlineMfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="6-digit code" />
-        </div>
-        <button id="m5a2InlineMfaBtn" class="btn" style="width:100%;margin-top:6px" onclick="m5a2VerifyInlineMfa()">Verify selected authenticator and open app</button>
-        <button class="btn ghost" style="width:100%;margin-top:8px" onclick="m5a2RefreshInlineFactors()">Refresh authenticator list</button>
-        <button class="btn ghost" style="width:100%;margin-top:8px" onclick="m5a2ReturnToPassword()">Use password again</button>
+      <div class="field">
+        <label>Password / secure PIN</label>
+        <input id="sharedLoginPassword" type="password" placeholder="Enter your own password" autocomplete="current-password" />
       </div>
-
-      <div id="m5a2LoginStatus" style="margin-top:12px;padding:10px 12px;border:1px solid #334155;border-radius:10px;font-size:11px;line-height:1.45;color:#cbd5e1">
-        Ready for secure staff sign-in.
+      <button id="sharedLoginButton" class="btn" style="width:100%;margin-top:6px" onclick="doLogin()">Sign in to this shared device</button>
+      <div id="sharedLoginStatus" style="margin-top:12px;padding:10px 12px;border:1px solid #334155;border-radius:10px;font-size:11px;line-height:1.45;color:#cbd5e1">
+        Loading shared-device staff accounts…
       </div>
-
       <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button class="btn sm ghost" onclick="m5a2ForgotPassword()">Forgot password</button>
-        <button class="btn sm ghost" onclick="m5a2OpenInvitation()">Accept invitation</button>
-        <button class="btn sm ghost" onclick="m5a2ResetSecureSession()">Reset secure login session only</button>
+        <button class="btn sm ghost" onclick="sharedDeviceOwnerRecovery()">Owner recovery / first setup</button>
+        <button class="btn sm ghost" onclick="sharedDeviceRefreshUsers()">Refresh staff list</button>
       </div>
       <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">
-        Password verification is completed first; authenticator verification follows on this page.
-      </p>
-    </div>
-    <div id="m5a2LegacyLoginPanel">
-      <div class="field">
-        <label>Cashier</label>
-        <select id="loginCashier"><!-- filled by populateLoginCashiers() --></select>
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" />
-      </div>
-      <button class="btn" style="width:100%;margin-top:6px" onclick="doLogin()">Legacy sign in</button>
-      <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">
-        Temporary legacy access until M5A-2 is activated by the business owner.
+        Staff switch locally; Cloud Sync M4 stays connected on the device.
       </p>
     </div>
   </div>
@@ -1171,7 +1135,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.6.4 · MFA Factor Selector · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.6.6 · Shared-Device Recovery · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1216,38 +1180,38 @@ html.zezms-phone-layout .kpi-freeze-pane{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/app.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/logger.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/diagnostics.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/registry.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/storage.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/dbservice.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/bootpatch.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/events.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/db-events.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/system-module.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/health-module.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/utils-module.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/lifecycle-module.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/notifications-module.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/product-search-module.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/product-search-adapter.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/product-search-service.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/product-search-controller.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/product-search-events.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/product-search-metrics.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/product-search-facade.js?v=20260805-mfa-factor-selector-r22"></script>
+<script src="js/config.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/app.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/logger.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/diagnostics.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/registry.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/storage.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/dbservice.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/bootpatch.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/events.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/db-events.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/system-module.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/health-module.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/utils-module.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/lifecycle-module.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/notifications-module.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/product-search-module.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/product-search-adapter.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/product-search-service.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/product-search-controller.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/product-search-events.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/product-search-metrics.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/product-search-facade.js?v=20260805-shared-device-recovery-r24"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1"></script>
-<script src="js/cloud-sync.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/backup-manager.js?v=20260805-mfa-factor-selector-r22"></script>
+<script src="js/cloud-sync.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/backup-manager.js?v=20260805-shared-device-recovery-r24"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.6.4 — MFA Factor Selector — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.6.6 — Shared-Device Recovery — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.6.4';
+const APP_VERSION = '3.6.6';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 function normalizeVatPercent(value){
@@ -4427,7 +4391,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260805-mfa-factor-selector-r22').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260805-shared-device-recovery-r24').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4444,19 +4408,20 @@ tick(); setInterval(tick, 1000);
 registerSW();
 // Enter key on login
 document.addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && $('loginScreen').style.display!=='none'){
+  const modalOpen = $('modalBg') && $('modalBg').classList.contains('show');
+  if(e.key==='Enter' && !modalOpen && $('loginScreen').style.display!=='none'){
     doLogin();
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/auto-month-rollover.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/invoice-waybill.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/mobile-vertical-layout.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/kpi-freeze-pane.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/confirmed-july-snapshot.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/commercial-foundation.js?v=20260805-mfa-factor-selector-r22"></script>
-<script src="js/staff-auth.js?v=20260805-mfa-factor-selector-r22"></script>
+<script src="js/operations-update.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/auto-month-rollover.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/invoice-waybill.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/mobile-vertical-layout.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/kpi-freeze-pane.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/confirmed-july-snapshot.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/commercial-foundation.js?v=20260805-shared-device-recovery-r24"></script>
+<script src="js/shared-device-auth.js?v=20260805-shared-device-recovery-r24"></script>
 
 
 

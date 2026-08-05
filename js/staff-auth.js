@@ -1,10 +1,10 @@
-/* ZEZMS v3.6.4 — MFA Factor Selector */
+/* ZEZMS v3.6.5 — Invitation Runtime Fix */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-mfa-factor-selector-r22';
+  const BUILD = '20260805-shared-device-recovery-r24';
   const STATE_KEY = 'zezms_m5a2_staff_auth_state';
   const PENDING_INVITE_KEY = 'zezms_m5a2_pending_invite';
   const AUTH_STORAGE_KEY = 'zezms-m5a2-staff-auth';
@@ -183,7 +183,7 @@
       p_device_id: String(cs.deviceId || ''),
       p_device_name: String(cs.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.4'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.5'
     };
   }
 
@@ -301,8 +301,18 @@
     return String(r || '').replace('_', ' ');
   }
 
+  function databaseErrorText(error) {
+    if (!error) return 'Unknown error';
+    const parts = [];
+    if (error.code) parts.push('Code: ' + String(error.code));
+    if (error.message) parts.push(String(error.message));
+    if (error.details) parts.push('Details: ' + String(error.details));
+    if (error.hint) parts.push('Hint: ' + String(error.hint));
+    return parts.join(' · ') || String(error);
+  }
+
   function friendlyError(error) {
-    const message = String(error && (error.message || error.details || error.hint) || error || 'Unknown error');
+    const message = databaseErrorText(error);
     const map = [
       [/ZEZMS_INVITATION_INVALID_OR_EXPIRED/i, 'The invitation code is invalid, expired, already used, or belongs to another email address.'],
       [/ZEZMS_MEMBER_EMAIL_EXISTS/i, 'A staff member with that email already exists.'],
@@ -315,7 +325,8 @@
       [/mfa_factor_name_conflict|factor with a friendly name.*exist/i, 'An authenticator with that label already exists. This release generates a unique label automatically; press Add authenticator app again.'],
       [/invalid.*(totp|verification code)|challenge.*expired|code.*invalid/i, 'The authenticator code was not accepted. Wait for a fresh code and try again.'],
       [/session.*missing|refresh_token.*not found|invalid refresh token/i, 'The secure session is stale. Select Reset secure login session only, then sign in again.'],
-      [/PGRST202|could not find the function|does not exist/i, 'M5A-2 SQL has not been installed. Run SUPABASE_M5A2_AUTH_STAFF_SECURITY.sql once.']
+      [/ZEZMS_PGCRYPTO_NOT_INSTALLED|gen_random_bytes.*does not exist|digest.*does not exist|ZEZMS_INVITATION_HASH_FAILED/i, 'The invitation RPC is installed, but its cryptographic runtime could not be resolved. Run SUPABASE_M5A2_INVITATION_CRYPTO_RUNTIME_FIX.sql once.'],
+      [/PGRST202|could not find the function.*zezms_m5a2_create_invitation|schema cache.*zezms_m5a2_create_invitation/i, 'The invitation RPC is not visible to the Data API. Run SUPABASE_M5A2_INVITATION_CRYPTO_RUNTIME_FIX.sql once, wait 30 seconds, and retry.']
     ];
     for (const item of map) {
       if (item[0].test(message)) return item[1];
@@ -1640,6 +1651,19 @@
       );
     } catch (error) {
       handleError(error);
+      const raw = databaseErrorText(error);
+      openModal(
+        '<h3>Invitation could not be created</h3>'
+        + '<p class="muted">The exact database response is shown below.</p>'
+        + '<div style="white-space:pre-wrap;word-break:break-word;padding:12px;border:1px solid #475569;border-radius:10px;background:#0f172a;color:#fecaca;font-size:11px;line-height:1.5">'
+        + esc(raw)
+        + '</div>'
+        + '<p class="muted" style="font-size:11px;margin-top:10px">'
+        + 'When the message mentions pgcrypto, digest, gen_random_bytes or a missing invitation RPC, run '
+        + '<code>SUPABASE_M5A2_INVITATION_CRYPTO_RUNTIME_FIX.sql</code>.'
+        + '</p>'
+        + '<button class="btn ghost" onclick="closeModal()">Close</button>'
+      );
     }
   }
 

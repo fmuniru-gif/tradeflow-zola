@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260805-mfa-factor-selector-r22';
+  const BUILD = '20260805-shared-device-recovery-r24';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

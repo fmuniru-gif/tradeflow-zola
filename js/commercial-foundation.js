@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-mfa-factor-selector-r22';
+  const BUILD = '20260805-shared-device-recovery-r24';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();
