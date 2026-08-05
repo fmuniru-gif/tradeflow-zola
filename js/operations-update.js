@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260804-m5a2-auth-staff-security-r18';
+  const BUILD = '20260805-mfa-login-recovery-r19';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

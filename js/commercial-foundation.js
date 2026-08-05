@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260804-m5a2-auth-staff-security-r18';
+  const BUILD = '20260805-mfa-login-recovery-r19';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();

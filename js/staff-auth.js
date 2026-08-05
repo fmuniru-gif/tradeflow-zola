@@ -1,10 +1,10 @@
-/* ZEZMS v3.6.0 — M5A-2 Auth and Staff Security */
+/* ZEZMS v3.6.1 — MFA Login Recovery */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260804-m5a2-auth-staff-security-r18';
+  const BUILD = '20260805-mfa-login-recovery-r19';
   const STATE_KEY = 'zezms_m5a2_staff_auth_state';
   const PENDING_INVITE_KEY = 'zezms_m5a2_pending_invite';
   const AUTH_STORAGE_KEY = 'zezms-m5a2-staff-auth';
@@ -113,6 +113,10 @@
   let factors = [];
   let running = false;
   let wrapped = false;
+  let signInFlowPromise = null;
+  let mfaPromptPromise = null;
+  let authEventTimer = null;
+  let explicitPasswordSignIn = false;
   let state = loadState();
 
   function defaults() {
@@ -175,7 +179,7 @@
       p_device_id: String(cs.deviceId || ''),
       p_device_name: String(cs.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.0'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.1'
     };
   }
 
@@ -239,10 +243,9 @@
         return;
       }
 
-      if (event === 'SIGNED_IN' && authSession) {
-        setTimeout(function () {
-          handleSignedIn().catch(handleError);
-        }, 100);
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')
+          && authSession && localAuthActive() && !explicitPasswordSignIn) {
+        scheduleSignedInContinuation();
       }
 
       if (event === 'SIGNED_OUT') {
@@ -307,6 +310,8 @@
       [/ZEZMS_PERMISSION_DENIED|ROLE_DENIED/i, 'Your staff role does not permit this action.'],
       [/ZEZMS_LAST_OWNER_PROTECTED/i, 'The final active Owner cannot be suspended or revoked.'],
       [/MFA_REQUIRED/i, 'Authenticator verification is required for this action.'],
+      [/invalid.*(totp|verification code)|challenge.*expired|code.*invalid/i, 'The authenticator code was not accepted. Wait for a fresh code and try again.'],
+      [/session.*missing|refresh_token.*not found|invalid refresh token/i, 'The secure session is stale. Select Reset secure login session only, then sign in again.'],
       [/PGRST202|could not find the function|does not exist/i, 'M5A-2 SQL has not been installed. Run SUPABASE_M5A2_AUTH_STAFF_SECURITY.sql once.']
     ];
     for (const item of map) {
@@ -474,74 +479,102 @@
   }
 
   async function challengeFactor(factorId, title) {
-    return new Promise(async function (resolve, reject) {
-      try {
-        const challenge = await client.auth.mfa.challenge({ factorId: factorId });
-        if (challenge.error) throw challenge.error;
-        const challengeId = challenge.data.id;
+    if (mfaPromptPromise) return mfaPromptPromise;
 
-        openModal(
-          '<h3>' + esc(title || 'Authenticator verification') + '</h3>'
-          + '<p class="muted">Enter the current six-digit code from your authenticator app.</p>'
-          + '<div class="field"><label>Authenticator code</label>'
-          + '<input id="m5a2MfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></div>'
-          + '<div class="row"><button class="btn" id="m5a2VerifyMfaBtn">Verify</button>'
-          + '<button class="btn ghost" id="m5a2CancelMfaBtn">Cancel</button></div>'
-        );
+    mfaPromptPromise = new Promise(function (resolve) {
+      openModal(
+        '<h3>' + esc(title || 'Authenticator verification') + '</h3>'
+        + '<p class="muted">Enter the current six-digit code from your authenticator app.</p>'
+        + '<div class="field"><label>Authenticator code</label>'
+        + '<input id="m5a2MfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></div>'
+        + '<div class="row"><button class="btn" id="m5a2VerifyMfaBtn">Verify and continue</button>'
+        + '<button class="btn ghost" id="m5a2CancelMfaBtn">Cancel</button></div>'
+      );
 
-        document.getElementById('m5a2CancelMfaBtn').onclick = function () {
-          closeModal();
-          resolve(false);
-        };
-        document.getElementById('m5a2VerifyMfaBtn').onclick = async function () {
-          const code = String((document.getElementById('m5a2MfaCode') || {}).value || '').trim();
-          try {
-            const verify = await client.auth.mfa.verify({
-              factorId: factorId,
-              challengeId: challengeId,
-              code: code
-            });
-            if (verify.error) throw verify.error;
-            authSession = verify.data || authSession;
-            closeModal();
-            resolve(true);
-          } catch (error) {
-            if (typeof toast === 'function') toast(friendlyError(error), 'err');
+      const codeField = document.getElementById('m5a2MfaCode');
+      if (codeField) setTimeout(function () { codeField.focus(); }, 50);
+
+      document.getElementById('m5a2CancelMfaBtn').onclick = function () {
+        closeModal();
+        mfaPromptPromise = null;
+        resolve(false);
+      };
+
+      document.getElementById('m5a2VerifyMfaBtn').onclick = async function () {
+        const code = String((document.getElementById('m5a2MfaCode') || {}).value || '').trim();
+        if (!/^\d{6,8}$/.test(code)) {
+          if (typeof toast === 'function') toast('Enter the current authenticator code.', 'err');
+          return;
+        }
+
+        const button = document.getElementById('m5a2VerifyMfaBtn');
+        if (button) button.disabled = true;
+
+        try {
+          const verified = await client.auth.mfa.challengeAndVerify({
+            factorId: factorId,
+            code: code
+          });
+          if (verified.error) throw verified.error;
+
+          if (verified.data && verified.data.session) {
+            authSession = verified.data.session;
+          } else {
+            const current = await client.auth.getSession();
+            if (!current.error && current.data) {
+              authSession = current.data.session || authSession;
+            }
           }
-        };
-      } catch (error) {
-        reject(error);
-      }
+
+          closeModal();
+          mfaPromptPromise = null;
+          resolve(true);
+        } catch (error) {
+          if (button) button.disabled = false;
+          if (typeof toast === 'function') toast(friendlyError(error), 'err');
+        }
+      };
     });
+
+    return mfaPromptPromise;
   }
 
-  async function ensureMfa(ctx, force) {
+  async function ensureExistingFactorMfa() {
     if (!client) return false;
     const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
     if (assurance.error) throw assurance.error;
     const level = assurance.data || {};
-    const needsUpgrade = level.nextLevel === 'aal2' && level.currentLevel !== 'aal2';
-    const required = force || mfaRequiredFor(ctx);
 
-    if (!needsUpgrade) {
-      if (required && level.currentLevel !== 'aal2') {
-        const existing = await listMfaFactors();
-        if (!existing.length) {
-          await enrollMfa(true);
-          const retry = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-          return !retry.error && retry.data && retry.data.currentLevel === 'aal2';
-        }
-      }
-      return true;
-    }
+    if (level.currentLevel === 'aal2') return true;
+    if (level.nextLevel !== 'aal2') return true;
 
     const existing = await listMfaFactors();
-    if (!existing.length) {
-      if (!required) return true;
-      await enrollMfa(true);
-      return true;
-    }
+    if (!existing.length) return true;
     return challengeFactor(existing[0].id, 'Complete secure staff sign in');
+  }
+
+  async function ensureMfa(ctx, force) {
+    if (!client) return false;
+
+    const existingVerified = await ensureExistingFactorMfa();
+    if (!existingVerified) return false;
+
+    const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) throw assurance.error;
+    const level = assurance.data || {};
+    const required = force || mfaRequiredFor(ctx);
+
+    if (!required || level.currentLevel === 'aal2') return true;
+
+    const existing = await listMfaFactors();
+    if (existing.length) {
+      return challengeFactor(existing[0].id, 'Authenticator verification required');
+    }
+
+    const enrolled = await enrollMfa(true);
+    if (!enrolled) return false;
+    const retry = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    return !retry.error && retry.data && retry.data.currentLevel === 'aal2';
   }
 
   async function establishAppSession(ctx) {
@@ -570,63 +603,153 @@
     if (typeof toast === 'function') toast('Welcome, ' + String(session.cashier).split(' ')[0] + '!');
   }
 
-  async function handleSignedIn() {
-    if (!localAuthActive() || !authSession) return;
+  function scheduleSignedInContinuation() {
+    if (authEventTimer) clearTimeout(authEventTimer);
+    authEventTimer = setTimeout(function () {
+      authEventTimer = null;
+      continueSignedInFlow().catch(handleError);
+    }, 180);
+  }
+
+  async function runSignedInFlow() {
+    if (!localAuthActive() || !authSession) return false;
+
+    // Complete any already-enrolled factor before reading tenant context.
+    const firstFactorOk = await ensureExistingFactorMfa();
+    if (!firstFactorOk) return false;
+
     const pendingRaw = localStorage.getItem(PENDING_INVITE_KEY);
     if (pendingRaw) {
-      try {
-        const pending = JSON.parse(pendingRaw);
-        if (pending && pending.code) {
-          const result = await client.rpc(
-            'zezms_m5a2_claim_invitation',
-            Object.assign({ p_invite_code: pending.code }, deviceArgs())
-          );
-          if (result.error) throw result.error;
-          localStorage.removeItem(PENDING_INVITE_KEY);
-          context = normalizeRow(result.data);
-          saveState({
-            active: true,
-            businessId: context.business_id,
-            contextCache: context
-          });
-        }
-      } catch (error) {
-        handleError(error);
-        return;
+      const pending = JSON.parse(pendingRaw);
+      if (pending && pending.code) {
+        const result = await client.rpc(
+          'zezms_m5a2_claim_invitation',
+          Object.assign({ p_invite_code: pending.code }, deviceArgs())
+        );
+        if (result.error) throw result.error;
+        localStorage.removeItem(PENDING_INVITE_KEY);
+        context = normalizeRow(result.data);
+        saveState({
+          active: true,
+          businessId: context.business_id,
+          contextCache: context
+        });
       }
     }
 
     const ctx = context || await contextForSession();
     const mfaOk = await ensureMfa(ctx, false);
-    if (!mfaOk) return;
+    if (!mfaOk) return false;
+
     const refreshed = await contextForSession();
     await establishAppSession(refreshed);
+    return true;
+  }
+
+  function continueSignedInFlow() {
+    if (signInFlowPromise) return signInFlowPromise;
+
+    signInFlowPromise = runSignedInFlow()
+      .catch(function (error) {
+        handleError(error);
+        return false;
+      })
+      .finally(function () {
+        signInFlowPromise = null;
+      });
+
+    return signInFlowPromise;
   }
 
   async function signInFromLogin() {
     if (running) return;
     running = true;
+    explicitPasswordSignIn = true;
+
     try {
       await waitForClient(10000);
       if (!client) throw new Error('Supabase configuration is unavailable on this device.');
+
       const email = String((document.getElementById('m5a2LoginEmail') || {}).value || '').trim();
       const password = String((document.getElementById('m5a2LoginPassword') || {}).value || '');
       if (!email || !password) throw new Error('Enter your staff email and password.');
-      const result = await client.auth.signInWithPassword({ email: email, password: password });
+
+      const result = await client.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
       if (result.error) throw result.error;
+
       authSession = result.data.session;
-      await handleSignedIn();
+      await continueSignedInFlow();
     } catch (error) {
       handleError(error);
     } finally {
+      explicitPasswordSignIn = false;
       running = false;
+    }
+  }
+
+  async function resumeSignIn() {
+    try {
+      await waitForClient(10000);
+      const current = await client.auth.getSession();
+      if (current.error) throw current.error;
+      authSession = current.data && current.data.session ? current.data.session : null;
+
+      if (!authSession) {
+        throw new Error('No pending secure session exists. Enter your email and password first.');
+      }
+
+      await continueSignedInFlow();
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  function clearStaffAuthStorage() {
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key === AUTH_STORAGE_KEY || key.indexOf(AUTH_STORAGE_KEY) === 0)) {
+          keys.push(key);
+        }
+      }
+      keys.forEach(function (key) { localStorage.removeItem(key); });
+    } catch (_) {}
+  }
+
+  async function resetSecureSession() {
+    if (!confirm(
+      'Reset only the secure staff-login session on this device?\n\n'
+      + 'This does not clear ZEZMS business data, M4 cloud configuration, backups, or the enrolled authenticator.'
+    )) return;
+
+    try {
+      if (client) await client.auth.signOut({ scope: 'local' });
+    } catch (_) {}
+
+    clearStaffAuthStorage();
+    authSession = null;
+    context = null;
+    signInFlowPromise = null;
+    mfaPromptPromise = null;
+    saveState({ signedInEmail: '', lastError: '' });
+    showLoginMode();
+
+    if (typeof toast === 'function') {
+      toast('Secure login session reset on this device.');
     }
   }
 
   async function signOut() {
     try {
-      if (client) await client.auth.signOut();
+      // Supabase defaults to global sign-out. Use local scope so other devices
+      // and the separate M4 session are not revoked.
+      if (client) await client.auth.signOut({ scope: 'local' });
     } catch (_) {}
+
     authSession = null;
     context = null;
     session = {
@@ -635,8 +758,10 @@
     };
     cart = [];
     priceAdjUnlocked = false;
+
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
+
     const pass = document.getElementById('m5a2LoginPassword');
     if (pass) pass.value = '';
     showLoginMode();
@@ -1287,7 +1412,7 @@
       if (!client) return;
 
       if (authSession && localAuthActive()) {
-        await handleSignedIn();
+        await continueSignedInFlow();
       }
     } catch (error) {
       saveState({ lastError: friendlyError(error) });
@@ -1296,6 +1421,8 @@
   }
 
   window.m5a2SecureSignIn = function () { signInFromLogin(); };
+  window.m5a2ResumeSignIn = function () { resumeSignIn(); };
+  window.m5a2ResetSecureSession = function () { resetSecureSession(); };
   window.m5a2ForgotPassword = function () { forgotPassword(); };
   window.m5a2OpenInvitation = openInvitation;
   window.m5a2CreateAccountAndClaim = function () { createAccountAndClaim(); };
@@ -1321,6 +1448,8 @@
     fallbackView: fallbackView,
     isElevatedForViewing: isElevatedForViewing,
     signInFromLogin: signInFromLogin,
+    resumeSignIn: resumeSignIn,
+    resetSecureSession: resetSecureSession,
     signOut: signOut,
     confirmSensitive: confirmSensitive,
     applyRoleUI: applyRoleUI,

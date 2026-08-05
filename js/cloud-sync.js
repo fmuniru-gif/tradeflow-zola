@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260804-m5a2-auth-staff-security-r18';
+  const BUILD = '20260805-mfa-login-recovery-r19';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -39,6 +39,7 @@
   let session = null;
   let channel = null;
   let authSubscription = null;
+  let cloudMfaPromptPromise = null;
   let pushTimer = null;
   let pushInFlight = false;
   let pullInFlight = false;
@@ -1070,6 +1071,85 @@
     notify(result.data && result.data.session ? 'Cloud account created and signed in.' : 'Cloud account created. Confirm the email, then sign in.');
   }
 
+  function verifiedCloudTotpFactors(data) {
+    const list = data && data.totp ? data.totp : [];
+    return (Array.isArray(list) ? list : []).filter(function (factor) {
+      return factor && (!factor.status || factor.status === 'verified');
+    });
+  }
+
+  async function ensureCloudMfa() {
+    if (!client || !session) return true;
+
+    const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) throw assurance.error;
+    const level = assurance.data || {};
+
+    if (level.currentLevel === 'aal2' || level.nextLevel !== 'aal2') return true;
+
+    const factorResult = await client.auth.mfa.listFactors();
+    if (factorResult.error) throw factorResult.error;
+    const available = verifiedCloudTotpFactors(factorResult.data || {});
+    if (!available.length) return true;
+
+    if (cloudMfaPromptPromise) return cloudMfaPromptPromise;
+
+    cloudMfaPromptPromise = new Promise(function (resolve) {
+      openModal(
+        '<h3>Cloud account authenticator verification</h3>'
+        + '<p class="muted">Enter the current code from the authenticator app to complete this device&#39;s M4 cloud session.</p>'
+        + '<div class="field"><label>Authenticator code</label>'
+        + '<input id="m4MfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></div>'
+        + '<div class="row"><button class="btn" id="m4MfaVerifyBtn">Verify</button>'
+        + '<button class="btn ghost" id="m4MfaCancelBtn">Cancel</button></div>'
+      );
+
+      document.getElementById('m4MfaCancelBtn').onclick = function () {
+        closeModal();
+        cloudMfaPromptPromise = null;
+        resolve(false);
+      };
+
+      document.getElementById('m4MfaVerifyBtn').onclick = async function () {
+        const code = String((document.getElementById('m4MfaCode') || {}).value || '').trim();
+        const button = document.getElementById('m4MfaVerifyBtn');
+
+        if (!/^\d{6,8}$/.test(code)) {
+          notify('Enter the current authenticator code.', 'err');
+          return;
+        }
+
+        if (button) button.disabled = true;
+
+        try {
+          const verified = await client.auth.mfa.challengeAndVerify({
+            factorId: available[0].id,
+            code: code
+          });
+          if (verified.error) throw verified.error;
+
+          if (verified.data && verified.data.session) {
+            session = verified.data.session;
+          } else {
+            const current = await client.auth.getSession();
+            if (!current.error && current.data) {
+              session = current.data.session || session;
+            }
+          }
+
+          closeModal();
+          cloudMfaPromptPromise = null;
+          resolve(true);
+        } catch (error) {
+          if (button) button.disabled = false;
+          handleError(error);
+        }
+      };
+    });
+
+    return cloudMfaPromptPromise;
+  }
+
   async function signIn() {
     if (!client) await buildClient();
     if (!client) throw new Error('Save valid Supabase settings first.');
@@ -1078,6 +1158,16 @@
     const result = await client.auth.signInWithPassword(credentials);
     if (result.error) throw result.error;
     session = result.data.session;
+
+    const mfaOk = await ensureCloudMfa();
+    if (!mfaOk) {
+      setState({
+        status: 'signed-out',
+        lastError: 'Cloud MFA verification was cancelled.'
+      });
+      return;
+    }
+
     const master = await fetchMaster().catch(function () { return null; });
     const m4Ready = !!(master && master.sync_mode === 'operations');
     setState({
@@ -1092,7 +1182,7 @@
   async function signOut() {
     stopRealtime();
     if (client) {
-      const result = await client.auth.signOut();
+      const result = await client.auth.signOut({ scope: 'local' });
       if (result.error) throw result.error;
     }
     session = null;
@@ -1293,6 +1383,7 @@
     getState: function () { return Object.assign({}, state, { queueLength: queue.length }); },
     getClient: function () { return client; },
     getSession: function () { return session; },
+    ensureMfa: ensureCloudMfa,
     syncCardHtml: syncCardHtml,
     settingsHtml: settingsHtml,
     pushNow: flushQueue,
