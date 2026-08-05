@@ -1,10 +1,10 @@
-/* ZEZMS v3.6.3 — Unique MFA Factor Names */
+/* ZEZMS v3.6.4 — MFA Factor Selector */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-unique-mfa-factor-names-r21';
+  const BUILD = '20260805-mfa-factor-selector-r22';
   const STATE_KEY = 'zezms_m5a2_staff_auth_state';
   const PENDING_INVITE_KEY = 'zezms_m5a2_pending_invite';
   const AUTH_STORAGE_KEY = 'zezms-m5a2-staff-auth';
@@ -118,6 +118,8 @@
   let authEventTimer = null;
   let explicitPasswordSignIn = false;
   let pendingInlineFactorId = '';
+  let pendingInlineFactorName = '';
+  let pendingInlineFactors = [];
   let pendingInlineEmail = '';
   let state = loadState();
 
@@ -181,7 +183,7 @@
       p_device_id: String(cs.deviceId || ''),
       p_device_name: String(cs.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.3'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.6.4'
     };
   }
 
@@ -359,24 +361,91 @@
     if (passwordStage) passwordStage.style.display = '';
     if (mfaStage) mfaStage.style.display = 'none';
     pendingInlineFactorId = '';
+    pendingInlineFactorName = '';
+    pendingInlineFactors = [];
     if (message) setLoginStatus(message, 'info');
   }
 
-  function showAuthenticatorStage(factorId, email) {
-    pendingInlineFactorId = String(factorId || '');
+  function factorCreatedAt(factor) {
+    const value = factor && (factor.created_at || factor.updated_at);
+    const time = value ? new Date(value).getTime() : 0;
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  function factorDisplayName(factor, index) {
+    return String(
+      factor && factor.friendly_name
+      || ('Authenticator app ' + (Number(index || 0) + 1))
+    );
+  }
+
+  function selectInlineFactorById(factorId) {
+    const selected = pendingInlineFactors.find(function (factor) {
+      return String(factor.id || '') === String(factorId || '');
+    }) || null;
+
+    pendingInlineFactorId = selected ? String(selected.id || '') : '';
+    pendingInlineFactorName = selected
+      ? factorDisplayName(selected, pendingInlineFactors.indexOf(selected))
+      : '';
+
+    const hint = document.getElementById('m5a2SelectedFactorHint');
+    if (hint) {
+      hint.textContent = pendingInlineFactorName
+        ? 'Use the current code from: ' + pendingInlineFactorName
+        : 'Select the exact named entry whose code you will use.';
+    }
+
+    const code = document.getElementById('m5a2InlineMfaCode');
+    if (code) code.value = '';
+    return selected;
+  }
+
+  function renderInlineFactorOptions() {
+    const select = document.getElementById('m5a2InlineFactorSelect');
+    if (!select) return;
+
+    select.innerHTML = pendingInlineFactors.map(function (factor, index) {
+      const name = factorDisplayName(factor, index);
+      const newest = index === 0 && pendingInlineFactors.length > 1
+        ? ' — newest'
+        : '';
+      return '<option value="' + attr(factor.id || '') + '">'
+        + esc(name + newest)
+        + '</option>';
+    }).join('');
+
+    if (pendingInlineFactors.length) {
+      select.value = String(pendingInlineFactors[0].id || '');
+      selectInlineFactorById(select.value);
+    } else {
+      pendingInlineFactorId = '';
+      pendingInlineFactorName = '';
+    }
+  }
+
+  function showAuthenticatorStage(factorList, email) {
+    pendingInlineFactors = (Array.isArray(factorList) ? factorList : [])
+      .slice()
+      .sort(function (a, b) {
+        return factorCreatedAt(b) - factorCreatedAt(a);
+      });
     pendingInlineEmail = String(email || '');
     const passwordStage = document.getElementById('m5a2PasswordStage');
     const mfaStage = document.getElementById('m5a2AuthenticatorStage');
     if (passwordStage) passwordStage.style.display = 'none';
     if (mfaStage) mfaStage.style.display = '';
+    renderInlineFactorOptions();
+
     const code = document.getElementById('m5a2InlineMfaCode');
     if (code) {
       code.value = '';
       setTimeout(function () { code.focus(); }, 50);
     }
+
     setLoginStatus(
       'Password accepted for ' + (pendingInlineEmail || 'this account')
-      + '. Enter the current code from the authenticator app.',
+      + '. Choose the exact authenticator entry, then enter its current code.',
       'working'
     );
   }
@@ -534,7 +603,9 @@
     if (!client) return [];
     const result = await client.auth.mfa.listFactors();
     if (result.error) throw result.error;
-    factors = verifiedTotpFactors(result.data || {});
+    factors = verifiedTotpFactors(result.data || {}).slice().sort(function (a, b) {
+      return factorCreatedAt(b) - factorCreatedAt(a);
+    });
     return factors;
   }
 
@@ -556,7 +627,7 @@
     }
 
     showAuthenticatorStage(
-      existing[0].id,
+      existing,
       authSession && authSession.user ? authSession.user.email || pendingInlineEmail : pendingInlineEmail
     );
     return false;
@@ -771,9 +842,11 @@
     }
 
     const code = String((document.getElementById('m5a2InlineMfaCode') || {}).value || '').trim();
+    const select = document.getElementById('m5a2InlineFactorSelect');
+    if (select && select.value) selectInlineFactorById(select.value);
+
     if (!pendingInlineFactorId) {
-      setLoginStatus('The authenticator challenge is missing. Use password again.', 'error');
-      showPasswordStage();
+      setLoginStatus('Select an authenticator entry before entering its code.', 'error');
       return;
     }
     if (!/^\d{6,8}$/.test(code)) {
@@ -783,7 +856,10 @@
 
     running = true;
     setMfaButtonBusy(true);
-    setLoginStatus('Verifying the authenticator code…', 'working');
+    setLoginStatus(
+      'Verifying the code for ' + (pendingInlineFactorName || 'the selected authenticator') + '…',
+      'working'
+    );
 
     try {
       const verified = await client.auth.mfa.challengeAndVerify({
@@ -806,8 +882,14 @@
         throw new Error('Authenticator verification completed, but the session was not promoted to aal2.');
       }
 
+      const verifiedFactorName = pendingInlineFactorName;
       pendingInlineFactorId = '';
-      setLoginStatus('Authenticator accepted. Verifying business membership and device…', 'ok');
+      pendingInlineFactorName = '';
+      setLoginStatus(
+        'Authenticator accepted: ' + (verifiedFactorName || 'selected factor')
+        + '. Verifying business membership and device…',
+        'ok'
+      );
       await continueAfterVerifiedMfa();
     } catch (error) {
       const message = friendlyError(error);
@@ -845,6 +927,32 @@
       setLoginStatus(message, 'error');
       handleError(error);
       showPasswordStage();
+    }
+  }
+
+  function selectInlineFactor() {
+    const select = document.getElementById('m5a2InlineFactorSelect');
+    if (!select) return;
+    const selected = selectInlineFactorById(select.value);
+    if (selected) {
+      setLoginStatus(
+        'Selected: ' + pendingInlineFactorName
+        + '. Enter the current code from that exact authenticator entry.',
+        'info'
+      );
+    }
+  }
+
+  async function refreshInlineFactors() {
+    try {
+      setLoginStatus('Refreshing verified authenticator entries…', 'working');
+      const existing = await listMfaFactors();
+      if (!existing.length) {
+        throw new Error('No verified authenticator factor was returned.');
+      }
+      showAuthenticatorStage(existing, pendingInlineEmail);
+    } catch (error) {
+      handleError(error);
     }
   }
 
@@ -1372,9 +1480,16 @@
   }
 
   function factorRowsHtml() {
-    return factors.map(function (factor) {
+    const sorted = factors.slice().sort(function (a, b) {
+      return factorCreatedAt(b) - factorCreatedAt(a);
+    });
+    return sorted.map(function (factor, index) {
+      const newest = index === 0 && sorted.length > 1
+        ? ' <span class="badge ok">NEWEST</span>'
+        : '';
       return '<div class="statline"><span>'
         + esc(factor.friendly_name || 'Authenticator app')
+        + newest
         + '</span><span><b>' + esc(factor.status || 'verified') + '</b> '
         + '<button class="btn sm danger" onclick="m5a2UnenrollMfa(\'' + attr(factor.id) + '\')">Remove</button></span></div>';
     }).join('') || '<p class="muted" style="font-size:12px">No authenticator factor enrolled.</p>';
@@ -1647,6 +1762,8 @@
 
   window.m5a2SecureSignIn = function () { signInFromLogin(); };
   window.m5a2VerifyInlineMfa = function () { verifyInlineMfa(); };
+  window.m5a2SelectInlineFactor = function () { selectInlineFactor(); };
+  window.m5a2RefreshInlineFactors = function () { refreshInlineFactors(); };
   window.m5a2ReturnToPassword = function () { returnToPassword(); };
   window.m5a2ResumeSignIn = function () { resumeSignIn(); };
   window.m5a2ResetSecureSession = function () { resetSecureSession(); };
@@ -1676,6 +1793,8 @@
     isElevatedForViewing: isElevatedForViewing,
     signInFromLogin: signInFromLogin,
     verifyInlineMfa: verifyInlineMfa,
+    selectInlineFactor: selectInlineFactor,
+    refreshInlineFactors: refreshInlineFactors,
     returnToPassword: returnToPassword,
     resumeSignIn: resumeSignIn,
     resetSecureSession: resetSecureSession,

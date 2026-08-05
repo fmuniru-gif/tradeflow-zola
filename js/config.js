@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Commercial Pilot 0.6.3 — Unique MFA Factor Names",
-  build:"20260805-unique-mfa-factor-names-r21",
+  version:"Commercial Pilot 0.6.4 — MFA Factor Selector",
+  build:"20260805-mfa-factor-selector-r22",
   debug:true,
   cloud:{
     googleDrive:{
