@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Commercial Pilot 0.7.1 — Enrollment Fix & Entry Guards",
-  build:"20260806-enrollment-fix-entry-guards-r29",
+  version:"Commercial Pilot 0.7.2 — Forced Activation",
+  build:"20260806-forced-activation-r30",
   debug:true,
   cloud:{
     googleDrive:{

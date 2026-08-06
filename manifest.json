@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS shared-counter system with corrected secure device enrollment, 0000 transaction-entry controls, permanent non-owner staff deletion, guarded login utilities, Cloud Sync M4 and backups.",
-  "start_url": "./index.html?build=20260806-enrollment-fix-entry-guards-r29",
+  "description": "ZEZMS v3.7.2 forced-activation release with corrected device enrollment, 0000 price/VAT safeguards, staff deletion and guarded login utilities.",
+  "start_url": "./index-v372.html?build=20260806-forced-activation-r30",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

@@ -1,8 +1,8 @@
-/* ZEZMS v3.7.1 — Cross-Device Staff Access */
+/* ZEZMS v3.7.2 — Cross-Device Staff Access */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260806-enrollment-fix-entry-guards-r29';
+const BUILD='20260806-forced-activation-r30';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],

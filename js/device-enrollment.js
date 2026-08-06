@@ -1,9 +1,9 @@
-/* ZEZMS v3.7.1 — Enrollment Fix & Entry Guards */
+/* ZEZMS v3.7.2 — Forced Activation */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260806-enrollment-fix-entry-guards-r29';
+  const BUILD = '20260806-forced-activation-r30';
   let branches = [];
   let lastPairing = null;
 
@@ -78,7 +78,7 @@
   async function claimNewDevice() {
     const s=sync();
     if(!s||typeof s.enrollPairedDevice!=='function'){
-      status('Enrollment Fix & Entry Guards did not load. Confirm v3.7.1 is deployed.','error');
+      status('Forced Activation did not load. Confirm v3.7.2 is deployed.','error');
       return;
     }
     const values={
@@ -144,10 +144,10 @@
   function ownerCardHtml() {
     const state=cloudState();
     if(state.deviceAccessMode==='PAIRED'){
-      return '<div class="card" style="margin-top:12px"><h3>Enrollment Fix & Entry Guards</h3><p class="muted">Pairing codes can be created only from a primary OWNER-authenticated device. This device is already paired.</p></div>';
+      return '<div class="card" style="margin-top:12px"><h3>Forced Activation</h3><p class="muted">Pairing codes can be created only from a primary OWNER-authenticated device. This device is already paired.</p></div>';
     }
     return '<div class="card" style="margin-top:12px">'
-      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Enrollment Fix & Entry Guards</h3><span class="badge ok">M5A-3</span></div>'
+      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Forced Activation</h3><span class="badge ok">M5A-3</span></div>'
       + '<p class="muted" style="font-size:12px;line-height:1.55">Create a short-lived, one-use code for a completely new phone or computer. The new device receives its own identity and never receives the OWNER password.</p>'
       + '<div class="grid g2"><div class="field"><label>New device name</label><input id="devicePairName" placeholder="Till 2 / Manager phone"></div>'
       + '<div class="field"><label>Branch</label><select id="devicePairBranch"><option value="">Loading branches…</option></select></div>'
