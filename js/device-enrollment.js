@@ -1,9 +1,9 @@
-/* ZEZMS v3.7.2 — Forced Activation */
+/* ZEZMS v3.7.3 — Operational Safeguards & Device Revocation */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260806-forced-activation-r30';
+  const BUILD = '20260806-operational-safeguards-r31';
   let branches = [];
   let lastPairing = null;
 
@@ -78,7 +78,7 @@
   async function claimNewDevice() {
     const s=sync();
     if(!s||typeof s.enrollPairedDevice!=='function'){
-      status('Forced Activation did not load. Confirm v3.7.2 is deployed.','error');
+      status('Secure Device Enrollment did not load. Confirm v3.7.0 is deployed.','error');
       return;
     }
     const values={
@@ -106,7 +106,6 @@
       else if(/ZEZMS_PAIRING_USED/i.test(raw))message='This pairing code has already been used.';
       else if(/ZEZMS_DEVICE_REVOKED/i.test(raw))message='This device has been revoked.';
       else if(/anonymous.*disabled|signups.*disabled/i.test(raw))message='Enable Anonymous Sign-Ins in Supabase Authentication settings, then retry.';
-      else if(/column reference.*business_id.*ambiguous|42702/i.test(raw))message='Run SUPABASE_M5A3_DEVICE_CONTEXT_AMBIGUITY_FIX.sql once, wait for the schema reload, then retry this same pairing code on this device.';
       status(message,'error');
     }
   }
@@ -141,13 +140,87 @@
     }
     return branches;
   }
+  function enrolledDevicesRowsHtml(){
+    const state=cloudState();
+    const currentId=String(state.deviceId||'');
+    return enrolledDevices.map(function(device){
+      const revoked=!!device.revoked_at;
+      const current=String(device.device_id||'')===currentId;
+      const action=revoked
+        ? '—'
+        : current
+          ? '<span class="muted" style="font-size:10px">Revoke from another OWNER device</span>'
+          : '<button class="btn sm danger" onclick="secureDeviceEnrollmentRevoke(\''+attr(device.device_id)+'\')">Revoke</button>';
+      return '<tr>'
+        +'<td>'+esc(device.device_name||'ZEZMS Device')+(current?' <span class="badge ok">THIS DEVICE</span>':'')+'</td>'
+        +'<td class="mono" style="font-size:10px">'+esc(device.device_id||'')+'</td>'
+        +'<td>'+esc(device.app_version||'—')+'</td>'
+        +'<td style="font-size:11px">'+esc(device.last_seen_at?new Date(device.last_seen_at).toLocaleString():'—')+'</td>'
+        +'<td>'+(revoked?'<span class="badge bad">REVOKED</span>':'<span class="badge ok">ACTIVE</span>')+'</td>'
+        +'<td>'+action+'</td></tr>';
+    }).join('')||'<tr><td colspan="6" class="empty">No enrolled devices returned yet.</td></tr>';
+  }
+  function enrolledDevicesHtml(){
+    return '<hr class="hr"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      +'<h3 style="margin:0">Enrolled devices</h3>'
+      +'<button class="btn sm ghost" onclick="secureDeviceEnrollmentRefreshDevices()">Refresh devices</button></div>'
+      +'<p class="muted" style="font-size:11px">Revoking a device blocks its M4 data access and future sync. The current device must be revoked from another OWNER device.</p>'
+      +'<div class="table-wrap"><table><thead><tr><th>Device</th><th>Device ID</th><th>App</th><th>Last seen</th><th>Status</th><th>Action</th></tr></thead>'
+      +'<tbody id="secureEnrolledDevicesBody">'+enrolledDevicesRowsHtml()+'</tbody></table></div>';
+  }
+  function paintEnrolledDevices(){
+    const body=document.getElementById('secureEnrolledDevicesBody');
+    if(body)body.innerHTML=enrolledDevicesRowsHtml();
+  }
+  async function loadEnrolledDevices(showNotice){
+    const state=cloudState();
+    if(state.deviceAccessMode==='PAIRED')return [];
+    const pair=await ownerClient();
+    const f=foundationState();
+    const businessId=String(f.businessId||f.context&&f.context.business_id||'');
+    if(!businessId)throw new Error('The M5A-1 Tenant ID is unavailable.');
+    const result=await pair.client.from('zezms_business_devices')
+      .select('device_id,device_name,platform,app_version,last_seen_at,revoked_at,revocation_reason,user_id')
+      .eq('business_id',businessId)
+      .order('last_seen_at',{ascending:false});
+    if(result.error)throw result.error;
+    enrolledDevices=Array.isArray(result.data)?result.data:[];
+    paintEnrolledDevices();
+    if(showNotice&&typeof toast==='function')toast('Enrolled devices refreshed.');
+    return enrolledDevices;
+  }
+  async function revokeEnrolledDevice(deviceId){
+    try{
+      const state=cloudState();
+      if(String(deviceId||'')===String(state.deviceId||'')){
+        throw new Error('For safety, revoke the current device from another OWNER device.');
+      }
+      const pair=await ownerClient();
+      const f=foundationState();
+      const businessId=String(f.businessId||f.context&&f.context.business_id||'');
+      if(!businessId)throw new Error('The M5A-1 Tenant ID is unavailable.');
+      const device=enrolledDevices.find(d=>String(d.device_id||'')===String(deviceId||''));
+      const label=device&&device.device_name?device.device_name:String(deviceId||'device');
+      if(!window.confirm('Revoke '+label+'?\n\nThis device will lose M4 data access and future sync.'))return;
+      const reason=String(window.prompt('Reason for revocation (optional)','Device no longer authorised')||'').trim();
+      const result=await pair.client.rpc('zezms_revoke_business_device',{p_business_id:businessId,p_device_id:String(deviceId||''),p_reason:reason});
+      if(result.error)throw result.error;
+      await loadEnrolledDevices(false);
+      if(window.ZEZMS&&ZEZMS.commercialFoundation&&typeof ZEZMS.commercialFoundation.refresh==='function'){
+        try{await ZEZMS.commercialFoundation.refresh({silent:true});}catch(_){}
+      }
+      if(typeof toast==='function')toast('Device revoked: '+label);
+    }catch(error){
+      if(typeof toast==='function')toast(error.message||String(error),'err');
+    }
+  }
   function ownerCardHtml() {
     const state=cloudState();
     if(state.deviceAccessMode==='PAIRED'){
-      return '<div class="card" style="margin-top:12px"><h3>Forced Activation</h3><p class="muted">Pairing codes can be created only from a primary OWNER-authenticated device. This device is already paired.</p></div>';
+      return '<div class="card" style="margin-top:12px"><h3>Secure Device Enrollment</h3><p class="muted">Pairing codes can be created only from a primary OWNER-authenticated device. This device is already paired.</p></div>';
     }
     return '<div class="card" style="margin-top:12px">'
-      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Forced Activation</h3><span class="badge ok">M5A-3</span></div>'
+      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Secure Device Enrollment</h3><span class="badge ok">M5A-3</span></div>'
       + '<p class="muted" style="font-size:12px;line-height:1.55">Create a short-lived, one-use code for a completely new phone or computer. The new device receives its own identity and never receives the OWNER password.</p>'
       + '<div class="grid g2"><div class="field"><label>New device name</label><input id="devicePairName" placeholder="Till 2 / Manager phone"></div>'
       + '<div class="field"><label>Branch</label><select id="devicePairBranch"><option value="">Loading branches…</option></select></div>'
@@ -155,6 +228,7 @@
       + '<button class="btn" onclick="secureDeviceEnrollmentCreateCode()">Create one-time device code</button>'
       + (lastPairing?pairingResultHtml(lastPairing):'')
       + '<p class="muted" style="font-size:11px;margin-top:10px">Prerequisite: Supabase Anonymous Sign-Ins must be enabled once for the project.</p>'
+      + enrolledDevicesHtml()
       + '</div>';
   }
   function pairingResultHtml(data) {
@@ -187,7 +261,7 @@
       if(!branchId)throw new Error('Select the branch for the new device.');
       const result=await pair.client.rpc('zezms_m5a3_create_device_pairing',{
         p_business_id:businessId,p_device_name:deviceName,p_branch_id:branchId,
-        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.0'
+        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.3'
       });
       if(result.error)throw result.error;
       lastPairing=normalizeRow(result.data);
@@ -210,7 +284,7 @@
   function installSettingsCard() {
     const original=window.viewSettings;
     if(typeof original!=='function'||original.__m5a3DeviceWrapped)return;
-    const wrapped=function(){const result=original.apply(this,arguments)+ownerCardHtml();setTimeout(function(){if(document.getElementById('devicePairBranch'))loadBranches().catch(function(error){const s=document.getElementById('devicePairBranch');if(s)s.innerHTML='<option value="">'+esc(error.message||error)+'</option>';});},30);return result;};
+    const wrapped=function(){const result=original.apply(this,arguments)+ownerCardHtml();setTimeout(function(){if(document.getElementById('devicePairBranch'))loadBranches().catch(function(error){const s=document.getElementById('devicePairBranch');if(s)s.innerHTML='<option value="">'+esc(error.message||error)+'</option>';});if(document.getElementById('secureEnrolledDevicesBody'))loadEnrolledDevices(false).catch(function(error){const b=document.getElementById('secureEnrolledDevicesBody');if(b)b.innerHTML='<tr><td colspan="6" class="empty">'+esc(error.message||error)+'</td></tr>';});},30);return result;};
     wrapped.__m5a3DeviceWrapped=true;window.viewSettings=wrapped;
   }
   function init() {
@@ -223,6 +297,8 @@
   window.secureDeviceEnrollmentOpen=function(){openNewDevice(pairingParams());};
   window.secureDeviceEnrollmentClaim=function(){claimNewDevice();};
   window.secureDeviceEnrollmentCreateCode=function(){createPairing();};
+  window.secureDeviceEnrollmentRefreshDevices=function(){loadEnrolledDevices(true).catch(function(error){if(typeof toast==='function')toast(error.message||String(error),'err');});};
+  window.secureDeviceEnrollmentRevoke=function(deviceId){revokeEnrolledDevice(deviceId);};
   window.secureDeviceEnrollmentCopyCode=function(){if(lastPairing)copyText(lastPairing.pairing_code,'Pairing code copied.');};
   window.secureDeviceEnrollmentCopyLink=function(){if(lastPairing)copyText(lastPairing.setup_link,'Complete setup link copied.');};
 

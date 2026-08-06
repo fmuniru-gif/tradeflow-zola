@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260806-forced-activation-r30';
+  const BUILD = '20260806-operational-safeguards-r31';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

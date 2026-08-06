@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260805-secure-device-enrollment-r28" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
-<title>Zola Electronics Zone · TradeFlow v3.7.0 · Secure Device Enrollment</title>
+<meta name="zezms-build" content="20260806-operational-safeguards-r31" /><meta name="zezms-mobile-engine" content="portrait-readable-v31" />
+<title>Zola Electronics Zone · TradeFlow v3.7.3 · Operational Safeguards & Device Revocation</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260805-secure-device-enrollment-r28';
+  const BUILD = '20260806-operational-safeguards-r31';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1104,7 +1104,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.7.0 · Secure Device Enrollment · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.7.3 · Operational Safeguards & Device Revocation · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div id="sharedDeviceLoginPanel">
       <div class="field">
         <label>Staff member</label>
@@ -1119,10 +1119,9 @@ html.zezms-phone-layout .kpi-freeze-pane{
         Loading shared-device staff accounts…
       </div>
       <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button id="sharedOwnerRecoveryButton" class="btn sm ghost"
-        onclick="if(typeof window.sharedDeviceOwnerRecovery==='function'){window.sharedDeviceOwnerRecovery();}else{var s=document.getElementById('sharedLoginStatus');var m='Recovery controller did not load. Confirm that index.html from v3.7.0 replaced the older file.';if(s){s.textContent=m;s.style.background='#3f1017';s.style.borderColor='#fb7185';s.style.color='#ffe4e6';}try{alert(m);}catch(_){}}">Owner recovery / first setup</button>
-        <button class="btn sm ghost" onclick="sharedDeviceRefreshUsers()">Refresh staff list</button>
-        <button class="btn sm ghost" onclick="if(typeof secureDeviceEnrollmentOpen==='function'){secureDeviceEnrollmentOpen();}else{alert('Secure Device Enrollment did not load. Confirm v3.7.0 is deployed.');}">Set up a new device</button>
+        <button id="sharedOwnerRecoveryButton" class="btn sm ghost" onclick="confirmLoginUtility('owner-recovery')">Owner recovery / first setup</button>
+        <button class="btn sm ghost" onclick="confirmLoginUtility('refresh-staff')">Refresh staff list</button>
+        <button class="btn sm ghost" onclick="confirmLoginUtility('new-device')">Set up a new device</button>
       </div>
       <p class="muted" style="font-size:11px;text-align:center;margin:14px 0 0">
         Staff switch locally; Cloud Sync M4 stays connected on the device.
@@ -1182,40 +1181,41 @@ html.zezms-phone-layout .kpi-freeze-pane{
 </div>
 
 <!-- ZEZMS modules load first so persistence is available during clean boot. -->
-<script src="js/config.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/app.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/logger.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/diagnostics.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/registry.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/storage.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/dbservice.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/bootpatch.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/events.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/db-events.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/system-module.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/health-module.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/utils-module.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/lifecycle-module.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/notifications-module.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/product-search-module.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/product-search-adapter.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/product-search-service.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/product-search-controller.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/product-search-events.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/product-search-metrics.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/product-search-facade.js?v=20260805-secure-device-enrollment-r28"></script>
+<script src="js/config.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/app.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/logger.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/diagnostics.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/registry.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/storage.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/dbservice.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/bootpatch.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/events.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/db-events.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/system-module.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/health-module.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/utils-module.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/lifecycle-module.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/notifications-module.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/product-search-module.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/product-search-adapter.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/product-search-service.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/product-search-controller.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/product-search-events.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/product-search-metrics.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/product-search-facade.js?v=20260806-operational-safeguards-r31"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1"></script>
-<script src="js/cloud-sync.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/backup-manager.js?v=20260805-secure-device-enrollment-r28"></script>
+<script src="js/cloud-sync.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/backup-manager.js?v=20260806-operational-safeguards-r31"></script>
 
 <script>
 /* =========================================================
    TradeFlow PWA v3.7.0 — Secure Device Enrollment — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.7.0';
+const APP_VERSION = '3.7.3';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
+const TRANSACTION_ENTRY_PIN = '0000'; // accidental-entry control only
 function normalizeVatPercent(value){
   const n = Number(value);
   if(!Number.isFinite(n)) return 0;
@@ -1235,6 +1235,19 @@ function clampSaleVatRate(){
   cart._vatRate = normalizeVatPercent(input ? input.value : cart._vatRate);
   if(input) input.value = cart._vatRate;
   refreshSaleTotals();
+}
+function unlockVatRate(){
+  promptTransactionEntryPIN('Unlock VAT percentage', ()=>{
+    vatRateUnlocked = true;
+    const input = $('posVatRate');
+    if(input){ input.readOnly=false; input.focus(); input.select(); }
+    toast('VAT entry unlocked for this edit.', 'ok');
+  });
+}
+function lockVatRate(){
+  vatRateUnlocked = false;
+  const input = $('posVatRate');
+  if(input) input.readOnly = true;
 }
 const BUSINESS = {
   name: 'Zola Electronics Zone',
@@ -1270,6 +1283,7 @@ let session = { cashier: null, tel: null, role: null, adminMode: false, sig: nul
 let cart = [];
 let currentView = 'pos';
 let priceAdjUnlocked = false;
+let vatRateUnlocked = false;
 let lastKPIDayKey = '';
 
 
@@ -1612,6 +1626,7 @@ function doLogin(){
   // Excel: Muniru starts Admin Mode ON; Cashier2 starts OFF
   session.adminMode = (c.role === 'ADMIN');
   priceAdjUnlocked = false;
+  vatRateUnlocked = false;
   cart = [];
   $('loginScreen').style.display = 'none';
   $('appShell').style.display = 'flex';
@@ -1629,6 +1644,7 @@ function doLogout(){
   session = { cashier:null, tel:null, role:null, adminMode:false, sig:null, isCashier2:false };
   cart = [];
   priceAdjUnlocked = false;
+  vatRateUnlocked = false;
   $('appShell').style.display = 'none';
   $('loginScreen').style.display = 'flex';
   $('loginPass').value = '';
@@ -1726,6 +1742,45 @@ function promptPIN(title, expected, onOk){
     onOk();
   };
   setTimeout(()=>{ const el=document.getElementById('pinInput'); if(el) el.focus(); }, 50);
+}
+
+
+function promptTransactionEntryPIN(title, onOk){
+  openModal(`
+    <h3>${esc(title)}</h3>
+    <p class="muted">Enter the four-digit control PIN.</p>
+    <div class="field"><label>Control PIN</label>
+      <input id="transactionEntryPinInput" type="password" inputmode="numeric" maxlength="4" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();window.__transactionEntryPinOk&&window.__transactionEntryPinOk();}" />
+    </div>
+    <div class="row">
+      <button class="btn" onclick="window.__transactionEntryPinOk&&window.__transactionEntryPinOk()">Unlock</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+  window.__transactionEntryPinOk=()=>{
+    const value=String((document.getElementById('transactionEntryPinInput')||{}).value||'');
+    if(value!==TRANSACTION_ENTRY_PIN){toast('Incorrect control PIN.','err');return;}
+    closeModal(); onOk();
+  };
+  setTimeout(()=>{const input=document.getElementById('transactionEntryPinInput');if(input)input.focus();},50);
+}
+
+const LOGIN_UTILITY_CONFIRMATIONS={
+  'owner-recovery':{title:'Open Owner recovery?',message:'Use this only to restore or replace the local OWNER password. Normal staff sign-in does not require recovery.',button:'Continue to Owner recovery'},
+  'refresh-staff':{title:'Refresh the staff list?',message:'This checks Cloud Sync M4 for the published staff directory. It does not change passwords or transactions.',button:'Refresh staff list'},
+  'new-device':{title:'Set up a completely new device?',message:'Continue only on a new browser or device with a valid one-time pairing code.',button:'Continue to device setup'}
+};
+function confirmLoginUtility(action){
+  const item=LOGIN_UTILITY_CONFIRMATIONS[action]; if(!item)return;
+  openModal(`<h3>${esc(item.title)}</h3><p class="muted">${esc(item.message)}</p><div class="row"><button class="btn" onclick="runConfirmedLoginUtility('${escAttr(action)}')">${esc(item.button)}</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>`);
+}
+function runConfirmedLoginUtility(action){
+  closeModal();
+  setTimeout(()=>{
+    if(action==='owner-recovery'){if(typeof window.sharedDeviceOwnerRecovery==='function')window.sharedDeviceOwnerRecovery();else toast('Owner recovery did not load.','err');return;}
+    if(action==='refresh-staff'){if(typeof window.sharedDeviceRefreshUsers==='function')window.sharedDeviceRefreshUsers();else toast('Staff-list refresh did not load.','err');return;}
+    if(action==='new-device'){if(typeof window.secureDeviceEnrollmentOpen==='function')window.secureDeviceEnrollmentOpen();else toast('Secure Device Enrollment did not load.','err');}
+  },30);
 }
 
 /* ---------- navigation ---------- */
@@ -2394,7 +2449,7 @@ function viewPOS(){
             <input id="posQty" type="number" min="0.01" step="1" value="1" /></div>
           <div class="field" style="flex:1"><label>Unit price (locked)</label>
             <input id="posUPrice" type="number" step="0.01" value="0" readonly /></div>
-          <div class="field" style="flex:1"><label>Price adj (dbl-click / PIN)</label>
+          <div class="field" style="flex:1"><label>Price adj (dbl-click / control PIN)</label>
             <input id="posPriceAdj" type="number" step="0.01" value="0" readonly
               ondblclick="unlockPriceAdj()" title="Double-click to request authorised price adjustment" /></div>
           <div class="field" style="flex:1"><label>Discount (GH₵)</label>
@@ -2447,9 +2502,15 @@ function viewPOS(){
       <div class="card pos-totals mobile-payment-card">
         <h3>Payment summary</h3>
         <div class="statline"><span>Subtotal</span><b class="mono" id="posSubtotal">${fmtN(sub)}</b></div>
-        <div class="field" style="margin-top:10px"><label>VAT percentage (%)</label>
-          <input id="posVatRate" type="number" min="0" max="100" step="0.01" value="${vatRate}"
-            oninput="onSaleVatRateChange()" onchange="clampSaleVatRate()" /></div>
+        <div class="field" style="margin-top:10px"><label>VAT percentage (%) — locked</label>
+          <div class="row" style="align-items:flex-end;gap:8px">
+            <input id="posVatRate" type="number" min="0" max="100" step="0.01" value="${vatRate}"
+              readonly ondblclick="unlockVatRate()" oninput="onSaleVatRateChange()"
+              onblur="clampSaleVatRate();lockVatRate()" />
+            <button class="btn sm ghost" type="button" onclick="unlockVatRate()">Unlock VAT</button>
+          </div>
+          <p class="muted" style="font-size:10px;margin:5px 0 0">Control PIN required before VAT can be typed.</p>
+        </div>
         <div class="statline"><span>VAT amount (<span id="posVatRateLabel">${fmtN(vatRate)}</span>%)</span><b class="mono" id="posVat">${fmtN(vat)}</b></div>
         <div class="statline"><span>Grand total</span><b class="mono" id="posGrand">${fmtN(grand)}</b></div>
         <div class="field" style="margin-top:10px"><label>Amount paid</label>
@@ -2466,11 +2527,8 @@ function viewPOS(){
   </div>`;
 }
 function bindPOS(){
-  // restore paid field listener already inline
-  if(priceAdjUnlocked){
-    const el = $('posPriceAdj');
-    if(el){ el.readOnly = false; }
-  }
+  if(priceAdjUnlocked){const el=$('posPriceAdj');if(el)el.readOnly=false;}
+  if(vatRateUnlocked){const vat=$('posVatRate');if(vat)vat.readOnly=false;}
 }
 function round2(n){ return Math.round((Number(n)||0)*100)/100; }
 function cartSubtotal(){
@@ -2572,11 +2630,11 @@ function onPosProductChange(){
   if($('posSearchId')) $('posSearchId').value=item.id||'';
 }
 function unlockPriceAdj(){
-  promptPIN('Price Adjustment PIN', getPricePIN(), ()=>{
+  promptTransactionEntryPIN('Unlock price adjustment', ()=>{
     priceAdjUnlocked = true;
     const el = $('posPriceAdj');
-    if(el){ el.readOnly = false; el.focus(); }
-    toast('Price adjustment unlocked.', 'ok');
+    if(el){ el.readOnly=false; el.focus(); el.select(); }
+    toast('Price adjustment unlocked for this item.', 'ok');
   });
 }
 function clearProductEntry(){
@@ -2611,7 +2669,7 @@ function addItemToList(){
   const adj = Number($('posPriceAdj').value)||0;
   // Excel: if adj field used without unlock and non-zero, block
   if(Math.abs(adj) > 1e-9 && !priceAdjUnlocked){
-    toast('Price adjustment is locked. Double-click Price adj and complete authorised verification.', 'warn');
+    toast('Price adjustment is locked. Double-click Price adj and enter the control PIN.', 'warn');
     return;
   }
   const uPrice = base + adj; // effective
@@ -2729,6 +2787,7 @@ function resetSaleOutForm(){
   cart = [];
   cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = 0; cart._vatRate = 0;
   priceAdjUnlocked = false;
+  vatRateUnlocked = false;
 }
 
 function quickSaleOut(){
@@ -4393,7 +4452,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260805-secure-device-enrollment-r28').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260806-operational-safeguards-r31').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4416,20 +4475,20 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/auto-month-rollover.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/invoice-waybill.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/mobile-vertical-layout.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/kpi-freeze-pane.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/confirmed-july-snapshot.js?v=20260805-secure-device-enrollment-r28"></script>
-<script src="js/commercial-foundation.js?v=20260805-secure-device-enrollment-r28"></script>
+<script src="js/operations-update.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/auto-month-rollover.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/invoice-waybill.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/mobile-vertical-layout.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/kpi-freeze-pane.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/confirmed-july-snapshot.js?v=20260806-operational-safeguards-r31"></script>
+<script src="js/commercial-foundation.js?v=20260806-operational-safeguards-r31"></script>
 <script>
 /* Embedded so Owner Recovery does not depend on a newly added external file. */
-/* ZEZMS v3.7.0 — Secure Device Enrollment */
+/* ZEZMS v3.7.3 — Operational Safeguards & Device Revocation */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260805-secure-device-enrollment-r28';
+const BUILD='20260806-operational-safeguards-r31';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
@@ -4440,7 +4499,7 @@ const ROLES={
  AUDITOR:['LOGIN','VIEW_DASHBOARD','VIEW_RECEIPTS','VIEW_PRODUCTS','VIEW_STOCK','VIEW_CASH','VIEW_EXPENSES','VIEW_ACCOUNTS','VIEW_REPORTS','EXPORT_BACKUP','VIEW_AUDIT']
 };
 const VIEW={dashboard:'VIEW_DASHBOARD',pos:'SALE_OUT',receipts:'VIEW_RECEIPTS',stockin:'STOCK_IN',products:'VIEW_PRODUCTS',stock:'VIEW_STOCK',cash:'VIEW_CASH',expenses:'VIEW_EXPENSES',accounts:'VIEW_ACCOUNTS',reports:'VIEW_REPORTS',sync:'MANAGE_SYNC',settings:'MANAGE_SETTINGS'};
-const WRAP={quickSaleOut:'SALE_OUT',printReceiptSale:'SALE_OUT',doStockIn:'STOCK_IN',addProduct:'MANAGE_PRODUCTS',saveEditProduct:'MANAGE_PRODUCTS',delProduct:'MANAGE_PRODUCTS',doCashMove:'MANAGE_CASH',addExpense:'MANAGE_EXPENSES',delExpense:'MANAGE_EXPENSES',addAccount:'MANAGE_ACCOUNTS',applySettle:'MANAGE_ACCOUNTS',deleteAccountHolder:'MANAGE_ACCOUNTS',saveElectronicInvoice:'MANAGE_DOCUMENTS',saveElectronicWaybill:'MANAGE_DOCUMENTS',voidCommercialDocument:'MANAGE_DOCUMENTS',waybillFromInvoice:'MANAGE_DOCUMENTS',undoLast:'UNDO_TRANSACTION',undoInventoryTransaction:'UNDO_TRANSACTION',undoLastInventoryTransaction:'UNDO_TRANSACTION',undoAccountTransaction:'UNDO_TRANSACTION',undoLastAccountTransaction:'UNDO_TRANSACTION',undoSelectedAccountTransaction:'UNDO_TRANSACTION',undoCashTransaction:'UNDO_TRANSACTION',undoLastCashTransaction:'UNDO_TRANSACTION',undoSelectedCashTransaction:'UNDO_TRANSACTION',unlockPriceAdj:'PRICE_ADJUSTMENT',saveBiz:'MANAGE_SETTINGS',resetAll:'RESET_DATA',importDB:'IMPORT_DATA',importExcelWorkbook:'IMPORT_DATA',restoreFromLocal:'IMPORT_DATA',restoreCloudBackupAt:'IMPORT_DATA',m4SaveConfiguration:'MANAGE_SYNC',m4CreateCloudAccount:'MANAGE_SYNC',m4SignIn:'MANAGE_SYNC',m4SignOut:'MANAGE_SYNC',m4BootstrapThisDevice:'MANAGE_SYNC',m4DownloadCloudMaster:'MANAGE_SYNC'};
+const WRAP={quickSaleOut:'SALE_OUT',printReceiptSale:'SALE_OUT',doStockIn:'STOCK_IN',addProduct:'MANAGE_PRODUCTS',saveEditProduct:'MANAGE_PRODUCTS',delProduct:'MANAGE_PRODUCTS',doCashMove:'MANAGE_CASH',addExpense:'MANAGE_EXPENSES',delExpense:'MANAGE_EXPENSES',addAccount:'MANAGE_ACCOUNTS',applySettle:'MANAGE_ACCOUNTS',deleteAccountHolder:'MANAGE_ACCOUNTS',saveElectronicInvoice:'MANAGE_DOCUMENTS',saveElectronicWaybill:'MANAGE_DOCUMENTS',voidCommercialDocument:'MANAGE_DOCUMENTS',waybillFromInvoice:'MANAGE_DOCUMENTS',undoLast:'UNDO_TRANSACTION',undoInventoryTransaction:'UNDO_TRANSACTION',undoLastInventoryTransaction:'UNDO_TRANSACTION',undoAccountTransaction:'UNDO_TRANSACTION',undoLastAccountTransaction:'UNDO_TRANSACTION',undoSelectedAccountTransaction:'UNDO_TRANSACTION',undoCashTransaction:'UNDO_TRANSACTION',undoLastCashTransaction:'UNDO_TRANSACTION',undoSelectedCashTransaction:'UNDO_TRANSACTION',saveBiz:'MANAGE_SETTINGS',resetAll:'RESET_DATA',importDB:'IMPORT_DATA',importExcelWorkbook:'IMPORT_DATA',restoreFromLocal:'IMPORT_DATA',restoreCloudBackupAt:'IMPORT_DATA',m4SaveConfiguration:'MANAGE_SYNC',m4CreateCloudAccount:'MANAGE_SYNC',m4SignIn:'MANAGE_SYNC',m4SignOut:'MANAGE_SYNC',m4BootstrapThisDevice:'MANAGE_SYNC',m4DownloadCloudMaster:'MANAGE_SYNC'};
 const REAUTH=new Set(['MANAGE_STAFF','MANAGE_SETTINGS','MANAGE_SYNC','IMPORT_DATA','RESET_DATA']);
 let wrapped=false,recoveryClient=null,recoverySession=null,recoveryFactors=[];
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -4581,8 +4640,8 @@ async function refreshUsersFromCloud(showNotice){
     return false;
   }
 }
-async function login(){const id=String((document.getElementById('sharedLoginUser')||{}).value||''),password=String((document.getElementById('sharedLoginPassword')||{}).value||''),u=model().users.find(x=>x.id===id),btn=document.getElementById('sharedLoginButton');if(!u||!u.passwordHash){status('Select Owner recovery / first setup to create staff passwords.','error');return;}if(!password){status('Enter the selected staff member’s password.','error');return;}const lock=u.lockedUntil?new Date(u.lockedUntil).getTime():0;if(lock>Date.now()){status(`Too many failed attempts. Try again in ${Math.ceil((lock-Date.now())/1000)} seconds.`,'error');return;}if(btn){btn.disabled=true;btn.textContent='Checking password…';}status('Checking the local staff password…','working');try{if(!await verify(u,password)){u.failedAttempts=Number(u.failedAttempts||0)+1;if(u.failedAttempts>=5){u.failedAttempts=0;u.lockedUntil=new Date(Date.now()+30000).toISOString();}saveDB();status(`Incorrect password for ${u.name}.`,'error');return;}u.failedAttempts=0;u.lockedUntil='';u.lastLoginAt=stamp();saveDB();session.cashier=u.name;session.tel=u.tel||'';session.role=['OWNER','ADMIN','MANAGER','READ_ONLY','AUDITOR'].includes(u.role)?'ADMIN':'CASHIER2';session.sig=u.signatureFile||'';session.isCashier2=u.role==='CASHIER';session.adminMode=false;session.commercialRole=u.role;session.sharedUserId=u.id;session.businessId=model().businessId;cart=[];priceAdjUnlocked=false;document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';updateUserBadge();applyRoleUI();updatePeriodUI();audit('STAFF_SIGNED_IN',{userId:u.id});nav(fallback());toast('Welcome, '+String(u.name).split(' ')[0]+'!');if(['OWNER','ADMIN'].includes(u.role))setTimeout(()=>{autoPublishDirectory();},800);}catch(e){console.error(e);status(e.message||String(e),'error');}finally{if(btn){btn.disabled=false;btn.textContent='Sign in to this shared device';}}}
-async function logout(){if(session.sharedUserId)audit('STAFF_SIGNED_OUT',{userId:session.sharedUserId});session={cashier:null,tel:null,role:null,adminMode:false,sig:null,isCashier2:false};cart=[];priceAdjUnlocked=false;document.getElementById('appShell').style.display='none';document.getElementById('loginScreen').style.display='flex';const p=document.getElementById('sharedLoginPassword');if(p)p.value='';refreshUsers();}
+async function login(){const id=String((document.getElementById('sharedLoginUser')||{}).value||''),password=String((document.getElementById('sharedLoginPassword')||{}).value||''),u=model().users.find(x=>x.id===id),btn=document.getElementById('sharedLoginButton');if(!u||!u.passwordHash){status('Select Owner recovery / first setup to create staff passwords.','error');return;}if(!password){status('Enter the selected staff member’s password.','error');return;}const lock=u.lockedUntil?new Date(u.lockedUntil).getTime():0;if(lock>Date.now()){status(`Too many failed attempts. Try again in ${Math.ceil((lock-Date.now())/1000)} seconds.`,'error');return;}if(btn){btn.disabled=true;btn.textContent='Checking password…';}status('Checking the local staff password…','working');try{if(!await verify(u,password)){u.failedAttempts=Number(u.failedAttempts||0)+1;if(u.failedAttempts>=5){u.failedAttempts=0;u.lockedUntil=new Date(Date.now()+30000).toISOString();}saveDB();status(`Incorrect password for ${u.name}.`,'error');return;}u.failedAttempts=0;u.lockedUntil='';u.lastLoginAt=stamp();saveDB();session.cashier=u.name;session.tel=u.tel||'';session.role=['OWNER','ADMIN','MANAGER','READ_ONLY','AUDITOR'].includes(u.role)?'ADMIN':'CASHIER2';session.sig=u.signatureFile||'';session.isCashier2=u.role==='CASHIER';session.adminMode=false;session.commercialRole=u.role;session.sharedUserId=u.id;session.businessId=model().businessId;cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';updateUserBadge();applyRoleUI();updatePeriodUI();audit('STAFF_SIGNED_IN',{userId:u.id});nav(fallback());toast('Welcome, '+String(u.name).split(' ')[0]+'!');if(['OWNER','ADMIN'].includes(u.role))setTimeout(()=>{autoPublishDirectory();},800);}catch(e){console.error(e);status(e.message||String(e),'error');}finally{if(btn){btn.disabled=false;btn.textContent='Sign in to this shared device';}}}
+async function logout(){if(session.sharedUserId)audit('STAFF_SIGNED_OUT',{userId:session.sharedUserId});session={cashier:null,tel:null,role:null,adminMode:false,sig:null,isCashier2:false};cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;document.getElementById('appShell').style.display='none';document.getElementById('loginScreen').style.display='flex';const p=document.getElementById('sharedLoginPassword');if(p)p.value='';refreshUsers();}
 function badge(){const n=document.getElementById('uiUserName'),b=document.getElementById('uiUserRole');if(n)n.textContent=session.cashier||'—';if(b){b.textContent=role().replace('_',' ');b.className=role()==='CASHIER'?'badge cashier':'badge admin';}}
 function roleUI(){document.querySelectorAll('#mainNav button[data-view]').forEach(b=>b.style.display=canView(b.dataset.view)?'':'none');const sw=document.getElementById('navAdminMode');if(sw){sw.style.display='';sw.textContent='⇄ Switch Staff';sw.style.background='rgba(20,184,166,.18)';sw.style.color='#99f6e4';}document.querySelectorAll('[data-admin-only]').forEach(e=>{if(e.id==='navAdminMode')return;const v=e.dataset&&e.dataset.view;e.style.display=v?(canView(v)?'':'none'):'';});badge();}
 function afterRender(){const a=document.getElementById('legacyPinSecurityCard'),b=document.getElementById('legacyLocalUsersCard');if(a)a.remove();if(b)b.remove();if(['READ_ONLY','AUDITOR'].includes(role())){const names=Object.keys(WRAP);document.querySelectorAll('#viewRoot button[onclick]').forEach(x=>{const c=String(x.getAttribute('onclick')||'');if(names.some(n=>c.includes(n+'(')))x.style.display='none';});document.querySelectorAll('#viewRoot input:not([type="search"]),#viewRoot select,#viewRoot textarea').forEach(f=>{if(!f.closest('.period-selector')&&!String(f.id||'').startsWith('receiptNameSearch')&&!String(f.id||'').startsWith('stockSearch'))f.disabled=true;});}}
@@ -4591,14 +4650,15 @@ async function sensitive(title){if(!['OWNER','ADMIN','MANAGER'].includes(role())
 function wrap(name,action){const original=window[name];if(typeof original!=='function'||original.__sharedDeviceWrapped)return;const fn=async function(){if(!can(action)){toast('Your staff role cannot perform this action.','err');return false;}if(REAUTH.has(action)&&!await reauth('Confirm '+action.replace(/_/g,' ').toLowerCase()))return false;return original.apply(this,arguments);};fn.__sharedDeviceWrapped=true;window[name]=fn;}
 function guards(){if(wrapped)return;Object.keys(WRAP).forEach(n=>wrap(n,WRAP[n]));wrapped=true;}
 async function upsert(values,id){const m=model(),name=String(values.name||'').trim(),tel=String(values.tel||'').trim(),r=String(values.role||'CASHIER').toUpperCase(),password=String(values.password||'');if(!name)throw new Error('Staff name is required.');if(!ROLES[r])throw new Error('Invalid role.');let u=id?m.users.find(x=>x.id===id):null;if(!u){u={id:uid(),createdAt:stamp()};m.users.push(u);}if(u.role==='OWNER'&&r!=='OWNER')throw new Error('The Owner role cannot be removed here.');u.name=name;u.tel=tel;u.role=r;u.active=values.active!==false;u.updatedAt=stamp();if(password){if(password.length<6)throw new Error('Password or secure PIN must contain at least 6 characters.');const rec=await makePassword(password);u.passwordAlgorithm=rec.algorithm;u.passwordIterations=rec.iterations;u.passwordSalt=rec.salt;u.passwordHash=rec.hash;u.passwordChangedAt=stamp();}else if(!u.passwordHash)throw new Error('A password is required for a new staff account.');m.enabled=true;m.updatedAt=stamp();if(!m.createdAt)m.createdAt=stamp();if(DB.security&&Array.isArray(DB.security.cashiers))DB.security.cashiers.forEach(c=>{if(c&&Object.prototype.hasOwnProperty.call(c,'password'))delete c.password;});if(DB.security){DB.security.adminPIN='';DB.security.pricePIN='';DB.security.sharedDevicePasswordsActive=true;}writeDirectoryRoot();saveDB();return u;}
-function rows(){return model().users.slice().sort((a,b)=>(a.role==='OWNER'?0:1)-(b.role==='OWNER'?0:1)||String(a.name||'').localeCompare(String(b.name||''))).map(u=>`<tr><td>${esc(u.name)}${u.active===false?' <span class="badge bad">INACTIVE</span>':''}</td><td>${esc(u.tel||'')}</td><td><span class="badge ${u.role==='CASHIER'?'cashier':'admin'}">${esc(u.role.replace('_',' '))}</span></td><td>${u.passwordHash?'PBKDF2 protected':'Password required'}</td><td style="font-size:11px">${esc(u.lastLoginAt?new Date(u.lastLoginAt).toLocaleString():'Never')}</td><td><button class="btn sm ghost" onclick="sharedDeviceEditUser('${attr(u.id)}')">Manage</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">No shared-device users.</td></tr>';}
+function rows(){return model().users.slice().sort((a,b)=>(a.role==='OWNER'?0:1)-(b.role==='OWNER'?0:1)||String(a.name||'').localeCompare(String(b.name||''))).map(u=>`<tr><td>${esc(u.name)}${u.active===false?' <span class="badge bad">INACTIVE</span>':''}</td><td>${esc(u.tel||'')}</td><td><span class="badge ${u.role==='CASHIER'?'cashier':'admin'}">${esc(u.role.replace('_',' '))}</span></td><td>${u.passwordHash?'PBKDF2 protected':'Password required'}</td><td style="font-size:11px">${esc(u.lastLoginAt?new Date(u.lastLoginAt).toLocaleString():'Never')}</td><td><div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm ghost" onclick="sharedDeviceEditUser('${attr(u.id)}')">Manage</button>${u.role!=='OWNER'?`<button class="btn sm danger" onclick="sharedDeviceDeleteUser('${attr(u.id)}')">Delete</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="6" class="empty">No shared-device users.</td></tr>';}
 function card(){if(!can('MANAGE_SETTINGS'))return'';return `<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Shared-Device Staff Access</h3><span class="badge ok">ACTIVE</span></div><p class="muted" style="font-size:12px;line-height:1.55">Several staff members can use this same registered device. Staff switching does not sign out Cloud Sync M4. Passwords are stored only as salted PBKDF2 hashes.</p><div class="table-wrap"><table><thead><tr><th>Name</th><th>Telephone</th><th>Role</th><th>Password</th><th>Last login</th><th>Action</th></tr></thead><tbody>${rows()}</tbody></table></div><hr class="hr"><h3>Add staff member</h3><div class="grid g2"><div class="field"><label>Full name</label><input id="sharedNewName"></div><div class="field"><label>Telephone</label><input id="sharedNewTel"></div><div class="field"><label>Role</label><select id="sharedNewRole"><option value="ADMIN">ADMIN</option><option value="MANAGER">MANAGER</option><option value="CASHIER" selected>CASHIER</option><option value="READ_ONLY">READ ONLY</option><option value="AUDITOR">AUDITOR</option></select></div><div class="field"><label>Password / secure PIN</label><input id="sharedNewPassword" type="password" autocomplete="new-password"></div></div><button class="btn" onclick="sharedDeviceAddUser()">Add staff member</button><button class="btn ghost" style="margin-left:8px" onclick="sharedDevicePublishAccess()">Publish staff access to devices</button><button class="btn ghost" style="margin-left:8px" onclick="sharedDeviceOwnerRecovery()">Owner recovery</button><p class="muted" style="font-size:11px;margin-top:10px">The experimental one-user-per-browser login is disabled. Its Supabase records remain for future migration.</p></div>`;}
 function installCard(){const original=window.viewSettings;if(typeof original!=='function'||original.__sharedDeviceWrapped)return;const fn=function(){return original.apply(this,arguments)+card();};fn.__sharedDeviceWrapped=true;window.viewSettings=fn;}
 async function addUser(){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can add staff.');if(!await reauth('Confirm new staff account'))return;const name=String((document.getElementById('sharedNewName')||{}).value||''),r=String((document.getElementById('sharedNewRole')||{}).value||'CASHIER');await upsert({name,tel:String((document.getElementById('sharedNewTel')||{}).value||''),role:r,password:String((document.getElementById('sharedNewPassword')||{}).value||''),active:true});audit('STAFF_ACCOUNT_CREATED',{name,role:r});render();refreshUsers();toast('Shared-device staff account created.');}catch(e){toast(e.message||String(e),'err');}}
-function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;const rs=u.role==='OWNER'?['OWNER']:['ADMIN','MANAGER','CASHIER','READ_ONLY','AUDITOR'];sharedModal(`<h3>Manage shared-device staff</h3><div class="field"><label>Full name</label><input id="sharedEditName" value="${attr(u.name)}"></div><div class="field"><label>Telephone</label><input id="sharedEditTel" value="${attr(u.tel||'')}"></div><div class="field"><label>Role</label><select id="sharedEditRole">${rs.map(x=>`<option value="${x}" ${x===u.role?'selected':''}>${x.replace('_',' ')}</option>`).join('')}</select></div><div class="field"><label>Status</label><select id="sharedEditActive"><option value="1" ${u.active!==false?'selected':''}>ACTIVE</option><option value="0" ${u.active===false?'selected':''}>INACTIVE</option></select></div><div class="field"><label>New password / secure PIN</label><input id="sharedEditPassword" type="password" placeholder="Leave blank to keep current password" autocomplete="new-password"></div><div class="row"><button class="btn" onclick="sharedDeviceSaveUser('${attr(u.id)}')">Save</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>`);}
+function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;const rs=u.role==='OWNER'?['OWNER']:['ADMIN','MANAGER','CASHIER','READ_ONLY','AUDITOR'];sharedModal(`<h3>Manage shared-device staff</h3><div class="field"><label>Full name</label><input id="sharedEditName" value="${attr(u.name)}"></div><div class="field"><label>Telephone</label><input id="sharedEditTel" value="${attr(u.tel||'')}"></div><div class="field"><label>Role</label><select id="sharedEditRole">${rs.map(x=>`<option value="${x}" ${x===u.role?'selected':''}>${x.replace('_',' ')}</option>`).join('')}</select></div><div class="field"><label>Status</label><select id="sharedEditActive"><option value="1" ${u.active!==false?'selected':''}>ACTIVE</option><option value="0" ${u.active===false?'selected':''}>INACTIVE</option></select></div><div class="field"><label>New password / secure PIN</label><input id="sharedEditPassword" type="password" placeholder="Leave blank to keep current password" autocomplete="new-password"></div><div class="row"><button class="btn" onclick="sharedDeviceSaveUser('${attr(u.id)}')">Save</button>${u.role!=='OWNER'?`<button class="btn danger" onclick="sharedDeviceDeleteUser('${attr(u.id)}')">Delete staff</button>`:''}<button class="btn ghost" onclick="closeModal()">Cancel</button></div>`);}
 async function saveUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can manage staff.');if(!await reauth('Confirm staff-account change'))return;const u=model().users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(role()==='ADMIN'&&u.role==='OWNER')throw new Error('An Admin cannot modify the Owner account.');await upsert({name:String((document.getElementById('sharedEditName')||{}).value||''),tel:String((document.getElementById('sharedEditTel')||{}).value||''),role:String((document.getElementById('sharedEditRole')||{}).value||u.role),password:String((document.getElementById('sharedEditPassword')||{}).value||''),active:String((document.getElementById('sharedEditActive')||{}).value||'1')==='1'},id);closeModal();audit('STAFF_ACCOUNT_UPDATED',{userId:id});render();refreshUsers();toast('Staff account updated.');}catch(e){toast(e.message||String(e),'err');}}
+async function deleteUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can delete staff.');const m=model(),u=m.users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(u.role==='OWNER')throw new Error('The OWNER account cannot be deleted.');if(session.sharedUserId===u.id)throw new Error('You cannot delete the account currently signed in.');if(role()==='ADMIN'&&u.role==='ADMIN')throw new Error('Only the OWNER can delete another ADMIN.');if(!window.confirm(`Permanently delete ${u.name}?\n\nTheir historical transactions remain, but this staff login and password will be removed from synced devices.`))return;if(!await reauth('Confirm permanent staff deletion'))return;const i=m.users.findIndex(x=>x.id===id);if(i<0)throw new Error('Staff account not found.');const deleted=m.users.splice(i,1)[0];m.updatedAt=stamp();writeDirectoryRoot();audit('STAFF_ACCOUNT_DELETED',{userId:deleted.id,name:deleted.name,role:deleted.role});try{await publishDirectory(false);}catch(error){console.warn('Staff deletion will sync with the queued directory update.',error);}closeModal();render();refreshUsers();toast(`Staff deleted: ${deleted.name}`);}catch(e){toast(e.message||String(e),'err');}}
 function cloud(){const s=ZEZMS.cloudSync;return s&&typeof s.getState==='function'?s.getState():{};}
-function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.0'};}
+function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.3'};}
 function recovery(){const s=cloud();if(!s.supabaseUrl||!s.publishableKey||!window.supabase)throw new Error('Supabase configuration is unavailable on this device.');if(!recoveryClient)recoveryClient=window.supabase.createClient(String(s.supabaseUrl).replace(/\/$/,''),String(s.publishableKey),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:RECOVERY_KEY}});return recoveryClient;}
 
 function sharedModal(html){
@@ -4703,6 +4763,7 @@ window.sharedDeviceCompleteOwnerSetup=function(){ completeSetup(); };
 window.sharedDeviceAddUser=function(){ addUser(); };
 window.sharedDeviceEditUser=editUser;
 window.sharedDeviceSaveUser=function(id){ saveUser(id); };
+window.sharedDeviceDeleteUser=function(id){ deleteUser(id); };
 
 ZEZMS.staffAuth={version:'M5A-2-SHARED-DEVICE',build:BUILD,isActive:()=>true,can,canView,fallbackView:fallback,isElevatedForViewing:elevated,signInFromLogin:login,signOut:logout,confirmSensitive:sensitive,applyRoleUI:roleUI,updateUserBadge:badge,afterRender,getContext:()=>({authMode:'SHARED_DEVICE',businessId:model().businessId,role:role(),user:current()}),getState:()=>({enabled:!!model().enabled,businessId:model().businessId,directoryPublished:!!DB.sharedDeviceDirectory,users:model().users.map(u=>({id:u.id,name:u.name,tel:u.tel,role:u.role,active:u.active,lastLoginAt:u.lastLoginAt}))})};
 setTimeout(init,250);
@@ -4750,12 +4811,12 @@ setTimeout(function(){
 
 <script>
 /* Embedded Secure Device Enrollment controller. */
-/* ZEZMS v3.7.0 — Secure Device Enrollment */
+/* ZEZMS v3.7.3 — Operational Safeguards & Device Revocation */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260805-secure-device-enrollment-r28';
+  const BUILD = '20260806-operational-safeguards-r31';
   let branches = [];
   let lastPairing = null;
 
@@ -4892,6 +4953,80 @@ setTimeout(function(){
     }
     return branches;
   }
+  function enrolledDevicesRowsHtml(){
+    const state=cloudState();
+    const currentId=String(state.deviceId||'');
+    return enrolledDevices.map(function(device){
+      const revoked=!!device.revoked_at;
+      const current=String(device.device_id||'')===currentId;
+      const action=revoked
+        ? '—'
+        : current
+          ? '<span class="muted" style="font-size:10px">Revoke from another OWNER device</span>'
+          : '<button class="btn sm danger" onclick="secureDeviceEnrollmentRevoke(\''+attr(device.device_id)+'\')">Revoke</button>';
+      return '<tr>'
+        +'<td>'+esc(device.device_name||'ZEZMS Device')+(current?' <span class="badge ok">THIS DEVICE</span>':'')+'</td>'
+        +'<td class="mono" style="font-size:10px">'+esc(device.device_id||'')+'</td>'
+        +'<td>'+esc(device.app_version||'—')+'</td>'
+        +'<td style="font-size:11px">'+esc(device.last_seen_at?new Date(device.last_seen_at).toLocaleString():'—')+'</td>'
+        +'<td>'+(revoked?'<span class="badge bad">REVOKED</span>':'<span class="badge ok">ACTIVE</span>')+'</td>'
+        +'<td>'+action+'</td></tr>';
+    }).join('')||'<tr><td colspan="6" class="empty">No enrolled devices returned yet.</td></tr>';
+  }
+  function enrolledDevicesHtml(){
+    return '<hr class="hr"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      +'<h3 style="margin:0">Enrolled devices</h3>'
+      +'<button class="btn sm ghost" onclick="secureDeviceEnrollmentRefreshDevices()">Refresh devices</button></div>'
+      +'<p class="muted" style="font-size:11px">Revoking a device blocks its M4 data access and future sync. The current device must be revoked from another OWNER device.</p>'
+      +'<div class="table-wrap"><table><thead><tr><th>Device</th><th>Device ID</th><th>App</th><th>Last seen</th><th>Status</th><th>Action</th></tr></thead>'
+      +'<tbody id="secureEnrolledDevicesBody">'+enrolledDevicesRowsHtml()+'</tbody></table></div>';
+  }
+  function paintEnrolledDevices(){
+    const body=document.getElementById('secureEnrolledDevicesBody');
+    if(body)body.innerHTML=enrolledDevicesRowsHtml();
+  }
+  async function loadEnrolledDevices(showNotice){
+    const state=cloudState();
+    if(state.deviceAccessMode==='PAIRED')return [];
+    const pair=await ownerClient();
+    const f=foundationState();
+    const businessId=String(f.businessId||f.context&&f.context.business_id||'');
+    if(!businessId)throw new Error('The M5A-1 Tenant ID is unavailable.');
+    const result=await pair.client.from('zezms_business_devices')
+      .select('device_id,device_name,platform,app_version,last_seen_at,revoked_at,revocation_reason,user_id')
+      .eq('business_id',businessId)
+      .order('last_seen_at',{ascending:false});
+    if(result.error)throw result.error;
+    enrolledDevices=Array.isArray(result.data)?result.data:[];
+    paintEnrolledDevices();
+    if(showNotice&&typeof toast==='function')toast('Enrolled devices refreshed.');
+    return enrolledDevices;
+  }
+  async function revokeEnrolledDevice(deviceId){
+    try{
+      const state=cloudState();
+      if(String(deviceId||'')===String(state.deviceId||'')){
+        throw new Error('For safety, revoke the current device from another OWNER device.');
+      }
+      const pair=await ownerClient();
+      const f=foundationState();
+      const businessId=String(f.businessId||f.context&&f.context.business_id||'');
+      if(!businessId)throw new Error('The M5A-1 Tenant ID is unavailable.');
+      const device=enrolledDevices.find(d=>String(d.device_id||'')===String(deviceId||''));
+      const label=device&&device.device_name?device.device_name:String(deviceId||'device');
+      if(!window.confirm('Revoke '+label+'?\n\nThis device will lose M4 data access and future sync.'))return;
+      const reason=String(window.prompt('Reason for revocation (optional)','Device no longer authorised')||'').trim();
+      const result=await pair.client.rpc('zezms_revoke_business_device',{p_business_id:businessId,p_device_id:String(deviceId||''),p_reason:reason});
+      if(result.error)throw result.error;
+      await loadEnrolledDevices(false);
+      if(window.ZEZMS&&ZEZMS.commercialFoundation&&typeof ZEZMS.commercialFoundation.refresh==='function'){
+        try{await ZEZMS.commercialFoundation.refresh({silent:true});}catch(_){}
+      }
+      if(typeof toast==='function')toast('Device revoked: '+label);
+    }catch(error){
+      if(typeof toast==='function')toast(error.message||String(error),'err');
+    }
+  }
   function ownerCardHtml() {
     const state=cloudState();
     if(state.deviceAccessMode==='PAIRED'){
@@ -4906,6 +5041,7 @@ setTimeout(function(){
       + '<button class="btn" onclick="secureDeviceEnrollmentCreateCode()">Create one-time device code</button>'
       + (lastPairing?pairingResultHtml(lastPairing):'')
       + '<p class="muted" style="font-size:11px;margin-top:10px">Prerequisite: Supabase Anonymous Sign-Ins must be enabled once for the project.</p>'
+      + enrolledDevicesHtml()
       + '</div>';
   }
   function pairingResultHtml(data) {
@@ -4938,7 +5074,7 @@ setTimeout(function(){
       if(!branchId)throw new Error('Select the branch for the new device.');
       const result=await pair.client.rpc('zezms_m5a3_create_device_pairing',{
         p_business_id:businessId,p_device_name:deviceName,p_branch_id:branchId,
-        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.0'
+        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.3'
       });
       if(result.error)throw result.error;
       lastPairing=normalizeRow(result.data);
@@ -4961,7 +5097,7 @@ setTimeout(function(){
   function installSettingsCard() {
     const original=window.viewSettings;
     if(typeof original!=='function'||original.__m5a3DeviceWrapped)return;
-    const wrapped=function(){const result=original.apply(this,arguments)+ownerCardHtml();setTimeout(function(){if(document.getElementById('devicePairBranch'))loadBranches().catch(function(error){const s=document.getElementById('devicePairBranch');if(s)s.innerHTML='<option value="">'+esc(error.message||error)+'</option>';});},30);return result;};
+    const wrapped=function(){const result=original.apply(this,arguments)+ownerCardHtml();setTimeout(function(){if(document.getElementById('devicePairBranch'))loadBranches().catch(function(error){const s=document.getElementById('devicePairBranch');if(s)s.innerHTML='<option value="">'+esc(error.message||error)+'</option>';});if(document.getElementById('secureEnrolledDevicesBody'))loadEnrolledDevices(false).catch(function(error){const b=document.getElementById('secureEnrolledDevicesBody');if(b)b.innerHTML='<tr><td colspan="6" class="empty">'+esc(error.message||error)+'</td></tr>';});},30);return result;};
     wrapped.__m5a3DeviceWrapped=true;window.viewSettings=wrapped;
   }
   function init() {
@@ -4974,6 +5110,8 @@ setTimeout(function(){
   window.secureDeviceEnrollmentOpen=function(){openNewDevice(pairingParams());};
   window.secureDeviceEnrollmentClaim=function(){claimNewDevice();};
   window.secureDeviceEnrollmentCreateCode=function(){createPairing();};
+  window.secureDeviceEnrollmentRefreshDevices=function(){loadEnrolledDevices(true).catch(function(error){if(typeof toast==='function')toast(error.message||String(error),'err');});};
+  window.secureDeviceEnrollmentRevoke=function(deviceId){revokeEnrolledDevice(deviceId);};
   window.secureDeviceEnrollmentCopyCode=function(){if(lastPairing)copyText(lastPairing.pairing_code,'Pairing code copied.');};
   window.secureDeviceEnrollmentCopyLink=function(){if(lastPairing)copyText(lastPairing.setup_link,'Complete setup link copied.');};
 

@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Commercial Pilot 0.7.2 — Forced Activation",
-  build:"20260806-forced-activation-r30",
+  version:"Commercial Pilot 0.7.3 — Operational Safeguards & Device Revocation",
+  build:"20260806-operational-safeguards-r31",
   debug:true,
   cloud:{
     googleDrive:{
