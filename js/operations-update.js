@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260805-secure-device-enrollment-r28';
+  const BUILD = '20260806-enrollment-fix-entry-guards-r29';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260805-secure-device-enrollment-r28';
+  const BUILD = '20260806-enrollment-fix-entry-guards-r29';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();

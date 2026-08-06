@@ -1,9 +1,9 @@
-/* ZEZMS v3.7.0 — Secure Device Enrollment */
+/* ZEZMS v3.7.1 — Enrollment Fix & Entry Guards */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260805-secure-device-enrollment-r28';
+  const BUILD = '20260806-enrollment-fix-entry-guards-r29';
   let branches = [];
   let lastPairing = null;
 
@@ -78,7 +78,7 @@
   async function claimNewDevice() {
     const s=sync();
     if(!s||typeof s.enrollPairedDevice!=='function'){
-      status('Secure Device Enrollment did not load. Confirm v3.7.0 is deployed.','error');
+      status('Enrollment Fix & Entry Guards did not load. Confirm v3.7.1 is deployed.','error');
       return;
     }
     const values={
@@ -106,6 +106,7 @@
       else if(/ZEZMS_PAIRING_USED/i.test(raw))message='This pairing code has already been used.';
       else if(/ZEZMS_DEVICE_REVOKED/i.test(raw))message='This device has been revoked.';
       else if(/anonymous.*disabled|signups.*disabled/i.test(raw))message='Enable Anonymous Sign-Ins in Supabase Authentication settings, then retry.';
+      else if(/column reference.*business_id.*ambiguous|42702/i.test(raw))message='Run SUPABASE_M5A3_DEVICE_CONTEXT_AMBIGUITY_FIX.sql once, wait for the schema reload, then retry this same pairing code on this device.';
       status(message,'error');
     }
   }
@@ -143,10 +144,10 @@
   function ownerCardHtml() {
     const state=cloudState();
     if(state.deviceAccessMode==='PAIRED'){
-      return '<div class="card" style="margin-top:12px"><h3>Secure Device Enrollment</h3><p class="muted">Pairing codes can be created only from a primary OWNER-authenticated device. This device is already paired.</p></div>';
+      return '<div class="card" style="margin-top:12px"><h3>Enrollment Fix & Entry Guards</h3><p class="muted">Pairing codes can be created only from a primary OWNER-authenticated device. This device is already paired.</p></div>';
     }
     return '<div class="card" style="margin-top:12px">'
-      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Secure Device Enrollment</h3><span class="badge ok">M5A-3</span></div>'
+      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Enrollment Fix & Entry Guards</h3><span class="badge ok">M5A-3</span></div>'
       + '<p class="muted" style="font-size:12px;line-height:1.55">Create a short-lived, one-use code for a completely new phone or computer. The new device receives its own identity and never receives the OWNER password.</p>'
       + '<div class="grid g2"><div class="field"><label>New device name</label><input id="devicePairName" placeholder="Till 2 / Manager phone"></div>'
       + '<div class="field"><label>Branch</label><select id="devicePairBranch"><option value="">Loading branches…</option></select></div>'
