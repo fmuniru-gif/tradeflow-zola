@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Commercial Pilot 0.7.3 — Operational Safeguards & Device Revocation",
-  build:"20260806-operational-safeguards-r31",
+  version:"Commercial Pilot 0.7.0 — Secure Device Enrollment",
+  build:"20260807-access-controls-r29",
   debug:true,
   cloud:{
     googleDrive:{

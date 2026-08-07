@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260806-operational-safeguards-r31';
+  const BUILD = '20260807-access-controls-r29';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();
@@ -273,7 +273,7 @@
     }
     if (!confirm(
       'Revoke this device?\n\nDevice ID: ' + deviceId
-      + '\n\nThe device will immediately lose M4 data access and future sync under M5A-3.'
+      + '\n\nThe device will be blocked when M5A tenant enforcement is activated.'
     )) return;
 
     const reason = String(prompt('Reason for revocation (optional)', 'Device no longer authorised') || '').trim();

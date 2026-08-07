@@ -1,11 +1,16 @@
-/* ZEZMS v3.7.3 — Operational Safeguards & Device Revocation */
+/* ZEZMS v3.7.0 — Secure Device Enrollment */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260806-operational-safeguards-r31';
+  const BUILD = '20260807-access-controls-r29';
   let branches = [];
   let lastPairing = null;
+  let enrolledDevices = [];
+  let enrolledDevicesLoaded = false;
+  let enrolledDevicesLoading = false;
+  let enrolledDevicesError = '';
+  let pendingRevocation = null;
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
@@ -140,78 +145,107 @@
     }
     return branches;
   }
-  function enrolledDevicesRowsHtml(){
+  function deviceBusinessId(pair) {
+    const f=foundationState();
+    return String(f.businessId||f.context&&f.context.business_id||pair&&pair.state&&pair.state.businessId||'');
+  }
+  function localDate(value) {
+    if(!value)return 'Never';
+    const date=new Date(value);
+    return Number.isNaN(date.getTime())?'Unknown':date.toLocaleString();
+  }
+  function enrolledDeviceRows() {
+    if(enrolledDevicesLoading||!enrolledDevicesLoaded)return '<tr><td colspan="6" class="empty">Loading enrolled devices…</td></tr>';
+    if(enrolledDevicesError)return '<tr><td colspan="6" class="empty">'+esc(enrolledDevicesError)+'</td></tr>';
+    if(!enrolledDevices.length)return '<tr><td colspan="6" class="empty">No enrolled devices were returned.</td></tr>';
     const state=cloudState();
     const currentId=String(state.deviceId||'');
     return enrolledDevices.map(function(device){
-      const revoked=!!device.revoked_at;
-      const current=String(device.device_id||'')===currentId;
-      const action=revoked
-        ? '—'
-        : current
-          ? '<span class="muted" style="font-size:10px">Revoke from another OWNER device</span>'
-          : '<button class="btn sm danger" onclick="secureDeviceEnrollmentRevoke(\''+attr(device.device_id)+'\')">Revoke</button>';
-      return '<tr>'
-        +'<td>'+esc(device.device_name||'ZEZMS Device')+(current?' <span class="badge ok">THIS DEVICE</span>':'')+'</td>'
-        +'<td class="mono" style="font-size:10px">'+esc(device.device_id||'')+'</td>'
-        +'<td>'+esc(device.app_version||'—')+'</td>'
-        +'<td style="font-size:11px">'+esc(device.last_seen_at?new Date(device.last_seen_at).toLocaleString():'—')+'</td>'
-        +'<td>'+(revoked?'<span class="badge bad">REVOKED</span>':'<span class="badge ok">ACTIVE</span>')+'</td>'
-        +'<td>'+action+'</td></tr>';
-    }).join('')||'<tr><td colspan="6" class="empty">No enrolled devices returned yet.</td></tr>';
+      const active=!device.revoked_at;
+      const isCurrent=currentId&&String(device.device_id||'')===currentId;
+      const metadata=device.metadata&&typeof device.metadata==='object'?device.metadata:{};
+      const type=String(metadata.access_mode||'').toUpperCase()==='PAIRED_ANONYMOUS'?'Paired device':'Registered device';
+      let action='<span class="badge bad">REVOKED</span>';
+      if(active&&isCurrent)action='<button class="btn sm ghost" disabled title="Revoke this device from another Owner device">Current device</button>';
+      else if(active)action='<button class="btn sm danger" onclick="secureDeviceEnrollmentOpenRevocation('+attr(JSON.stringify(String(device.device_id||'')))+','+attr(JSON.stringify(String(device.device_name||'ZEZMS Device')))+')">Revoke</button>';
+      return '<tr><td><b>'+esc(device.device_name||'ZEZMS Device')+'</b><br><span class="muted mono" style="font-size:10px">'+esc(device.device_id||'')+'</span></td>'
+        + '<td>'+esc(type)+'</td>'
+        + '<td><span class="badge '+(active?'ok':'bad')+'">'+(active?'ACTIVE':'REVOKED')+'</span></td>'
+        + '<td style="font-size:11px">'+esc(localDate(device.last_seen_at))+'</td>'
+        + '<td>'+esc(device.app_version||'—')+'</td><td>'+action+'</td></tr>';
+    }).join('');
   }
-  function enrolledDevicesHtml(){
-    return '<hr class="hr"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
-      +'<h3 style="margin:0">Enrolled devices</h3>'
-      +'<button class="btn sm ghost" onclick="secureDeviceEnrollmentRefreshDevices()">Refresh devices</button></div>'
-      +'<p class="muted" style="font-size:11px">Revoking a device blocks its M4 data access and future sync. The current device must be revoked from another OWNER device.</p>'
-      +'<div class="table-wrap"><table><thead><tr><th>Device</th><th>Device ID</th><th>App</th><th>Last seen</th><th>Status</th><th>Action</th></tr></thead>'
-      +'<tbody id="secureEnrolledDevicesBody">'+enrolledDevicesRowsHtml()+'</tbody></table></div>';
+  function refreshEnrolledDeviceTable() {
+    const body=document.getElementById('enrolledDeviceRows');
+    if(body)body.innerHTML=enrolledDeviceRows();
   }
-  function paintEnrolledDevices(){
-    const body=document.getElementById('secureEnrolledDevicesBody');
-    if(body)body.innerHTML=enrolledDevicesRowsHtml();
+  function enrolledDevicesHtml() {
+    return '<hr class="hr"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Enrolled devices</h3>'
+      + '<button class="btn sm ghost" onclick="secureDeviceEnrollmentRefreshDevices()">Refresh devices</button></div>'
+      + '<p class="muted" style="font-size:12px">Revoke a lost, replaced, or unauthorised device. Revocation immediately blocks its cloud access.</p>'
+      + '<div class="table-wrap"><table><thead><tr><th>Device</th><th>Type</th><th>Status</th><th>Last seen</th><th>App</th><th>Action</th></tr></thead>'
+      + '<tbody id="enrolledDeviceRows">'+enrolledDeviceRows()+'</tbody></table></div>';
   }
-  async function loadEnrolledDevices(showNotice){
-    const state=cloudState();
-    if(state.deviceAccessMode==='PAIRED')return [];
-    const pair=await ownerClient();
-    const f=foundationState();
-    const businessId=String(f.businessId||f.context&&f.context.business_id||'');
-    if(!businessId)throw new Error('The M5A-1 Tenant ID is unavailable.');
-    const result=await pair.client.from('zezms_business_devices')
-      .select('device_id,device_name,platform,app_version,last_seen_at,revoked_at,revocation_reason,user_id')
-      .eq('business_id',businessId)
-      .order('last_seen_at',{ascending:false});
-    if(result.error)throw result.error;
-    enrolledDevices=Array.isArray(result.data)?result.data:[];
-    paintEnrolledDevices();
-    if(showNotice&&typeof toast==='function')toast('Enrolled devices refreshed.');
-    return enrolledDevices;
-  }
-  async function revokeEnrolledDevice(deviceId){
+  async function loadEnrolledDevices() {
+    if(enrolledDevicesLoading)return enrolledDevices;
+    enrolledDevicesLoading=true;enrolledDevicesError='';refreshEnrolledDeviceTable();
     try{
-      const state=cloudState();
-      if(String(deviceId||'')===String(state.deviceId||'')){
-        throw new Error('For safety, revoke the current device from another OWNER device.');
-      }
       const pair=await ownerClient();
-      const f=foundationState();
-      const businessId=String(f.businessId||f.context&&f.context.business_id||'');
+      const businessId=deviceBusinessId(pair);
       if(!businessId)throw new Error('The M5A-1 Tenant ID is unavailable.');
-      const device=enrolledDevices.find(d=>String(d.device_id||'')===String(deviceId||''));
-      const label=device&&device.device_name?device.device_name:String(deviceId||'device');
-      if(!window.confirm('Revoke '+label+'?\n\nThis device will lose M4 data access and future sync.'))return;
-      const reason=String(window.prompt('Reason for revocation (optional)','Device no longer authorised')||'').trim();
-      const result=await pair.client.rpc('zezms_revoke_business_device',{p_business_id:businessId,p_device_id:String(deviceId||''),p_reason:reason});
+      const result=await pair.client.from('zezms_business_devices')
+        .select('device_id,device_name,platform,app_version,last_seen_at,revoked_at,revocation_reason,metadata,created_at')
+        .eq('business_id',businessId).order('last_seen_at',{ascending:false});
       if(result.error)throw result.error;
-      await loadEnrolledDevices(false);
-      if(window.ZEZMS&&ZEZMS.commercialFoundation&&typeof ZEZMS.commercialFoundation.refresh==='function'){
-        try{await ZEZMS.commercialFoundation.refresh({silent:true});}catch(_){}
-      }
-      if(typeof toast==='function')toast('Device revoked: '+label);
+      enrolledDevices=Array.isArray(result.data)?result.data:[];
+      return enrolledDevices;
     }catch(error){
-      if(typeof toast==='function')toast(error.message||String(error),'err');
+      enrolledDevicesError=String(error&&(error.message||error.details||error.hint)||error||'Could not load enrolled devices.');
+      return [];
+    }finally{
+      enrolledDevicesLoading=false;enrolledDevicesLoaded=true;refreshEnrolledDeviceTable();
+    }
+  }
+  function revokeStatus(message,error) {
+    const box=document.getElementById('deviceRevokeStatus');
+    if(box){box.textContent=String(message||'');box.style.color=error?'#fda4af':'#bfdbfe';}
+  }
+  function openDeviceRevocation(deviceId,deviceName) {
+    const device=enrolledDevices.find(function(row){return String(row.device_id||'')===String(deviceId||'');});
+    if(!device||device.revoked_at){if(typeof toast==='function')toast('That device is already revoked.','warn');return;}
+    pendingRevocation={deviceId:String(deviceId||''),deviceName:String(deviceName||device.device_name||'ZEZMS Device')};
+    modal('<h3>Revoke enrolled device</h3><p class="muted">This will immediately block cloud access for <b>'+esc(pendingRevocation.deviceName)+'</b>.</p>'
+      + '<div class="field"><label>Reason for revocation</label><input id="deviceRevokeReason" placeholder="Lost, replaced, unauthorised…"></div>'
+      + '<div id="deviceRevokeStatus" class="muted" style="font-size:11px;margin-bottom:10px">Enter a reason, then confirm the permanent revocation.</div>'
+      + '<div class="row"><button class="btn danger" id="deviceRevokeConfirm" onclick="secureDeviceEnrollmentConfirmRevocation()">Revoke device</button>'
+      + '<button class="btn ghost" onclick="closeModal()">Cancel</button></div>');
+  }
+  async function revokeDevice() {
+    if(!pendingRevocation)return;
+    const reason=String((document.getElementById('deviceRevokeReason')||{}).value||'').trim();
+    if(!reason){revokeStatus('Enter a reason before revoking this device.',true);return;}
+    if(!window.confirm('Permanently revoke '+pendingRevocation.deviceName+'? The device will lose cloud access.'))return;
+    const button=document.getElementById('deviceRevokeConfirm');
+    if(button){button.disabled=true;button.textContent='Revoking…';}
+    try{
+      revokeStatus('Verifying Owner access and revoking the device…',false);
+      const pair=await ownerClient();
+      const businessId=deviceBusinessId(pair);
+      if(!businessId)throw new Error('The M5A-1 Tenant ID is unavailable.');
+      const result=await pair.client.rpc('zezms_revoke_business_device',{p_business_id:businessId,p_device_id:pendingRevocation.deviceId,p_reason:reason});
+      if(result.error)throw result.error;
+      const name=pendingRevocation.deviceName;
+      pendingRevocation=null;
+      if(typeof closeModal==='function')closeModal();
+      await loadEnrolledDevices();
+      if(typeof toast==='function')toast(result.data===false?'Device was already revoked.':name+' was revoked. Cloud access is now blocked.',result.data===false?'warn':'ok');
+    }catch(error){
+      const raw=String(error&&(error.message||error.details||error.hint)||error||'Device revocation failed.');
+      let message=raw;
+      if(/ZEZMS_PERMISSION_DENIED/i.test(raw))message='Only a verified Owner or Admin can revoke a device.';
+      else if(/PGRST202|could not find the function/i.test(raw))message='Run SUPABASE_M5A3_SECURE_DEVICE_ENROLLMENT.sql once, then retry.';
+      revokeStatus(message,true);
+      if(button){button.disabled=false;button.textContent='Revoke device';}
     }
   }
   function ownerCardHtml() {
@@ -221,14 +255,14 @@
     }
     return '<div class="card" style="margin-top:12px">'
       + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Secure Device Enrollment</h3><span class="badge ok">M5A-3</span></div>'
-      + '<p class="muted" style="font-size:12px;line-height:1.55">Create a short-lived, one-use code for a completely new phone or computer. The new device receives its own identity and never receives the OWNER password.</p>'
+      + enrolledDevicesHtml()
+      + '<hr class="hr"><p class="muted" style="font-size:12px;line-height:1.55">Create a short-lived, one-use code for a completely new phone or computer. The new device receives its own identity and never receives the OWNER password.</p>'
       + '<div class="grid g2"><div class="field"><label>New device name</label><input id="devicePairName" placeholder="Till 2 / Manager phone"></div>'
       + '<div class="field"><label>Branch</label><select id="devicePairBranch"><option value="">Loading branches…</option></select></div>'
       + '<div class="field"><label>Code validity</label><select id="devicePairMinutes"><option value="10">10 minutes</option><option value="15" selected>15 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select></div></div>'
       + '<button class="btn" onclick="secureDeviceEnrollmentCreateCode()">Create one-time device code</button>'
       + (lastPairing?pairingResultHtml(lastPairing):'')
       + '<p class="muted" style="font-size:11px;margin-top:10px">Prerequisite: Supabase Anonymous Sign-Ins must be enabled once for the project.</p>'
-      + enrolledDevicesHtml()
       + '</div>';
   }
   function pairingResultHtml(data) {
@@ -261,7 +295,7 @@
       if(!branchId)throw new Error('Select the branch for the new device.');
       const result=await pair.client.rpc('zezms_m5a3_create_device_pairing',{
         p_business_id:businessId,p_device_name:deviceName,p_branch_id:branchId,
-        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.3'
+        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.0'
       });
       if(result.error)throw result.error;
       lastPairing=normalizeRow(result.data);
@@ -284,7 +318,7 @@
   function installSettingsCard() {
     const original=window.viewSettings;
     if(typeof original!=='function'||original.__m5a3DeviceWrapped)return;
-    const wrapped=function(){const result=original.apply(this,arguments)+ownerCardHtml();setTimeout(function(){if(document.getElementById('devicePairBranch'))loadBranches().catch(function(error){const s=document.getElementById('devicePairBranch');if(s)s.innerHTML='<option value="">'+esc(error.message||error)+'</option>';});if(document.getElementById('secureEnrolledDevicesBody'))loadEnrolledDevices(false).catch(function(error){const b=document.getElementById('secureEnrolledDevicesBody');if(b)b.innerHTML='<tr><td colspan="6" class="empty">'+esc(error.message||error)+'</td></tr>';});},30);return result;};
+    const wrapped=function(){const result=original.apply(this,arguments)+ownerCardHtml();setTimeout(function(){const branchLoad=document.getElementById('devicePairBranch')?loadBranches().catch(function(error){const s=document.getElementById('devicePairBranch');if(s)s.innerHTML='<option value="">'+esc(error.message||error)+'</option>';}):Promise.resolve();branchLoad.then(function(){if(document.getElementById('enrolledDeviceRows'))loadEnrolledDevices();});},30);return result;};
     wrapped.__m5a3DeviceWrapped=true;window.viewSettings=wrapped;
   }
   function init() {
@@ -295,13 +329,15 @@
   }
 
   window.secureDeviceEnrollmentOpen=function(){openNewDevice(pairingParams());};
+  window.secureDeviceEnrollmentConfirmOpen=function(){if(!window.confirm('Set up a new device? Continue only on a phone or computer that has not already been enrolled.'))return false;openNewDevice(pairingParams());return true;};
   window.secureDeviceEnrollmentClaim=function(){claimNewDevice();};
   window.secureDeviceEnrollmentCreateCode=function(){createPairing();};
-  window.secureDeviceEnrollmentRefreshDevices=function(){loadEnrolledDevices(true).catch(function(error){if(typeof toast==='function')toast(error.message||String(error),'err');});};
-  window.secureDeviceEnrollmentRevoke=function(deviceId){revokeEnrolledDevice(deviceId);};
   window.secureDeviceEnrollmentCopyCode=function(){if(lastPairing)copyText(lastPairing.pairing_code,'Pairing code copied.');};
   window.secureDeviceEnrollmentCopyLink=function(){if(lastPairing)copyText(lastPairing.setup_link,'Complete setup link copied.');};
+  window.secureDeviceEnrollmentRefreshDevices=function(){return loadEnrolledDevices();};
+  window.secureDeviceEnrollmentOpenRevocation=function(deviceId,deviceName){openDeviceRevocation(deviceId,deviceName);};
+  window.secureDeviceEnrollmentConfirmRevocation=function(){revokeDevice();};
 
-  ZEZMS.deviceEnrollment={version:'M5A-3',build:BUILD,open:openNewDevice,claim:claimNewDevice,createPairing:createPairing,getLastPairing:function(){return lastPairing;}};
+  ZEZMS.deviceEnrollment={version:'M5A-3',build:BUILD,open:openNewDevice,claim:claimNewDevice,createPairing:createPairing,loadDevices:loadEnrolledDevices,revokeDevice:revokeDevice,getLastPairing:function(){return lastPairing;}};
   setTimeout(init,350);
 }());
