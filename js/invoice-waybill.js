@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260808-owner-maintenance-r31';
+  const BUILD = '20260808-owner-maintenance-r32';
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;

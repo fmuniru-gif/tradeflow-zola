@@ -1,9 +1,9 @@
-/* ZEZMS Owner Edition v3.7.2 - offline PDF exports */
+/* ZEZMS Owner Edition v3.7.3 - offline PDF exports */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260808-owner-maintenance-r31';
+  const BUILD = '20260808-owner-maintenance-r32';
   const A4 = { width: 595, height: 842 };
 
   function ascii(value) {
@@ -386,11 +386,11 @@
     pdf.keyValue('Prepared by', record.cashier || '-');
     pdf.y += 4;
     pdf.table(
-      ['#', 'Product ID', 'Product', 'Qty', 'Unit cost', 'Selling price', 'Total'],
+      ['#', 'Product ID', 'Product', 'Qty', 'Unit cost', 'Total'],
       (record.lines || []).map(function (line, index) {
-        return [String(index + 1), line.productId || '-', line.product || '', number(line.qty), number(line.unitCost), number(line.unitPrice), number(line.total)];
+        return [String(index + 1), line.productId || '-', line.product || '', number(line.qty), number(line.unitCost), number(line.total)];
       }),
-      [20, 60, 155, 45, 70, 70, 103], ['center', 'left', 'left', 'right', 'right', 'right', 'right']
+      [20, 70, 200, 55, 85, 93], ['center', 'left', 'left', 'right', 'right', 'right']
     );
     pdf.summary([
       { label: 'Order total', value: 'GHS ' + number(record.total) },
@@ -474,7 +474,7 @@
 
   installRegisterButtons();
   ZEZMS.pdfExport = {
-    version: '3.7.2', build: BUILD, SimplePDF: SimplePDF,
+    version: '3.7.3', build: BUILD, SimplePDF: SimplePDF,
     buildReceiptPDF: buildReceiptPDF, buildInvoicePDF: buildInvoicePDF,
     buildWaybillPDF: buildWaybillPDF, buildPurchaseOrderPDF: buildPurchaseOrderPDF,
     installRegisterButtons: installRegisterButtons

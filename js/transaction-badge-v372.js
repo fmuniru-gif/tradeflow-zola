@@ -1,9 +1,9 @@
-/* ZEZMS Owner Edition v3.7.2 - remote transaction badge */
+/* ZEZMS Owner Edition v3.7.3 - remote transaction badge */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260808-owner-maintenance-r31';
+  const BUILD = '20260808-owner-maintenance-r32';
   const STORAGE_KEY = 'zezms-owner-remote-transaction-badge';
   const MAX_COUNT = 999;
   const MAX_RECENT = 30;
@@ -107,7 +107,7 @@
   renderBadge();
 
   ZEZMS.transactionBadge = {
-    version: '3.7.2', build: BUILD, getState: function () { return JSON.parse(JSON.stringify(state)); },
+    version: '3.7.3', build: BUILD, getState: function () { return JSON.parse(JSON.stringify(state)); },
     receive: receive, clear: window.clearRemoteTransactionNotifications, render: renderBadge
   };
 }());

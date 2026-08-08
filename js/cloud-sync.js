@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260808-owner-maintenance-r31';
+  const BUILD = '20260808-owner-maintenance-r32';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -695,7 +695,7 @@
       p_device_id: state.deviceId,
       p_device_name: state.deviceName,
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.2'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.3'
     });
     if (result.error) throw result.error;
     const context = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -1384,7 +1384,7 @@
       p_device_id: state.deviceId,
       p_device_name: name,
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.2'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.3'
     });
     if (claim.error) throw claim.error;
     const context = Array.isArray(claim.data) ? claim.data[0] : claim.data;
