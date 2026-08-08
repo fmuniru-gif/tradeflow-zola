@@ -198,6 +198,7 @@
       'products', 'stockRows', 'sales', 'saleLines', 'debtors', 'creditors',
       'depositors', 'debtorsMonthly', 'creditorsMonthly', 'depositorsMonthly',
       'accountTxns', 'cashLog', 'expenses', 'kpiHistory', 'receipts',
+      'invoices', 'waybills', 'purchaseOrders',
       'undoLog', 'inventoryTxns', 'backupHistory'
     ];
     arrayKeys.forEach(function (key) {

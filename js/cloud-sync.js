@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260807-access-controls-r29';
+  const BUILD = '20260808-owner-maintenance-r30';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -15,7 +15,7 @@
 
   const COLLECTIONS = [
     'products', 'stockRows', 'debtors', 'creditors', 'depositors',
-    'sales', 'receipts', 'invoices', 'waybills', 'saleLines', 'accountTxns', 'cashLog',
+    'sales', 'receipts', 'invoices', 'waybills', 'purchaseOrders', 'saleLines', 'accountTxns', 'cashLog',
     'expenses', 'inventoryTxns', 'undoLog', 'debtorsMonthly',
     'creditorsMonthly', 'depositorsMonthly', 'kpiHistory', 'monthRollovers'
   ];
@@ -402,6 +402,7 @@
     if (inventory && inventory.value && inventory.value.type) return String(inventory.value.type).toUpperCase();
     if (insert('invoices')) return 'INVOICE';
     if (insert('waybills')) return 'WAYBILL';
+    if (insert('purchaseOrders')) return 'PURCHASE_ORDER';
     if (insert('sales') || insert('receipts')) return 'SALE_OUT';
     const account = insert('accountTxns');
     if (account && account.value) return 'ACCOUNT_' + String(account.value.txnType || 'CHANGE').toUpperCase().replace(/\s+/g, '_');
@@ -694,7 +695,7 @@
       p_device_id: state.deviceId,
       p_device_name: state.deviceName,
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.0'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.1'
     });
     if (result.error) throw result.error;
     const context = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -1370,7 +1371,7 @@
       p_device_id: state.deviceId,
       p_device_name: name,
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.0'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.1'
     });
     if (claim.error) throw claim.error;
     const context = Array.isArray(claim.data) ? claim.data[0] : claim.data;

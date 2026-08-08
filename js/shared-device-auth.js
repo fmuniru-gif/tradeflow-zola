@@ -1,8 +1,8 @@
-/* ZEZMS v3.7.0 — Cross-Device Staff Access */
+/* ZEZMS v3.7.1 — Cross-Device Staff Access */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260807-access-controls-r29';
+const BUILD='20260808-owner-maintenance-r30';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
@@ -172,7 +172,7 @@ function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;cons
 async function saveUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can manage staff.');if(!await reauth('Confirm staff-account change'))return;const u=model().users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(role()==='ADMIN'&&u.role==='OWNER')throw new Error('An Admin cannot modify the Owner account.');await upsert({name:String((document.getElementById('sharedEditName')||{}).value||''),tel:String((document.getElementById('sharedEditTel')||{}).value||''),role:String((document.getElementById('sharedEditRole')||{}).value||u.role),password:String((document.getElementById('sharedEditPassword')||{}).value||''),active:String((document.getElementById('sharedEditActive')||{}).value||'1')==='1'},id);closeModal();audit('STAFF_ACCOUNT_UPDATED',{userId:id});render();refreshUsers();toast('Staff account updated.');}catch(e){toast(e.message||String(e),'err');}}
 async function deleteUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can delete staff.');const m=model(),u=m.users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(u.role==='OWNER')throw new Error('The Owner account cannot be deleted.');if(u.id===session.sharedUserId)throw new Error('You cannot delete the account that is currently signed in.');if(!window.confirm(`Permanently delete ${u.name}? This cannot be undone.`))return;if(!await reauth('Confirm permanent staff deletion'))return;const index=m.users.findIndex(x=>x.id===id);if(index<0)throw new Error('Staff account not found.');m.users.splice(index,1);audit('STAFF_ACCOUNT_DELETED',{userId:id,name:u.name,role:u.role});writeDirectoryRoot();saveDB();closeModal();render();refreshUsers();const published=await autoPublishDirectory();toast(published?'Staff account deleted and published to authorised devices.':'Staff account deleted locally. Publish staff access when Cloud Sync is available.',published?'ok':'warn');}catch(e){toast(e.message||String(e),'err');}}
 function cloud(){const s=ZEZMS.cloudSync;return s&&typeof s.getState==='function'?s.getState():{};}
-function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.0'};}
+function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.1'};}
 function recovery(){const s=cloud();if(!s.supabaseUrl||!s.publishableKey||!window.supabase)throw new Error('Supabase configuration is unavailable on this device.');if(!recoveryClient)recoveryClient=window.supabase.createClient(String(s.supabaseUrl).replace(/\/$/,''),String(s.publishableKey),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:RECOVERY_KEY}});return recoveryClient;}
 
 function sharedModal(html){

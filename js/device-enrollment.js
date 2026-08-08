@@ -1,9 +1,9 @@
-/* ZEZMS v3.7.0 — Secure Device Enrollment */
+/* ZEZMS v3.7.1 — Secure Device Enrollment */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260807-access-controls-r29';
+  const BUILD = '20260808-owner-maintenance-r30';
   let branches = [];
   let lastPairing = null;
   let enrolledDevices = [];
@@ -83,7 +83,7 @@
   async function claimNewDevice() {
     const s=sync();
     if(!s||typeof s.enrollPairedDevice!=='function'){
-      status('Secure Device Enrollment did not load. Confirm v3.7.0 is deployed.','error');
+      status('Secure Device Enrollment did not load. Confirm v3.7.1 is deployed.','error');
       return;
     }
     const values={
@@ -295,7 +295,7 @@
       if(!branchId)throw new Error('Select the branch for the new device.');
       const result=await pair.client.rpc('zezms_m5a3_create_device_pairing',{
         p_business_id:businessId,p_device_name:deviceName,p_branch_id:branchId,
-        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.0'
+        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.7.1'
       });
       if(result.error)throw result.error;
       lastPairing=normalizeRow(result.data);

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260807-access-controls-r29';
+  const BUILD = '20260808-owner-maintenance-r30';
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;

@@ -1,40 +1,42 @@
-/* ZEZMS TradeFlow — Vertical-only phone layout; A5 receipts, Sales Records, VAT, Invoice, Waybill, Auto Month and Cloud Sync M4 retained */
-const CACHE = 'zezms-access-controls-20260807-r29';
+/* ZEZMS Owner Edition - purchase orders, PDF exports and existing operational modules */
+const CACHE = 'zezms-owner-maintenance-20260808-r30';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './js/app.js?v=20260807-access-controls-r29',
-  './js/backup-manager.js?v=20260807-access-controls-r29',
-  './js/cloud-sync.js?v=20260807-access-controls-r29',
-  './js/bootpatch.js?v=20260807-access-controls-r29',
-  './js/config.js?v=20260807-access-controls-r29',
-  './js/db-events.js?v=20260807-access-controls-r29',
-  './js/dbservice.js?v=20260807-access-controls-r29',
-  './js/diagnostics.js?v=20260807-access-controls-r29',
-  './js/events.js?v=20260807-access-controls-r29',
-  './js/health-module.js?v=20260807-access-controls-r29',
-  './js/lifecycle-module.js?v=20260807-access-controls-r29',
-  './js/logger.js?v=20260807-access-controls-r29',
-  './js/notifications-module.js?v=20260807-access-controls-r29',
-  './js/operations-update.js?v=20260807-access-controls-r29',
-  './js/auto-month-rollover.js?v=20260807-access-controls-r29',
-  './js/invoice-waybill.js?v=20260807-access-controls-r29',
-  './js/product-search-adapter.js?v=20260807-access-controls-r29',
-  './js/product-search-controller.js?v=20260807-access-controls-r29',
-  './js/product-search-events.js?v=20260807-access-controls-r29',
-  './js/product-search-facade.js?v=20260807-access-controls-r29',
-  './js/product-search-metrics.js?v=20260807-access-controls-r29',
-  './js/product-search-module.js?v=20260807-access-controls-r29',
-  './js/product-search-service.js?v=20260807-access-controls-r29',
-  './js/registry.js?v=20260807-access-controls-r29',
-  './js/storage.js?v=20260807-access-controls-r29',
-  './js/system-module.js?v=20260807-access-controls-r29',
-  './js/utils-module.js?v=20260807-access-controls-r29',
-  './js/mobile-vertical-layout.js?v=20260807-access-controls-r29',
-  './js/kpi-freeze-pane.js?v=20260807-access-controls-r29',
-  './js/confirmed-july-snapshot.js?v=20260807-access-controls-r29',
-  './js/commercial-foundation.js?v=20260807-access-controls-r29',
+  './js/app.js?v=20260808-owner-maintenance-r30',
+  './js/backup-manager.js?v=20260808-owner-maintenance-r30',
+  './js/cloud-sync.js?v=20260808-owner-maintenance-r30',
+  './js/bootpatch.js?v=20260808-owner-maintenance-r30',
+  './js/config.js?v=20260808-owner-maintenance-r30',
+  './js/db-events.js?v=20260808-owner-maintenance-r30',
+  './js/dbservice.js?v=20260808-owner-maintenance-r30',
+  './js/diagnostics.js?v=20260808-owner-maintenance-r30',
+  './js/events.js?v=20260808-owner-maintenance-r30',
+  './js/health-module.js?v=20260808-owner-maintenance-r30',
+  './js/lifecycle-module.js?v=20260808-owner-maintenance-r30',
+  './js/logger.js?v=20260808-owner-maintenance-r30',
+  './js/notifications-module.js?v=20260808-owner-maintenance-r30',
+  './js/operations-update.js?v=20260808-owner-maintenance-r30',
+  './js/auto-month-rollover.js?v=20260808-owner-maintenance-r30',
+  './js/invoice-waybill.js?v=20260808-owner-maintenance-r30',
+  './js/product-search-adapter.js?v=20260808-owner-maintenance-r30',
+  './js/product-search-controller.js?v=20260808-owner-maintenance-r30',
+  './js/product-search-events.js?v=20260808-owner-maintenance-r30',
+  './js/product-search-facade.js?v=20260808-owner-maintenance-r30',
+  './js/product-search-metrics.js?v=20260808-owner-maintenance-r30',
+  './js/product-search-module.js?v=20260808-owner-maintenance-r30',
+  './js/product-search-service.js?v=20260808-owner-maintenance-r30',
+  './js/registry.js?v=20260808-owner-maintenance-r30',
+  './js/storage.js?v=20260808-owner-maintenance-r30',
+  './js/system-module.js?v=20260808-owner-maintenance-r30',
+  './js/utils-module.js?v=20260808-owner-maintenance-r30',
+  './js/mobile-vertical-layout.js?v=20260808-owner-maintenance-r30',
+  './js/kpi-freeze-pane.js?v=20260808-owner-maintenance-r30',
+  './js/confirmed-july-snapshot.js?v=20260808-owner-maintenance-r30',
+  './js/commercial-foundation.js?v=20260808-owner-maintenance-r30',
+  './js/owner-maintenance-v371.js?v=20260808-owner-maintenance-r30',
+  './js/pdf-export.js?v=20260808-owner-maintenance-r30',
 ];
 
 self.addEventListener('install', (event) => {
@@ -48,7 +50,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys
+        .filter((key) => key !== CACHE && !key.startsWith('zezms-commercial-pilot-'))
+        .map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });

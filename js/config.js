@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Commercial Pilot 0.7.0 — Secure Device Enrollment",
-  build:"20260807-access-controls-r29",
+  version:"Owner Edition 3.7.1 — Purchase Orders and PDF Exports",
+  build:"20260808-owner-maintenance-r30",
   debug:true,
   cloud:{
     googleDrive:{

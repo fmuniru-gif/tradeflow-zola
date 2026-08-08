@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS secure one-time device enrollment with anonymous device identities, branch assignment, automatic M4 master and staff-directory download, revocation and shared-terminal staff login.",
-  "start_url": "./index.html?build=20260807-access-controls-r29",
+  "description": "ZEZMS Owner Edition with offline sales, FIFO inventory, account filtering, purchase orders, printable commercial documents, PDF exports and secure device enrollment.",
+  "start_url": "./index.html?build=20260808-owner-maintenance-r30",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
