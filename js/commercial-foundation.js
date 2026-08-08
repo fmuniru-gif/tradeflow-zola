@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260808-owner-maintenance-r30';
+  const BUILD = '20260808-owner-maintenance-r31';
   const STATE_KEY = 'zezms_commercial_m5a1_state';
 
   let state = loadState();
@@ -94,7 +94,7 @@
       p_device_id: String(syncState.deviceId || ''),
       p_device_name: String(syncState.deviceName || 'ZEZMS Device'),
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.1'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.2'
     };
   }
 
@@ -155,7 +155,7 @@
             p_device_id: String(syncState.deviceId || ''),
             p_device_name: String(syncState.deviceName || 'ZEZMS Device'),
             p_platform: String(navigator.userAgent || '').slice(0, 240),
-            p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.1'
+            p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.2'
           })
         : await pair.client.rpc('zezms_commercial_context', args);
       if (result.error) throw result.error;

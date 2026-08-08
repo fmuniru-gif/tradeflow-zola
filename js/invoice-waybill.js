@@ -4,12 +4,14 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260808-owner-maintenance-r30';
+  const BUILD = '20260808-owner-maintenance-r31';
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;
   let activeCommercialDocument = null;
   let documentPrintBusy = false;
+  let editingInvoiceId = '';
+  let editingWaybillId = '';
 
   const invoiceDraft = {
     lines: [], customer: '', location: '', contact: '', tin: '', reference: '',
@@ -19,6 +21,24 @@
     lines: [], consignee: '', location: '', contact: '', vehicleNo: '', driver: '',
     reference: '', notes: ''
   };
+
+  function canManageDocuments() {
+    try {
+      if (ZEZMS.staffAuth && ZEZMS.staffAuth.isActive && ZEZMS.staffAuth.isActive()) {
+        return !!ZEZMS.staffAuth.can('MANAGE_DOCUMENTS');
+      }
+    } catch (_) {}
+    return isElevated();
+  }
+
+  function resetInvoiceDraft() {
+    Object.assign(invoiceDraft, { lines: [], customer: '', location: '', contact: '', tin: '', reference: '', dueDate: '', terms: 'Payment due on or before the due date.', notes: '', vatRate: 0 });
+    invoicePriceAdjustmentUnlocked = false;
+  }
+
+  function resetWaybillDraft() {
+    Object.assign(waybillDraft, { lines: [], consignee: '', location: '', contact: '', vehicleNo: '', driver: '', reference: '', notes: '' });
+  }
 
   function ensureModel() {
     let changed = false;
@@ -270,10 +290,9 @@
   function clearDraft(type) {
     if (!confirm('Clear all items and details from this draft?')) return;
     if (type === 'invoice') {
-      Object.assign(invoiceDraft, { lines: [], customer: '', location: '', contact: '', tin: '', reference: '', dueDate: '', terms: 'Payment due on or before the due date.', notes: '', vatRate: 0 });
-      invoicePriceAdjustmentUnlocked = false;
+      resetInvoiceDraft();
     } else {
-      Object.assign(waybillDraft, { lines: [], consignee: '', location: '', contact: '', vehicleNo: '', driver: '', reference: '', notes: '' });
+      resetWaybillDraft();
     }
     render();
   }
@@ -312,70 +331,93 @@
   }
 
   function captureInvoiceFields() {
-    invoiceDraft.customer = String((document.getElementById('invCustomer') || {}).value || invoiceDraft.customer || '').trim();
-    invoiceDraft.location = String((document.getElementById('invLocation') || {}).value || invoiceDraft.location || '').trim();
-    invoiceDraft.contact = String((document.getElementById('invContact') || {}).value || invoiceDraft.contact || '').trim();
-    invoiceDraft.tin = String((document.getElementById('invTin') || {}).value || invoiceDraft.tin || '').trim();
-    invoiceDraft.reference = String((document.getElementById('invReference') || {}).value || invoiceDraft.reference || '').trim();
-    invoiceDraft.dueDate = String((document.getElementById('invDueDate') || {}).value || invoiceDraft.dueDate || '').trim();
-    invoiceDraft.terms = String((document.getElementById('invTerms') || {}).value || invoiceDraft.terms || '').trim();
-    invoiceDraft.notes = String((document.getElementById('invNotes') || {}).value || invoiceDraft.notes || '').trim();
-    invoiceDraft.vatRate = normalizeVatPercent((document.getElementById('invVatRate') || {}).value != null ? (document.getElementById('invVatRate') || {}).value : invoiceDraft.vatRate);
+    const fields = {
+      customer: 'invCustomer', location: 'invLocation', contact: 'invContact', tin: 'invTin',
+      reference: 'invReference', dueDate: 'invDueDate', terms: 'invTerms', notes: 'invNotes'
+    };
+    Object.keys(fields).forEach((field) => {
+      const element = document.getElementById(fields[field]);
+      if (element) invoiceDraft[field] = String(element.value || '').trim();
+    });
+    const vat = document.getElementById('invVatRate');
+    if (vat) invoiceDraft.vatRate = normalizeVatPercent(vat.value);
   }
 
   function captureWaybillFields() {
-    waybillDraft.consignee = String((document.getElementById('wbConsignee') || {}).value || waybillDraft.consignee || '').trim();
-    waybillDraft.location = String((document.getElementById('wbLocation') || {}).value || waybillDraft.location || '').trim();
-    waybillDraft.contact = String((document.getElementById('wbContact') || {}).value || waybillDraft.contact || '').trim();
-    waybillDraft.vehicleNo = String((document.getElementById('wbVehicleNo') || {}).value || waybillDraft.vehicleNo || '').trim();
-    waybillDraft.driver = String((document.getElementById('wbDriver') || {}).value || waybillDraft.driver || '').trim();
-    waybillDraft.reference = String((document.getElementById('wbReference') || {}).value || waybillDraft.reference || '').trim();
-    waybillDraft.notes = String((document.getElementById('wbNotes') || {}).value || waybillDraft.notes || '').trim();
+    const fields = {
+      consignee: 'wbConsignee', location: 'wbLocation', contact: 'wbContact', vehicleNo: 'wbVehicleNo',
+      driver: 'wbDriver', reference: 'wbReference', notes: 'wbNotes'
+    };
+    Object.keys(fields).forEach((field) => {
+      const element = document.getElementById(fields[field]);
+      if (element) waybillDraft[field] = String(element.value || '').trim();
+    });
   }
 
   function createInvoice() {
+    if (!canManageDocuments()) { toast('Document-management permission is required.', 'err'); return; }
     captureInvoiceFields();
     if (!invoiceDraft.customer) { toast('Customer name is required.', 'err'); return; }
     if (!invoiceDraft.contact) { toast('Customer telephone is required.', 'err'); return; }
     if (!invoiceDraft.lines.length) { toast('Add at least one product to the invoice.', 'err'); return; }
     const totals = invoiceTotals(invoiceDraft.lines, invoiceDraft.vatRate);
-    const id = idStamp('INV-');
-    const record = {
-      id, invoiceNo: id, date: nowISO(), dueDate: invoiceDraft.dueDate,
+    const existing = editingInvoiceId ? findDocument('invoice', editingInvoiceId) : null;
+    if (editingInvoiceId && (!existing || existing.status !== ACTIVE)) { toast('Only an open invoice can be edited.', 'err'); return; }
+    const id = existing ? existing.id : idStamp('INV-');
+    const values = {
+      id, invoiceNo: existing ? existing.invoiceNo : id, date: existing ? existing.date : nowISO(), dueDate: invoiceDraft.dueDate,
       customer: invoiceDraft.customer, location: invoiceDraft.location,
       contact: invoiceDraft.contact, tin: invoiceDraft.tin, reference: invoiceDraft.reference,
       terms: invoiceDraft.terms, notes: invoiceDraft.notes,
       subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vat, vat: totals.vat, total: totals.total,
-      status: ACTIVE, cashier: session.cashier, cashierTel: session.tel,
+      status: ACTIVE, cashier: existing ? existing.cashier : session.cashier, cashierTel: existing ? existing.cashierTel : session.tel,
       year: getLatestMonth().year, month: getLatestMonth().month,
       lines: deepClone(invoiceDraft.lines)
     };
-    DB.invoices.push(record);
+    const record = existing || values;
+    if (existing) {
+      Object.assign(record, values, {
+        editRevision: (Number(existing.editRevision) || 0) + 1,
+        updatedAt: nowISO(), updatedBy: session.cashier
+      });
+    } else DB.invoices.push(record);
     saveDB();
-    Object.assign(invoiceDraft, { lines: [], customer: '', location: '', contact: '', tin: '', reference: '', dueDate: '', terms: 'Payment due on or before the due date.', notes: '', vatRate: 0 });
-    invoicePriceAdjustmentUnlocked = false;
-    toast('Invoice saved · ' + record.invoiceNo);
+    const wasEditing = !!existing;
+    editingInvoiceId = '';
+    resetInvoiceDraft();
+    toast((wasEditing ? 'Invoice updated · ' : 'Invoice saved · ') + record.invoiceNo);
     showCommercialDocument('invoice', record);
   }
 
   function createWaybill() {
+    if (!canManageDocuments()) { toast('Document-management permission is required.', 'err'); return; }
     captureWaybillFields();
     if (!waybillDraft.consignee) { toast('Consignee/customer name is required.', 'err'); return; }
     if (!waybillDraft.lines.length) { toast('Add at least one product to the waybill.', 'err'); return; }
-    const id = idStamp('WB-');
-    const record = {
-      id, waybillNo: id, date: nowISO(), consignee: waybillDraft.consignee,
+    const existing = editingWaybillId ? findDocument('waybill', editingWaybillId) : null;
+    if (editingWaybillId && (!existing || existing.status !== ACTIVE)) { toast('Only an active waybill can be edited.', 'err'); return; }
+    const id = existing ? existing.id : idStamp('WB-');
+    const values = {
+      id, waybillNo: existing ? existing.waybillNo : id, date: existing ? existing.date : nowISO(), consignee: waybillDraft.consignee,
       location: waybillDraft.location, contact: waybillDraft.contact,
       vehicleNo: waybillDraft.vehicleNo, driver: waybillDraft.driver,
       reference: waybillDraft.reference, notes: waybillDraft.notes,
-      status: ACTIVE, cashier: session.cashier, cashierTel: session.tel,
+      status: ACTIVE, cashier: existing ? existing.cashier : session.cashier, cashierTel: existing ? existing.cashierTel : session.tel,
       year: getLatestMonth().year, month: getLatestMonth().month,
       lines: deepClone(waybillDraft.lines)
     };
-    DB.waybills.push(record);
+    const record = existing || values;
+    if (existing) {
+      Object.assign(record, values, {
+        editRevision: (Number(existing.editRevision) || 0) + 1,
+        updatedAt: nowISO(), updatedBy: session.cashier
+      });
+    } else DB.waybills.push(record);
     saveDB();
-    Object.assign(waybillDraft, { lines: [], consignee: '', location: '', contact: '', vehicleNo: '', driver: '', reference: '', notes: '' });
-    toast('Waybill saved · ' + record.waybillNo);
+    const wasEditing = !!existing;
+    editingWaybillId = '';
+    resetWaybillDraft();
+    toast((wasEditing ? 'Waybill updated · ' : 'Waybill saved · ') + record.waybillNo);
     showCommercialDocument('waybill', record);
   }
 
@@ -493,6 +535,53 @@
     return list.find((item) => item.id === id || item.invoiceNo === id || item.waybillNo === id) || null;
   }
 
+  function editDocument(type, id) {
+    if (!canManageDocuments()) { toast('Document-management permission is required.', 'err'); return; }
+    const record = findDocument(type, id);
+    if (!record) { toast('Document not found.', 'err'); return; }
+    if (record.status !== ACTIVE) {
+      toast(type === 'invoice' ? 'Only an open, unsold invoice can be edited.' : 'Only an active waybill can be edited.', 'warn');
+      return;
+    }
+    const draft = type === 'invoice' ? invoiceDraft : waybillDraft;
+    const alreadyEditing = type === 'invoice' ? editingInvoiceId : editingWaybillId;
+    if (!alreadyEditing && draft.lines.length && !confirm('Replace the current unsaved ' + type + ' draft with this saved document?')) return;
+    if (type === 'invoice') {
+      Object.assign(invoiceDraft, {
+        lines: deepClone(record.lines || []), customer: record.customer || '', location: record.location || '',
+        contact: record.contact || '', tin: record.tin || '', reference: record.reference || '',
+        dueDate: record.dueDate || '', terms: record.terms || '', notes: record.notes || '',
+        vatRate: normalizeVatPercent(record.vatRate)
+      });
+      editingInvoiceId = record.id;
+      editingWaybillId = '';
+      invoicePriceAdjustmentUnlocked = false;
+      closeModal(); nav('invoices');
+    } else {
+      Object.assign(waybillDraft, {
+        lines: deepClone(record.lines || []), consignee: record.consignee || '', location: record.location || '',
+        contact: record.contact || '', vehicleNo: record.vehicleNo || '', driver: record.driver || '',
+        reference: record.reference || '', notes: record.notes || ''
+      });
+      editingWaybillId = record.id;
+      editingInvoiceId = '';
+      closeModal(); nav('waybills');
+    }
+    toast('Editing ' + (type === 'invoice' ? record.invoiceNo : record.waybillNo) + '.');
+  }
+
+  function cancelDocumentEdit(type) {
+    if (!confirm('Discard the unsaved changes to this ' + type + '?')) return;
+    if (type === 'invoice') {
+      editingInvoiceId = '';
+      resetInvoiceDraft();
+    } else {
+      editingWaybillId = '';
+      resetWaybillDraft();
+    }
+    render();
+  }
+
   function voidDocument(type, id) {
     if (!isElevated()) { toast('Only admin can void documents.', 'err'); return; }
     const record = findDocument(type, id);
@@ -508,6 +597,7 @@
     const invoice = findDocument('invoice', id);
     if (!invoice) { toast('Invoice not found.', 'err'); return; }
     if (invoice.status === VOID) { toast('A void invoice cannot be loaded into Sale Out.', 'err'); return; }
+    if (invoice.status !== ACTIVE) { toast('This invoice has already been converted to a sale.', 'warn'); return; }
     const grouped = new Map();
     (invoice.lines || []).forEach((line) => grouped.set(line.product, (grouped.get(line.product) || 0) + (Number(line.qty) || 0)));
     for (const [name, qty] of grouped.entries()) {
@@ -555,13 +645,15 @@
   function invoiceBuilderHTML() {
     const lm = getLatestMonth();
     const totals = invoiceTotals(invoiceDraft.lines, invoiceDraft.vatRate);
+    const editing = editingInvoiceId ? findDocument('invoice', editingInvoiceId) : null;
     const rows = invoiceDraft.lines.map((line, index) => `<tr>
       <td class="mono">${esc(line.productId || '—')}</td><td>${esc(line.product)}</td>
       <td class="right mono">${fmtN(line.qty)}</td><td class="right mono">${fmtN(line.unitPrice)}</td>
       <td class="right mono">${fmtN(line.discount || 0)}</td><td class="right mono">${fmtN(line.total)}</td>
       <td><button class="btn sm danger" onclick="removeCommercialLine('invoice',${index})">Remove</button></td></tr>`).join('') ||
       '<tr><td colspan="7" class="empty">No products added to this invoice.</td></tr>';
-    return `<div class="document-layout"><div>
+    const banner = editing ? `<div class="card" style="margin-bottom:12px;border-color:var(--amber)"><b>Editing ${esc(editing.invoiceNo)}</b><p class="muted" style="margin:6px 0 0">Sale Out will use this updated version after you save it.</p></div>` : '';
+    return banner + `<div class="document-layout"><div>
       <div class="card sale-theme" style="margin-bottom:12px"><h3>Product entry · Invoice</h3>
         <div class="row mobile-search-row"><div class="field" style="position:relative;flex:1"><label>Search by product name</label>
           <input id="invSearchName" placeholder="Type product name…" autocomplete="off" oninput="invoiceSearchName()" onkeydown="commercialSearchKey(event,'inv','name')"><div id="invSuggestName" class="suggest"></div></div>
@@ -592,7 +684,8 @@
       <div class="card pos-totals"><h3>Invoice summary</h3><div class="statline"><span>Subtotal</span><b class="mono" id="invSubtotal">${fmt(totals.subtotal)}</b></div>
         <div class="field" style="margin-top:10px"><label>VAT percentage (%)</label><input id="invVatRate" type="number" min="0" max="100" step="0.01" value="${totals.vatRate}" oninput="invoiceVatRateChanged(this.value)" onchange="clampInvoiceVatRate()"></div>
         <div class="statline"><span>VAT amount (<span id="invVatRateLabel">${fmtN(totals.vatRate)}</span>%)</span><b class="mono" id="invVatAmount">${fmt(totals.vat)}</b></div><div class="statline"><span>Grand total</span><b class="mono" id="invGrandTotal">${fmt(totals.total)}</b></div>
-        <button class="btn ok" style="width:100%;margin-top:12px" onclick="saveElectronicInvoice()">Save & open invoice</button></div>
+        <button class="btn ok" style="width:100%;margin-top:12px" onclick="saveElectronicInvoice()">${editing ? 'Update & open invoice' : 'Save & open invoice'}</button>
+        ${editing ? '<button class="btn danger" style="width:100%;margin-top:8px" onclick="cancelCommercialEdit(\'invoice\')">Cancel edit</button>' : ''}</div>
       </div></div>`;
   }
 
@@ -607,7 +700,8 @@
         <td>${isVoid ? '<span class="badge bad">VOID</span>' : (isConverted ? '<span class="badge ok">SOLD</span>' : '<span class="badge">OPEN</span>')}</td>
         <td><div class="doc-register-actions"><button class="btn sm ghost" onclick="showStoredCommercialDocument('invoice','${escAttr(item.id)}')">View</button>
           <button class="btn sm" onclick="printStoredCommercialDocument('invoice','${escAttr(item.id)}')">Print</button>
-          ${!isVoid ? `<button class="btn sm ok" onclick="loadInvoiceIntoSale('${escAttr(item.id)}')">Sale Out</button><button class="btn sm ghost" onclick="waybillFromInvoice('${escAttr(item.id)}')">Waybill</button>` : ''}
+          ${item.status === ACTIVE && canManageDocuments() ? `<button class="btn sm ghost" onclick="editCommercialDocument('invoice','${escAttr(item.id)}')">Edit</button>` : ''}
+          ${item.status === ACTIVE ? `<button class="btn sm ok" onclick="loadInvoiceIntoSale('${escAttr(item.id)}')">Sale Out</button>` : ''}${!isVoid ? `<button class="btn sm ghost" onclick="waybillFromInvoice('${escAttr(item.id)}')">Waybill</button>` : ''}
           ${isElevated() && !isVoid ? `<button class="btn sm danger" onclick="voidCommercialDocument('invoice','${escAttr(item.id)}')">Void</button>` : ''}</div></td></tr>`;
     }).join('') || '<tr><td colspan="7" class="empty">No invoices saved yet.</td></tr>';
     return `<div class="card" style="margin-top:12px"><h3>Invoice register</h3><div class="table-wrap"><table><thead><tr><th>Invoice #</th><th>Customer</th><th class="right">Total</th><th>Date</th><th>Prepared by</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -615,11 +709,13 @@
 
   function waybillBuilderHTML() {
     const lm = getLatestMonth();
+    const editing = editingWaybillId ? findDocument('waybill', editingWaybillId) : null;
     const rows = waybillDraft.lines.map((line, index) => `<tr><td class="mono">${esc(line.productId || '—')}</td><td>${esc(line.product)}</td>
       <td class="right mono">${fmtN(line.qty)}</td><td>${esc(line.unit || 'pcs')}</td><td>${esc(line.remarks || '')}</td>
       <td><button class="btn sm danger" onclick="removeCommercialLine('waybill',${index})">Remove</button></td></tr>`).join('') ||
       '<tr><td colspan="6" class="empty">No products added to this waybill.</td></tr>';
-    return `<div class="document-layout"><div>
+    const banner = editing ? `<div class="card" style="margin-bottom:12px;border-color:var(--amber)"><b>Editing ${esc(editing.waybillNo)}</b><p class="muted" style="margin:6px 0 0">Printing and PDF export will use this updated version after you save it.</p></div>` : '';
+    return banner + `<div class="document-layout"><div>
       <div class="card sale-theme" style="margin-bottom:12px"><h3>Product entry · Waybill</h3>
         <div class="row mobile-search-row"><div class="field" style="position:relative;flex:1"><label>Search by product name</label><input id="wbSearchName" placeholder="Type product name…" autocomplete="off" oninput="waybillSearchName()" onkeydown="commercialSearchKey(event,'wb','name')"><div id="wbSuggestName" class="suggest"></div></div>
           <div class="field" style="position:relative;flex:1"><label>Search by product ID</label><input id="wbSearchId" placeholder="Type product ID…" autocomplete="off" oninput="waybillSearchId()" onkeydown="commercialSearchKey(event,'wb','id')"><div id="wbSuggestId" class="suggest"></div></div></div>
@@ -642,7 +738,8 @@
         <div class="field"><label>Vehicle number</label><input id="wbVehicleNo" value="${escAttr(waybillDraft.vehicleNo)}" oninput="waybillDraftField('vehicleNo',this.value)"></div>
         <div class="field"><label>Driver / Delivery person</label><input id="wbDriver" value="${escAttr(waybillDraft.driver)}" oninput="waybillDraftField('driver',this.value)"></div>
         <div class="field"><label>Delivery notes</label><textarea id="wbNotes" rows="3" oninput="waybillDraftField('notes',this.value)">${esc(waybillDraft.notes)}</textarea></div>
-        <button class="btn ok" style="width:100%;margin-top:6px" onclick="saveElectronicWaybill()">Save & open waybill</button>
+        <button class="btn ok" style="width:100%;margin-top:6px" onclick="saveElectronicWaybill()">${editing ? 'Update & open waybill' : 'Save & open waybill'}</button>
+        ${editing ? '<button class="btn danger" style="width:100%;margin-top:8px" onclick="cancelCommercialEdit(\'waybill\')">Cancel edit</button>' : ''}
       </div><div class="doc-help"><b>Stock protection:</b> Create the receipt through Sale Out for the actual stock movement. Use the waybill only as the delivery document.</div>
       </div></div>`;
   }
@@ -656,6 +753,7 @@
         <td>${esc(item.reference || '—')}</td><td>${new Date(item.date).toLocaleString()}</td><td>${esc(item.cashier || '')}</td><td>${isVoid ? '<span class="badge bad">VOID</span>' : '<span class="badge ok">ACTIVE</span>'}</td>
         <td><div class="doc-register-actions"><button class="btn sm ghost" onclick="showStoredCommercialDocument('waybill','${escAttr(item.id)}')">View</button>
           <button class="btn sm" onclick="printStoredCommercialDocument('waybill','${escAttr(item.id)}')">Print</button>
+          ${!isVoid && canManageDocuments() ? `<button class="btn sm ghost" onclick="editCommercialDocument('waybill','${escAttr(item.id)}')">Edit</button>` : ''}
           ${isElevated() && !isVoid ? `<button class="btn sm danger" onclick="voidCommercialDocument('waybill','${escAttr(item.id)}')">Void</button>` : ''}</div></td></tr>`;
     }).join('') || '<tr><td colspan="7" class="empty">No waybills saved yet.</td></tr>';
     return `<div class="card" style="margin-top:12px"><h3>Waybill register</h3><div class="table-wrap"><table><thead><tr><th>Waybill #</th><th>Consignee</th><th>Reference</th><th>Date</th><th>Issued by</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -749,6 +847,8 @@
   window.voidCommercialDocument = voidDocument;
   window.loadInvoiceIntoSale = loadInvoiceToSale;
   window.waybillFromInvoice = prepareWaybillFromInvoice;
+  window.editCommercialDocument = editDocument;
+  window.cancelCommercialEdit = cancelDocumentEdit;
 
   ensureModel();
   injectStyles();
@@ -757,6 +857,6 @@
   ZEZMS.commercialDocuments = {
     version: '3.4.10', build: BUILD, ensureModel,
     viewInvoices, viewWaybills, createInvoice, createWaybill,
-    loadInvoiceToSale, prepareWaybillFromInvoice
+    loadInvoiceToSale, prepareWaybillFromInvoice, editDocument
   };
 }());

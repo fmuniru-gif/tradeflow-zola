@@ -1,9 +1,9 @@
-/* ZEZMS Owner Edition v3.7.1 - offline PDF exports */
+/* ZEZMS Owner Edition v3.7.2 - offline PDF exports */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260808-owner-maintenance-r30';
+  const BUILD = '20260808-owner-maintenance-r31';
   const A4 = { width: 595, height: 842 };
 
   function ascii(value) {
@@ -474,7 +474,7 @@
 
   installRegisterButtons();
   ZEZMS.pdfExport = {
-    version: '3.7.1', build: BUILD, SimplePDF: SimplePDF,
+    version: '3.7.2', build: BUILD, SimplePDF: SimplePDF,
     buildReceiptPDF: buildReceiptPDF, buildInvoicePDF: buildInvoicePDF,
     buildWaybillPDF: buildWaybillPDF, buildPurchaseOrderPDF: buildPurchaseOrderPDF,
     installRegisterButtons: installRegisterButtons

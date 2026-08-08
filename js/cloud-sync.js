@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260808-owner-maintenance-r30';
+  const BUILD = '20260808-owner-maintenance-r31';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -695,7 +695,7 @@
       p_device_id: state.deviceId,
       p_device_name: state.deviceName,
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.1'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.2'
     });
     if (result.error) throw result.error;
     const context = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -998,6 +998,7 @@
     pullInFlight = true;
     setState({ status: 'syncing', lastError: '' });
     let applied = 0;
+    const remoteTransactions = [];
     try {
       const rowsToApply = [];
       let fetchCursor = Number(state.cursor) || 0;
@@ -1032,7 +1033,14 @@
           const ownAcceptedFromQueue = acceptedOwnIds.has(row.op_id);
           if (row.device_id !== state.deviceId || ownAcceptedFromQueue) {
             applyOperation(operation, { silent: true });
-            applied += row.device_id !== state.deviceId ? 1 : 0;
+            if (row.device_id !== state.deviceId) {
+              applied += 1;
+              remoteTransactions.push({
+                seq: Number(row.seq) || 0, opId: row.op_id || operation.opId || '',
+                deviceId: row.device_id || operation.deviceId || '', kind: row.kind || operation.kind || 'TRANSACTION',
+                createdAt: row.created_at || row.client_created_at || new Date().toISOString()
+              });
+            }
           }
           state.cursor = Math.max(Number(state.cursor) || 0, Number(row.seq) || 0);
           state.lastRemoteAt = row.created_at || state.lastRemoteAt;
@@ -1052,6 +1060,11 @@
       if (applied) {
         try { if (typeof populateLoginCashiers === 'function') populateLoginCashiers(); } catch (_) {}
         try { if (typeof render === 'function') render(); } catch (_) {}
+        try {
+          if (ZEZMS.events && typeof ZEZMS.events.emit === 'function') {
+            ZEZMS.events.emit('sync:remote-transactions', { count: applied, transactions: remoteTransactions });
+          }
+        } catch (_) {}
       }
       return true;
     } catch (error) {
@@ -1371,7 +1384,7 @@
       p_device_id: state.deviceId,
       p_device_name: name,
       p_platform: String(navigator.userAgent || '').slice(0, 240),
-      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.1'
+      p_app_version: typeof APP_VERSION !== 'undefined' ? String(APP_VERSION) : '3.7.2'
     });
     if (claim.error) throw claim.error;
     const context = Array.isArray(claim.data) ? claim.data[0] : claim.data;

@@ -1,6 +1,6 @@
 window.ZEZMS_CONFIG={
-  version:"Owner Edition 3.7.1 — Purchase Orders and PDF Exports",
-  build:"20260808-owner-maintenance-r30",
+  version:"Owner Edition 3.7.2 - Document Editing and Transaction Badges",
+  build:"20260808-owner-maintenance-r31",
   debug:true,
   cloud:{
     googleDrive:{
