@@ -1,11 +1,11 @@
 {
-    "version":  "3.8.0",
-    "build":  "20260811-management-intelligence-r33",
-    "release":  "Owner Edition Management Intelligence Foundation",
+    "version":  "3.8.1",
+    "build":  "20260811-margin-intelligence-r34",
+    "release":  "Owner Edition Margin \u0026 Pricing Intelligence",
     "sql_required":  false,
     "sql_baseline":  "M5A3",
     "anonymous_signins_required":  true,
-    "operational_baseline":  "3.7.3-r32",
+    "operational_baseline":  "3.8.0-r33",
     "files":  [
                   {
                       "path":  "A5_RECEIPT_PRINT_v3.4.10_RELEASE_NOTES.md",
@@ -159,13 +159,13 @@
                   },
                   {
                       "path":  "FORCE_UPDATE_MOBILE.html",
-                      "bytes":  1275,
-                      "sha256":  "215bfbc3749df3a6bf996c97fcea57e930f573b43758d55e30dca09e692c104b"
+                      "bytes":  1271,
+                      "sha256":  "0d993e10d3b448648404c7182270a74247ae17da7d3109db73fc2728f5986b2a"
                   },
                   {
                       "path":  "index.html",
-                      "bytes":  258176,
-                      "sha256":  "0f71a11b2c512d11933204653e459fdee8070dc24a69f71a41bfb5dff0cad9cb"
+                      "bytes":  258106,
+                      "sha256":  "0a0d401d808e5ec3b913c555e8e0cc2aae1913c86b658ce3d21860673a3e5368"
                   },
                   {
                       "path":  "INVITATION_RUNTIME_FIX_v3.6.5_PROCEDURE.md",
@@ -284,8 +284,13 @@
                   },
                   {
                       "path":  "js/management-intelligence-v380.js",
-                      "bytes":  12915,
-                      "sha256":  "265081fcb2ff90a91db33415b5a49e39bce700a8be9692f21002ad0747415fa3"
+                      "bytes":  13324,
+                      "sha256":  "f96215f6d713fee3c02b0ea35c4276a9fbb548e7667bb681223444d8a869f135"
+                  },
+                  {
+                      "path":  "js/margin-intelligence-v381.js",
+                      "bytes":  16493,
+                      "sha256":  "3eeae36654f48ee425be4a6089502442d55a93ee539bcd3afad1a299298d0847"
                   },
                   {
                       "path":  "js/mobile-vertical-layout.js",
@@ -489,8 +494,18 @@
                   },
                   {
                       "path":  "manifest.json",
-                      "bytes":  1391,
-                      "sha256":  "2965626de597030c655859564f1629d6d0ac083d2d7fa93176ea8183f1beeab3"
+                      "bytes":  1404,
+                      "sha256":  "a884a24e8a56c71257aff2a2adf6ed32988eb9a6e6515980df7a199f5f91a375"
+                  },
+                  {
+                      "path":  "MARGIN_PRICING_INTELLIGENCE_v3.8.1_RELEASE_NOTES.md",
+                      "bytes":  5063,
+                      "sha256":  "07a47bea6d9189ef75d9657bdca136aa38b216d5862b04d559a16b8ff43339e6"
+                  },
+                  {
+                      "path":  "MARGIN_PRICING_INTELLIGENCE_v3.8.1_TEST_REPORT.md",
+                      "bytes":  6425,
+                      "sha256":  "aa38bb7994c70d833c9140b9d1b6250511f74d133034ffe762f848dbf1b876b5"
                   },
                   {
                       "path":  "MFA_FACTOR_SELECTOR_v3.6.4_PROCEDURE.md",
@@ -669,8 +684,8 @@
                   },
                   {
                       "path":  "README.md",
-                      "bytes":  4792,
-                      "sha256":  "c1d8d80c8eaad1e130e6fa4985f926be771825ab9e94b0ef299b7b67d6959167"
+                      "bytes":  5109,
+                      "sha256":  "7001d49e0594cea4fc861556ff85427c64e6dd233597c579b84f86f10778452a"
                   },
                   {
                       "path":  "RECEIPT_NAME_SEARCH_ACCOUNT_UNDO_v3.4.24_RELEASE_NOTES.md",
@@ -844,8 +859,8 @@
                   },
                   {
                       "path":  "sw.js",
-                      "bytes":  4365,
-                      "sha256":  "4038dccb8f4de745515500b41b56c2a996818a45fa27789fd67fbb3b8198cb02"
+                      "bytes":  4277,
+                      "sha256":  "9010970376142d8b42c686fd17e94898ad8a87e9dc536d5bc340ba27668c6827"
                   },
                   {
                       "path":  "UNIQUE_MFA_FACTOR_NAMES_v3.6.3_PROCEDURE.md",
