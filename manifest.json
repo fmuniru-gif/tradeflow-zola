@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition with offline sales, FIFO inventory, purchase orders, safe document editing, PDF exports, transaction badges, Management Intelligence and read-only margin analysis.",
-  "start_url": "./index.html?build=20260811-margin-intelligence-r34",
+  "description": "ZEZMS Owner Edition with offline sales, FIFO inventory, purchase orders, document/PDF tools, Management Intelligence and advisory current-stock pricing guidance.",
+  "start_url": "./index.html?build=20260811-pricing-guidance-r35",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

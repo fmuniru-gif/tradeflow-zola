@@ -1,11 +1,11 @@
 {
-    "version":  "3.8.1",
-    "build":  "20260811-margin-intelligence-r34",
-    "release":  "Owner Edition Margin \u0026 Pricing Intelligence",
+    "version":  "3.8.2",
+    "build":  "20260811-pricing-guidance-r35",
+    "release":  "Owner Edition Pricing Guidance Foundation",
     "sql_required":  false,
     "sql_baseline":  "M5A3",
     "anonymous_signins_required":  true,
-    "operational_baseline":  "3.8.0-r33",
+    "operational_baseline":  "3.8.1-r34",
     "files":  [
                   {
                       "path":  "A5_RECEIPT_PRINT_v3.4.10_RELEASE_NOTES.md",
@@ -159,13 +159,13 @@
                   },
                   {
                       "path":  "FORCE_UPDATE_MOBILE.html",
-                      "bytes":  1271,
-                      "sha256":  "0d993e10d3b448648404c7182270a74247ae17da7d3109db73fc2728f5986b2a"
+                      "bytes":  1268,
+                      "sha256":  "95f1f1561b029a56843f87217d9bcb640e312b0aef606310eb7282af1f885519"
                   },
                   {
                       "path":  "index.html",
-                      "bytes":  258106,
-                      "sha256":  "0a0d401d808e5ec3b913c555e8e0cc2aae1913c86b658ce3d21860673a3e5368"
+                      "bytes":  258060,
+                      "sha256":  "d22acc6c89c732e9b1ff5baec37c9ab14f6d6fe4ed9894bd33b49a7ec0e9e49f"
                   },
                   {
                       "path":  "INVITATION_RUNTIME_FIX_v3.6.5_PROCEDURE.md",
@@ -316,6 +316,11 @@
                       "path":  "js/pdf-export.js",
                       "bytes":  22408,
                       "sha256":  "45a29683657313ee1864f789bd12c64b49cdd393c6ad52d0e2fe614ebcb7a7b4"
+                  },
+                  {
+                      "path":  "js/pricing-guidance-v382.js",
+                      "bytes":  26758,
+                      "sha256":  "b386525653f74c4c2fd7415161885d4d24938ab66b5aa78894daca3dd852605d"
                   },
                   {
                       "path":  "js/product-search-adapter.js",
@@ -494,8 +499,8 @@
                   },
                   {
                       "path":  "manifest.json",
-                      "bytes":  1404,
-                      "sha256":  "a884a24e8a56c71257aff2a2adf6ed32988eb9a6e6515980df7a199f5f91a375"
+                      "bytes":  1379,
+                      "sha256":  "5a5e8e6bebd73eb22e5d463920010ee73e0c1013a5a18af3981ab1c25431212c"
                   },
                   {
                       "path":  "MARGIN_PRICING_INTELLIGENCE_v3.8.1_RELEASE_NOTES.md",
@@ -683,9 +688,19 @@
                       "sha256":  "f077be5a1ff6217999325b32efde5afa94f14dc9e687e170a6baf75cd5c4de36"
                   },
                   {
+                      "path":  "PRICING_GUIDANCE_v3.8.2_RELEASE_NOTES.md",
+                      "bytes":  5285,
+                      "sha256":  "fee9ae7ba51b83c46b255220c7e3a71726e922649735f9160e32ea5fb8d78a11"
+                  },
+                  {
+                      "path":  "PRICING_GUIDANCE_v3.8.2_TEST_REPORT.md",
+                      "bytes":  7076,
+                      "sha256":  "8b80dc0d9da27609f4256256bac93008a28832b6c59c1712f63b41ee159a3f47"
+                  },
+                  {
                       "path":  "README.md",
-                      "bytes":  5109,
-                      "sha256":  "7001d49e0594cea4fc861556ff85427c64e6dd233597c579b84f86f10778452a"
+                      "bytes":  5587,
+                      "sha256":  "899f90d1ee8a711e502b6d040e241382725705643c012cc9ce7eef02cc6a4ede"
                   },
                   {
                       "path":  "RECEIPT_NAME_SEARCH_ACCOUNT_UNDO_v3.4.24_RELEASE_NOTES.md",
@@ -859,8 +874,8 @@
                   },
                   {
                       "path":  "sw.js",
-                      "bytes":  4277,
-                      "sha256":  "9010970376142d8b42c686fd17e94898ad8a87e9dc536d5bc340ba27668c6827"
+                      "bytes":  4238,
+                      "sha256":  "9f2253f451499f56f5a852e1b47989b51046b9b682a815e3c9e65f002be3a59d"
                   },
                   {
                       "path":  "UNIQUE_MFA_FACTOR_NAMES_v3.6.3_PROCEDURE.md",
