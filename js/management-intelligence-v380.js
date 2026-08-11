@@ -4,8 +4,13 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
+  if (ZEZMS.managementIntelligence
+      && ZEZMS.managementIntelligence.installed
+      && typeof ZEZMS.managementIntelligence.getSelectedPeriodAggregate === 'function') return;
+
   const VERSION = '3.8.0';
   const BUILD = '20260811-management-intelligence-r33';
+  let lastAggregate = Object.freeze([]);
 
   function number(value) {
     const parsed = Number(value);
@@ -123,12 +128,12 @@
       }
     });
 
-    return Array.from(groups.values()).map(function (product) {
+    return Object.freeze(Array.from(groups.values()).map(function (product) {
       const sellThroughBase = product.qtySold + product.remainingQty;
       product.sellThrough = percentage(product.qtySold, sellThroughBase);
       product.grossMargin = percentage(product.grossProfit, product.totalSales);
-      return product;
-    });
+      return Object.freeze(product);
+    }));
   }
 
   function productCells(product, columns) {
@@ -155,7 +160,9 @@
   }
 
   function managementIntelligenceHTML() {
+    lastAggregate = Object.freeze([]);
     const products = buildAggregateModel();
+    lastAggregate = products;
     const heading = '<section id="managementIntelligence" data-build="' + BUILD + '" style="margin-top:18px">'
       + '<div class="card" style="margin-bottom:12px"><h2 style="margin:0 0 6px">Management Intelligence</h2>'
       + '<p class="muted" style="margin:0">Read-only analysis based on the selected reporting period. No inventory or transaction records are changed.</p></div>';
@@ -220,5 +227,11 @@
   }
 
   const installed = install();
-  ZEZMS.managementIntelligence = Object.freeze({ version: VERSION, build: BUILD, installed: installed, readOnly: true });
+  ZEZMS.managementIntelligence = Object.freeze({
+    version: VERSION,
+    build: BUILD,
+    installed: installed,
+    readOnly: true,
+    getSelectedPeriodAggregate: function () { return lastAggregate; }
+  });
 }());
