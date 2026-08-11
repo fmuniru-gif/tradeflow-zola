@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition with offline sales, FIFO inventory, purchase orders, document/PDF tools, current-stock pricing guidance and runtime-only existing/new-product pricing simulation.",
-  "start_url": "./index.html?build=20260811-new-product-pricing-r37",
+  "description": "ZEZMS Owner Edition with offline sales, FIFO inventory, purchase orders, document/PDF tools, pricing intelligence, stock velocity analysis and runtime-only reorder planning.",
+  "start_url": "./index.html?build=20260811-stock-velocity-r38",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

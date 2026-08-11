@@ -1,6 +1,6 @@
-# ZEZMS TradeFlow Owner Edition v3.8.4
+# ZEZMS TradeFlow Owner Edition v3.9.0
 
-Current build: `20260811-new-product-pricing-r37`
+Current build: `20260811-stock-velocity-r38`
 
 This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 package is retained separately and is not modified by this release.
 
@@ -26,6 +26,7 @@ This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 packag
 - Read-only, advisory Current Stock Pricing Guidance with weighted remaining-cost references, factual price-position visibility and a runtime-only What-If Calculator
 - Runtime-only Pricing Policy Lab for target gross-margin scenarios, additional business-cost allowances, contemplated-price comparisons and a read-only current-stock portfolio preview
 - Isolated New Product mode for landed-cost, advisory-price, market-price, batch-profit and capital-efficiency simulation before a catalogue product, Stock In record or Purchase Order exists
+- Read-only Stock Velocity & Reorder Planning Lab with 30/60/90-day sales windows, current-stock movement tables, open-PO-aware inventory position and runtime-only reorder scenarios
 
 ## Credentials
 
@@ -41,18 +42,20 @@ The fixed `0000` Price Adjustment/VAT PIN is an operator-entry safeguard request
 4. Replace the existing `index.html`, `manifest.json`, `sw.js`, `FORCE_UPDATE_MOBILE.html`, and all matching JavaScript files.
 5. Do not upload only the ZIP; GitHub Pages does not extract it.
 6. Wait for deployment, close all old tabs/PWA windows, and reopen the app.
-7. Confirm the page source build is `20260811-new-product-pricing-r37`.
+7. Confirm the page source build is `20260811-stock-velocity-r38`.
 8. Open Purchase Orders and verify that product search, supplier selection and the Edit action load.
 9. Open Dashboard and confirm **Management Intelligence** appears beneath the existing KPI, Quick Actions and Cash Wallet sections.
 10. Confirm **Margin & Pricing Intelligence** appears beneath the Stage 1 Management Intelligence tables.
 11. Confirm **Current Stock Pricing Guidance** appears beneath Stage 2 and remains tied to the current open stock period when the historical Dashboard month changes.
 12. Confirm **Pricing Policy Lab** appears beneath Current Stock Pricing Guidance, calculates a temporary scenario, and clears all fields and results with **Reset Policy Lab**.
 13. Switch the Lab to **New Product**, calculate a temporary landed-cost scenario, then confirm **Reset New Product Scenario** restores the blank/default state.
-14. When using an installed PWA, confirm that the bell counter is visible in the top bar.
+14. Confirm **Stock Velocity & Reorder Planning Lab** appears beneath the pricing stages, defaults to 90 days, and hides reorder guidance until lead-time and target-coverage inputs are supplied.
+15. Enter a temporary reorder scenario, confirm open uncommitted purchase-order quantities appear once, then use **Reset** and verify the planning result disappears without changing any purchase order.
+16. When using an installed PWA, confirm that the bell counter is visible in the top bar.
 
 ## Supabase prerequisites
 
-The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.8.4 adds no new SQL migration. Do not rerun completed migrations on a live database without first taking a verified backup.
+The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.9.0 adds no new SQL migration. Do not rerun completed migrations on a live database without first taking a verified backup.
 
 ## Commercialisation boundary
 
@@ -62,7 +65,7 @@ See `COMMERCIALISATION_ROADMAP_M5.md`, `COMMERCIAL_READINESS_EVALUATION_v1.md`, 
 
 ## Upgrade compatibility
 
-v3.8.4 intentionally keeps the existing Owner Edition browser database key so an in-place upgrade retains current records. Management Intelligence and Margin & Pricing Intelligence derive figures in memory from selected-period aggregates. Pricing Guidance reads the current open stock period, while Existing Product mode reuses the frozen Stage 3A current-stock aggregate. The isolated New Product mode uses only assumptions typed into its rendered form. Both modes are runtime-only: neither saves, creates, enforces or modifies operational data. Take a verified backup before deployment. The service-worker cleanup is scoped so it does not remove the separately developed commercial-pilot cache or browser database.
+v3.9.0 intentionally keeps the existing Owner Edition browser database key so an in-place upgrade retains current records. Management Intelligence and Margin & Pricing Intelligence derive figures in memory from selected-period aggregates. Pricing Guidance reads the current open stock period, while Existing Product mode reuses the frozen Stage 3A current-stock aggregate. The isolated New Product mode uses only assumptions typed into its rendered form. Stage 4A reuses that same frozen current-stock aggregate, reads active receipt/Quick Sale history and open uncommitted purchase-order lines, and keeps every planning input and result in memory only. None of the intelligence stages saves, creates, enforces or modifies operational data. Take a verified backup before deployment. The service-worker cleanup is scoped so it does not remove the separately developed commercial-pilot cache or browser database.
 
 Receipt financial edits are limited to active receipts in the current open stock period because those records still have safely reversible FIFO details. Committed purchase orders, sold invoices, void documents and historical receipts are protected from editing.
 

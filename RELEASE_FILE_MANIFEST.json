@@ -1,11 +1,11 @@
 {
-    "version":  "3.8.4",
-    "build":  "20260811-new-product-pricing-r37",
-    "release":  "Owner Edition New Product Pricing Simulator",
+    "version":  "3.9.0",
+    "build":  "20260811-stock-velocity-r38",
+    "release":  "Stock Velocity \u0026 Reorder Planning Lab",
     "sql_required":  false,
     "sql_baseline":  "M5A3",
     "anonymous_signins_required":  true,
-    "operational_baseline":  "3.8.3-r36",
+    "operational_baseline":  "3.8.4-r37",
     "files":  [
                   {
                       "path":  "A5_RECEIPT_PRINT_v3.4.10_RELEASE_NOTES.md",
@@ -159,13 +159,13 @@
                   },
                   {
                       "path":  "FORCE_UPDATE_MOBILE.html",
-                      "bytes":  1271,
-                      "sha256":  "ce88775abb075709b480acc49ddf21ae3a0bc96b1803b8d8a4408b7b42e8d37e"
+                      "bytes":  1266,
+                      "sha256":  "9367e82f5fceeddf76e2ceabc44d66badf34765cafe6c34448022cb470da1840"
                   },
                   {
                       "path":  "index.html",
-                      "bytes":  258368,
-                      "sha256":  "13b1db8d46018f36fcd20e1253460ee3fc0e9cfc71e946425bd86ae0b24d1de0"
+                      "bytes":  258223,
+                      "sha256":  "0e4f15ac011866b9f98e2326f41989ff998a027278c79ffda3d8a59aeaef83c8"
                   },
                   {
                       "path":  "INVITATION_RUNTIME_FIX_v3.6.5_PROCEDURE.md",
@@ -383,6 +383,11 @@
                       "sha256":  "26da6a334f02750e863ef5e3608d1967a52bb64bace2fef60040ae425cb8505a"
                   },
                   {
+                      "path":  "js/stock-velocity-v390.js",
+                      "bytes":  51451,
+                      "sha256":  "279bca8bfe2254856b80ff6c854e9810bca858fb3d746499e4f540e0bc439f56"
+                  },
+                  {
                       "path":  "js/storage.js",
                       "bytes":  387,
                       "sha256":  "c67c325fce0d8ea652ba63ad40ef60c313d92e67be20e27749a70e9d7add7350"
@@ -509,8 +514,8 @@
                   },
                   {
                       "path":  "manifest.json",
-                      "bytes":  1402,
-                      "sha256":  "a1b5542e83c8214acd8c77728c9d60e75aee708df04f5961071705949eeae15d"
+                      "bytes":  1389,
+                      "sha256":  "b11f7aa31cbe34a255c77044ef2b206bb2b8e5152f0bb5255ab7a388ea1f12a6"
                   },
                   {
                       "path":  "MARGIN_PRICING_INTELLIGENCE_v3.8.1_RELEASE_NOTES.md",
@@ -729,8 +734,8 @@
                   },
                   {
                       "path":  "README.md",
-                      "bytes":  6426,
-                      "sha256":  "568166ceec502de3fe4e674095063c36921cee05616ef46212432a9ed0cb45d8"
+                      "bytes":  7189,
+                      "sha256":  "e6970c5ce5f84e774a78ffd5f0dbaec32a1595c416fb5a674cf14447458e4f51"
                   },
                   {
                       "path":  "RECEIPT_NAME_SEARCH_ACCOUNT_UNDO_v3.4.24_RELEASE_NOTES.md",
@@ -853,6 +858,16 @@
                       "sha256":  "306dd975ad033f055b49c9c687ad449d206fa4465cd69f28247f589053dc54fd"
                   },
                   {
+                      "path":  "STOCK_VELOCITY_REORDER_v3.9.0_RELEASE_NOTES.md",
+                      "bytes":  6945,
+                      "sha256":  "82fb99577c2096530634d53def2f23152d1af7a575800766b0e7143d62a1ec1e"
+                  },
+                  {
+                      "path":  "STOCK_VELOCITY_REORDER_v3.9.0_TEST_REPORT.md",
+                      "bytes":  9523,
+                      "sha256":  "0819717bc532a23ed8124a63b986db8c1f84792ad862d3a0371537d17e8b03ee"
+                  },
+                  {
                       "path":  "SUPABASE_M5A1_COMMERCIAL_FOUNDATION.sql",
                       "bytes":  24770,
                       "sha256":  "4da644222f0fcdcd3ffd98b3f89f523bea2123053d7a4846da5990965aa8c722"
@@ -904,8 +919,8 @@
                   },
                   {
                       "path":  "sw.js",
-                      "bytes":  4516,
-                      "sha256":  "e87b5129a251831c070ab0a22ff37cb93b1418057fe760b31f9617ca9ef71c51"
+                      "bytes":  4364,
+                      "sha256":  "48c22e3c0ea4400433977808e3e680aaaf597a66fcd909f328a1d47b2e2d78da"
                   },
                   {
                       "path":  "UNIQUE_MFA_FACTOR_NAMES_v3.6.3_PROCEDURE.md",
