@@ -1,5 +1,5 @@
-/* ZEZMS Owner Edition - read-only portfolio signals and capital-allocation intelligence */
-const CACHE = 'zezms-portfolio-signals-20260812-r39';
+/* ZEZMS Owner Edition - read-only customer relationship intelligence */
+const CACHE = 'zezms-customer-intelligence-20260812-r40';
 const ASSETS = [
   './',
   './index.html',
@@ -45,6 +45,7 @@ const ASSETS = [
   './js/new-product-pricing-v384.js?v=20260812-portfolio-signals-r39',
   './js/stock-velocity-v390.js?v=20260812-portfolio-signals-r39',
   './js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39',
+  './js/customer-intelligence-v3100.js?v=20260812-customer-intelligence-r40',
 ];
 
 self.addEventListener('install', (event) => {
