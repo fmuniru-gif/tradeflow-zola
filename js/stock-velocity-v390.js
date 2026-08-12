@@ -15,6 +15,7 @@
   }
   var runtime = {
     baseModel: null,
+    planningSnapshot: null,
     renderCount: 0,
     scenarioCount: 0
   };
@@ -506,6 +507,7 @@
     });
 
     runtime.renderCount += 1;
+    runtime.planningSnapshot = null;
     runtime.baseModel = {
       windowDays: selectedWindow,
       startDay: startDay,
@@ -791,6 +793,7 @@
   }
 
   function hidePlanning(message, state){
+    runtime.planningSnapshot = null;
     setText('velocityPlanningMessage', message);
     var messageElement = document.getElementById('velocityPlanningMessage');
     if(messageElement) messageElement.setAttribute('data-state', state);
@@ -807,6 +810,17 @@
       hidePlanning('Planning inputs or calculated quantities are too large for a reliable whole-unit scenario. Enter smaller values.', 'invalid');
       return;
     }
+    runtime.planningSnapshot = {
+      inputs: inputs,
+      products: currentPlanning.map(function(product){
+        return {
+          key: product.key,
+          inventoryPosition: product.inventoryPosition,
+          suggestedReorderQuantity: product.suggestedReorderQuantity,
+          planningStatus: product.planningStatus
+        };
+      })
+    };
     var preview = currentPlanning.concat(outOfStockPlanning);
     preview.sort(function(a, b){
       return planningRank(a.planningStatus) - planningRank(b.planningStatus)
@@ -865,6 +879,7 @@
     var model = buildBaseModel(selected);
     renderBaseTables(model);
     recalculate();
+    notifySnapshotChanged();
   }
 
   function resetScenario(){
@@ -873,6 +888,60 @@
     setValue('velocitySafetyDays', '0');
     setValue('velocityTargetDays', '');
     changeWindow(DEFAULT_WINDOW);
+  }
+
+  function freezeSnapshotValue(value){
+    if(value instanceof Date) return value.toISOString();
+    if(Array.isArray(value)) return Object.freeze(value.map(freezeSnapshotValue));
+    if(value && typeof value === 'object'){
+      var copy = {};
+      Object.keys(value).forEach(function(key){ copy[key] = freezeSnapshotValue(value[key]); });
+      return Object.freeze(copy);
+    }
+    return value;
+  }
+
+  function currentPlanningSnapshot(){
+    return runtime.planningSnapshot;
+  }
+
+  function productSnapshot(){
+    var model = runtime.baseModel;
+    if(!model) return Object.freeze({ windowDays:null, startDay:null, endDay:null, products:Object.freeze([]), planning:null });
+    return freezeSnapshotValue({
+      windowDays: model.windowDays,
+      startDay: model.startDay,
+      endDay: model.endDay,
+      products: model.products.map(function(product){
+        return {
+          key: product.key,
+          productId: product.productId,
+          product: product.product,
+          category: product.category,
+          remainingQty: product.remainingQty,
+          totalRemainingCost: product.totalRemainingCost,
+          weightedCost: product.weightedCost,
+          listedPrice: product.listedPrice,
+          unitsSold: product.unitsSold,
+          averageDailyVelocity: product.averageDailyVelocity,
+          thirtyDayPace: product.thirtyDayPace,
+          estimatedDaysOfCover: product.estimatedDaysOfCover,
+          lastSaleDate: product.lastSaleDate,
+          incomingOpenPOQty: product.incomingOpenPOQty,
+          incomingKnown: product.incomingKnown,
+          inventoryPosition: safeAdd(product.remainingQty, product.incomingKnown ? product.incomingOpenPOQty : 0)
+        };
+      }),
+      planning: currentPlanningSnapshot()
+    });
+  }
+
+  function notifySnapshotChanged(){
+    try{
+      window.dispatchEvent(new CustomEvent('zezms:stock-velocity-updated', {
+        detail: { windowDays: runtime.baseModel ? runtime.baseModel.windowDays : null }
+      }));
+    }catch(_error){}
   }
 
   function setHTML(id, html){
@@ -1023,6 +1092,7 @@
     changeWindow: changeWindow,
     recalculate: recalculate,
     resetScenario: resetScenario,
+    getProductSnapshot: productSnapshot,
     getRuntimeSnapshot: function(){
       var model = runtime.baseModel;
       return Object.freeze({
