@@ -1,5 +1,5 @@
-/* ZEZMS Owner Edition - read-only customer relationship intelligence */
-const CACHE = 'zezms-customer-intelligence-20260812-r40';
+/* ZEZMS Owner Edition v3.10.1 - grouped navigation and transaction entry safeguards */
+const CACHE = 'zezms-navigation-entry-guard-20260813-r41';
 const ASSETS = [
   './',
   './index.html',
@@ -46,6 +46,7 @@ const ASSETS = [
   './js/stock-velocity-v390.js?v=20260812-portfolio-signals-r39',
   './js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39',
   './js/customer-intelligence-v3100.js?v=20260812-customer-intelligence-r40',
+  './js/navigation-v3101.js?v=20260813-navigation-entry-guard-r41',
 ];
 
 self.addEventListener('install', (event) => {
@@ -89,11 +90,11 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() =>
-          caches.match(request).then((cached) =>
-            cached || caches.match(request, { ignoreSearch: true }) || caches.match('./index.html')
-          )
-        )
+        .catch(() => caches.match(request).then((cached) => {
+          if (cached) return cached;
+          return caches.match(request, { ignoreSearch: true })
+            .then((ignoredSearch) => ignoredSearch || caches.match('./index.html'));
+        }))
     );
     return;
   }
