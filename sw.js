@@ -1,9 +1,10 @@
-/* ZEZMS Owner Edition v3.10.1 - grouped navigation and transaction entry safeguards */
-const CACHE = 'zezms-navigation-entry-guard-20260813-r41';
+/* ZEZMS Owner Edition v3.10.2 - A5 document branding */
+const CACHE = 'zezms-document-branding-20260813-r42';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39',
   './js/backup-manager.js?v=20260812-portfolio-signals-r39',
   './js/cloud-sync.js?v=20260812-portfolio-signals-r39',
@@ -17,9 +18,9 @@ const ASSETS = [
   './js/lifecycle-module.js?v=20260812-portfolio-signals-r39',
   './js/logger.js?v=20260812-portfolio-signals-r39',
   './js/notifications-module.js?v=20260812-portfolio-signals-r39',
-  './js/operations-update.js?v=20260812-portfolio-signals-r39',
+  './js/operations-update.js?v=20260813-document-branding-r42',
   './js/auto-month-rollover.js?v=20260812-portfolio-signals-r39',
-  './js/invoice-waybill.js?v=20260812-portfolio-signals-r39',
+  './js/invoice-waybill.js?v=20260813-document-branding-r42',
   './js/product-search-adapter.js?v=20260812-portfolio-signals-r39',
   './js/product-search-controller.js?v=20260812-portfolio-signals-r39',
   './js/product-search-events.js?v=20260812-portfolio-signals-r39',
@@ -36,7 +37,7 @@ const ASSETS = [
   './js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39',
   './js/commercial-foundation.js?v=20260812-portfolio-signals-r39',
   './js/owner-maintenance-v373.js?v=20260812-portfolio-signals-r39',
-  './js/pdf-export.js?v=20260812-portfolio-signals-r39',
+  './js/pdf-export.js?v=20260813-document-branding-r42',
   './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39',
   './js/management-intelligence-v380.js?v=20260812-portfolio-signals-r39',
   './js/margin-intelligence-v381.js?v=20260812-portfolio-signals-r39',
@@ -46,7 +47,7 @@ const ASSETS = [
   './js/stock-velocity-v390.js?v=20260812-portfolio-signals-r39',
   './js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39',
   './js/customer-intelligence-v3100.js?v=20260812-customer-intelligence-r40',
-  './js/navigation-v3101.js?v=20260813-navigation-entry-guard-r41',
+  './js/navigation-v3101.js?v=20260813-document-branding-r42',
 ];
 
 self.addEventListener('install', (event) => {

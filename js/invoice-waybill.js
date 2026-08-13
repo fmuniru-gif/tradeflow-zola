@@ -4,7 +4,8 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260808-owner-maintenance-r32';
+  const BUILD = '20260813-document-branding-r42';
+  const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
   let invoicePriceAdjustmentUnlocked = false;
@@ -72,7 +73,9 @@
     style.id = 'invoiceWaybillStyles';
     style.textContent = `
       .document-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,.8fr);gap:12px;align-items:start}
-      .document-paper{background:#fff;color:#111;padding:24px;max-width:210mm;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.45}
+      .document-paper{position:relative;isolation:isolate;overflow:hidden;background:#fff;color:#111;padding:24px;width:min(100%,148mm);min-height:210mm;margin:0 auto;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.45}
+      .document-paper .document-branding-watermark{position:absolute;inset:0;z-index:0;background-image:url("${DOCUMENT_WATERMARK_URL}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
+      .document-paper .document-content{position:relative;z-index:1}
       .document-paper .doc-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:14px}
       .document-paper .doc-title{font-size:25px;font-weight:900;letter-spacing:2px;text-align:right}
       .document-paper table{width:100%;border-collapse:collapse;margin-top:12px}
@@ -82,7 +85,9 @@
       .document-paper .doc-total div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ddd}
       .document-paper .doc-total .grand{font-size:15px;font-weight:900;border-top:2px solid #111;border-bottom:2px solid #111}
       .document-paper .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}
+      .document-paper .signature-block{display:flex;min-height:58px;flex-direction:column;justify-content:flex-end}
       .document-paper .signature-line{border-top:1px solid #111;padding-top:5px;text-align:center}
+      .document-paper .approved-stamp{display:inline-flex;align-self:center;align-items:center;justify-content:center;margin:0 0 9px;padding:4px 12px;border:2px solid #0f6f4b;border-radius:5px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 11px/1 Arial,Helvetica,sans-serif;letter-spacing:1.4px;transform:rotate(-2deg)}
       .doc-register-actions{display:flex;gap:5px;flex-wrap:wrap}
       .doc-void td{opacity:.7;background:rgba(100,116,139,.12)!important}
       .doc-converted td{background:rgba(34,197,94,.08)!important}
@@ -436,7 +441,7 @@
       <td style="text-align:right">${fmtN(line.unitPrice)}</td><td style="text-align:right">${fmtN(line.discount || 0)}</td>
       <td style="text-align:right">${fmtN(line.total)}</td></tr>`).join('');
     const voided = record.status === VOID;
-    return `<div class="document-paper" style="position:relative">
+    return `<div class="document-paper" style="position:relative"><div class="document-branding-watermark" aria-hidden="true"></div><div class="document-content">
       ${voided ? '<div style="position:absolute;inset:42% 0 auto;text-align:center;font-size:76px;font-weight:900;color:rgba(185,28,28,.17);transform:rotate(-20deg);letter-spacing:10px">VOID</div>' : ''}
       <div class="doc-head"><div><div style="font-size:20px;font-weight:900">${esc(biz.name)}</div>
         <div>${esc(biz.address || '')}</div><div>Tel: ${esc(biz.tel || '')}</div></div>
@@ -453,8 +458,8 @@
         <div class="grand"><span>GRAND TOTAL</span><b>GH₵ ${fmtN(record.total != null ? record.total : totals.total)}</b></div></div>
       ${record.terms ? `<div style="margin-top:22px"><b>Terms:</b> ${esc(record.terms)}</div>` : ''}
       ${record.notes ? `<div style="margin-top:8px"><b>Notes:</b> ${esc(record.notes)}</div>` : ''}
-      <div class="signature-grid"><div class="signature-line">For ${esc(biz.name)}</div><div class="signature-line">Customer signature</div></div>
-    </div>`;
+      <div class="signature-grid"><div class="signature-block"><span class="approved-stamp">APPROVED</span><div class="signature-line">For ${esc(biz.name)}</div></div><div class="signature-block"><div class="signature-line">Customer signature</div></div></div>
+    </div></div>`;
   }
 
   function waybillPaperHTML(record) {
@@ -464,7 +469,7 @@
       <td>${esc(line.product)}</td><td style="text-align:right">${fmtN(line.qty)}</td>
       <td>${esc(line.unit || 'pcs')}</td><td>${esc(line.remarks || '')}</td></tr>`).join('');
     const voided = record.status === VOID;
-    return `<div class="document-paper" style="position:relative">
+    return `<div class="document-paper" style="position:relative"><div class="document-branding-watermark" aria-hidden="true"></div><div class="document-content">
       ${voided ? '<div style="position:absolute;inset:42% 0 auto;text-align:center;font-size:76px;font-weight:900;color:rgba(185,28,28,.17);transform:rotate(-20deg);letter-spacing:10px">VOID</div>' : ''}
       <div class="doc-head"><div><div style="font-size:20px;font-weight:900">${esc(biz.name)}</div>
         <div>${esc(biz.address || '')}</div><div>Tel: ${esc(biz.tel || '')}</div></div>
@@ -475,9 +480,9 @@
       </div>
       <table><thead><tr><th>#</th><th>Product ID</th><th>Product description</th><th style="text-align:right">Quantity</th><th>Unit</th><th>Remarks</th></tr></thead><tbody>${rows}</tbody></table>
       ${record.notes ? `<div style="margin-top:18px"><b>Delivery notes:</b> ${esc(record.notes)}</div>` : ''}
-      <div class="signature-grid"><div class="signature-line">Goods issued by</div><div class="signature-line">Goods received by</div></div>
+      <div class="signature-grid"><div class="signature-block"><span class="approved-stamp">APPROVED</span><div class="signature-line">Goods issued by</div></div><div class="signature-block"><div class="signature-line">Goods received by</div></div></div>
       <div style="margin-top:14px;font-size:10px">The recipient confirms that the goods listed above were received in the stated quantities and apparent condition.</div>
-    </div>`;
+    </div></div>`;
   }
 
   function documentHTML(type, record) {
@@ -509,11 +514,12 @@
     const number = type === 'invoice' ? record.invoiceNo : record.waybillNo;
     doc.open();
     doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(number)}</title><style>
-      @page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif}
-      .document-paper{background:#fff;color:#111;padding:0;font-size:12px;line-height:1.45}.doc-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:14px}
-      .doc-title{font-size:25px;font-weight:900;letter-spacing:2px;text-align:right}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #999;padding:6px;vertical-align:top}th{background:#eee;text-align:left}
+      @page{size:A5 portrait;margin:12mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif}
+      body{position:relative}body::before{content:"";position:fixed;z-index:0;top:-12mm;left:-12mm;width:148mm;height:210mm;background-image:url("${esc(DOCUMENT_WATERMARK_URL)}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
+      .document-paper{position:relative;z-index:1;background:transparent;color:#111;padding:0;font-size:10px;line-height:1.4}.document-branding-watermark{display:none}.document-content{position:relative;z-index:1}.doc-head{display:flex;justify-content:space-between;gap:14px;border-bottom:2px solid #111;padding-bottom:9px;margin-bottom:10px}
+      .doc-title{font-size:20px;font-weight:900;letter-spacing:1.5px;text-align:right}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:10px;font-size:8px}th,td{border:1px solid #999;padding:4px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:left}
       .doc-total{width:330px;max-width:100%;margin-left:auto;margin-top:12px}.doc-total div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ddd}.doc-total .grand{font-size:15px;font-weight:900;border-top:2px solid #111;border-bottom:2px solid #111}
-      .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}.signature-line{border-top:1px solid #111;padding-top:5px;text-align:center}
+      .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:34px}.signature-block{display:flex;min-height:48px;flex-direction:column;justify-content:flex-end}.signature-line{border-top:1px solid #111;padding-top:4px;text-align:center}.approved-stamp{display:inline-flex;align-self:center;align-items:center;justify-content:center;margin:0 0 7px;padding:3px 10px;border:1.8px solid #0f6f4b;border-radius:4px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 9px/1 Arial,Helvetica,sans-serif;letter-spacing:1.2px;transform:rotate(-2deg)}
     </style></head><body>${documentHTML(type, record)}</body></html>`);
     doc.close();
     setTimeout(() => {

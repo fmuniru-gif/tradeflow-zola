@@ -1,6 +1,6 @@
-# ZEZMS TradeFlow Owner Edition v3.10.1
+# ZEZMS TradeFlow Owner Edition v3.10.2
 
-Current build: `20260813-navigation-entry-guard-r41`
+Current build: `20260813-document-branding-r42`
 
 This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 package is retained separately and is not modified by this release.
 
@@ -17,6 +17,7 @@ This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 packag
 - Debtor, Creditor and Depositor dropdown filtering with a clear-to-show-all option
 - Purchase orders with supplier management, part-payment posting, creditor balances, FIFO stock commit and reversible open-order cancellation
 - Printable purchase orders and offline PDF downloads for purchase orders, receipts, invoices and waybills
+- A5 receipt, invoice and waybill output with the packaged Zola logo watermark and an APPROVED mark at the authorised signature area
 - Purchase-order product search by name or ID, direct catalog-product creation and an icon in the main navigation
 - Cost-only purchase-order lines and documents; products created through Purchase Orders require both cost and selling prices in the catalog
 - Safe editing of open purchase orders, open invoices, active waybills and current-period active receipts
@@ -42,11 +43,11 @@ The fixed `0000` Price Adjustment/VAT PIN is an operator-entry safeguard request
 
 1. Back up the working device and confirm Cloud Sync has no queued transactions.
 2. Extract the complete release ZIP.
-3. Upload the extracted contents to the repository root, preserving the complete `js/` folder.
-4. Replace the existing `index.html`, `manifest.json`, `sw.js`, `FORCE_UPDATE_MOBILE.html`, and all matching JavaScript files.
+3. Upload the extracted contents to the repository root, preserving the complete `assets/` and `js/` folders.
+4. When upgrading directly from verified v3.10.1, replace `index.html`, `manifest.json`, `sw.js`, `FORCE_UPDATE_MOBILE.html`, `README.md`, `RELEASE_FILE_MANIFEST.json`, `js/operations-update.js`, `js/invoice-waybill.js`, and `js/pdf-export.js`; add `assets/zez-document-watermark.jpg` plus the two v3.10.2 document-branding reports.
 5. Do not upload only the ZIP; GitHub Pages does not extract it.
 6. Wait for deployment, close all old tabs/PWA windows, and reopen the app.
-7. Confirm the page source build is `20260813-navigation-entry-guard-r41`.
+7. Confirm the page source build is `20260813-document-branding-r42`.
 8. Open Purchase Orders and verify that product search, supplier selection and the Edit action load.
 9. Open each grouped navigation item by click/tap, confirm another group closes the first, and confirm child selection closes the sidebar on mobile.
 10. Open **Management → Dashboard KPIs** and confirm it contains the original KPI, Quick Actions and Cash Wallet content without appended intelligence sections.
@@ -60,10 +61,12 @@ The fixed `0000` Price Adjustment/VAT PIN is an operator-entry safeguard request
 18. When using an installed PWA, confirm that the bell counter is visible in the top bar.
 19. Open **Management → Customer Relationship Intelligence** directly, confirm it defaults to **Last 365 days**, and switch among 30/90/180/365 days and All Available History without changing the historical Dashboard month.
 20. Verify a customer search and purchase summary, then close and reopen Dashboard to confirm the runtime-only search/window selection does not modify any customer or transaction record.
+21. Open a receipt, invoice and waybill; confirm each A5 preview and print/PDF output shows the faint full-page logo and the APPROVED stamp without obscuring content.
+22. Test once offline after the updated service worker has activated; confirm the same local watermark asset appears.
 
 ## Supabase prerequisites
 
-The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.10.1 adds no new SQL or Supabase migration. Do not rerun completed migrations on a live database without first taking a verified backup.
+The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.10.2 adds no new SQL or Supabase migration. Do not rerun completed migrations on a live database without first taking a verified backup.
 
 ## Commercialisation boundary
 
@@ -73,7 +76,7 @@ See `COMMERCIALISATION_ROADMAP_M5.md`, `COMMERCIAL_READINESS_EVALUATION_v1.md`, 
 
 ## Upgrade compatibility
 
-v3.10.1 intentionally keeps the existing Owner Edition browser database key so an in-place upgrade retains current records. The Management host reuses the verified v3.10.0 Dashboard calculation chain, extracts the selected registered section for direct display, and removes all intelligence sections from the Dashboard KPI output. No intelligence formula file is changed. Management Intelligence and Margin & Pricing Intelligence continue to derive figures in memory from selected-period aggregates. Pricing Guidance reads the current open stock period, while Existing Product mode reuses the frozen Stage 3A current-stock aggregate. The isolated New Product mode uses only assumptions typed into its rendered form. Stage 4A reuses that same frozen current-stock aggregate, reads active receipt/Quick Sale history and open uncommitted purchase-order lines, and keeps every planning input and result in memory only. Stage 4B joins Stage 3A pricing references to a frozen Stage 4A product snapshot; it does not rescan sales, stock rows or purchase orders. Stage 5A scans active `DB.sales` receipts and active Quick Sale inventory transactions once per selected customer-history window; it does not scan the duplicate printable receipt register, persist normalised identity, or create a Customer Master. None of the intelligence stages saves, creates, enforces or modifies operational data. Take a verified backup before deployment. The service-worker cleanup is scoped so it does not remove the separately developed commercial-pilot cache or browser database.
+v3.10.2 intentionally keeps the existing Owner Edition browser database key so an in-place upgrade retains current records. This release changes only receipt, invoice and waybill presentation plus release/cache identity; the verified v3.10.1 navigation, `0000` entry safeguards, calculations and operational workflows remain unchanged. The Management host reuses the verified v3.10.0 Dashboard calculation chain, extracts the selected registered section for direct display, and removes all intelligence sections from the Dashboard KPI output. No intelligence formula file is changed. Management Intelligence and Margin & Pricing Intelligence continue to derive figures in memory from selected-period aggregates. Pricing Guidance reads the current open stock period, while Existing Product mode reuses the frozen Stage 3A current-stock aggregate. The isolated New Product mode uses only assumptions typed into its rendered form. Stage 4A reuses that same frozen current-stock aggregate, reads active receipt/Quick Sale history and open uncommitted purchase-order lines, and keeps every planning input and result in memory only. Stage 4B joins Stage 3A pricing references to a frozen Stage 4A product snapshot; it does not rescan sales, stock rows or purchase orders. Stage 5A scans active `DB.sales` receipts and active Quick Sale inventory transactions once per selected customer-history window; it does not scan the duplicate printable receipt register, persist normalised identity, or create a Customer Master. None of the intelligence stages saves, creates, enforces or modifies operational data. Take a verified backup before deployment. The service-worker cleanup is scoped so it does not remove the separately developed commercial-pilot cache or browser database.
 
 Receipt financial edits are limited to active receipts in the current open stock period because those records still have safely reversible FIFO details. Committed purchase orders, sold invoices, void documents and historical receipts are protected from editing.
 

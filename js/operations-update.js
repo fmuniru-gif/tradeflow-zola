@@ -4,7 +4,8 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260808-owner-maintenance-r32';
+  const BUILD = '20260813-document-branding-r42';
+  const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
@@ -125,6 +126,9 @@
       .chart-legend{font-size:11px;color:var(--muted);margin-top:14px}
       .void-row td{opacity:.72;text-decoration:none;background:rgba(100,116,139,.12)!important}
       .receipt-actions{display:flex;gap:5px;flex-wrap:wrap}
+      .receipt-paper{position:relative;isolation:isolate;overflow:hidden;width:min(100%,148mm);min-height:210mm;margin:0 auto}
+      .receipt-paper .document-branding-watermark{position:absolute;inset:0;z-index:0;background-image:url("${DOCUMENT_WATERMARK_URL}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
+      .receipt-paper .receipt-document-content{position:relative;z-index:1}
       .receipt-title{text-align:center;color:#00f;font-weight:800;font-size:18px;letter-spacing:1px}
       .receipt-business{margin-top:8px}
       .receipt-meta{display:flex;justify-content:space-between;gap:16px;margin-top:8px}
@@ -139,6 +143,7 @@
       .receipt-summary{margin-top:10px;text-align:right;color:#111;font-variant-numeric:tabular-nums}
       .receipt-paid{margin-top:6px}
       .receipt-signature{margin-top:14px;color:#111}
+      .approved-stamp{display:inline-flex;align-items:center;justify-content:center;margin:0 0 8px 12mm;padding:4px 12px;border:2px solid #0f6f4b;border-radius:5px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 11px/1 Arial,Helvetica,sans-serif;letter-spacing:1.4px;transform:rotate(-2deg)}
       .receipt-thanks{text-align:center;margin-top:14px;font-size:16px;font-weight:800;color:#111}
       .receipt-void-watermark{position:absolute;inset:42% 0 auto;text-align:center;font-size:52px;font-weight:900;color:rgba(185,28,28,.23);transform:rotate(-20deg);letter-spacing:8px}
       .receipt-void-label,.receipt-void-note{color:#b91c1c}
@@ -393,6 +398,7 @@
       : (subtotal > 0 ? round2((vat / subtotal) * 100) : 0);
 
     return `<div class="receipt-paper" id="receiptPrint" style="position:relative">
+      <div class="document-branding-watermark" aria-hidden="true"></div><div class="receipt-document-content">
       ${sale.voided ? '<div class="receipt-void-watermark">VOID</div>' : ''}
       <div class="receipt-title">SALES RECEIPT</div>
       <div class="receipt-business"><b>${esc(biz.name)}</b><br>${esc(biz.address)}<br>Tel: ${esc(biz.tel)}</div>
@@ -420,11 +426,12 @@
         <div>Balance: ${fmtN(sale.balance)}</div>
       </div>
       <div class="receipt-signature">
+        <span class="approved-stamp">APPROVED</span><br>
         Cashier Signature: ........................<br>
         <i>${esc(sale.cashier)} (${esc(sale.cashierTel)})</i>
       </div>
       ${sale.voided ? `<div class="receipt-void-note">Voided ${sale.voidedAt ? new Date(sale.voidedAt).toLocaleString() : ''}${sale.voidedBy ? ' by ' + esc(sale.voidedBy) : ''}</div>` : ''}
-      <div class="receipt-thanks">Thank you for your business!</div>
+      <div class="receipt-thanks">Thank you for your business!</div></div>
     </div>`;
   }
 
@@ -468,8 +475,10 @@
         @page{size:A5 portrait;margin:7mm}
         *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
         html,body{margin:0;padding:0;width:100%;background:#fff;color:#111;font-family:"Courier New",ui-monospace,Menlo,Consolas,monospace}
-        body{display:block}
-        .receipt-paper{width:100%;max-width:none;margin:0;padding:5.5mm 6mm;background:#fff;color:#111;border:1px solid #cbd5e1;border-radius:2mm;font-size:9.6pt;line-height:1.42;overflow:hidden}
+        body{display:block;position:relative}
+        body::before{content:"";position:fixed;z-index:0;top:-7mm;left:-7mm;width:148mm;height:210mm;background-image:url("${esc(DOCUMENT_WATERMARK_URL)}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
+        .receipt-paper{position:relative;z-index:1;width:100%;max-width:none;margin:0;padding:5.5mm 6mm;background:transparent;color:#111;border:1px solid #cbd5e1;border-radius:2mm;font-size:9.6pt;line-height:1.42;overflow:hidden}
+        .document-branding-watermark{display:none}.receipt-document-content{position:relative;z-index:1}
         .receipt-title{text-align:center;color:#0000ff;font-weight:800;font-size:15pt;letter-spacing:1.1px}
         .receipt-business{margin-top:4.5mm}
         .receipt-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(58mm,auto);gap:5mm;margin-top:3mm;align-items:start}
@@ -489,6 +498,7 @@
         .receipt-summary{margin-top:4mm;text-align:right;font-variant-numeric:tabular-nums}
         .receipt-paid{margin-top:2.5mm}
         .receipt-signature{margin-top:5mm}
+        .approved-stamp{display:inline-flex;align-items:center;justify-content:center;margin:0 0 2.5mm 12mm;padding:1.2mm 3.5mm;border:0.55mm solid #0f6f4b;border-radius:1.4mm;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 8.5pt/1 Arial,Helvetica,sans-serif;letter-spacing:1pt;transform:rotate(-2deg)}
         .receipt-thanks{text-align:center;margin-top:5mm;font-size:12pt;font-weight:800}
         .receipt-void-watermark{position:absolute;inset:42% 0 auto;text-align:center;font-size:36pt;font-weight:900;color:rgba(185,28,28,.22);transform:rotate(-20deg);letter-spacing:7px}
         .receipt-void-label,.receipt-void-note{color:#b91c1c}

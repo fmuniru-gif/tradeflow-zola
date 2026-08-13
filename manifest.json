@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition with grouped business navigation, direct management intelligence views, offline sales, FIFO inventory and protected transaction entry.",
-  "start_url": "./index.html?build=20260813-navigation-entry-guard-r41",
+  "description": "ZEZMS Owner Edition with A5-branded receipts, invoices and waybills, grouped business navigation, offline sales, FIFO inventory and protected transaction entry.",
+  "start_url": "./index.html?build=20260813-document-branding-r42",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

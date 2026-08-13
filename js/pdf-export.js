@@ -1,10 +1,15 @@
-/* ZEZMS Owner Edition v3.7.3 - offline PDF exports */
+/* ZEZMS Owner Edition v3.10.2 - branded offline PDF exports */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260808-owner-maintenance-r32';
+  const BUILD = '20260813-document-branding-r42';
+  const DOCUMENT_WATERMARK_ASSET = 'assets/zez-document-watermark.jpg';
+  const DOCUMENT_WATERMARK_OPACITY = 0.10;
   const A4 = { width: 595, height: 842 };
+  const A5 = { width: 419.53, height: 595.28 };
+  const A5_MARGIN = 28.35;
+  let watermarkAssetPromise = null;
 
   function ascii(value) {
     let result = String(value == null ? '' : value)
@@ -38,12 +43,68 @@
     return (cleaned || 'ZEZMS-document') + '.pdf';
   }
 
+  function jpegDetails(bytes) {
+    let offset = 2;
+    if (!bytes || bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) {
+      throw new Error('The document watermark is not a valid JPEG image.');
+    }
+    while (offset + 8 < bytes.length) {
+      if (bytes[offset] !== 0xFF) { offset += 1; continue; }
+      const marker = bytes[offset + 1];
+      offset += 2;
+      if (marker === 0xD8 || marker === 0xD9 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) continue;
+      const length = (bytes[offset] << 8) + bytes[offset + 1];
+      if (length < 2 || offset + length > bytes.length) break;
+      if ((marker >= 0xC0 && marker <= 0xC3) || (marker >= 0xC5 && marker <= 0xC7)
+        || (marker >= 0xC9 && marker <= 0xCB) || (marker >= 0xCD && marker <= 0xCF)) {
+        return {
+          height: (bytes[offset + 3] << 8) + bytes[offset + 4],
+          width: (bytes[offset + 5] << 8) + bytes[offset + 6],
+          components: bytes[offset + 7]
+        };
+      }
+      offset += length;
+    }
+    throw new Error('The document watermark JPEG dimensions could not be read.');
+  }
+
+  function bytesToHex(bytes) {
+    const digits = '0123456789ABCDEF';
+    let result = '';
+    for (let index = 0; index < bytes.length; index += 1) {
+      const value = bytes[index];
+      result += digits[value >> 4] + digits[value & 15];
+    }
+    return result;
+  }
+
+  function loadDocumentWatermark() {
+    if (!watermarkAssetPromise) {
+      watermarkAssetPromise = fetch(DOCUMENT_WATERMARK_ASSET, { cache: 'force-cache' })
+        .then(function (response) {
+          if (!response.ok) throw new Error('Watermark asset returned HTTP ' + response.status + '.');
+          return response.arrayBuffer();
+        })
+        .then(function (buffer) {
+          const bytes = new Uint8Array(buffer);
+          return Object.assign({ bytes: bytes, opacity: DOCUMENT_WATERMARK_OPACITY }, jpegDetails(bytes));
+        })
+        .catch(function (error) {
+          console.warn('ZEZMS document watermark is unavailable; generating the document without it.', error);
+          return null;
+        });
+    }
+    return watermarkAssetPromise;
+  }
+
   class SimplePDF {
-    constructor(size) {
+    constructor(size, options) {
+      const opts = options || {};
       this.width = (size || A4).width;
       this.height = (size || A4).height;
-      this.margin = 36;
+      this.margin = opts.margin == null ? 36 : Number(opts.margin);
       this.bottom = 42;
+      this.watermark = opts.watermark || null;
       this.pages = [];
       this.current = -1;
       this.y = this.margin;
@@ -192,7 +253,7 @@
     }
 
     summary(rows) {
-      const width = 235;
+      const width = Math.min(235, this.width - this.margin * 2);
       const x = this.width - this.margin - width;
       const rowHeight = 17;
       this.ensureSpace(rows.length * rowHeight + 10);
@@ -206,10 +267,26 @@
       this.y += 8;
     }
 
-    signatures(left, right) {
-      this.ensureSpace(62);
-      this.y += 34;
+    approvedStamp(x, top, width, height) {
+      const stampWidth = width || 74;
+      const stampHeight = height || 21;
+      const stampY = this.height - top - stampHeight;
+      const label = 'APPROVED';
+      const labelSize = 10;
+      const labelX = x + (stampWidth - this.estimatedWidth(label, labelSize)) / 2;
+      const labelTop = top + (stampHeight - labelSize) / 2 - 0.5;
+      this.command('q 0.06 0.43 0.29 RG 0.06 0.43 0.29 rg 1.25 w '
+        + x.toFixed(2) + ' ' + stampY.toFixed(2) + ' ' + stampWidth.toFixed(2) + ' ' + stampHeight.toFixed(2)
+        + ' re S BT /F2 ' + labelSize.toFixed(2) + ' Tf ' + labelX.toFixed(2) + ' '
+        + this.baseline(labelTop, labelSize).toFixed(2) + ' Td (' + label + ') Tj ET Q');
+    }
+
+    signatures(left, right, options) {
+      const opts = options || {};
+      this.ensureSpace(opts.approved ? 78 : 62);
       const half = (this.width - this.margin * 2 - 35) / 2;
+      if (opts.approved) this.approvedStamp(this.margin + (half - 74) / 2, this.y + 2, 74, 21);
+      this.y += opts.approved ? 43 : 34;
       this.line(this.margin, this.y, this.margin + half, this.y, 0.15);
       this.line(this.margin + half + 35, this.y, this.width - this.margin, this.y, 0.15);
       this.drawText(left, this.margin + half / 2, this.y + 4, 8.5, false, 'center');
@@ -228,13 +305,34 @@
       objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
       objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
       objects[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+      let nextId = 5;
+      let graphicsStateId = 0;
+      let watermarkId = 0;
+      if (this.watermark && this.watermark.bytes) {
+        graphicsStateId = nextId;
+        watermarkId = nextId + 1;
+        nextId += 2;
+        const opacity = Math.max(0, Math.min(1, Number(this.watermark.opacity) || DOCUMENT_WATERMARK_OPACITY));
+        objects[graphicsStateId] = '<< /Type /ExtGState /ca ' + opacity.toFixed(2) + ' /CA ' + opacity.toFixed(2) + ' /BM /Normal >>';
+        const imageHex = bytesToHex(this.watermark.bytes) + '>'; 
+        const colourSpace = Number(this.watermark.components) === 1 ? '/DeviceGray' : (Number(this.watermark.components) === 4 ? '/DeviceCMYK' : '/DeviceRGB');
+        objects[watermarkId] = '<< /Type /XObject /Subtype /Image /Width ' + Number(this.watermark.width)
+          + ' /Height ' + Number(this.watermark.height) + ' /ColorSpace ' + colourSpace
+          + ' /BitsPerComponent 8 /Filter [/ASCIIHexDecode /DCTDecode] /Length ' + imageHex.length
+          + ' >>\nstream\n' + imageHex + '\nendstream';
+      }
       this.pages.forEach((commands, index) => {
-        const contentId = 5 + index * 2;
+        const contentId = nextId + index * 2;
         const pageId = contentId + 1;
-        const stream = commands.join('\n') + '\n';
+        const watermarkCommand = watermarkId
+          ? 'q /GS1 gs ' + this.width.toFixed(2) + ' 0 0 ' + this.height.toFixed(2) + ' 0 0 cm /WM Do Q\n'
+          : '';
+        const stream = watermarkCommand + commands.join('\n') + '\n';
         objects[contentId] = '<< /Length ' + stream.length + ' >>\nstream\n' + stream + 'endstream';
         objects[pageId] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + this.width + ' ' + this.height + '] '
-          + '/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + contentId + ' 0 R >>';
+          + '/Resources << /Font << /F1 3 0 R /F2 4 0 R >> '
+          + (watermarkId ? '/ExtGState << /GS1 ' + graphicsStateId + ' 0 R >> /XObject << /WM ' + watermarkId + ' 0 R >> ' : '')
+          + '>> /Contents ' + contentId + ' 0 R >>';
         pageIds.push(pageId);
       });
       objects[2] = '<< /Type /Pages /Kids [' + pageIds.map(function (id) { return id + ' 0 R'; }).join(' ') + '] /Count ' + pageIds.length + ' >>';
@@ -257,8 +355,10 @@
 
   function businessHeader(pdf, title, numberText, dateValue, status) {
     const biz = DB.business || BUSINESS;
-    pdf.drawText(ascii(biz.name || 'ZEZMS TradeFlow'), pdf.margin, pdf.y, 16, true);
-    const titleSize = ascii(title).length >= 14 ? 16 : 20;
+    const compact = pdf.width < 500;
+    const businessNameSize = compact ? 12.5 : 16;
+    pdf.drawText(ascii(biz.name || 'ZEZMS TradeFlow'), pdf.margin, pdf.y, businessNameSize, true);
+    const titleSize = compact ? (ascii(title).length >= 14 ? 13 : 16) : (ascii(title).length >= 14 ? 16 : 20);
     pdf.drawText(title, pdf.width - pdf.margin, pdf.y, titleSize, true, 'right');
     pdf.y += 22;
     pdf.drawText(ascii(biz.address || ''), pdf.margin, pdf.y, 8.5, false);
@@ -297,9 +397,9 @@
     };
   }
 
-  function buildReceiptPDF(source) {
+  function buildReceiptPDF(source, watermark) {
     const receipt = normalizeReceipt(source);
-    const pdf = new SimplePDF(A4);
+    const pdf = new SimplePDF(A5, { margin: A5_MARGIN, watermark: watermark });
     businessHeader(pdf, 'SALES RECEIPT', 'Receipt No: ' + receipt.receiptNo, receipt.date, receipt.status);
     pdf.keyValue('Customer', receipt.customer || '-');
     pdf.keyValue('Location', receipt.location || '-');
@@ -309,7 +409,7 @@
     pdf.table(
       ['Product', 'Qty', 'Unit price', 'Discount', 'Total'],
       receipt.lines.map(function (line) { return [line.product, number(line.qty), number(line.unitPrice), number(line.discount), number(line.total)]; }),
-      [215, 45, 85, 75, 103], ['left', 'right', 'right', 'right', 'right']
+      [142, 34, 65, 58, 64], ['left', 'right', 'right', 'right', 'right']
     );
     pdf.summary([
       { label: 'Subtotal', value: 'GHS ' + number(receipt.subtotal) },
@@ -318,13 +418,13 @@
       { label: 'Amount paid', value: 'GHS ' + number(receipt.paid) },
       { label: 'Balance owed', value: 'GHS ' + number(receipt.balance), strong: receipt.balance > 0 }
     ]);
-    pdf.signatures('Cashier signature', 'Customer signature');
+    pdf.signatures('Cashier signature', 'Customer signature', { approved: true });
     pdf.paragraph('Thank you for your business.', { align: 'center', bold: true, size: 11 });
     return pdf.finish();
   }
 
-  function buildInvoicePDF(record) {
-    const pdf = new SimplePDF(A4);
+  function buildInvoicePDF(record, watermark) {
+    const pdf = new SimplePDF(A5, { margin: A5_MARGIN, watermark: watermark });
     businessHeader(pdf, 'INVOICE', 'Invoice No: ' + (record.invoiceNo || record.id || ''), record.date, record.status || 'OPEN');
     pdf.keyValue('Customer', record.customer || '-');
     pdf.keyValue('Location', record.location || '-');
@@ -338,7 +438,7 @@
       (record.lines || []).map(function (line, index) {
         return [String(index + 1), line.productId || '-', line.product || '', number(line.qty), number(line.unitPrice), number(line.discount || 0), number(line.total)];
       }),
-      [20, 65, 160, 45, 70, 60, 103], ['center', 'left', 'left', 'right', 'right', 'right', 'right']
+      [16, 45, 100, 33, 56, 49, 64], ['center', 'left', 'left', 'right', 'right', 'right', 'right']
     );
     const subtotal = Number(record.subtotal) || 0;
     const vat = Number(record.vatAmount != null ? record.vatAmount : record.vat) || 0;
@@ -349,12 +449,12 @@
     ]);
     if (record.terms) pdf.paragraph('Terms: ' + record.terms, { size: 8.5 });
     if (record.notes) pdf.paragraph('Notes: ' + record.notes, { size: 8.5 });
-    pdf.signatures('For ' + ascii((DB.business || BUSINESS).name), 'Customer signature');
+    pdf.signatures('For ' + ascii((DB.business || BUSINESS).name), 'Customer signature', { approved: true });
     return pdf.finish();
   }
 
-  function buildWaybillPDF(record) {
-    const pdf = new SimplePDF(A4);
+  function buildWaybillPDF(record, watermark) {
+    const pdf = new SimplePDF(A5, { margin: A5_MARGIN, watermark: watermark });
     businessHeader(pdf, 'WAYBILL', 'Waybill No: ' + (record.waybillNo || record.id || ''), record.date, record.status || 'ACTIVE');
     pdf.keyValue('Consignee', record.consignee || '-');
     pdf.keyValue('Location', record.location || '-');
@@ -368,10 +468,10 @@
       (record.lines || []).map(function (line, index) {
         return [String(index + 1), line.productId || '-', line.product || '', number(line.qty), line.unit || 'pcs', line.remarks || ''];
       }),
-      [20, 70, 190, 55, 55, 133], ['center', 'left', 'left', 'right', 'left', 'left']
+      [16, 48, 125, 40, 38, 96], ['center', 'left', 'left', 'right', 'left', 'left']
     );
     if (record.notes) pdf.paragraph('Delivery notes: ' + record.notes, { size: 8.5 });
-    pdf.signatures('Goods issued by', 'Goods received by');
+    pdf.signatures('Goods issued by', 'Goods received by', { approved: true });
     pdf.paragraph('The recipient confirms that the goods listed above were received in the stated quantities and apparent condition.', { size: 8 });
     return pdf.finish();
   }
@@ -413,20 +513,22 @@
     setTimeout(function () { URL.revokeObjectURL(link.href); }, 2000);
   }
 
-  window.downloadStoredReceiptPDF = function (receiptNo) {
+  window.downloadStoredReceiptPDF = async function (receiptNo) {
     const receipt = (DB.receipts || []).find(function (item) { return String(item.receiptNo) === String(receiptNo); });
     if (!receipt) { toast('Receipt not found.', 'err'); return; }
-    downloadBytes(buildReceiptPDF(receipt), 'Receipt-' + receipt.receiptNo);
+    const watermark = await loadDocumentWatermark();
+    downloadBytes(buildReceiptPDF(receipt, watermark), 'Receipt-' + receipt.receiptNo);
     toast('Receipt PDF downloaded.');
   };
 
-  window.downloadStoredCommercialDocumentPDF = function (type, id) {
+  window.downloadStoredCommercialDocumentPDF = async function (type, id) {
     const list = type === 'invoice' ? DB.invoices : DB.waybills;
     const record = (list || []).find(function (item) {
       return String(item.id) === String(id) || String(item.invoiceNo || item.waybillNo) === String(id);
     });
     if (!record) { toast('Document not found.', 'err'); return; }
-    const bytes = type === 'invoice' ? buildInvoicePDF(record) : buildWaybillPDF(record);
+    const watermark = await loadDocumentWatermark();
+    const bytes = type === 'invoice' ? buildInvoicePDF(record, watermark) : buildWaybillPDF(record, watermark);
     const numberText = type === 'invoice' ? (record.invoiceNo || record.id) : (record.waybillNo || record.id);
     downloadBytes(bytes, (type === 'invoice' ? 'Invoice-' : 'Waybill-') + numberText);
     toast((type === 'invoice' ? 'Invoice' : 'Waybill') + ' PDF downloaded.');
@@ -474,9 +576,12 @@
 
   installRegisterButtons();
   ZEZMS.pdfExport = {
-    version: '3.7.3', build: BUILD, SimplePDF: SimplePDF,
+    version: '3.10.2', build: BUILD, SimplePDF: SimplePDF,
     buildReceiptPDF: buildReceiptPDF, buildInvoicePDF: buildInvoicePDF,
     buildWaybillPDF: buildWaybillPDF, buildPurchaseOrderPDF: buildPurchaseOrderPDF,
+    loadDocumentWatermark: loadDocumentWatermark,
+    documentWatermarkAsset: DOCUMENT_WATERMARK_ASSET,
+    documentWatermarkOpacity: DOCUMENT_WATERMARK_OPACITY,
     installRegisterButtons: installRegisterButtons
   };
 }());
