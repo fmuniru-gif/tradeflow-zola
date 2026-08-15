@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition with unified Sale Out customer capture, required receipt identity, optional Quick Sale identity, sales-channel intelligence, A5-branded documents and FIFO inventory.",
-  "start_url": "./index.html?build=20260815-unified-customer-capture-r44",
+  "description": "ZEZMS Owner Edition with persistent Customer Master, transaction-derived relationship intelligence, system-dialog A5 print readiness, branded documents and FIFO inventory.",
+  "start_url": "./index.html?build=20260815-customer-master-print-readiness-r45",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

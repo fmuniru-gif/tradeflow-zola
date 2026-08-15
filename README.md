@@ -1,6 +1,6 @@
-# ZEZMS TradeFlow Owner Edition v3.11.1
+# ZEZMS TradeFlow Owner Edition v3.12.0
 
-Current build: `20260815-unified-customer-capture-r44`
+Current build: `20260815-customer-master-print-readiness-r45`
 
 This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 package is retained separately and is not modified by this release.
 
@@ -37,6 +37,12 @@ This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 packag
 - Scoped high-contrast Customer Relationship Intelligence and Stage 5B form controls for desktop and portrait/mobile use
 - One unified Sale Out **Customer & Source** control set shared by Print Receipt and Quick Sale
 - Blocking Customer Name and Telephone presence checks for new Print Receipt sales, while Quick Sale identity remains optional
+- Owner/Admin-only persistent Customer Master with explicit, previewed and idempotent history import
+- Phone-first customer identity, stable non-phone-revealing Customer IDs, editable profile/location/notes and no fuzzy merge or delete
+- Transaction-derived Customer Master purchase history, lifetime sales, recency, product/category and Sales Source summaries
+- Sale Out **Find Customer**, exact-phone recognition and post-commit Customer Master upsert for valid receipt/phone-identified Quick Sales
+- JSON-operation Customer Master Cloud Sync and backup/restore support without a new SQL migration
+- Settings-based wireless/network print readiness guidance and an offline A5 system-dialog test page
 
 ## Credentials
 
@@ -49,10 +55,10 @@ The fixed `0000` Price Adjustment/VAT PIN is an operator-entry safeguard request
 1. Back up the working device and confirm Cloud Sync has no queued transactions.
 2. Extract the complete release ZIP.
 3. Upload the extracted contents to the repository root, preserving the complete `assets/` and `js/` folders.
-4. When upgrading directly from verified v3.11.0, replace `index.html`, `manifest.json`, `sw.js`, `FORCE_UPDATE_MOBILE.html`, `README.md`, `RELEASE_FILE_MANIFEST.json`, and `js/operations-update.js`; add `UNIFIED_CUSTOMER_CAPTURE_v3.11.1_RELEASE_NOTES.md` and `UNIFIED_CUSTOMER_CAPTURE_v3.11.1_TEST_REPORT.md`.
+4. When upgrading directly from verified v3.11.1, replace `index.html`, `manifest.json`, `sw.js`, `FORCE_UPDATE_MOBILE.html`, `README.md`, `RELEASE_FILE_MANIFEST.json`, `js/operations-update.js`, `js/cloud-sync.js`, `js/backup-manager.js`, and `js/navigation-v3101.js`; add `js/customer-master-v3120.js`, `js/print-readiness-v3120.js`, `CUSTOMER_MASTER_PRINT_READINESS_v3.12.0_RELEASE_NOTES.md`, and `CUSTOMER_MASTER_PRINT_READINESS_v3.12.0_TEST_REPORT.md`. Preserve these paths exactly—JavaScript files belong inside `js/`.
 5. Do not upload only the ZIP; GitHub Pages does not extract it.
 6. Wait for deployment, close all old tabs/PWA windows, and reopen the app.
-7. Confirm the page source build is `20260815-unified-customer-capture-r44`.
+7. Confirm the page source build is `20260815-customer-master-print-readiness-r45`.
 8. Open Purchase Orders and verify that product search, supplier selection and the Edit action load.
 9. Open each grouped navigation item by click/tap, confirm another group closes the first, and confirm child selection closes the sidebar on mobile.
 10. Open **Management → Dashboard KPIs** and confirm it contains the original KPI, Quick Actions and Cash Wallet content without appended intelligence sections.
@@ -71,10 +77,13 @@ The fixed `0000` Price Adjustment/VAT PIN is an operator-entry safeguard request
 23. Open Sale Out and confirm normal and Quick Sale Sales Source defaults to Walk-in, Other reveals Other Source, and blank customer identity remains optional.
 24. Complete controlled test sales, then open **Management -> Customer Relationship Intelligence**; confirm its inputs are readable and Sales Channel Intelligence follows the same Customer-history window.
 25. Confirm Sale Out shows one **Customer & Source** section. Print Receipt must reject a blank Customer Name or Telephone without changing the cart or stock; Quick Sale must still accept either or both fields blank.
+26. Open **Management → Customer Master**, review the Sales History build preview, confirm the import deliberately, and run it twice to confirm the second run creates no duplicates.
+27. In Sale Out, use **Find Customer** and exact telephone recognition; confirm customer selection fills only Name, Telephone and compatible Location without changing Sales Source, cart, price, discount or VAT.
+28. Open **Settings → Printing & Wireless Printer Readiness**, run **Print A5 Test Page**, and confirm the operating-system print dialog shows an A5 portrait page with alignment marks, watermark and sample APPROVED stamp.
 
 ## Supabase prerequisites
 
-The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.11.1 adds no new SQL or Supabase migration. Do not rerun completed migrations on a live database without first taking a verified backup.
+The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.12.0 adds no new SQL or Supabase migration: `DB.customers` is carried by the existing M4 JSON payload/operation store. Do not rerun completed migrations on a live database without first taking a verified backup.
 
 ## Commercialisation boundary
 
@@ -84,7 +93,7 @@ See `COMMERCIALISATION_ROADMAP_M5.md`, `COMMERCIAL_READINESS_EVALUATION_v1.md`, 
 
 ## Upgrade compatibility
 
-v3.11.1 intentionally keeps the existing Owner Edition browser database key so an in-place upgrade retains current records. The v3.11.0 normal and Quick Sale customer/source fields are now one visible control set. New Print Receipt sales require nonblank Customer Name and Telephone before any transaction work begins; Quick Sale continues to accept blank, partial or complete identity. Both actions reuse the same values and successful completion clears identity, resets Sales Source to Walk-in and clears Other Source. No new stored fields were added. Missing historical metadata remains valid and is interpreted only at runtime as Unspecified; no record migration or historical rewrite occurs. The verified document branding, grouped navigation, `0000` entry safeguards, calculations and operational workflows remain unchanged. Stages 5A and 5B continue scanning active `DB.sales` and active Quick Sale inventory transactions without creating a Customer Master or writing analytical data. Take a verified backup before deployment. The service-worker cleanup remains scoped so it does not remove the separately developed commercial-pilot cache or browser database.
+v3.12.0 intentionally keeps the existing Owner Edition browser database key `tradeflow_v321_zola`, adding only a backward-compatible `DB.customers` profile collection. Old databases and backups without that property initialise it as an empty array. Customer Master import is explicit and never rewrites historical sales; all relationship and financial metrics remain derived from active completed receipts and Quick Sales. Print Receipt still validates Name and Telephone before transaction work, and Quick Sale identity remains optional. Customer profile upsert runs only after the financial save and is separately guarded so CRM failure cannot undo a completed sale. The existing A5 production print functions are not routed through the new adapter in this release, avoiding document regression risk. FIFO, document calculations, branding, grouped navigation, `0000` entry safeguards, Stage 1–5B formulas and operational workflows remain unchanged. Take a verified backup before deployment.
 
 Receipt financial edits are limited to active receipts in the current open stock period because those records still have safely reversible FIFO details. Committed purchase orders, sold invoices, void documents and historical receipts are protected from editing.
 

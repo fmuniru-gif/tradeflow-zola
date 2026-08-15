@@ -195,7 +195,7 @@
 
     const restored = Object.assign(defaultDB(), data);
     const arrayKeys = [
-      'products', 'stockRows', 'sales', 'saleLines', 'debtors', 'creditors',
+      'products', 'customers', 'stockRows', 'sales', 'saleLines', 'debtors', 'creditors',
       'depositors', 'debtorsMonthly', 'creditorsMonthly', 'depositorsMonthly',
       'accountTxns', 'cashLog', 'expenses', 'kpiHistory', 'receipts',
       'invoices', 'waybills', 'purchaseOrders',
@@ -825,7 +825,11 @@
     restoreCloudBackupAt: restoreCloudBackupAt,
     saveSettings: saveSettings,
     syncCardHtml: syncCardHtml,
-    settingsHtml: settingsHtml
+    settingsHtml: settingsHtml,
+    _test: {
+      normalizeRestoredDatabase: normalizeRestoredDatabase,
+      createBackupBlob: createBackupBlob
+    }
   };
 
   window.backupNow = backupNow;

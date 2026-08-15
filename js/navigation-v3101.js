@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  var VERSION = '3.10.1';
-  var BUILD = '20260813-navigation-entry-guard-r41';
+  var VERSION = '3.12.0';
+  var BUILD = '20260815-customer-master-print-readiness-r45';
   window.ZEZMS = window.ZEZMS || {};
 
   if (window.ZEZMS.navigationV3101 && window.ZEZMS.navigationV3101.build === BUILD) {
@@ -29,12 +29,13 @@
     'pricing-policy': { title: 'Pricing Policy Lab', targetId: 'pricingPolicyLab' },
     'stock-velocity': { title: 'Stock Velocity & Reorder Planning', targetId: 'stockVelocityLab' },
     'portfolio-signals': { title: 'Portfolio Signals & Capital Allocation', targetId: 'portfolioSignalsLab' },
+    'customer-master': { title: 'Customer Master', renderer: 'customerMaster' },
     'customer-intelligence': { title: 'Customer Relationship Intelligence', targetId: 'customerIntelligenceLab' }
   });
 
   var ANALYTIC_IDS = Object.keys(MANAGEMENT_ROUTES).map(function (key) {
     return MANAGEMENT_ROUTES[key].targetId;
-  });
+  }).filter(Boolean);
 
   var GROUPS = Object.freeze([
     {
@@ -75,6 +76,7 @@
         { view: 'pricing-policy', label: 'Pricing Policy Lab', icon: '◈', permissionView: 'dashboard' },
         { view: 'stock-velocity', label: 'Stock Velocity & Reorder Planning', icon: '◈', permissionView: 'dashboard' },
         { view: 'portfolio-signals', label: 'Portfolio Signals & Capital Allocation', icon: '◈', permissionView: 'dashboard' },
+        { view: 'customer-master', label: 'Customer Master', icon: '👤', permissionView: 'dashboard' },
         { view: 'customer-intelligence', label: 'Customer Relationship Intelligence', icon: '◈', permissionView: 'dashboard' }
       ]
     }
@@ -134,6 +136,14 @@
       return '<div class="card"><h3>Management view unavailable</h3><p class="muted">The requested Management section is not registered.</p></div>';
     }
 
+    if (route.renderer === 'customerMaster') {
+      if (!window.ZEZMS.customerMaster || typeof window.ZEZMS.customerMaster.viewHTML !== 'function') {
+        return '<div class="card"><h3>Customer Master</h3><p class="muted">The Customer Master module could not be mounted.</p></div>';
+      }
+      return '<div class="management-direct-view" data-management-view="customer-master" data-build="' + BUILD + '">'
+        + window.ZEZMS.customerMaster.viewHTML() + '</div>';
+    }
+
     var template = createTemplate(fullDashboardHTML());
     var source = template.content.querySelector('[id="' + route.targetId + '"]');
     if (!source) {
@@ -151,6 +161,15 @@
 
     if (view === 'undo' && auth && typeof auth.can === 'function') {
       return !!auth.can('UNDO_TRANSACTION');
+    }
+    if (view === 'customer-master') {
+      try {
+        if (auth && typeof auth.getContext === 'function') {
+          var role = String((auth.getContext() || {}).role || '').toUpperCase();
+          return role === 'OWNER' || role === 'ADMIN';
+        }
+      } catch (_error) {}
+      try { return !!(session && (session.role === 'ADMIN' || session.adminMode === true)); } catch (_error2) { return false; }
     }
     if (originalCanView && auth && typeof auth.isActive === 'function' && auth.isActive()) {
       return !!originalCanView.call(auth, permissionView);
@@ -340,6 +359,7 @@
   function wrapAccessControl() {
     if (!auth || !originalCanView || auth.__navigationV3101AccessWrapped) return;
     auth.canView = function (view) {
+      if (view === 'customer-master') return canOpenView(view);
       var child = CHILD_BY_VIEW[view];
       var permissionView = child && child.permissionView ? child.permissionView : view;
       if (view === 'undo' && typeof auth.can === 'function') return !!auth.can('UNDO_TRANSACTION');

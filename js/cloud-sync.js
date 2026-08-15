@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260808-owner-maintenance-r32';
+  const BUILD = '20260815-customer-master-print-readiness-r45';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -14,7 +14,7 @@
   const PULL_PAGE_SIZE = 500;
 
   const COLLECTIONS = [
-    'products', 'stockRows', 'debtors', 'creditors', 'depositors',
+    'products', 'customers', 'stockRows', 'debtors', 'creditors', 'depositors',
     'sales', 'receipts', 'invoices', 'waybills', 'purchaseOrders', 'saleLines', 'accountTxns', 'cashLog',
     'expenses', 'inventoryTxns', 'undoLog', 'debtorsMonthly',
     'creditorsMonthly', 'depositorsMonthly', 'kpiHistory', 'monthRollovers'
@@ -214,7 +214,7 @@
 
   function entityKey(item) {
     if (!item || typeof item !== 'object') return '';
-    return String(item.id || item.receiptNo || item._syncId || '');
+    return String(item.id || item.customerId || item.receiptNo || item._syncId || '');
   }
 
   function ensureSyncIds(database) {
@@ -403,6 +403,7 @@
     if (insert('invoices')) return 'INVOICE';
     if (insert('waybills')) return 'WAYBILL';
     if (insert('purchaseOrders')) return 'PURCHASE_ORDER';
+    if (insert('customers') || patches.some(function (patch) { return patch.collection === 'customers'; })) return 'CUSTOMER_UPSERT';
     if (insert('sales') || insert('receipts')) return 'SALE_OUT';
     const account = insert('accountTxns');
     if (account && account.value) return 'ACCOUNT_' + String(account.value.txnType || 'CHANGE').toUpperCase().replace(/\s+/g, '_');
@@ -461,6 +462,45 @@
     setState({ mergeWarnings: warnings, lastError: message }, false);
   }
 
+  function customerByPhoneKey(phoneKey) {
+    const database = getDatabase();
+    const key = String(phoneKey || '');
+    if (!database || !key || !Array.isArray(database.customers)) return null;
+    return database.customers.find(function (customer) {
+      return customer && String(customer.phoneKey || '') === key;
+    }) || null;
+  }
+
+  function timestampValue(value) {
+    const time = Date.parse(value || '');
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  function mergeCustomerProfile(target, incoming) {
+    if (!target || !incoming) return target;
+    const incomingIsNewest = timestampValue(incoming.updatedAt) >= timestampValue(target.updatedAt);
+    const profileFields = ['name', 'phone', 'phoneKey', 'phoneAliases', 'location', 'notes', 'identityQuality', 'updatedAt', 'source', 'locationSource'];
+    const aliases = new Set([].concat(Array.isArray(target.phoneAliases) ? target.phoneAliases : [], Array.isArray(incoming.phoneAliases) ? incoming.phoneAliases : []));
+    if (incomingIsNewest) {
+      profileFields.forEach(function (field) {
+        if (field === 'phoneAliases') return;
+        if (incoming[field] !== undefined) target[field] = clone(incoming[field]);
+      });
+    } else {
+      profileFields.forEach(function (field) {
+        if (field === 'phoneAliases') return;
+        if ((target[field] == null || target[field] === '') && incoming[field] != null && incoming[field] !== '') {
+          target[field] = clone(incoming[field]);
+        }
+      });
+    }
+    target.phoneAliases = Array.from(aliases).filter(function (key) { return key && key !== target.phoneKey; });
+    if (!target.createdAt || (incoming.createdAt && timestampValue(incoming.createdAt) < timestampValue(target.createdAt))) {
+      target.createdAt = incoming.createdAt || target.createdAt;
+    }
+    return target;
+  }
+
   function applyPatch(patch, operation) {
     const database = getDatabase();
     if (!database) throw new Error('Local database is unavailable while applying a cloud operation.');
@@ -469,10 +509,21 @@
       if (!Array.isArray(database[patch.collection])) database[patch.collection] = [];
       const found = findEntity(patch.collection, patch.key);
       if (found.item) {
+        if (patch.collection === 'customers') {
+          mergeCustomerProfile(found.item, patch.value);
+          return;
+        }
         if (!equal(found.item, patch.value)) {
           addMergeWarning('Duplicate record key ignored in ' + patch.collection + ': ' + patch.key, operation);
         }
         return;
+      }
+      if (patch.collection === 'customers' && patch.value && patch.value.phoneKey) {
+        const samePhone = customerByPhoneKey(patch.value.phoneKey);
+        if (samePhone) {
+          mergeCustomerProfile(samePhone, patch.value);
+          return;
+        }
       }
       database[patch.collection].push(clone(patch.value));
       return;
@@ -486,10 +537,20 @@
 
     if (patch.action === 'update') {
       let found = findEntity(patch.collection, patch.key);
+      if (!found.item && patch.collection === 'customers' && patch.fallback && patch.fallback.phoneKey) {
+        const samePhone = customerByPhoneKey(patch.fallback.phoneKey);
+        if (samePhone) {
+          found = { list:database.customers, index:database.customers.indexOf(samePhone), item:samePhone };
+        }
+      }
       if (!found.item) {
         if (!patch.fallback) throw new Error('Missing record ' + patch.collection + '/' + patch.key);
         if (!Array.isArray(database[patch.collection])) database[patch.collection] = [];
         database[patch.collection].push(clone(patch.fallback));
+        return;
+      }
+      if (patch.collection === 'customers' && patch.fallback
+          && timestampValue(patch.fallback.updatedAt) < timestampValue(found.item.updatedAt)) {
         return;
       }
       patch.changes.forEach(function (change) {
@@ -504,6 +565,19 @@
           else found.item[change.field] = clone(change.value);
         }
       });
+      if (patch.collection === 'customers' && found.item.phoneKey) {
+        const duplicate = database.customers.find(function (customer) {
+          return customer && customer !== found.item && String(customer.phoneKey || '') === String(found.item.phoneKey);
+        });
+        if (duplicate) {
+          addMergeWarning('A conflicting Customer Master telephone update was ignored to prevent a duplicate phoneKey.', operation);
+          if (patch.fallback) mergeCustomerProfile(duplicate, patch.fallback);
+          ['phoneKey', 'phone', 'identityQuality'].forEach(function (field) {
+            const change = patch.changes.find(function (candidate) { return candidate.field === field; });
+            if (change) found.item[field] = clone(change.before == null ? '' : change.before);
+          });
+        }
+      }
       return;
     }
 
@@ -575,6 +649,9 @@
         return patch.action === 'root-set' && patch.root === 'sharedDeviceDirectory';
       })) {
         window.dispatchEvent(new CustomEvent('zezms-shared-device-directory-updated'));
+      }
+      if (operation.patches.some(function (patch) { return patch.collection === 'customers'; })) {
+        window.dispatchEvent(new CustomEvent('zezms-customer-master-updated'));
       }
     } catch (_) {}
     try { if (!(options && options.silent) && typeof render === 'function') render(); } catch (_) {}
@@ -783,6 +860,7 @@
     try { if (typeof populateLoginCashiers === 'function') populateLoginCashiers(); } catch (_) {}
     try { if (typeof sharedDeviceRefreshUsers === 'function') sharedDeviceRefreshUsers(false); } catch (_) {}
     try { window.dispatchEvent(new CustomEvent('zezms-shared-device-directory-updated')); } catch (_) {}
+    try { window.dispatchEvent(new CustomEvent('zezms-customer-master-updated')); } catch (_) {}
     try { if (typeof render === 'function') render(); } catch (_) {}
   }
 

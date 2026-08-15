@@ -1,13 +1,13 @@
-/* ZEZMS Owner Edition v3.11.1 - unified customer capture */
-const CACHE = 'zezms-unified-customer-capture-20260815-r44';
+/* ZEZMS Owner Edition v3.12.0 - persistent Customer Master and print readiness */
+const CACHE = 'zezms-customer-master-print-readiness-20260815-r45';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39',
-  './js/backup-manager.js?v=20260812-portfolio-signals-r39',
-  './js/cloud-sync.js?v=20260812-portfolio-signals-r39',
+  './js/backup-manager.js?v=20260815-customer-master-print-readiness-r45',
+  './js/cloud-sync.js?v=20260815-customer-master-print-readiness-r45',
   './js/bootpatch.js?v=20260812-portfolio-signals-r39',
   './js/config.js?v=20260812-portfolio-signals-r39',
   './js/db-events.js?v=20260812-portfolio-signals-r39',
@@ -18,7 +18,7 @@ const ASSETS = [
   './js/lifecycle-module.js?v=20260812-portfolio-signals-r39',
   './js/logger.js?v=20260812-portfolio-signals-r39',
   './js/notifications-module.js?v=20260812-portfolio-signals-r39',
-  './js/operations-update.js?v=20260815-unified-customer-capture-r44',
+  './js/operations-update.js?v=20260815-customer-master-print-readiness-r45',
   './js/auto-month-rollover.js?v=20260812-portfolio-signals-r39',
   './js/invoice-waybill.js?v=20260813-document-branding-r42',
   './js/product-search-adapter.js?v=20260812-portfolio-signals-r39',
@@ -47,7 +47,9 @@ const ASSETS = [
   './js/stock-velocity-v390.js?v=20260812-portfolio-signals-r39',
   './js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39',
   './js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43',
-  './js/navigation-v3101.js?v=20260813-document-branding-r42',
+  './js/customer-master-v3120.js?v=20260815-customer-master-print-readiness-r45',
+  './js/print-readiness-v3120.js?v=20260815-customer-master-print-readiness-r45',
+  './js/navigation-v3101.js?v=20260815-customer-master-print-readiness-r45',
 ];
 
 self.addEventListener('install', (event) => {

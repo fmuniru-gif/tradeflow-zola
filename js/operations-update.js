@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260815-unified-customer-capture-r44';
+  const BUILD = '20260815-customer-master-print-readiness-r45';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
@@ -815,7 +815,7 @@
     const currentPeriod = getLatestMonth();
     const quickCapture = typeof saleCaptureState === 'function'
       ? saleCaptureState()
-      : { customerName: '', customerPhone: '', salesChannel: 'Walk-in', salesChannelOther: '' };
+      : { customerId:'', customerName: '', customerPhone: '', salesChannel: 'Walk-in', salesChannelOther: '' };
     const customerControl = $('posCust');
     const telephoneControl = $('posTel');
     const channelControl = $('posSalesChannel');
@@ -828,6 +828,10 @@
     quickCapture.salesChannelOther = typeof normalizeSalesChannelOther === 'function'
       ? normalizeSalesChannelOther(otherControl ? otherControl.value : quickCapture.salesChannelOther, quickCapture.salesChannel)
       : quickCapture.salesChannelOther;
+    quickCapture.customerId = window.ZEZMS && ZEZMS.customerMaster && ZEZMS.customerMaster.resolveCustomerId
+      ? ZEZMS.customerMaster.resolveCustomerId({ phone:quickCapture.customerPhone, selectedId:quickCapture.customerId || (cart._customerId||'') })
+      : '';
+    quickCapture.location = String(($('posLoc') && $('posLoc').value) || cart._loc || '').trim().slice(0, 200);
     const cartSnapshot = cart.map((line) => deepClone(line));
     const undoStart = DB.undoLog.length;
     const lines = [];
@@ -864,8 +868,10 @@
       month: currentPeriod.month,
       cashier: session.cashier,
       cashierTel: session.tel,
+      customerId: quickCapture.customerId,
       customerName: quickCapture.customerName,
       customerPhone: quickCapture.customerPhone,
+      location: quickCapture.location,
       salesChannel: quickCapture.salesChannel,
       salesChannelOther: quickCapture.salesChannelOther,
       product: lines.map((line) => line.product).join(', '),
@@ -875,6 +881,21 @@
       details: { lines, saleMode: 'QUICK' }
     });
     saveDB();
+    try {
+      if(window.ZEZMS && ZEZMS.customerMaster && ZEZMS.customerMaster.upsertAfterCommittedSale) {
+        ZEZMS.customerMaster.upsertAfterCommittedSale({
+          customerId:quickCapture.customerId,
+          name:quickCapture.customerName,
+          phone:quickCapture.customerPhone,
+          location:quickCapture.location,
+          source:'quick-sale',
+          updatedAt:saleDate
+        });
+      }
+    } catch(customerMasterError) {
+      console.error('Completed Quick Sale Customer Master update failed', customerMasterError);
+      toast('Quick Sale completed, but Customer Master could not be updated: ' + (customerMasterError.message || customerMasterError), 'warn');
+    }
     resetSaleOutForm();
     toast('Quick Sale Out recorded · ' + transactionId);
     render();
