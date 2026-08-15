@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260814-sales-channel-capture-r43';
+  const BUILD = '20260815-unified-customer-capture-r44';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
@@ -814,15 +814,19 @@
     const saleDate = nowISO();
     const currentPeriod = getLatestMonth();
     const quickCapture = typeof saleCaptureState === 'function'
-      ? saleCaptureState('quick')
+      ? saleCaptureState()
       : { customerName: '', customerPhone: '', salesChannel: 'Walk-in', salesChannelOther: '' };
-    quickCapture.customerName = String((($('quickCustomerName') && $('quickCustomerName').value) || quickCapture.customerName) || '').trim().slice(0, 120);
-    quickCapture.customerPhone = String((($('quickCustomerPhone') && $('quickCustomerPhone').value) || quickCapture.customerPhone) || '').trim().slice(0, 40);
+    const customerControl = $('posCust');
+    const telephoneControl = $('posTel');
+    const channelControl = $('posSalesChannel');
+    const otherControl = $('posSalesChannelOther');
+    quickCapture.customerName = String(customerControl ? customerControl.value : quickCapture.customerName).trim().slice(0, 120);
+    quickCapture.customerPhone = String(telephoneControl ? telephoneControl.value : quickCapture.customerPhone).trim().slice(0, 40);
     quickCapture.salesChannel = typeof normalizeSalesChannel === 'function'
-      ? normalizeSalesChannel((($('quickSalesChannel') && $('quickSalesChannel').value) || quickCapture.salesChannel), 'Walk-in')
+      ? normalizeSalesChannel(channelControl ? channelControl.value : quickCapture.salesChannel, 'Walk-in')
       : quickCapture.salesChannel;
     quickCapture.salesChannelOther = typeof normalizeSalesChannelOther === 'function'
-      ? normalizeSalesChannelOther((($('quickSalesChannelOther') && $('quickSalesChannelOther').value) || quickCapture.salesChannelOther), quickCapture.salesChannel)
+      ? normalizeSalesChannelOther(otherControl ? otherControl.value : quickCapture.salesChannelOther, quickCapture.salesChannel)
       : quickCapture.salesChannelOther;
     const cartSnapshot = cart.map((line) => deepClone(line));
     const undoStart = DB.undoLog.length;

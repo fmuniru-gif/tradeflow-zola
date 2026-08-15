@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone — Sales, Inventory, Receipt Reprinting, Transaction Undo, KPI Charts, Cloud Sync and Backup" />
-<meta name="zezms-build" content="20260814-sales-channel-capture-r43" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
-<title>Zola Electronics Zone · TradeFlow v3.11.0 · Customer Capture &amp; Sales Channel Attribution</title>
+<meta name="zezms-build" content="20260815-unified-customer-capture-r44" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
+<title>Zola Electronics Zone · TradeFlow v3.11.1 · Unified Customer Capture</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260814-sales-channel-capture-r43';
+  const BUILD = '20260815-unified-customer-capture-r44';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -216,7 +216,6 @@ a{color:var(--teal2)}
 .stage5b-capture select option{background:#0b1220;color:#f1f5f9}
 .stage5b-capture input:-webkit-autofill{-webkit-text-fill-color:#f1f5f9;box-shadow:0 0 0 1000px #0b1220 inset;caret-color:#f1f5f9}
 .stage5b-capture .stage5b-other[hidden]{display:none!important}
-.stage5b-customer-reminder{margin:4px 0 10px;padding:8px 10px;border:1px solid rgba(245,158,11,.42);border-radius:9px;background:rgba(245,158,11,.10);color:#fde68a;font-size:12px;line-height:1.4}
 @media(max-width:720px){.stage5b-capture{min-width:0}.stage5b-capture input,.stage5b-capture select{max-width:100%;min-width:0}}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:9px 8px;border-bottom:1px solid #273449;text-align:left}
@@ -1118,7 +1117,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.11.0 · Customer Capture &amp; Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.11.1 · Unified Customer Capture · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div id="sharedDeviceLoginPanel">
       <div class="field">
         <label>Staff member</label>
@@ -1151,7 +1150,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.11.0 · Customer Capture &amp; Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.11.1 · Unified Customer Capture · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1224,10 +1223,10 @@ html.zezms-phone-layout .kpi-freeze-pane{
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.11.0 — Customer Capture & Sales Channel Attribution — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.11.1 — Unified Customer Capture & Receipt Customer Requirement — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.11.0';
+const APP_VERSION = '3.11.1';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 // Code-level accidental-entry guard for Price Adjustment and VAT only.
@@ -1300,40 +1299,32 @@ function salesChannelOptionsHTML(selected){
   const value = normalizeSalesChannel(selected,'Walk-in');
   return SALES_CHANNELS.map(channel=>`<option value="${escAttr(channel)}" ${channel===value?'selected':''}>${esc(channel)}</option>`).join('');
 }
-function saleCaptureState(mode){
-  const quick = mode==='quick';
-  const channelKey = quick ? '_quickSalesChannel' : '_salesChannel';
-  const otherKey = quick ? '_quickSalesChannelOther' : '_salesChannelOther';
+function saleCaptureState(){
+  const customerControl = $('posCust');
+  const telephoneControl = $('posTel');
+  const channelControl = $('posSalesChannel');
+  const otherControl = $('posSalesChannelOther');
+  const channel = normalizeSalesChannel(channelControl ? channelControl.value : cart._salesChannel,'Walk-in');
   return {
-    customerName: String(quick ? (cart._quickCustomerName||'') : (cart._cust||'')).trim(),
-    customerPhone: String(quick ? (cart._quickCustomerPhone||'') : (cart._tel||'')).trim(),
-    salesChannel: normalizeSalesChannel(cart[channelKey],'Walk-in'),
-    salesChannelOther: normalizeSalesChannelOther(cart[otherKey],cart[channelKey])
+    customerName: String(customerControl ? customerControl.value : (cart._cust||'')).trim().slice(0,120),
+    customerPhone: String(telephoneControl ? telephoneControl.value : (cart._tel||'')).trim().slice(0,40),
+    salesChannel: channel,
+    salesChannelOther: normalizeSalesChannelOther(otherControl ? otherControl.value : cart._salesChannelOther,channel)
   };
 }
-function onSaleCustomerIdentityChange(){
-  const reminder = $('posCustomerReminder');
-  if(reminder) reminder.hidden = !!(String(cart._cust||'').trim() || String(cart._tel||'').trim());
+function onSalesChannelChange(){
+  const select = $('posSalesChannel');
+  const other = $('posSalesChannelOther');
+  const otherWrap = $('posSalesChannelOtherWrap');
+  cart._salesChannel = normalizeSalesChannel(select&&select.value,'Walk-in');
+  if(cart._salesChannel!=='Other') cart._salesChannelOther = '';
+  if(otherWrap) otherWrap.hidden = cart._salesChannel!=='Other';
+  if(other && cart._salesChannel!=='Other') other.value='';
 }
-function onSalesChannelChange(mode){
-  const quick = mode==='quick';
-  const select = $(quick?'quickSalesChannel':'posSalesChannel');
-  const other = $(quick?'quickSalesChannelOther':'posSalesChannelOther');
-  const otherWrap = $(quick?'quickSalesChannelOtherWrap':'posSalesChannelOtherWrap');
-  const channelKey = quick ? '_quickSalesChannel' : '_salesChannel';
-  const otherKey = quick ? '_quickSalesChannelOther' : '_salesChannelOther';
-  cart[channelKey] = normalizeSalesChannel(select&&select.value,'Walk-in');
-  if(cart[channelKey]!=='Other') cart[otherKey] = '';
-  if(otherWrap) otherWrap.hidden = cart[channelKey]!=='Other';
-  if(other && cart[channelKey]!=='Other') other.value='';
-}
-function onSalesChannelOtherChange(mode){
-  const quick = mode==='quick';
-  const input = $(quick?'quickSalesChannelOther':'posSalesChannelOther');
-  const channelKey = quick ? '_quickSalesChannel' : '_salesChannel';
-  const otherKey = quick ? '_quickSalesChannelOther' : '_salesChannelOther';
-  cart[otherKey] = normalizeSalesChannelOther(input&&input.value,cart[channelKey]);
-  if(input && input.value!==cart[otherKey]) input.value=cart[otherKey];
+function onSalesChannelOtherChange(){
+  const input = $('posSalesChannelOther');
+  cart._salesChannelOther = normalizeSalesChannelOther(input&&input.value,cart._salesChannel);
+  if(input && input.value!==cart._salesChannelOther) input.value=cart._salesChannelOther;
 }
 
 /* ---------- state ---------- */
@@ -2505,32 +2496,19 @@ function viewPOS(){
     </div>
 
     <div>
-      <div class="card mobile-customer-card stage5b-capture" style="margin-bottom:12px">
-        <h3>Customer</h3>
-        <div class="field"><label>Customer name (optional)</label>
-          <input id="posCust" maxlength="120" autocomplete="name" placeholder="Optional customer name" value="${escAttr(cart._cust||'')}" oninput="cart._cust=this.value;onSaleCustomerIdentityChange()" /></div>
-        <div class="field"><label>Location</label>
-          <input id="posLoc" placeholder="Optional" value="${escAttr(cart._loc||'')}" oninput="cart._loc=this.value" /></div>
-        <div class="field"><label>Telephone (optional)</label>
-          <input id="posTel" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="Optional telephone" value="${escAttr(cart._tel||'')}" oninput="cart._tel=this.value;onSaleCustomerIdentityChange()" /></div>
+      <div class="card mobile-customer-card stage5b-capture" id="saleCustomerSource" style="margin-bottom:12px">
+        <h3>Customer &amp; Source</h3>
+        <p class="muted" style="font-size:11px;margin:0 0 10px">Customer Name and Telephone are required for Print Receipt and optional for Quick Sale.</p>
+        <div class="field"><label>Customer Name</label>
+          <input id="posCust" maxlength="120" autocomplete="name" placeholder="Enter customer name" value="${escAttr(cart._cust||'')}" oninput="cart._cust=this.value" /></div>
+        <div class="field"><label>Telephone</label>
+          <input id="posTel" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="Enter customer telephone" value="${escAttr(cart._tel||'')}" oninput="cart._tel=this.value" /></div>
         <div class="field"><label>Sales Source</label>
-          <select id="posSalesChannel" onchange="onSalesChannelChange('normal')">${salesChannelOptionsHTML(cart._salesChannel)}</select></div>
+          <select id="posSalesChannel" onchange="onSalesChannelChange()">${salesChannelOptionsHTML(cart._salesChannel)}</select></div>
         <div class="field stage5b-other" id="posSalesChannelOtherWrap" ${normalizeSalesChannel(cart._salesChannel,'Walk-in')==='Other'?'':'hidden'}><label>Other Source</label>
-          <input id="posSalesChannelOther" maxlength="100" placeholder="Describe the source (maximum 100 characters)" value="${escAttr(normalizeSalesChannelOther(cart._salesChannelOther,cart._salesChannel))}" oninput="onSalesChannelOtherChange('normal')" /></div>
-        <div id="posCustomerReminder" class="stage5b-customer-reminder" ${String(cart._cust||'').trim()||String(cart._tel||'').trim()?'hidden':''}>Customer details not captured - this sale will be unidentified in Customer Intelligence.</div>
-      </div>
-
-      <div class="card stage5b-capture" style="margin-bottom:12px">
-        <h3>Quick Sale &middot; Customer &amp; Source</h3>
-        <p class="muted" style="font-size:11px;margin:0 0 10px">Optional details for Quick Sale only.</p>
-        <div class="field"><label>Customer name (optional)</label>
-          <input id="quickCustomerName" maxlength="120" autocomplete="name" placeholder="Optional customer name" value="${escAttr(cart._quickCustomerName||'')}" oninput="cart._quickCustomerName=this.value" /></div>
-        <div class="field"><label>Telephone (optional)</label>
-          <input id="quickCustomerPhone" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="Optional telephone" value="${escAttr(cart._quickCustomerPhone||'')}" oninput="cart._quickCustomerPhone=this.value" /></div>
-        <div class="field"><label>Sales Source</label>
-          <select id="quickSalesChannel" onchange="onSalesChannelChange('quick')">${salesChannelOptionsHTML(cart._quickSalesChannel)}</select></div>
-        <div class="field stage5b-other" id="quickSalesChannelOtherWrap" ${normalizeSalesChannel(cart._quickSalesChannel,'Walk-in')==='Other'?'':'hidden'}><label>Other Source</label>
-          <input id="quickSalesChannelOther" maxlength="100" placeholder="Describe the source (maximum 100 characters)" value="${escAttr(normalizeSalesChannelOther(cart._quickSalesChannelOther,cart._quickSalesChannel))}" oninput="onSalesChannelOtherChange('quick')" /></div>
+          <input id="posSalesChannelOther" maxlength="100" placeholder="Describe the source (maximum 100 characters)" value="${escAttr(normalizeSalesChannelOther(cart._salesChannelOther,cart._salesChannel))}" oninput="onSalesChannelOtherChange()" /></div>
+        <div class="field"><label>Receipt location (optional)</label>
+          <input id="posLoc" placeholder="Optional receipt location" value="${escAttr(cart._loc||'')}" oninput="cart._loc=this.value" /></div>
       </div>
 
       <div class="card mobile-cashier-card" style="margin-bottom:12px">
@@ -2840,8 +2818,6 @@ function resetSaleOutForm(){
   cart = [];
   cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = 0; cart._vatRate = 0;
   cart._salesChannel = 'Walk-in'; cart._salesChannelOther = '';
-  cart._quickCustomerName = ''; cart._quickCustomerPhone = '';
-  cart._quickSalesChannel = 'Walk-in'; cart._quickSalesChannelOther = '';
   priceAdjUnlocked = false;
   vatRateUnlocked = false;
 }
@@ -2869,9 +2845,22 @@ function printReceiptSale(){
   // Excel cmdPrintReceipt order
   if(!session.cashier){ toast('No active cashier detected. Please login first.', 'err'); return; }
   if(!cart.length){ toast('No items added.', 'err'); return; }
-  const customer = (($('posCust')&&$('posCust').value)||cart._cust||'').trim().slice(0,120);
-  const location = (($('posLoc')&&$('posLoc').value)||cart._loc||'').trim();
-  const tel = (($('posTel')&&$('posTel').value)||cart._tel||'').trim().slice(0,40);
+  const customerControl = $('posCust');
+  const telephoneControl = $('posTel');
+  const customer = String(customerControl ? customerControl.value : (cart._cust||'')).trim().slice(0,120);
+  const tel = String(telephoneControl ? telephoneControl.value : (cart._tel||'')).trim().slice(0,40);
+  if(!customer){
+    toast('Customer Name is required to print a receipt.', 'err');
+    if(customerControl && typeof customerControl.focus==='function') customerControl.focus();
+    return;
+  }
+  if(!tel){
+    toast('Customer Telephone is required to print a receipt.', 'err');
+    if(telephoneControl && typeof telephoneControl.focus==='function') telephoneControl.focus();
+    return;
+  }
+  const locationControl = $('posLoc');
+  const location = String(locationControl ? locationControl.value : (cart._loc||'')).trim();
   const selectedSalesChannel = normalizeSalesChannel((($('posSalesChannel')&&$('posSalesChannel').value)||cart._salesChannel),'Walk-in');
   const selectedSalesChannelOther = normalizeSalesChannelOther((($('posSalesChannelOther')&&$('posSalesChannelOther').value)||cart._salesChannelOther),selectedSalesChannel);
 
@@ -4516,7 +4505,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260814-sales-channel-capture-r43').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260815-unified-customer-capture-r44').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4539,7 +4528,7 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260814-sales-channel-capture-r43"></script>
+<script src="js/operations-update.js?v=20260815-unified-customer-capture-r44"></script>
 <script src="js/auto-month-rollover.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/invoice-waybill.js?v=20260813-document-branding-r42"></script>
 <script src="js/mobile-vertical-layout.js?v=20260812-portfolio-signals-r39"></script>
@@ -4551,11 +4540,11 @@ document.addEventListener('keydown', (e)=>{
 <script src="js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39"></script>
 <script>
 /* Embedded so Owner Recovery does not depend on a newly added external file. */
-/* ZEZMS v3.11.0 — Customer Capture & Sales Channel Attribution */
+/* ZEZMS v3.11.1 — Unified Customer Capture & Receipt Customer Requirement */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260814-sales-channel-capture-r43';
+const BUILD='20260815-unified-customer-capture-r44';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
@@ -4725,7 +4714,7 @@ function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;cons
 async function saveUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can manage staff.');if(!await reauth('Confirm staff-account change'))return;const u=model().users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(role()==='ADMIN'&&u.role==='OWNER')throw new Error('An Admin cannot modify the Owner account.');await upsert({name:String((document.getElementById('sharedEditName')||{}).value||''),tel:String((document.getElementById('sharedEditTel')||{}).value||''),role:String((document.getElementById('sharedEditRole')||{}).value||u.role),password:String((document.getElementById('sharedEditPassword')||{}).value||''),active:String((document.getElementById('sharedEditActive')||{}).value||'1')==='1'},id);closeModal();audit('STAFF_ACCOUNT_UPDATED',{userId:id});render();refreshUsers();toast('Staff account updated.');}catch(e){toast(e.message||String(e),'err');}}
 async function deleteUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can delete staff.');const m=model(),u=m.users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(u.role==='OWNER')throw new Error('The Owner account cannot be deleted.');if(u.id===session.sharedUserId)throw new Error('You cannot delete the account that is currently signed in.');if(!window.confirm(`Permanently delete ${u.name}? This cannot be undone.`))return;if(!await reauth('Confirm permanent staff deletion'))return;const index=m.users.findIndex(x=>x.id===id);if(index<0)throw new Error('Staff account not found.');m.users.splice(index,1);audit('STAFF_ACCOUNT_DELETED',{userId:id,name:u.name,role:u.role});writeDirectoryRoot();saveDB();closeModal();render();refreshUsers();const published=await autoPublishDirectory();toast(published?'Staff account deleted and published to authorised devices.':'Staff account deleted locally. Publish staff access when Cloud Sync is available.',published?'ok':'warn');}catch(e){toast(e.message||String(e),'err');}}
 function cloud(){const s=ZEZMS.cloudSync;return s&&typeof s.getState==='function'?s.getState():{};}
-function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.11.0'};}
+function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.11.1'};}
 function recovery(){const s=cloud();if(!s.supabaseUrl||!s.publishableKey||!window.supabase)throw new Error('Supabase configuration is unavailable on this device.');if(!recoveryClient)recoveryClient=window.supabase.createClient(String(s.supabaseUrl).replace(/\/$/,''),String(s.publishableKey),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:RECOVERY_KEY}});return recoveryClient;}
 
 function sharedModal(html){
@@ -4852,7 +4841,7 @@ setTimeout(init,250);
 setTimeout(function(){
   var statusBox=document.getElementById('sharedLoginStatus');
   if(typeof window.sharedDeviceOwnerRecovery!=='function'){
-    var message='Shared-device recovery controller failed to load. Redeploy the complete v3.11.0 index.html.';
+    var message='Shared-device recovery controller failed to load. Redeploy the complete v3.11.1 index.html.';
     if(statusBox){
       statusBox.textContent=message;
       statusBox.style.background='#3f1017';
@@ -4888,12 +4877,12 @@ setTimeout(function(){
 
 <script>
 /* Embedded Secure Device Enrollment controller. */
-/* ZEZMS v3.11.0 — Customer Capture & Sales Channel Attribution */
+/* ZEZMS v3.11.1 — Unified Customer Capture & Receipt Customer Requirement */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260814-sales-channel-capture-r43';
+  const BUILD = '20260815-unified-customer-capture-r44';
   let branches = [];
   let lastPairing = null;
   let enrolledDevices = [];
@@ -4973,7 +4962,7 @@ setTimeout(function(){
   async function claimNewDevice() {
     const s=sync();
     if(!s||typeof s.enrollPairedDevice!=='function'){
-      status('Secure Device Enrollment did not load. Confirm v3.11.0 is deployed.','error');
+      status('Secure Device Enrollment did not load. Confirm v3.11.1 is deployed.','error');
       return;
     }
     const values={
@@ -5185,7 +5174,7 @@ setTimeout(function(){
       if(!branchId)throw new Error('Select the branch for the new device.');
       const result=await pair.client.rpc('zezms_m5a3_create_device_pairing',{
         p_business_id:businessId,p_device_name:deviceName,p_branch_id:branchId,
-        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.11.0'
+        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.11.1'
       });
       if(result.error)throw result.error;
       lastPairing=normalizeRow(result.data);

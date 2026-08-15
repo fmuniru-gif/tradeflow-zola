@@ -1,5 +1,5 @@
-/* ZEZMS Owner Edition v3.11.0 - customer capture and sales-channel attribution */
-const CACHE = 'zezms-sales-channel-capture-20260814-r43';
+/* ZEZMS Owner Edition v3.11.1 - unified customer capture */
+const CACHE = 'zezms-unified-customer-capture-20260815-r44';
 const ASSETS = [
   './',
   './index.html',
@@ -18,7 +18,7 @@ const ASSETS = [
   './js/lifecycle-module.js?v=20260812-portfolio-signals-r39',
   './js/logger.js?v=20260812-portfolio-signals-r39',
   './js/notifications-module.js?v=20260812-portfolio-signals-r39',
-  './js/operations-update.js?v=20260814-sales-channel-capture-r43',
+  './js/operations-update.js?v=20260815-unified-customer-capture-r44',
   './js/auto-month-rollover.js?v=20260812-portfolio-signals-r39',
   './js/invoice-waybill.js?v=20260813-document-branding-r42',
   './js/product-search-adapter.js?v=20260812-portfolio-signals-r39',
