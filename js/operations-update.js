@@ -4,12 +4,31 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260813-document-branding-r42';
+  const BUILD = '20260814-sales-channel-capture-r43';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
   let activeReceiptPayload = null;
   let receiptPrintBusy = false;
+
+  function recordedSalesChannel(record) {
+    const raw = record && record.salesChannel;
+    return typeof normalizeSalesChannel === 'function' ? normalizeSalesChannel(raw, '') : String(raw || '').trim();
+  }
+
+  function recordedSalesChannelOther(record, channel) {
+    const raw = record && record.salesChannelOther;
+    return typeof normalizeSalesChannelOther === 'function'
+      ? normalizeSalesChannelOther(raw, channel)
+      : (channel === 'Other' ? String(raw || '').trim().slice(0, 100) : '');
+  }
+
+  function salesSourceText(record, unspecifiedFallback) {
+    const channel = recordedSalesChannel(record);
+    if (!channel) return unspecifiedFallback || '';
+    const detail = recordedSalesChannelOther(record, channel);
+    return channel === 'Other' && detail ? channel + ' - ' + detail : channel;
+  }
 
   function uid(prefix) {
     return idStamp(prefix) + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -370,6 +389,8 @@
       outstanding: Math.max(0, round2(total - paid)),
       cashier: sale.cashier || '',
       cashierTel: sale.cashierTel || '',
+      salesChannel: recordedSalesChannel(sale),
+      salesChannelOther: recordedSalesChannelOther(sale, recordedSalesChannel(sale)),
       date: sale.date || nowISO(),
       lines,
       voided: !!sale.voided || sale.status === 'VOID' || sale.status === UNDONE,
@@ -410,6 +431,7 @@
         Customer: <b>${esc(sale.customer)}</b><br>
         Location: ${esc(sale.location)}<br>
         Telephone: ${esc(sale.contact)}
+        ${sale.salesChannel ? '<br>Sales Source: <b>' + esc(salesSourceText(sale)) + '</b>' : ''}
       </div>
       <table class="receipt-items">
         <thead><tr class="receipt-table-head">
@@ -567,6 +589,9 @@
       <div class="statline"><span>Transaction number</span><b class="mono">${esc(transaction.id || '')}</b></div>
       <div class="statline"><span>Date</span><b>${transaction.date ? new Date(transaction.date).toLocaleString() : '—'}</b></div>
       <div class="statline"><span>Cashier</span><b>${esc(transaction.cashier || '')}</b></div>
+      <div class="statline"><span>Customer</span><b>${esc(transaction.customerName || 'Not captured')}</b></div>
+      <div class="statline"><span>Telephone</span><b>${esc(transaction.customerPhone || 'Not captured')}</b></div>
+      <div class="statline"><span>Sales Source</span><b>${esc(salesSourceText(transaction, 'Unspecified'))}</b></div>
       <div class="statline"><span>Total quantity</span><b class="mono">${fmtN(transaction.qty)}</b></div>
       <div class="statline"><span>Sale amount</span><b class="mono">${fmt(transaction.amount)}</b></div>
       <div class="statline"><span>Status</span><b>${transaction.status === UNDONE ? 'UNDONE' : 'COMPLETED'}</b></div>
@@ -641,6 +666,7 @@
       status: receipt.voided || receipt.status === 'VOID' || receipt.status === UNDONE
         ? 'VOID'
         : ((receipt.credit || Number(receipt.balance) > 0) ? 'CREDIT' : 'PAID'),
+      salesChannel: salesSourceText(receipt, 'Unspecified'),
       source: receipt
     }));
 
@@ -651,11 +677,12 @@
         id: transaction.id,
         date: transaction.date,
         cashier: transaction.cashier || '',
-        customer: 'Walk-in / not captured',
-        contact: '',
+        customer: transaction.customerName || 'Walk-in / not captured',
+        contact: transaction.customerPhone || '',
         total: Number(transaction.amount) || 0,
         balance: 0,
         status: transaction.status === UNDONE ? 'UNDONE' : 'COMPLETED',
+        salesChannel: salesSourceText(transaction, 'Unspecified'),
         source: transaction
       }));
 
@@ -691,6 +718,7 @@
         <td class="mono" style="font-size:11px">${esc(record.id)}</td>
         <td>${esc(record.customer)}</td>
         <td>${esc(record.contact || '—')}</td>
+        <td>${esc(record.salesChannel || 'Unspecified')}</td>
         <td class="mono right">${fmt(record.total)}</td>
         <td class="mono right">${record.balance > 0 ? fmt(record.balance) : '—'}</td>
         <td style="font-size:11px">${record.date ? new Date(record.date).toLocaleString() : '—'}</td>
@@ -702,7 +730,7 @@
 
     const emptyRow = list.length
       ? ''
-      : `<tr><td colspan="10" class="empty">${session.isCashier2 && !isElevated() ? 'No sales records for you today yet.' : 'No Sale Out records yet.'}</td></tr>`;
+      : `<tr><td colspan="11" class="empty">${session.isCashier2 && !isElevated() ? 'No sales records for you today yet.' : 'No Sale Out records yet.'}</td></tr>`;
 
     return `<div class="card">
       <h3>Sales records <span class="muted" style="font-weight:400">(${esc(note)})</span></h3>
@@ -715,8 +743,8 @@
         <span id="salesRecordsSearchCount" class="pill search-count">${list.length} ${list.length === 1 ? 'sales record' : 'sales records'}</span>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Sale type</th><th>Record #</th><th>Customer</th><th>Contact</th><th class="right">Total</th><th class="right">Balance owed</th><th>Date</th><th>Cashier</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody id="salesRecordsBody">${rows}${emptyRow}<tr id="salesRecordsNoMatch" style="display:none"><td colspan="10" class="empty">No receipt matches that customer name.</td></tr></tbody>
+        <thead><tr><th>Sale type</th><th>Record #</th><th>Customer</th><th>Contact</th><th>Sales Source</th><th class="right">Total</th><th class="right">Balance owed</th><th>Date</th><th>Cashier</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="salesRecordsBody">${rows}${emptyRow}<tr id="salesRecordsNoMatch" style="display:none"><td colspan="11" class="empty">No receipt matches that customer name.</td></tr></tbody>
       </table></div>
     </div>`;
   };
@@ -785,6 +813,17 @@
     const transactionId = uid('QSALE-');
     const saleDate = nowISO();
     const currentPeriod = getLatestMonth();
+    const quickCapture = typeof saleCaptureState === 'function'
+      ? saleCaptureState('quick')
+      : { customerName: '', customerPhone: '', salesChannel: 'Walk-in', salesChannelOther: '' };
+    quickCapture.customerName = String((($('quickCustomerName') && $('quickCustomerName').value) || quickCapture.customerName) || '').trim().slice(0, 120);
+    quickCapture.customerPhone = String((($('quickCustomerPhone') && $('quickCustomerPhone').value) || quickCapture.customerPhone) || '').trim().slice(0, 40);
+    quickCapture.salesChannel = typeof normalizeSalesChannel === 'function'
+      ? normalizeSalesChannel((($('quickSalesChannel') && $('quickSalesChannel').value) || quickCapture.salesChannel), 'Walk-in')
+      : quickCapture.salesChannel;
+    quickCapture.salesChannelOther = typeof normalizeSalesChannelOther === 'function'
+      ? normalizeSalesChannelOther((($('quickSalesChannelOther') && $('quickSalesChannelOther').value) || quickCapture.salesChannelOther), quickCapture.salesChannel)
+      : quickCapture.salesChannelOther;
     const cartSnapshot = cart.map((line) => deepClone(line));
     const undoStart = DB.undoLog.length;
     const lines = [];
@@ -821,6 +860,10 @@
       month: currentPeriod.month,
       cashier: session.cashier,
       cashierTel: session.tel,
+      customerName: quickCapture.customerName,
+      customerPhone: quickCapture.customerPhone,
+      salesChannel: quickCapture.salesChannel,
+      salesChannelOther: quickCapture.salesChannelOther,
       product: lines.map((line) => line.product).join(', '),
       qty: lines.reduce((sum, line) => sum + (Number(line.qty) || 0), 0),
       amount: lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),

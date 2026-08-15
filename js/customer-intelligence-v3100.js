@@ -1,10 +1,15 @@
 (function(){
   'use strict';
 
-  var VERSION = '3.10.0';
-  var BUILD = '20260812-customer-intelligence-r40';
-  var RELEASE = 'Customer Relationship Intelligence Foundation';
+  var VERSION = '3.11.0';
+  var BUILD = '20260814-sales-channel-capture-r43';
+  var RELEASE = 'Customer Capture & Sales Channel Attribution';
   var DEFAULT_WINDOW = '365';
+  var SALES_CHANNELS = Object.freeze([
+    'Walk-in','WhatsApp','Facebook','TikTok','Instagram','Phone Call','Referral','Corporate/B2B','Other'
+  ]);
+  var ANALYTICAL_CHANNELS = Object.freeze(SALES_CHANNELS.concat(['Unspecified']));
+  var DIGITAL_CHANNELS = Object.freeze(['WhatsApp','Facebook','TikTok','Instagram','Phone Call']);
 
   if(window.ZEZMS && window.ZEZMS.customerIntelligence
     && window.ZEZMS.customerIntelligence.version === VERSION
@@ -30,6 +35,15 @@
   }
   function collapse(value){ return clean(value).replace(/\s+/g, ' '); }
   function canonical(value){ return collapse(value).toLocaleLowerCase(); }
+  function salesChannel(value){
+    var raw = canonical(value);
+    return SALES_CHANNELS.find(function(channel){ return canonical(channel) === raw; }) || 'Unspecified';
+  }
+  function salesChannelOther(record, details, channel){
+    if(channel !== 'Other') return '';
+    details = details && typeof details === 'object' ? details : {};
+    return (collapse(record && record.salesChannelOther) || collapse(details.salesChannelOther)).slice(0, 100);
+  }
   function list(value){ return Array.isArray(value) ? value : []; }
   function finite(value){
     if(value == null || (typeof value === 'string' && !clean(value))) return null;
@@ -267,8 +281,8 @@
     return {
       name: clean(record && (record.customerName || record.customer))
         || clean(details.customerName || details.customer),
-      phone: clean(record && (record.contact || record.telephone || record.phone || record.tel))
-        || clean(details.contact || details.telephone || details.phone || details.tel),
+      phone: clean(record && (record.customerPhone || record.contact || record.telephone || record.phone || record.tel))
+        || clean(details.customerPhone || details.contact || details.telephone || details.phone || details.tel),
       location: collapse(record && record.location) || collapse(details.location)
     };
   }
@@ -300,6 +314,7 @@
       }
       var details = record && record.details;
       var meta = metadata(record, details);
+      var channel = salesChannel(record && record.salesChannel || details && details.salesChannel);
       transactions.push({
         key: key,
         id: stableId || prefix + '-' + (index + 1),
@@ -311,6 +326,8 @@
         name: meta.name,
         phone: meta.phone,
         location: meta.location,
+        salesChannel: channel,
+        salesChannelOther: salesChannelOther(record, details, channel),
         lines: list(lines)
       });
     }
@@ -397,7 +414,8 @@
       missingValueTransactions: 0,
       totalQuantity: 0,
       products: new Map(),
-      categories: new Map()
+      categories: new Map(),
+      channels: new Map()
     };
   }
   function addAffinity(customer, transaction, resolveProduct){
@@ -464,6 +482,17 @@
     });
   }
 
+  function addCustomerChannel(customer, transaction){
+    var channelName = transaction.salesChannel || 'Unspecified';
+    if(!customer.channels.has(channelName)) customer.channels.set(channelName, { channel:channelName, transactions:0, sales:0, knownSales:0 });
+    var channel = customer.channels.get(channelName);
+    channel.transactions += 1;
+    if(transaction.valueKnown){
+      var next = safeAdd(channel.sales, transaction.value);
+      if(next != null){ channel.sales = next; channel.knownSales += 1; }
+    }
+  }
+
   function finalCustomer(customer, today){
     var locations = Array.from(customer.locationMap.values());
     var products = Array.from(customer.products.values()).map(function(product){
@@ -490,7 +519,18 @@
     }).sort(function(left, right){
       return (Number.isFinite(right.salesValue) ? right.salesValue : -Infinity)
         - (Number.isFinite(left.salesValue) ? left.salesValue : -Infinity)
-        || left.category.localeCompare(right.category);
+      || left.category.localeCompare(right.category);
+    });
+    var channelBreakdown = Array.from(customer.channels.values()).map(function(channel){
+      return {
+        channel: channel.channel,
+        transactions: channel.transactions,
+        sales: channel.knownSales ? channel.sales : null
+      };
+    }).sort(function(left, right){
+      return right.transactions - left.transactions
+        || (Number.isFinite(right.sales) ? right.sales : -Infinity) - (Number.isFinite(left.sales) ? left.sales : -Infinity)
+        || ANALYTICAL_CHANNELS.indexOf(left.channel) - ANALYTICAL_CHANNELS.indexOf(right.channel);
     });
     var transactions = customer.transactionKeys.size;
     return {
@@ -517,6 +557,8 @@
       repeat: transactions >= 2,
       products: products,
       categories: categories,
+      mostUsedSalesChannel: channelBreakdown.length ? channelBreakdown[0].channel : 'Unspecified',
+      channelBreakdown: channelBreakdown,
       searchText: canonical(customer.displayName + ' ' + customer.telephone)
     };
   }
@@ -608,6 +650,7 @@
         customer.missingValueTransactions += 1;
       }
       addAffinity(customer, transaction, resolveProduct);
+      addCustomerChannel(customer, transaction);
     });
 
     var customers = Array.from(customersMap.values()).map(function(customer){ return finalCustomer(customer, today); });
@@ -644,6 +687,59 @@
       var next = safeAdd(bucket.salesValue, customer.totalSales);
       if(next != null) bucket.salesValue = next;
     });
+
+    var customerByKey = new Map(customers.map(function(customer){ return [customer.key, customer]; }));
+    var channelMap = new Map();
+    ANALYTICAL_CHANNELS.forEach(function(channel){
+      channelMap.set(channel, {
+        channel:channel, transactions:0, sales:0, knownSalesTransactions:0,
+        identifiedTransactions:0, customerKeys:new Set(), repeatCustomerTransactions:0, repeatCustomerSales:0
+      });
+    });
+    windowTransactions.forEach(function(transaction){
+      var channel = channelMap.get(transaction.salesChannel) || channelMap.get('Unspecified');
+      channel.transactions += 1;
+      if(transaction.valueKnown){
+        var channelSalesNext = safeAdd(channel.sales, transaction.value);
+        if(channelSalesNext != null){ channel.sales = channelSalesNext; channel.knownSalesTransactions += 1; }
+      }
+      var identity = customerIdentity(transaction);
+      if(!identity) return;
+      channel.identifiedTransactions += 1;
+      channel.customerKeys.add(identity.key);
+      var joinedCustomer = customerByKey.get(identity.key);
+      if(joinedCustomer && joinedCustomer.repeat){
+        channel.repeatCustomerTransactions += 1;
+        if(transaction.valueKnown){
+          var repeatChannelNext = safeAdd(channel.repeatCustomerSales, transaction.value);
+          if(repeatChannelNext != null) channel.repeatCustomerSales = repeatChannelNext;
+        }
+      }
+    });
+    var channelRows = ANALYTICAL_CHANNELS.map(function(channelName){
+      var channel = channelMap.get(channelName);
+      return {
+        channel: channelName,
+        transactions: channel.transactions,
+        totalSales: channel.sales,
+        salesShare: totalSales ? (channel.sales / totalSales) * 100 : 0,
+        averageTransactionValue: channel.transactions ? channel.sales / channel.transactions : null,
+        identifiedCustomerTransactions: channel.identifiedTransactions,
+        identificationCoverage: channel.transactions ? (channel.identifiedTransactions / channel.transactions) * 100 : 0,
+        distinctCustomers: channel.customerKeys.size,
+        repeatCustomerTransactions: channel.repeatCustomerTransactions,
+        repeatCustomerSales: channel.repeatCustomerSales
+      };
+    });
+    var salesByChannel = channelRows.filter(function(channel){ return channel.channel !== 'Unspecified' || channel.transactions > 0; }).sort(function(left, right){
+      return right.totalSales - left.totalSales || right.transactions - left.transactions
+        || ANALYTICAL_CHANNELS.indexOf(left.channel) - ANALYTICAL_CHANNELS.indexOf(right.channel);
+    });
+    var digitalChannels = channelRows.filter(function(channel){ return DIGITAL_CHANNELS.indexOf(channel.channel) >= 0; });
+    var specifiedTransactions = channelRows.filter(function(channel){ return channel.channel !== 'Unspecified'; }).reduce(function(sum, channel){ return sum + channel.transactions; }, 0);
+    var attributedSales = channelRows.filter(function(channel){ return channel.channel !== 'Unspecified'; }).reduce(function(sum, channel){ return sum + channel.totalSales; }, 0);
+    var digitalSales = digitalChannels.reduce(function(sum, channel){ return sum + channel.totalSales; }, 0);
+    var topSalesChannel = salesByChannel.filter(function(channel){ return channel.channel !== 'Unspecified' && channel.transactions > 0; })[0] || null;
     var identifiedCustomers = customers.length;
     var totalTransactions = windowTransactions.length;
     var kpis = {
@@ -689,6 +785,18 @@
       },
       kpis: kpis,
       customers: customers,
+      channelIntelligence: {
+        canonicalChannels: SALES_CHANNELS,
+        analyticalChannels: ANALYTICAL_CHANNELS,
+        digitalChannels: DIGITAL_CHANNELS,
+        attributedSales: attributedSales,
+        attributionCoverage: totalTransactions ? (specifiedTransactions / totalTransactions) * 100 : 0,
+        digitalSales: digitalSales,
+        digitalSalesShare: totalSales ? (digitalSales / totalSales) * 100 : 0,
+        topSalesChannel: topSalesChannel ? topSalesChannel.channel : 'Not enough attributed sales',
+        salesByChannel: salesByChannel,
+        digitalByChannel: digitalChannels
+      },
       topCustomers: topCustomers,
       frequentCustomers: frequentCustomers,
       recentRepeatCustomers: recentRepeatCustomers,
@@ -791,14 +899,44 @@
     var categoryRows = customer.categories.length ? customer.categories.map(function(category){
       return '<tr data-affinity-category="1"><td><b>' + esc(category.category) + '</b></td><td class="num">' + formatQuantity(category.quantity) + '</td><td class="num">' + formatCurrency(category.salesValue) + '</td></tr>';
     }).join('') : emptyRow(3, 'No reliable product-category mapping is available for this customer.');
+    var channelRows = customer.channelBreakdown.length ? customer.channelBreakdown.map(function(channel){
+      return '<tr data-customer-channel="' + esc(channel.channel) + '"><td><b>' + esc(channel.channel) + '</b></td><td class="num">' + formatInteger(channel.transactions) + '</td><td class="num">' + formatCurrency(channel.sales) + '</td></tr>';
+    }).join('') : emptyRow(3, 'No sales-channel metadata is available for this customer.');
     return '<div id="customerDetailSummary" data-customer-key="' + esc(customer.key) + '"><div class="grid g4">'
       + '<div><div class="sub">Transactions</div><b data-detail="transactions">' + formatInteger(customer.transactions) + '</b></div>'
       + '<div><div class="sub">Total Sales</div><b data-detail="sales">' + formatCurrency(customer.totalSales) + '</b></div>'
       + '<div><div class="sub">First Purchase</div><b data-detail="first">' + formatDay(customer.firstPurchase) + '</b></div>'
       + '<div><div class="sub">Last Purchase</div><b data-detail="last">' + formatDay(customer.lastPurchase) + '</b></div></div>'
-      + '<div class="muted" style="margin-top:8px">Avg Transaction Value: <b>' + formatCurrency(customer.averageTransactionValue) + '</b>. Product/category sales use recorded line values and do not allocate receipt VAT.</div>'
+      + '<div class="muted" style="margin-top:8px">Avg Transaction Value: <b>' + formatCurrency(customer.averageTransactionValue) + '</b>. Most Used Sales Channel: <b data-detail="most-used-channel">' + esc(customer.mostUsedSalesChannel) + '</b>. Product/category sales use recorded line values and do not allocate receipt VAT.</div>'
       + '<h5>Products Purchased</h5><div class="table-wrap"><table><thead><tr><th>Product</th><th class="num">Quantity Purchased</th><th class="num">Sales Value</th><th>Most Recent Purchase</th></tr></thead><tbody>' + productRows + '</tbody></table></div>'
-      + '<h5>Category Summary</h5><div class="table-wrap"><table><thead><tr><th>Category</th><th class="num">Quantity</th><th class="num">Sales Value</th></tr></thead><tbody>' + categoryRows + '</tbody></table></div></div>';
+      + '<h5>Category Summary</h5><div class="table-wrap"><table><thead><tr><th>Category</th><th class="num">Quantity</th><th class="num">Sales Value</th></tr></thead><tbody>' + categoryRows + '</tbody></table></div>'
+      + '<h5>Sales Channel Breakdown</h5><div class="table-wrap"><table><thead><tr><th>Channel</th><th class="num">Transactions</th><th class="num">Sales</th></tr></thead><tbody>' + channelRows + '</tbody></table></div></div>';
+  }
+
+  function salesChannelIntelligenceHTML(model){
+    var intelligence = model.channelIntelligence;
+    var channelRows = intelligence.salesByChannel.map(function(channel){
+      return '<tr data-sales-channel="' + esc(channel.channel) + '"><td><b>' + esc(channel.channel) + '</b></td>'
+        + '<td class="num">' + formatInteger(channel.transactions) + '</td><td class="num">' + formatCurrency(channel.totalSales) + '</td>'
+        + '<td class="num">' + formatPercent(channel.salesShare) + '</td><td class="num">' + formatCurrency(channel.averageTransactionValue) + '</td>'
+        + '<td class="num">' + formatPercent(channel.identificationCoverage) + '</td><td class="num">' + formatInteger(channel.distinctCustomers) + '</td></tr>';
+    }).join('') || emptyRow(7, 'No completed sales are available in the selected window.');
+    var digitalRows = intelligence.digitalByChannel.map(function(channel){
+      return '<tr data-digital-channel="' + esc(channel.channel) + '"><td><b>' + esc(channel.channel) + '</b></td>'
+        + '<td class="num">' + formatInteger(channel.transactions) + '</td><td class="num">' + formatCurrency(channel.totalSales) + '</td>'
+        + '<td class="num">' + formatPercent(channel.salesShare) + '</td><td class="num">' + formatCurrency(channel.averageTransactionValue) + '</td>'
+        + '<td class="num">' + formatInteger(channel.distinctCustomers) + '</td><td class="num">' + formatCurrency(channel.repeatCustomerSales) + '</td></tr>';
+    }).join('');
+    return '<div class="card" id="salesChannelIntelligence" style="margin-top:12px"><div class="row wrap" style="justify-content:space-between;align-items:flex-start">'
+      + '<div><h4 style="margin:0">Sales Channel Intelligence</h4><div class="muted">Declared transaction source within the selected Customer-history window. This is not advertising ROI.</div></div><span class="pill">Stage 5B</span></div>'
+      + '<div class="grid g4" id="salesChannelKpis" style="margin-top:12px">'
+      + '<div class="card kpi teal"><div class="sub">Attributed Sales</div><div class="val" id="channelKpiAttributedSales" data-value="' + dataNumber(intelligence.attributedSales) + '">' + formatCurrency(intelligence.attributedSales) + '</div></div>'
+      + '<div class="card kpi"><div class="sub">Channel Attribution Coverage</div><div class="val" id="channelKpiAttributionCoverage" data-value="' + dataNumber(intelligence.attributionCoverage) + '">' + formatPercent(intelligence.attributionCoverage) + '</div></div>'
+      + '<div class="card kpi green"><div class="sub">Digital/Remote-Origin Sales</div><div class="val" id="channelKpiDigitalSales" data-value="' + dataNumber(intelligence.digitalSales) + '">' + formatCurrency(intelligence.digitalSales) + '</div></div>'
+      + '<div class="card kpi"><div class="sub">Digital/Remote-Origin Sales Share</div><div class="val" id="channelKpiDigitalShare" data-value="' + dataNumber(intelligence.digitalSalesShare) + '">' + formatPercent(intelligence.digitalSalesShare) + '</div></div></div>'
+      + '<div class="notice" id="topSalesChannel" style="margin-top:10px"><b>Top Sales Channel:</b> ' + esc(intelligence.topSalesChannel) + '</div>'
+      + '<h4>Sales by Channel</h4><div class="table-wrap"><table><thead><tr><th>Channel</th><th class="num">Transactions</th><th class="num">Total Sales</th><th class="num">Sales Share %</th><th class="num">Avg Transaction Value</th><th class="num">Identified Customer %</th><th class="num">Distinct Customers</th></tr></thead><tbody id="salesByChannelRows">' + channelRows + '</tbody></table></div>'
+      + '<h4>Digital &amp; Remote Sales</h4><div class="muted">WhatsApp, Facebook, TikTok, Instagram and Phone Call only.</div><div class="table-wrap"><table><thead><tr><th>Channel</th><th class="num">Transactions</th><th class="num">Sales</th><th class="num">Sales Share</th><th class="num">Avg Transaction Value</th><th class="num">Identified Customers</th><th class="num">Repeat-Customer Sales</th></tr></thead><tbody id="digitalSalesChannelRows">' + digitalRows + '</tbody></table></div></div>';
   }
 
   function sectionHTML(){
@@ -816,14 +954,15 @@
       return '<tr data-recency-bucket="' + esc(bucket.label) + '"><td>' + esc(bucket.label) + '</td><td class="num">' + formatInteger(bucket.customerCount) + '</td><td class="num">' + formatCurrency(bucket.salesValue) + '</td></tr>';
     }).join('');
 
-    return '<div class="divider"></div><section id="customerIntelligenceLab" data-stage="5A" data-version="' + VERSION + '" data-build="' + BUILD + '" data-window="' + esc(model.window.value) + '" aria-labelledby="customerIntelligenceHeading">'
-      + '<style id="customerIntelligenceResponsiveStyles">#customerIntelligenceLab .ci-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap}#customerIntelligenceLab .ci-controls label{min-width:190px;flex:1}#customerIntelligenceLab .ci-customer,#customerIntelligenceLab .ci-phone{max-width:240px;overflow-wrap:anywhere}#customerIntelligenceLab select,#customerIntelligenceLab input{max-width:100%}@media(max-width:720px){#customerIntelligenceLab .grid.g4{grid-template-columns:minmax(0,1fr)!important}#customerIntelligenceLab .ci-controls{display:grid;grid-template-columns:minmax(0,1fr)}}html.zezms-phone-layout #customerIntelligenceLab .table-wrap{overflow-x:auto!important;overflow-y:auto!important}html.zezms-phone-layout #customerIntelligenceLab .table-wrap table{width:max-content!important;max-width:none!important;min-width:700px!important}</style>'
+    return '<div class="divider"></div><section id="customerIntelligenceLab" class="customer-intelligence-view" data-stage="5B" data-version="' + VERSION + '" data-build="' + BUILD + '" data-window="' + esc(model.window.value) + '" aria-labelledby="customerIntelligenceHeading">'
+      + '<style id="customerIntelligenceResponsiveStyles">#customerIntelligenceLab .ci-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap}#customerIntelligenceLab .ci-controls label{min-width:190px;flex:1}#customerIntelligenceLab .ci-customer,#customerIntelligenceLab .ci-phone{max-width:240px;overflow-wrap:anywhere}#customerIntelligenceLab select,#customerIntelligenceLab input{box-sizing:border-box;max-width:100%;width:100%;padding:10px 12px;background:#0b1220!important;color:#f1f5f9!important;border:1px solid #475569!important;border-radius:10px;outline:none}#customerIntelligenceLab input::placeholder{color:#94a3b8!important;opacity:1}#customerIntelligenceLab select:focus,#customerIntelligenceLab input:focus{border-color:#14b8a6!important;box-shadow:0 0 0 3px rgba(20,184,166,.20)!important}#customerIntelligenceLab select:disabled,#customerIntelligenceLab input:disabled,#customerIntelligenceLab input[readonly]{background:#111c2f!important;color:#cbd5e1!important;opacity:.78}#customerIntelligenceLab select option{background:#0b1220;color:#f1f5f9}#customerIntelligenceLab input:-webkit-autofill{-webkit-text-fill-color:#f1f5f9!important;box-shadow:0 0 0 1000px #0b1220 inset!important;caret-color:#f1f5f9}@media(max-width:720px){#customerIntelligenceLab .grid.g4{grid-template-columns:minmax(0,1fr)!important}#customerIntelligenceLab .ci-controls{display:grid;grid-template-columns:minmax(0,1fr)}#customerIntelligenceLab select,#customerIntelligenceLab input{min-width:0;min-height:52px;font-size:16px}}html.zezms-phone-layout #customerIntelligenceLab .table-wrap{overflow-x:auto!important;overflow-y:auto!important}html.zezms-phone-layout #customerIntelligenceLab .table-wrap table{width:max-content!important;max-width:none!important;min-width:700px!important}</style>'
+      + '<style id="customerIntelligencePhoneControlStyles">html.zezms-phone-layout #customerIntelligenceLab select,html.zezms-phone-layout #customerIntelligenceLab input{min-width:0!important;max-width:100%!important;min-height:52px!important;font-size:16px!important}</style>'
       + '<div class="row wrap" style="justify-content:space-between;align-items:flex-start"><div><h3 id="customerIntelligenceHeading" style="margin:0">Customer Relationship Intelligence</h3>'
-      + '<div class="muted">Read-only analysis of identifiable completed-sale customers. No customer or transaction record is changed.</div></div><span class="pill">Stage 5A · Read only</span></div>'
+      + '<div class="muted">Read-only analysis of identifiable completed-sale customers and declared Sales Source. No customer or transaction record is changed.</div></div><span class="pill">Stages 5A + 5B · Read only</span></div>'
       + '<div class="ci-controls card" style="margin-top:12px"><label><span class="sub">Customer-history window</span><select id="customerHistoryWindow" onchange="ZEZMS.customerIntelligence.setWindow(this.value)">'
       + ['30','90','180','365','all'].map(function(value){ var label = value === 'all' ? 'All Available History' : 'Last ' + value + ' days'; return '<option value="' + value + '"' + (value === model.window.value ? ' selected' : '') + '>' + label + '</option>'; }).join('')
       + '</select></label><div style="flex:2;min-width:240px"><div class="sub">Effective completed-sale dates</div><b id="customerWindowDates">' + esc(rangeText) + '</b></div></div>'
-      + '<div class="notice" style="margin-top:10px">Receipt transactions and customer metadata come from active <code>DB.sales</code>; active Quick Sale values come from <code>DB.inventoryTxns</code>. The duplicate printable receipt register is not scanned. Quick Sales without safely stored identity are unidentified.' + (qualityText ? ' ' + esc(qualityText) : '') + '</div>'
+      + '<div class="notice" style="margin-top:10px">Receipt transactions and customer/channel metadata come from active <code>DB.sales</code>; active Quick Sale data comes from <code>DB.inventoryTxns</code>. The duplicate printable receipt register is not scanned. Missing or malformed historical channel metadata is reported as Unspecified.' + (qualityText ? ' ' + esc(qualityText) : '') + '</div>'
       + '<div class="grid g4" id="customerPrimaryKpis" style="margin-top:12px">'
       + '<div class="card kpi teal"><div class="sub">Identified Customers</div><div class="val" id="customerKpiIdentified" data-value="' + model.kpis.identifiedCustomers + '">' + formatInteger(model.kpis.identifiedCustomers) + '</div></div>'
       + '<div class="card kpi green"><div class="sub">Repeat Customers</div><div class="val" id="customerKpiRepeat" data-value="' + model.kpis.repeatCustomers + '">' + formatInteger(model.kpis.repeatCustomers) + '</div></div>'
@@ -835,6 +974,7 @@
       + '<div class="card kpi"><div class="sub">Average Identified Customer Value</div><div class="val" id="customerKpiAverageValue" data-value="' + dataNumber(model.kpis.averageIdentifiedCustomerValue) + '">' + formatCurrency(model.kpis.averageIdentifiedCustomerValue) + '</div></div>'
       + '<div class="card kpi"><div class="sub">Top-5 Customer Sales Concentration</div><div class="val" id="customerKpiTopFive" data-value="' + dataNumber(model.kpis.topFiveConcentration) + '">' + formatPercent(model.kpis.topFiveConcentration) + '</div><div class="muted">Dependence on the five highest-value identifiable customers.</div></div></div>'
       + coverageHTML(model)
+      + salesChannelIntelligenceHTML(model)
       + '<div class="card" style="margin-top:12px"><h4 style="margin-top:0">Customer Search</h4><label><span class="sub">Name or telephone</span><input id="customerIntelligenceSearch" type="search" autocomplete="off" value="' + esc(runtime.searchTerm) + '" placeholder="Search the derived customer list" oninput="ZEZMS.customerIntelligence.search(this.value)"></label><div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>Customer</th><th>Telephone</th><th>Transactions</th><th>Total Sales</th><th>Avg Transaction Value</th><th>Last Purchase</th><th>Days Since Last Purchase</th><th>Distinct Products</th></tr></thead><tbody id="customerSearchResults">' + searchResultsHTML() + '</tbody></table></div></div>'
       + '<h4>Top Customers by Sales — Top 20</h4><div class="table-wrap"><table><thead><tr><th>Customer</th><th>Telephone</th><th>Location</th><th>Transactions</th><th>Total Sales</th><th>Avg Transaction Value</th><th>First Purchase</th><th>Last Purchase</th><th>Days Since Last Purchase</th><th>Repeat Status</th></tr></thead><tbody id="topCustomersBySales">' + rows(model.topCustomers, 'top', 20, 10, 'No identified customers are available in this window.') + '</tbody></table></div>'
       + '<h4>Most Frequent Customers — Top 20</h4><div class="table-wrap"><table><thead><tr><th>Customer</th><th>Telephone</th><th>Transactions</th><th>Total Sales</th><th>Avg Transaction Value</th><th>Last Purchase</th><th>Days Since Last Purchase</th><th>Distinct Products</th></tr></thead><tbody id="mostFrequentCustomers">' + rows(model.frequentCustomers, 'frequent', 20, 8, 'No identified customers are available in this window.') + '</tbody></table></div>'
@@ -844,7 +984,7 @@
       + '<div class="card" style="margin-top:12px"><h4 style="margin-top:0">Customer Purchase Summary</h4><label><span class="sub">Identified customer</span><select id="customerDetailSelector" onchange="ZEZMS.customerIntelligence.selectCustomer(this.value)"><option value="">Select a customer</option>' + options + '</select></label><div id="customerPurchaseDetail" style="margin-top:12px">' + detailHTML() + '</div></div>'
       + '<h4>Customer Sales Concentration — Top 10</h4><div class="table-wrap"><table><thead><tr><th>Customer</th><th>Total Sales</th><th>% of Identified Customer Sales</th><th>Transactions</th><th>Last Purchase</th></tr></thead><tbody id="customerConcentration">' + rows(model.topCustomers, 'concentration', 10, 5, 'No identified customer sales are available in this window.') + '</tbody></table></div>'
       + '<h4>Customer Value &amp; Frequency</h4><div class="table-wrap"><table><thead><tr><th>Customer</th><th>Transactions</th><th>Total Sales</th><th>Avg Transaction Value</th><th>Days Since Last Purchase</th></tr></thead><tbody id="customerValueFrequency">' + rows(model.topCustomers, 'value-frequency', null, 5, 'No identified customers are available in this window.') + '</tbody></table></div>'
-      + '<div class="muted" style="margin-top:12px">Runtime-only analysis. No Customer Master, customer merge, message, sales-channel field, database write or migration is created. Name-only identities remain separate from telephone identities; no fuzzy matching is used.</div>'
+      + '<div class="muted" style="margin-top:12px">Runtime-only analysis. No Customer Master, customer merge, outbound communication, marketing ROI claim, database migration or analytical write is created. Name-only identities remain separate from telephone identities; no fuzzy matching is used.</div>'
       + '</section>';
   }
 
@@ -914,6 +1054,7 @@
     selectCustomer: selectCustomer,
     deriveSnapshot: function(data, options){ return deriveModel(data || {}, options || {}); },
     getCustomerSnapshot: function(){ return runtime.model || freezeDeep({ customers:[], kpis:{}, coverage:{}, window:{} }); },
+    getChannelSnapshot: function(){ return runtime.model && runtime.model.channelIntelligence || freezeDeep({ salesByChannel:[], digitalByChannel:[] }); },
     getRuntimeSnapshot: function(){
       return freezeDeep({
         windowValue: runtime.windowValue,
@@ -925,7 +1066,8 @@
       });
     },
     normalizeTelephone: function(value){ var result = phoneIdentity(value); return result ? result.display : ''; },
-    canonicalCustomerName: function(value){ var result = customerName(value); return result ? result.key : ''; }
+    canonicalCustomerName: function(value){ var result = customerName(value); return result ? result.key : ''; },
+    canonicalSalesChannel: salesChannel
   });
   install();
 }());

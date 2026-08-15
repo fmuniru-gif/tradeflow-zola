@@ -1,6 +1,6 @@
-# ZEZMS TradeFlow Owner Edition v3.10.2
+# ZEZMS TradeFlow Owner Edition v3.11.0
 
-Current build: `20260813-document-branding-r42`
+Current build: `20260814-sales-channel-capture-r43`
 
 This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 package is retained separately and is not modified by this release.
 
@@ -32,6 +32,9 @@ This is the maintenance fork for the Owner Edition. The frozen v3.7.0 r29 packag
 - Read-only Stock Velocity & Reorder Planning Lab with 30/60/90-day sales windows, current-stock movement tables, open-PO-aware inventory position and runtime-only reorder scenarios
 - Read-only Portfolio Signals & Capital Allocation Intelligence with relative ranks, quartiles, overlapping attention signals, reference contribution pace and reference capital-productivity views
 - Read-only Customer Relationship Intelligence with conservative phone-first/exact-name identity, repeat-customer measures, unidentified-sales coverage, recency, concentration, search and customer product/category purchase summaries
+- Optional normal and Quick Sale customer/source capture using a controlled Sales Source list, prospective Walk-in default, historical Unspecified fallback and Other Source detail
+- Read-only Sales Channel Intelligence with channel sales/share, average transaction value, identification coverage, distinct customers, repeat-customer measures, Digital/Remote results and customer channel breakdowns
+- Scoped high-contrast Customer Relationship Intelligence and Stage 5B form controls for desktop and portrait/mobile use
 
 ## Credentials
 
@@ -44,10 +47,10 @@ The fixed `0000` Price Adjustment/VAT PIN is an operator-entry safeguard request
 1. Back up the working device and confirm Cloud Sync has no queued transactions.
 2. Extract the complete release ZIP.
 3. Upload the extracted contents to the repository root, preserving the complete `assets/` and `js/` folders.
-4. When upgrading directly from verified v3.10.1, replace `index.html`, `manifest.json`, `sw.js`, `FORCE_UPDATE_MOBILE.html`, `README.md`, `RELEASE_FILE_MANIFEST.json`, `js/operations-update.js`, `js/invoice-waybill.js`, and `js/pdf-export.js`; add `assets/zez-document-watermark.jpg` plus the two v3.10.2 document-branding reports.
+4. When upgrading directly from verified v3.10.2, replace `index.html`, `manifest.json`, `sw.js`, `FORCE_UPDATE_MOBILE.html`, `README.md`, `RELEASE_FILE_MANIFEST.json`, `js/operations-update.js`, `js/pdf-export.js`, and `js/customer-intelligence-v3100.js`; add `CUSTOMER_CHANNEL_CAPTURE_v3.11.0_RELEASE_NOTES.md` and `CUSTOMER_CHANNEL_CAPTURE_v3.11.0_TEST_REPORT.md`.
 5. Do not upload only the ZIP; GitHub Pages does not extract it.
 6. Wait for deployment, close all old tabs/PWA windows, and reopen the app.
-7. Confirm the page source build is `20260813-document-branding-r42`.
+7. Confirm the page source build is `20260814-sales-channel-capture-r43`.
 8. Open Purchase Orders and verify that product search, supplier selection and the Edit action load.
 9. Open each grouped navigation item by click/tap, confirm another group closes the first, and confirm child selection closes the sidebar on mobile.
 10. Open **Management → Dashboard KPIs** and confirm it contains the original KPI, Quick Actions and Cash Wallet content without appended intelligence sections.
@@ -63,10 +66,12 @@ The fixed `0000` Price Adjustment/VAT PIN is an operator-entry safeguard request
 20. Verify a customer search and purchase summary, then close and reopen Dashboard to confirm the runtime-only search/window selection does not modify any customer or transaction record.
 21. Open a receipt, invoice and waybill; confirm each A5 preview and print/PDF output shows the faint full-page logo and the APPROVED stamp without obscuring content.
 22. Test once offline after the updated service worker has activated; confirm the same local watermark asset appears.
+23. Open Sale Out and confirm normal and Quick Sale Sales Source defaults to Walk-in, Other reveals Other Source, and blank customer identity remains optional.
+24. Complete controlled test sales, then open **Management -> Customer Relationship Intelligence**; confirm its inputs are readable and Sales Channel Intelligence follows the same Customer-history window.
 
 ## Supabase prerequisites
 
-The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.10.2 adds no new SQL or Supabase migration. Do not rerun completed migrations on a live database without first taking a verified backup.
+The existing deployment requires the M5A-1, M5A-2 and M5A-3 SQL migrations already included in this package. v3.11.0 adds no new SQL or Supabase migration. Do not rerun completed migrations on a live database without first taking a verified backup.
 
 ## Commercialisation boundary
 
@@ -76,7 +81,7 @@ See `COMMERCIALISATION_ROADMAP_M5.md`, `COMMERCIAL_READINESS_EVALUATION_v1.md`, 
 
 ## Upgrade compatibility
 
-v3.10.2 intentionally keeps the existing Owner Edition browser database key so an in-place upgrade retains current records. This release changes only receipt, invoice and waybill presentation plus release/cache identity; the verified v3.10.1 navigation, `0000` entry safeguards, calculations and operational workflows remain unchanged. The Management host reuses the verified v3.10.0 Dashboard calculation chain, extracts the selected registered section for direct display, and removes all intelligence sections from the Dashboard KPI output. No intelligence formula file is changed. Management Intelligence and Margin & Pricing Intelligence continue to derive figures in memory from selected-period aggregates. Pricing Guidance reads the current open stock period, while Existing Product mode reuses the frozen Stage 3A current-stock aggregate. The isolated New Product mode uses only assumptions typed into its rendered form. Stage 4A reuses that same frozen current-stock aggregate, reads active receipt/Quick Sale history and open uncommitted purchase-order lines, and keeps every planning input and result in memory only. Stage 4B joins Stage 3A pricing references to a frozen Stage 4A product snapshot; it does not rescan sales, stock rows or purchase orders. Stage 5A scans active `DB.sales` receipts and active Quick Sale inventory transactions once per selected customer-history window; it does not scan the duplicate printable receipt register, persist normalised identity, or create a Customer Master. None of the intelligence stages saves, creates, enforces or modifies operational data. Take a verified backup before deployment. The service-worker cleanup is scoped so it does not remove the separately developed commercial-pilot cache or browser database.
+v3.11.0 intentionally keeps the existing Owner Edition browser database key so an in-place upgrade retains current records. It adds optional metadata to newly posted normal and Quick Sales, plus a read-only Stage 5B analysis of that metadata. Missing historical metadata remains valid and is interpreted only at runtime as Unspecified; no record migration or historical rewrite occurs. The verified v3.10.2 document branding, grouped navigation, `0000` entry safeguards, calculations and operational workflows remain unchanged. Management Intelligence and Margin & Pricing Intelligence continue to derive figures in memory from selected-period aggregates. Pricing Guidance reads the current open stock period, while Existing Product mode reuses the frozen Stage 3A current-stock aggregate. The isolated New Product mode uses only assumptions typed into its rendered form. Stage 4A reuses that same frozen current-stock aggregate, reads active receipt/Quick Sale history and open uncommitted purchase-order lines, and keeps every planning input and result in memory only. Stage 4B joins Stage 3A pricing references to a frozen Stage 4A product snapshot; it does not rescan sales, stock rows or purchase orders. Stages 5A and 5B scan active `DB.sales` records and active Quick Sale inventory transactions once per selected customer-history window; they do not scan the duplicate printable receipt register, persist normalised identity, or create a Customer Master. Customer Intelligence remains read only. Take a verified backup before deployment. The service-worker cleanup is scoped so it does not remove the separately developed commercial-pilot cache or browser database.
 
 Receipt financial edits are limited to active receipts in the current open stock period because those records still have safely reversible FIFO details. Committed purchase orders, sold invoices, void documents and historical receipts are protected from editing.
 

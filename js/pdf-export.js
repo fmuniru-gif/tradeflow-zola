@@ -1,9 +1,9 @@
-/* ZEZMS Owner Edition v3.10.2 - branded offline PDF exports */
+/* ZEZMS Owner Edition v3.11.0 - branded offline PDF exports */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260813-document-branding-r42';
+  const BUILD = '20260814-sales-channel-capture-r43';
   const DOCUMENT_WATERMARK_ASSET = 'assets/zez-document-watermark.jpg';
   const DOCUMENT_WATERMARK_OPACITY = 0.10;
   const A4 = { width: 595, height: 842 };
@@ -374,6 +374,10 @@
   }
 
   function normalizeReceipt(source) {
+    const channels = ['Walk-in','WhatsApp','Facebook','TikTok','Instagram','Phone Call','Referral','Corporate/B2B','Other'];
+    const rawChannel = String(source.salesChannel || '').trim();
+    const salesChannel = channels.find(function (channel) { return channel.toLowerCase() === rawChannel.toLowerCase(); }) || '';
+    const salesChannelOther = salesChannel === 'Other' ? String(source.salesChannelOther || '').trim().slice(0, 100) : '';
     const lines = (source.lines || []).map(function (line) {
       return {
         product: line.product || line.name || '', qty: Number(line.qty) || 0,
@@ -393,6 +397,7 @@
       cashier: source.cashier || '', lines: lines, subtotal: subtotal,
       vatRate: Number(source.vatRate) || (subtotal > 0 ? vat / subtotal * 100 : 0), vat: vat,
       total: total, paid: paid, balance: balance,
+      salesSource: salesChannel ? (salesChannel === 'Other' && salesChannelOther ? salesChannel + ' - ' + salesChannelOther : salesChannel) : '',
       status: source.voided || source.status === 'VOID' || source.status === 'UNDONE' ? 'VOID' : (balance > 0 ? 'CREDIT' : 'PAID')
     };
   }
@@ -405,6 +410,7 @@
     pdf.keyValue('Location', receipt.location || '-');
     pdf.keyValue('Telephone', receipt.contact || '-');
     pdf.keyValue('Cashier', receipt.cashier || '-');
+    if (receipt.salesSource) pdf.keyValue('Sales Source', receipt.salesSource);
     pdf.y += 4;
     pdf.table(
       ['Product', 'Qty', 'Unit price', 'Discount', 'Total'],
@@ -576,7 +582,7 @@
 
   installRegisterButtons();
   ZEZMS.pdfExport = {
-    version: '3.10.2', build: BUILD, SimplePDF: SimplePDF,
+    version: '3.11.0', build: BUILD, SimplePDF: SimplePDF,
     buildReceiptPDF: buildReceiptPDF, buildInvoicePDF: buildInvoicePDF,
     buildWaybillPDF: buildWaybillPDF, buildPurchaseOrderPDF: buildPurchaseOrderPDF,
     loadDocumentWatermark: loadDocumentWatermark,

@@ -1,5 +1,5 @@
-/* ZEZMS Owner Edition v3.10.2 - A5 document branding */
-const CACHE = 'zezms-document-branding-20260813-r42';
+/* ZEZMS Owner Edition v3.11.0 - customer capture and sales-channel attribution */
+const CACHE = 'zezms-sales-channel-capture-20260814-r43';
 const ASSETS = [
   './',
   './index.html',
@@ -18,7 +18,7 @@ const ASSETS = [
   './js/lifecycle-module.js?v=20260812-portfolio-signals-r39',
   './js/logger.js?v=20260812-portfolio-signals-r39',
   './js/notifications-module.js?v=20260812-portfolio-signals-r39',
-  './js/operations-update.js?v=20260813-document-branding-r42',
+  './js/operations-update.js?v=20260814-sales-channel-capture-r43',
   './js/auto-month-rollover.js?v=20260812-portfolio-signals-r39',
   './js/invoice-waybill.js?v=20260813-document-branding-r42',
   './js/product-search-adapter.js?v=20260812-portfolio-signals-r39',
@@ -37,7 +37,7 @@ const ASSETS = [
   './js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39',
   './js/commercial-foundation.js?v=20260812-portfolio-signals-r39',
   './js/owner-maintenance-v373.js?v=20260812-portfolio-signals-r39',
-  './js/pdf-export.js?v=20260813-document-branding-r42',
+  './js/pdf-export.js?v=20260814-sales-channel-capture-r43',
   './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39',
   './js/management-intelligence-v380.js?v=20260812-portfolio-signals-r39',
   './js/margin-intelligence-v381.js?v=20260812-portfolio-signals-r39',
@@ -46,7 +46,7 @@ const ASSETS = [
   './js/new-product-pricing-v384.js?v=20260812-portfolio-signals-r39',
   './js/stock-velocity-v390.js?v=20260812-portfolio-signals-r39',
   './js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39',
-  './js/customer-intelligence-v3100.js?v=20260812-customer-intelligence-r40',
+  './js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43',
   './js/navigation-v3101.js?v=20260813-document-branding-r42',
 ];
 
