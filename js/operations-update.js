@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260815-customer-master-print-readiness-r45';
+  const BUILD = '20260816-direct-print-bridge-r46';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
@@ -457,48 +457,13 @@
     </div>`;
   }
 
-  showReceiptModal = function (source) {
-    activeReceiptPayload = normalizeReceiptPayload(source);
-    openModal(`
-      ${receiptPaperHTML(activeReceiptPayload)}
-      <div class="row" style="margin-top:12px">
-        <button class="btn" onclick="printActiveReceipt()">Print one copy</button>
-        <button class="btn ghost" onclick="closeModal();render()">Close</button>
-        ${isElevated() ? '<button class="btn ghost" onclick="closeModal();nav(\'receipts\')">Sales Records</button>' : ''}
-      </div>`);
-  };
-
-  function cleanupPrintFrame(frame) {
-    if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
-    receiptPrintBusy = false;
-  }
-
-  function printReceiptDocument(source) {
-    if (receiptPrintBusy) {
-      toast('The receipt print window is already opening.', 'warn');
-      return;
-    }
-    receiptPrintBusy = true;
-    const payload = normalizeReceiptPayload(source);
-    const frame = document.createElement('iframe');
-    frame.setAttribute('aria-hidden', 'true');
-    frame.style.position = 'fixed';
-    frame.style.right = '0';
-    frame.style.bottom = '0';
-    frame.style.width = '0';
-    frame.style.height = '0';
-    frame.style.border = '0';
-    document.body.appendChild(frame);
-
-    const doc = frame.contentDocument || frame.contentWindow.document;
-    doc.open();
-    doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(payload.receiptNo)}</title>
-      <style>
+  function receiptPrintStyles(watermarkUrl) {
+    return `
         @page{size:A5 portrait;margin:7mm}
         *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
         html,body{margin:0;padding:0;width:100%;background:#fff;color:#111;font-family:"Courier New",ui-monospace,Menlo,Consolas,monospace}
         body{display:block;position:relative}
-        body::before{content:"";position:fixed;z-index:0;top:-7mm;left:-7mm;width:148mm;height:210mm;background-image:url("${esc(DOCUMENT_WATERMARK_URL)}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
+        body::before{content:"";position:fixed;z-index:0;top:-7mm;left:-7mm;width:148mm;height:210mm;background-image:url("${esc(watermarkUrl || DOCUMENT_WATERMARK_URL)}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
         .receipt-paper{position:relative;z-index:1;width:100%;max-width:none;margin:0;padding:5.5mm 6mm;background:transparent;color:#111;border:1px solid #cbd5e1;border-radius:2mm;font-size:9.6pt;line-height:1.42;overflow:hidden}
         .document-branding-watermark{display:none}.receipt-document-content{position:relative;z-index:1}
         .receipt-title{text-align:center;color:#0000ff;font-weight:800;font-size:15pt;letter-spacing:1.1px}
@@ -525,11 +490,50 @@
         .receipt-void-watermark{position:absolute;inset:42% 0 auto;text-align:center;font-size:36pt;font-weight:900;color:rgba(185,28,28,.22);transform:rotate(-20deg);letter-spacing:7px}
         .receipt-void-label,.receipt-void-note{color:#b91c1c}
         .receipt-void-note{margin-top:3mm;font-size:8.5pt}
-        @media print{
-          html,body{width:100%;height:auto}
-          .receipt-paper{break-inside:avoid;page-break-inside:avoid}
-        }
-      </style></head><body>${receiptPaperHTML(payload)}</body></html>`);
+        @media print{html,body{width:100%;height:auto}.receipt-paper{break-inside:avoid;page-break-inside:avoid}}`;
+  }
+
+  function buildReceiptPrintDocument(source, watermarkUrl) {
+    const payload = normalizeReceiptPayload(source);
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="color-scheme" content="light"><title>${esc(payload.receiptNo)}</title><style>${receiptPrintStyles(watermarkUrl)}</style></head><body>${receiptPaperHTML(payload)}</body></html>`;
+  }
+
+  showReceiptModal = function (source) {
+    activeReceiptPayload = normalizeReceiptPayload(source);
+    openModal(`
+      ${receiptPaperHTML(activeReceiptPayload)}
+      <div class="row" style="margin-top:12px">
+        <button class="btn" onclick="printActiveReceipt()">Print one copy</button>
+        <button class="btn ghost" onclick="closeModal();render()">Close</button>
+        ${isElevated() ? '<button class="btn ghost" onclick="closeModal();nav(\'receipts\')">Sales Records</button>' : ''}
+      </div>`);
+  };
+
+  function cleanupPrintFrame(frame) {
+    if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
+    receiptPrintBusy = false;
+  }
+
+  function systemPrintReceiptDocument(source) {
+    if (receiptPrintBusy) {
+      toast('The receipt print window is already opening.', 'warn');
+      return;
+    }
+    receiptPrintBusy = true;
+    const payload = normalizeReceiptPayload(source);
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.position = 'fixed';
+    frame.style.right = '0';
+    frame.style.bottom = '0';
+    frame.style.width = '0';
+    frame.style.height = '0';
+    frame.style.border = '0';
+    document.body.appendChild(frame);
+
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    doc.open();
+    doc.write(buildReceiptPrintDocument(payload, DOCUMENT_WATERMARK_URL));
     doc.close();
 
     setTimeout(() => {
@@ -545,6 +549,22 @@
         toast('Receipt printing could not start.', 'err');
       }
     }, 300);
+  }
+
+  function printReceiptDocument(source, options) {
+    const payload = normalizeReceiptPayload(source);
+    const printOptions = options || {};
+    if (window.ZEZPrint && typeof ZEZPrint.printDocument === 'function' && ZEZPrint.getActiveTransport && ZEZPrint.getActiveTransport() === 'local-bridge') {
+      return ZEZPrint.printDocument({
+        documentType: 'receipt',
+        documentId: payload.receiptNo,
+        copies: 1,
+        isReprint: !!printOptions.isReprint,
+        createHtml: (watermarkDataUri) => buildReceiptPrintDocument(payload, watermarkDataUri),
+        systemPrint: () => systemPrintReceiptDocument(payload)
+      });
+    }
+    return systemPrintReceiptDocument(payload);
   }
 
   window.printActiveReceipt = function () {
@@ -570,8 +590,10 @@
       toast('Receipt not found.', 'err');
       return;
     }
-    printReceiptDocument(receipt);
+    printReceiptDocument(receipt, { isReprint: true });
   };
+
+  window.directReprintStoredReceipt = window.printStoredReceipt;
 
   function quickSaleDetailsHTML(transaction) {
     const lines = transaction && transaction.details && Array.isArray(transaction.details.lines)
@@ -707,7 +729,7 @@
       const actions = record.kind === 'RECEIPT'
         ? `<div class="receipt-actions">
             <button class="btn sm ghost" onclick="showStoredReceipt('${escAttr(record.id)}')">View</button>
-            <button class="btn sm" onclick="printStoredReceipt('${escAttr(record.id)}')">🖨 Reprint</button>
+            <button class="btn sm" onclick="printStoredReceipt('${escAttr(record.id)}')">${window.ZEZPrint && ZEZPrint.getActiveTransport && ZEZPrint.getActiveTransport() === 'local-bridge' ? 'Direct Reprint' : '🖨 Reprint'}</button>
           </div>`
         : `<div class="receipt-actions">
             <button class="btn sm ghost" onclick="showQuickSaleRecord('${escAttr(record.id)}')">View details</button>
@@ -1811,6 +1833,9 @@
     build: BUILD,
     version: 'M3.1',
     printReceiptDocument,
+    systemPrintReceiptDocument,
+    buildReceiptPrintDocument,
+    normalizeReceiptPayload,
     activeInventoryTransactions,
     activeAccountTransactions,
     activeCashTransactions

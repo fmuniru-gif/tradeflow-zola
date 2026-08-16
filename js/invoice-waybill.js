@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260813-document-branding-r42';
+  const BUILD = '20260816-direct-print-bridge-r46';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
@@ -489,6 +489,21 @@
     return type === 'invoice' ? invoicePaperHTML(record) : waybillPaperHTML(record);
   }
 
+  function commercialPrintStyles(watermarkUrl) {
+    return `
+      @page{size:A5 portrait;margin:12mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif}
+      body{position:relative}body::before{content:"";position:fixed;z-index:0;top:-12mm;left:-12mm;width:148mm;height:210mm;background-image:url("${esc(watermarkUrl || DOCUMENT_WATERMARK_URL)}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
+      .document-paper{position:relative;z-index:1;background:transparent;color:#111;padding:0;font-size:10px;line-height:1.4}.document-branding-watermark{display:none}.document-content{position:relative;z-index:1}.doc-head{display:flex;justify-content:space-between;gap:14px;border-bottom:2px solid #111;padding-bottom:9px;margin-bottom:10px}
+      .doc-title{font-size:20px;font-weight:900;letter-spacing:1.5px;text-align:right}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:10px;font-size:8px}th,td{border:1px solid #999;padding:4px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:left}
+      .doc-total{width:330px;max-width:100%;margin-left:auto;margin-top:12px}.doc-total div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ddd}.doc-total .grand{font-size:15px;font-weight:900;border-top:2px solid #111;border-bottom:2px solid #111}
+      .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:34px}.signature-block{display:flex;min-height:48px;flex-direction:column;justify-content:flex-end}.signature-line{border-top:1px solid #111;padding-top:4px;text-align:center}.approved-stamp{display:inline-flex;align-self:center;align-items:center;justify-content:center;margin:0 0 7px;padding:3px 10px;border:1.8px solid #0f6f4b;border-radius:4px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 9px/1 Arial,Helvetica,sans-serif;letter-spacing:1.2px;transform:rotate(-2deg)}`;
+  }
+
+  function buildCommercialPrintDocument(type, record, watermarkUrl) {
+    const number = type === 'invoice' ? record.invoiceNo : record.waybillNo;
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="color-scheme" content="light"><title>${esc(number)}</title><style>${commercialPrintStyles(watermarkUrl)}</style></head><body>${documentHTML(type, record)}</body></html>`;
+  }
+
   function showCommercialDocument(type, record) {
     activeCommercialDocument = { type, record: deepClone(record) };
     openModal(`${documentHTML(type, record)}<div class="row" style="margin-top:12px">
@@ -502,7 +517,7 @@
     documentPrintBusy = false;
   }
 
-  function printCommercialDocument(type, record) {
+  function systemPrintCommercialDocument(type, record) {
     if (documentPrintBusy) { toast('A document print window is already opening.', 'warn'); return; }
     documentPrintBusy = true;
     const frame = document.createElement('iframe');
@@ -513,14 +528,7 @@
     const doc = frame.contentDocument || frame.contentWindow.document;
     const number = type === 'invoice' ? record.invoiceNo : record.waybillNo;
     doc.open();
-    doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(number)}</title><style>
-      @page{size:A5 portrait;margin:12mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif}
-      body{position:relative}body::before{content:"";position:fixed;z-index:0;top:-12mm;left:-12mm;width:148mm;height:210mm;background-image:url("${esc(DOCUMENT_WATERMARK_URL)}");background-position:center;background-repeat:no-repeat;background-size:100% 100%;opacity:.10;pointer-events:none}
-      .document-paper{position:relative;z-index:1;background:transparent;color:#111;padding:0;font-size:10px;line-height:1.4}.document-branding-watermark{display:none}.document-content{position:relative;z-index:1}.doc-head{display:flex;justify-content:space-between;gap:14px;border-bottom:2px solid #111;padding-bottom:9px;margin-bottom:10px}
-      .doc-title{font-size:20px;font-weight:900;letter-spacing:1.5px;text-align:right}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:10px;font-size:8px}th,td{border:1px solid #999;padding:4px;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:left}
-      .doc-total{width:330px;max-width:100%;margin-left:auto;margin-top:12px}.doc-total div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ddd}.doc-total .grand{font-size:15px;font-weight:900;border-top:2px solid #111;border-bottom:2px solid #111}
-      .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:34px}.signature-block{display:flex;min-height:48px;flex-direction:column;justify-content:flex-end}.signature-line{border-top:1px solid #111;padding-top:4px;text-align:center}.approved-stamp{display:inline-flex;align-self:center;align-items:center;justify-content:center;margin:0 0 7px;padding:3px 10px;border:1.8px solid #0f6f4b;border-radius:4px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 9px/1 Arial,Helvetica,sans-serif;letter-spacing:1.2px;transform:rotate(-2deg)}
-    </style></head><body>${documentHTML(type, record)}</body></html>`);
+    doc.write(buildCommercialPrintDocument(type, record, DOCUMENT_WATERMARK_URL));
     doc.close();
     setTimeout(() => {
       try {
@@ -534,6 +542,22 @@
         toast('Printing could not start.', 'err');
       }
     }, 250);
+  }
+
+  function printCommercialDocument(type, record, options) {
+    const printOptions = options || {};
+    const number = type === 'invoice' ? record.invoiceNo : record.waybillNo;
+    if (window.ZEZPrint && typeof ZEZPrint.printDocument === 'function' && ZEZPrint.getActiveTransport && ZEZPrint.getActiveTransport() === 'local-bridge') {
+      return ZEZPrint.printDocument({
+        documentType: type,
+        documentId: number,
+        copies: 1,
+        isReprint: !!printOptions.isReprint,
+        createHtml: (watermarkDataUri) => buildCommercialPrintDocument(type, record, watermarkDataUri),
+        systemPrint: () => systemPrintCommercialDocument(type, record)
+      });
+    }
+    return systemPrintCommercialDocument(type, record);
   }
 
   function findDocument(type, id) {
@@ -844,7 +868,7 @@
   window.printStoredCommercialDocument = function (type, id) {
     const record = findDocument(type, id);
     if (!record) { toast('Document not found.', 'err'); return; }
-    printCommercialDocument(type, record);
+    printCommercialDocument(type, record, { isReprint: true });
   };
   window.printActiveCommercialDocument = function () {
     if (!activeCommercialDocument) { toast('No invoice or waybill is open.', 'err'); return; }
@@ -863,6 +887,7 @@
   ZEZMS.commercialDocuments = {
     version: '3.4.10', build: BUILD, ensureModel,
     viewInvoices, viewWaybills, createInvoice, createWaybill,
-    loadInvoiceToSale, prepareWaybillFromInvoice, editDocument
+    loadInvoiceToSale, prepareWaybillFromInvoice, editDocument,
+    documentHTML, buildCommercialPrintDocument, printCommercialDocument, systemPrintCommercialDocument
   };
 }());

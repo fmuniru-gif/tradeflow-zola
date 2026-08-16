@@ -1,11 +1,10 @@
-/* ZEZMS TradeFlow Owner Edition v3.12.0
-   Wireless Print Readiness Foundation. No printer discovery, silent printing,
-   device address storage, vendor SDK or network protocol is implemented. */
+/* ZEZMS TradeFlow Owner Edition v3.12.1
+   System-dialog print transport retained as the direct-print fallback. */
 (function () {
   'use strict';
 
-  var VERSION = '3.12.0';
-  var BUILD = '20260815-customer-master-print-readiness-r45';
+  var VERSION = '3.12.1';
+  var BUILD = '20260816-direct-print-bridge-r46';
   var DEFAULT_TRANSPORT = 'system-dialog';
   var adapters = new Map();
 

@@ -1,15 +1,21 @@
 {
-  "version": "3.12.0",
-  "build": "20260815-customer-master-print-readiness-r45",
-  "release": "Persistent Customer Master & Wireless Print Readiness",
+  "version": "3.12.1",
+  "build": "20260816-direct-print-bridge-r46",
+  "release": "One-Click Direct Printing & Mobile Wireless Print Bridge",
   "sql_required": false,
   "sql_baseline": "M5A3",
   "anonymous_signins_required": true,
-  "operational_baseline": "3.11.1-r44",
+  "operational_baseline": "3.12.0-r45",
   "database_key": "tradeflow_v321_zola",
   "customer_sync": "M4 JSON operations / CUSTOMER_UPSERT",
-  "print_transport": "system-dialog",
-  "protected_baseline_zip_sha256": "50e38d10a6c39913331409dbda9b0c3b3aaa4a88d59b02cd320870c4636d462a",
+  "print_transports": [
+    "system-dialog",
+    "local-bridge"
+  ],
+  "print_bridge_version": "1.0.0",
+  "print_protocol": "ZEZPRINT/1",
+  "print_bridge_storage_key": "zezms_print_bridge_v1",
+  "protected_baseline_zip_sha256": "2b1ef684fb3d98e5cf52c0c147d0bf00a22134ae94de073235faf2a43a60258c",
   "files": [
     {
       "path": "A5_RECEIPT_PRINT_v3.4.10_RELEASE_NOTES.md",
@@ -182,6 +188,16 @@
       "sha256": "8b38088bfcd45b262eb9abcbed30c13c28ea02eefb9f1eabbb32a7b651ba2507"
     },
     {
+      "path": "DIRECT_PRINT_BRIDGE_v3.12.1_RELEASE_NOTES.md",
+      "bytes": 5952,
+      "sha256": "2eaf4fef654c494b2b38eb8983a8a803cf2767535bd82116e11523084cb26eeb"
+    },
+    {
+      "path": "DIRECT_PRINT_BRIDGE_v3.12.1_TEST_REPORT.md",
+      "bytes": 7910,
+      "sha256": "806799efb6ec70cdc25991941ccf92d1c2e9f15c76023cf8cfa8a0a8774e3b50"
+    },
+    {
       "path": "DOCUMENT_BRANDING_v3.10.2_RELEASE_NOTES.md",
       "bytes": 3490,
       "sha256": "b526fe23242697e6d78f2cb80ea7598d590a75de9926b0ce30d66f82503e5bfa"
@@ -213,8 +229,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 265871,
-      "sha256": "f710a2045ccdad49daf05ec61953673f962aab301528a3d0f35cb6bc9d2d7f86"
+      "bytes": 266151,
+      "sha256": "30b3c5362ac6a36301cc1313ecf71d924652fe606a703cef00affbc4914a74ba"
     },
     {
       "path": "INVITATION_RUNTIME_FIX_v3.6.5_PROCEDURE.md",
@@ -312,6 +328,11 @@
       "sha256": "369bd6bce8243fcabf8ae48c03932e9e745d7d44460904a8c936b8a0e4cadb6e"
     },
     {
+      "path": "js/direct-print-bridge-v3121.js",
+      "bytes": 28930,
+      "sha256": "b5a5371d06790122ca164ecee6510ef88c77b41518ff3a78fcaa628b41a55f9a"
+    },
+    {
       "path": "js/events.js",
       "bytes": 246,
       "sha256": "c3115c223b7a4f07c8a5ca41749627578ce5596bfe6ac367f161e5ca3b41238c"
@@ -323,8 +344,8 @@
     },
     {
       "path": "js/invoice-waybill.js",
-      "bytes": 56670,
-      "sha256": "e156ec28f622cb373d8639b9dd6c78dbdfff0b100954c93589eb1c0784a892bb"
+      "bytes": 57939,
+      "sha256": "37818b0656661c1828c624b9d1c7a0c9d451203ca0600fd86051256c5a104b58"
     },
     {
       "path": "js/kpi-freeze-pane.js",
@@ -353,8 +374,8 @@
     },
     {
       "path": "js/mobile-vertical-layout.js",
-      "bytes": 2830,
-      "sha256": "81ee9e054b1ba923e78a88ac1780584a971cb0eb208d5489fc8f91a59347bd38"
+      "bytes": 2893,
+      "sha256": "bad0bacfb42decd3f9e693bfb10ee77326943a7fa990c309b622e4dab2770af7"
     },
     {
       "path": "js/navigation-v3101.js",
@@ -373,8 +394,8 @@
     },
     {
       "path": "js/operations-update.js",
-      "bytes": 85508,
-      "sha256": "e138faffe42bdb6e80142eca6dfa0e7574d8b33caad1c6668f80e911c5d81cdf"
+      "bytes": 86814,
+      "sha256": "244fcb9e89a14ea9ddfa0b45153e8d2ef74071cf4b94661f5394083af805c327"
     },
     {
       "path": "js/owner-maintenance-v373.js",
@@ -403,8 +424,8 @@
     },
     {
       "path": "js/print-readiness-v3120.js",
-      "bytes": 7767,
-      "sha256": "ae69a6567897a95321d9a3c9ae81a85e350dbaf918b51902a8b6676f932d50a5"
+      "bytes": 7674,
+      "sha256": "78305c787bdfd0a6377ac7890e083bd4e60d452c0c27863aa39b91c8783168c9"
     },
     {
       "path": "js/product-search-adapter.js",
@@ -588,8 +609,8 @@
     },
     {
       "path": "manifest.json",
-      "bytes": 1404,
-      "sha256": "2ad8e0da735258f7cd2cec7ea7b95dc99142b80615e9490f2ef92d5e391426d3"
+      "bytes": 1385,
+      "sha256": "7a80fdb28bdbb06132254fe719197a139abe5be957c34d3910cf8dedfe7fe22a"
     },
     {
       "path": "MARGIN_PRICING_INTELLIGENCE_v3.8.1_RELEASE_NOTES.md",
@@ -827,9 +848,159 @@
       "sha256": "0af2406573c65b71cfce5b31f8eb7fc97ef8f23543c8926dbc0c133d4f5a1e2a"
     },
     {
+      "path": "print-bridge/windows/README.md",
+      "bytes": 8797,
+      "sha256": "c6b920d51af717a20e73ba1e5e8929a7dbbb5e473ae1eef6171be47d773f2e7b"
+    },
+    {
+      "path": "print-bridge/windows/scripts/Disable-LanFirewallRule.ps1",
+      "bytes": 509,
+      "sha256": "d8a02e8e65b1120d05187374005704dc82e8225a3a5d7040409c9918829c4e75"
+    },
+    {
+      "path": "print-bridge/windows/scripts/Enable-LanFirewallRule.ps1",
+      "bytes": 1034,
+      "sha256": "1fd4502bb2507f5029c4c37ffd3929b4a52605c33d98dff46db3e19a0631f6b8"
+    },
+    {
+      "path": "print-bridge/windows/scripts/INSTALL_ZEZ_PRINT_BRIDGE.cmd",
+      "bytes": 298,
+      "sha256": "002ac1c2721a9da5d3a2dd9aca9776059d1a47ff47777a9dff52e54ed95da983"
+    },
+    {
+      "path": "print-bridge/windows/scripts/Install-ZEZPrintBridge.ps1",
+      "bytes": 1661,
+      "sha256": "ee9fe911d3700e054ec777e5ef9f751ff9fac2bfbd7951bb8098a5bf10b3f125"
+    },
+    {
+      "path": "print-bridge/windows/scripts/Publish-Windows-x64.ps1",
+      "bytes": 1109,
+      "sha256": "6d86504d4ed117ec4f47fbde0c5a465977a778ce052f9074279c66207c7adc22"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge.sln",
+      "bytes": 2904,
+      "sha256": "d433713a97aaf694a0fa675ec7cc938bdab440a15d4757a012596962bb6042c6"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge.Tests/BridgeCoreTests.cs",
+      "bytes": 10713,
+      "sha256": "12d0c155be3361d577d7a72c6f38991f7ee7c10aa46ec0ab884f942f2c3342eb"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge.Tests/ZEZPrintBridge.Tests.csproj",
+      "bytes": 1036,
+      "sha256": "36da930affe52d493d1d6e03fcd9db9c6a77155a75a6ef6f7e1177d5162e5de9"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Api/BridgeApiHost.cs",
+      "bytes": 9812,
+      "sha256": "77c12c075b55e0985a37bde0dc07e8d6997607b4b7dddf45e24b4d7f7c04f060"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Api/NetworkBinding.cs",
+      "bytes": 1004,
+      "sha256": "3f97a82798ba23027d503fb0043f376561cfc06e3e3e8f0c591c1d454c10a9af"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/app.manifest",
+      "bytes": 584,
+      "sha256": "9fd6b20d980706c2578f83a804369bf2508eb3fb13abef1c959e335c0ce95fbc"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/BridgeConstants.cs",
+      "bytes": 577,
+      "sha256": "53efa7618413c3ee218cb6eadecbab5239b5d059bc1ec31811d1d37ab4f5fc95"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Configuration/AppPaths.cs",
+      "bytes": 823,
+      "sha256": "7ccd0d94a4f6e894c74e6faa39564d8dff1765e3c7765e52b1ba981739c7548a"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Configuration/ConfigurationStore.cs",
+      "bytes": 2809,
+      "sha256": "8b6b5c962ce38729d76d8f78e9186e887fd1dc9d085466e69b7bfe187cf33c77"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Configuration/StartupManager.cs",
+      "bytes": 845,
+      "sha256": "d39c28bcef7423e3ad2e62c3b4db3aa5b34436e7038c532af4ee58893a539b85"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Models/BridgeConfig.cs",
+      "bytes": 1877,
+      "sha256": "501419af99cacc8a049b34b5d67f0209dd3e1ac92d5d34da0c11126d68464445"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Printing/IPrintRenderer.cs",
+      "bytes": 382,
+      "sha256": "f17f286834230f513182bbfbcfd1ee921e3bd2686b1401e946b4b9068c83fba8"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Printing/MockPrintRenderer.cs",
+      "bytes": 710,
+      "sha256": "9d301889b38dcc0e7710805f6e5274476300a3be181c82d79ad8cc79e02e3ae9"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Printing/PrinterCatalog.cs",
+      "bytes": 1865,
+      "sha256": "894f43cc7c56bc93803102bc13e7eeb2b5c643636cbaeacacbd23ceaf2ff1b98"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Printing/WebView2PrintRenderer.cs",
+      "bytes": 6832,
+      "sha256": "19989179a12538c52c82b06828fdedf1b840a617a543e031985fa37c92d1e183"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Program.cs",
+      "bytes": 804,
+      "sha256": "4719df673a0b021a9454179abda96a202e796a06cbd991f5c2edec1da7671583"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Security/HtmlSecurityValidator.cs",
+      "bytes": 3564,
+      "sha256": "bde2c7710204d0f4551a615c3db65682753e034f8dd6e15ae6869ee15f76ed32"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Security/PairingStore.cs",
+      "bytes": 4239,
+      "sha256": "c1fc1628889ef7d58565fe77fa610958cb8ee1342352182bd1e68866faac2fb1"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Services/JobStore.cs",
+      "bytes": 3492,
+      "sha256": "314c92f7b0f37a01fb780ca8fbafc9db6823f8bd70594c8c00cb6a3ed3ca00ea"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Services/MetadataLogger.cs",
+      "bytes": 1055,
+      "sha256": "3a2f03e49117f0b411156cd5b80d6e9780e68065fb37e0493c7c7aa5ef75f4f7"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/Services/PrintQueueService.cs",
+      "bytes": 3872,
+      "sha256": "d5e4b210e8930cf3a5abc8c6d4a166dc279ed39c0b05f1636dc75ecb1717fdce"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/UI/BridgeApplicationContext.cs",
+      "bytes": 3370,
+      "sha256": "85c03fdec8036ceb1518ae2a4ac8f8666d0045252b9f4ef1144e508e35413eaf"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/UI/SettingsForm.cs",
+      "bytes": 11826,
+      "sha256": "1b0fe969641273713d61021a1da4cd0f79deb09b345c134f77df63670209ce19"
+    },
+    {
+      "path": "print-bridge/windows/ZEZPrintBridge/ZEZPrintBridge.csproj",
+      "bytes": 1251,
+      "sha256": "450a5640921ebb6c21a231c1ae10531a4a8323445807889717e9feb2190ca576"
+    },
+    {
       "path": "README.md",
-      "bytes": 12440,
-      "sha256": "2a70bae0390180c57ed8b086da29186ec212feca2d8899c774f939e9debb0b9e"
+      "bytes": 8015,
+      "sha256": "83bddb6748060a6737467a1a2be1f59af037e2af2c82b228ea46e042fcd60d4f"
     },
     {
       "path": "RECEIPT_NAME_SEARCH_ACCOUNT_UNDO_v3.4.24_RELEASE_NOTES.md",
@@ -1013,8 +1184,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 5044,
-      "sha256": "e9cf41da33779303a11a5ecb1fec5065f40273379e753a902edce9ec1797ed99"
+      "bytes": 5082,
+      "sha256": "7913cdc6326c61312c54b74019a3c264a2c6340f9ff311b0fe24548112d1c73e"
     },
     {
       "path": "tests/customer-backup-v3120.test.js",
@@ -1027,9 +1198,34 @@
       "sha256": "b1f56cd6b4083fc3b9781312952e957fae6f140303e9920b16a0b52a292cbc23"
     },
     {
+      "path": "tests/direct-print-v3121.test.js",
+      "bytes": 10163,
+      "sha256": "e799f0a8d367e7010bce72bc9b39185cbab3361169b33f7a52a7376818354ef5"
+    },
+    {
+      "path": "tests/fixtures/direct-print-settings.html",
+      "bytes": 1000,
+      "sha256": "827ac80806bcf4f21da71059ccb0b8cfb4188579eb3f37a53e8224b622e72f94"
+    },
+    {
+      "path": "tests/fixtures/print-documents.html",
+      "bytes": 2890,
+      "sha256": "d652c15fa96a3d5bb0cca1bf458d1a7fc98463ca0b910db211e1cc1a7e210ed2"
+    },
+    {
       "path": "tests/generate-release-manifest.js",
-      "bytes": 1385,
-      "sha256": "9153b292d1deef301a6a917ffef3713364c662abaf79ec063a3cfb79c1778740"
+      "bytes": 1680,
+      "sha256": "25ecb4d7ecbdb5a1d40bdd3f7ae32a7509bc388b65d3ac69cab0d3e058d7858d"
+    },
+    {
+      "path": "tests/offline-lifecycle-v3121.test.js",
+      "bytes": 3517,
+      "sha256": "a1717f248fbf99717acb161ffb064f90f4ce8f8d506a717df59d91d1448568e7"
+    },
+    {
+      "path": "tests/release-verification-v3121.test.js",
+      "bytes": 21924,
+      "sha256": "486ecaedc7f6ff0517d761bb3dfbac2c9b99811d4b198e83ad30e9ca48a3b936"
     },
     {
       "path": "tests/stage5c-performance.test.js",
@@ -1038,8 +1234,8 @@
     },
     {
       "path": "tests/stage5c-v3120.test.js",
-      "bytes": 17249,
-      "sha256": "26eb7074c898afc4f9a4ee9fb3d9b1bc0d0518cfeb8cce65796fc9c1ce47cd4a"
+      "bytes": 17340,
+      "sha256": "c593e5f735cc55a31f68d9a2017bd6cc9d56076a4ea65d1110e75735c7e2c16e"
     },
     {
       "path": "UNIFIED_CUSTOMER_CAPTURE_v3.11.1_RELEASE_NOTES.md",

@@ -70,7 +70,9 @@
   function start(){
     schedule();
     var target = document.body || document.documentElement;
-    new MutationObserver(schedule).observe(target,{childList:true,subtree:true});
+    if(target && typeof target.nodeType === 'number'){
+      new MutationObserver(schedule).observe(target,{childList:true,subtree:true});
+    }
     window.addEventListener('resize',schedule,{passive:true});
     window.addEventListener('orientationchange',schedule,{passive:true});
   }

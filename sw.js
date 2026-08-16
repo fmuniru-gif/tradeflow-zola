@@ -1,5 +1,5 @@
-/* ZEZMS Owner Edition v3.12.0 - persistent Customer Master and print readiness */
-const CACHE = 'zezms-customer-master-print-readiness-20260815-r45';
+/* ZEZMS Owner Edition v3.12.1 - one-click direct printing and local bridge */
+const CACHE = 'zezms-direct-print-bridge-20260816-r46';
 const ASSETS = [
   './',
   './index.html',
@@ -18,9 +18,9 @@ const ASSETS = [
   './js/lifecycle-module.js?v=20260812-portfolio-signals-r39',
   './js/logger.js?v=20260812-portfolio-signals-r39',
   './js/notifications-module.js?v=20260812-portfolio-signals-r39',
-  './js/operations-update.js?v=20260815-customer-master-print-readiness-r45',
+  './js/operations-update.js?v=20260816-direct-print-bridge-r46',
   './js/auto-month-rollover.js?v=20260812-portfolio-signals-r39',
-  './js/invoice-waybill.js?v=20260813-document-branding-r42',
+  './js/invoice-waybill.js?v=20260816-direct-print-bridge-r46',
   './js/product-search-adapter.js?v=20260812-portfolio-signals-r39',
   './js/product-search-controller.js?v=20260812-portfolio-signals-r39',
   './js/product-search-events.js?v=20260812-portfolio-signals-r39',
@@ -32,7 +32,7 @@ const ASSETS = [
   './js/storage.js?v=20260812-portfolio-signals-r39',
   './js/system-module.js?v=20260812-portfolio-signals-r39',
   './js/utils-module.js?v=20260812-portfolio-signals-r39',
-  './js/mobile-vertical-layout.js?v=20260812-portfolio-signals-r39',
+  './js/mobile-vertical-layout.js?v=20260816-direct-print-bridge-r46',
   './js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39',
   './js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39',
   './js/commercial-foundation.js?v=20260812-portfolio-signals-r39',
@@ -48,7 +48,8 @@ const ASSETS = [
   './js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39',
   './js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43',
   './js/customer-master-v3120.js?v=20260815-customer-master-print-readiness-r45',
-  './js/print-readiness-v3120.js?v=20260815-customer-master-print-readiness-r45',
+  './js/print-readiness-v3120.js?v=20260816-direct-print-bridge-r46',
+  './js/direct-print-bridge-v3121.js?v=20260816-direct-print-bridge-r46',
   './js/navigation-v3101.js?v=20260815-customer-master-print-readiness-r45',
 ];
 

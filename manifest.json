@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition with persistent Customer Master, transaction-derived relationship intelligence, system-dialog A5 print readiness, branded documents and FIFO inventory.",
-  "start_url": "./index.html?build=20260815-customer-master-print-readiness-r45",
+  "description": "ZEZMS Owner Edition with persistent Customer Master, authenticated one-click local-bridge printing, system-dialog fallback, branded A5 documents and FIFO inventory.",
+  "start_url": "./index.html?build=20260816-direct-print-bridge-r46",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
