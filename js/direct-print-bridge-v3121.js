@@ -4,7 +4,7 @@
   'use strict';
 
   var VERSION = '3.12.1';
-  var BUILD = '20260816-direct-print-bridge-r46';
+  var BUILD = '20260817-loopback-network-r47';
   var PROTOCOL = 'ZEZPRINT/1';
   var STORAGE_KEY = 'zezms_print_bridge_v1';
   var SYSTEM = 'system-dialog';
@@ -90,6 +90,14 @@
     return url.origin;
   }
 
+  function bridgeTargetAddressSpace(baseUrl) {
+    var host = new URL(baseUrl).hostname.toLowerCase();
+    var loopbackV4 = /^127(?:\.[0-9]{1,3}){3}$/.test(host);
+    return host === 'localhost' || host === '::1' || host === '[::1]' || loopbackV4
+      ? 'loopback'
+      : 'local';
+  }
+
   function byteLength(value) {
     if (window.TextEncoder) return new TextEncoder().encode(String(value || '')).length;
     return unescape(encodeURIComponent(String(value || ''))).length;
@@ -113,7 +121,7 @@
     options = options || {};
     options.signal = controller.signal;
     options.cache = 'no-store';
-    options.targetAddressSpace = 'local';
+    options.targetAddressSpace = bridgeTargetAddressSpace(baseUrl);
     try {
       return await fetch(baseUrl + path, options);
     } catch (error) {
