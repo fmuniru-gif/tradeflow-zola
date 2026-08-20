@@ -1,11 +1,11 @@
-/* ZEZMS TradeFlow Owner Edition v3.13.0
-   Stage 5D — persistent, auditable customer follow-up management. */
+/* ZEZMS TradeFlow Owner Edition v3.14.0
+   Stage 5D/5E — persistent follow-up management with manually confirmed contact method. */
 (function () {
   'use strict';
 
-  var VERSION = '3.13.0';
-  var BUILD = '20260820-customer-retention-r47';
-  var RELEASE = 'Customer Retention & Follow-up Management';
+  var VERSION = '3.14.0';
+  var BUILD = '20260820-customer-outreach-r48';
+  var RELEASE = 'Customer Outreach & Contact Actions';
   var PURPOSES = Object.freeze([
     'General Follow-up', 'Product Availability', 'After-Sale Check', 'Quotation Follow-up',
     'Corporate/B2B Follow-up', 'Payment Follow-up', 'Customer Enquiry', 'Other'
@@ -223,17 +223,28 @@
     if (record.dayDelta === 0) return 'Due today';
     return record.dayDelta + ' day' + (record.dayDelta === 1 ? '' : 's') + ' remaining';
   }
+  function contactMethods() {
+    return ZEZMS.customerOutreach && Array.isArray(ZEZMS.customerOutreach.contactMethods)
+      ? ZEZMS.customerOutreach.contactMethods : [];
+  }
+  function contactMethodText(record) {
+    return ZEZMS.customerOutreach && typeof ZEZMS.customerOutreach.contactMethodText === 'function'
+      ? ZEZMS.customerOutreach.contactMethodText(record) : '—';
+  }
 
   function queueRows(records, model, label) {
     if (!records.length) return '<tr><td colspan="10" class="empty">No ' + esc(label.toLowerCase()) + ' follow-ups.</td></tr>';
     return records.map(function (record) {
       var row = model.customerById.get(record.customerId);
-      return '<tr><td><button class="btn sm ghost" onclick="ZEZMS.customerFollowups.openCustomer(\'' + attr(record.customerId) + '\')">' + esc(customerLabel(row)) + '</button></td>'
+      var contactButtons = ZEZMS.customerOutreach && typeof ZEZMS.customerOutreach.contactButtonsHTML === 'function'
+        ? ZEZMS.customerOutreach.contactButtonsHTML(record.customerId, record.followupId) : '';
+      return '<tr><td>' + esc(customerLabel(row)) + '</td>'
         + '<td>' + esc(customerPhone(row)) + '</td><td>' + formatDay(record.dueDate) + '</td><td>' + esc(dueText(record)) + '</td>'
         + '<td>' + esc(purposeText(record)) + '</td><td>' + (row && row.lastPurchase ? formatDay(localDay(row.lastPurchase)) : '—') + '</td>'
         + '<td class="right">' + (row && Number.isFinite(row.daysSince) ? row.daysSince : '—') + '</td><td class="right mono">' + esc(moneyValue(row && row.lifetimeSales)) + '</td>'
-        + '<td>' + statusBadge(record.derivedStatus) + '</td><td><div class="row" style="gap:5px;flex-wrap:nowrap">'
-        + '<button class="btn sm" onclick="ZEZMS.customerFollowups.openComplete(\'' + attr(record.followupId) + '\')">Complete</button>'
+        + '<td>' + statusBadge(record.derivedStatus) + '</td><td><div class="row" style="gap:5px">' + contactButtons
+        + '<button class="btn sm ghost" onclick="ZEZMS.customerFollowups.openCustomer(\'' + attr(record.customerId) + '\')">Open Customer</button>'
+        + '<button class="btn sm" onclick="ZEZMS.customerFollowups.openComplete(\'' + attr(record.followupId) + '\')">Complete Follow-up</button>'
         + '<button class="btn sm danger" onclick="ZEZMS.customerFollowups.cancel(\'' + attr(record.followupId) + '\')">Cancel</button></div></td></tr>';
     }).join('');
   }
@@ -270,6 +281,7 @@
     return '<div data-customer-followups-version="' + VERSION + '" data-build="' + BUILD + '"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2 style="margin:0">Customer Follow-ups</h2><p class="muted" style="margin:4px 0 0">Owner/Admin CRM workflow only. No automatic customer contact or financial transaction is created.</p></div><button class="btn" onclick="ZEZMS.customerFollowups.openSchedule()">Schedule Follow-up</button></div>'
       + '<div class="kpis"><div class="kpi"><small>Due Today</small><b>' + model.dueToday.length + '</b></div><div class="kpi"><small>Overdue</small><b>' + model.overdue.length + '</b></div><div class="kpi"><small>Upcoming</small><b>' + model.upcoming.length + '</b></div><div class="kpi"><small>Completed This Month</small><b>' + model.completedThisMonth.length + '</b></div></div>'
       + '<div class="kpis" style="margin-top:12px"><div class="kpi"><small>Customers with Planned Follow-up</small><b>' + model.plannedCustomerIds.size + '</b></div><div class="kpi"><small>Repeat Customers with No Planned Follow-up</small><b>' + model.repeatWithoutPlanned.length + '</b></div><div class="kpi"><small>Sales Value of Overdue-Follow-up Customers</small><b style="font-size:18px">' + esc(moneyValue(model.overdueSales)) + '</b></div><div class="kpi"><small>No Purchase in 90+ Days</small><b>' + model.noPurchase90.length + '</b></div></div>'
+      + (ZEZMS.customerOutreach && typeof ZEZMS.customerOutreach.dashboardSummaryHTML === 'function' ? ZEZMS.customerOutreach.dashboardSummaryHTML(model.followups) : '')
       + '<div class="card" style="margin-top:12px"><h3>Follow-up Queue</h3><div class="table-wrap"><table><thead><tr><th>Customer</th><th>Telephone</th><th>Due Date</th><th>Days Due / Remaining</th><th>Purpose</th><th>Last Purchase</th><th>Days Since Last Purchase</th><th>Lifetime Sales</th><th>Status</th><th>Action</th></tr></thead><tbody>'
       + '<tr><th colspan="10">1. Overdue</th></tr>' + queueRows(model.overdue, model, 'Overdue')
       + '<tr><th colspan="10">2. Due Today</th></tr>' + queueRows(model.dueToday, model, 'Due Today')
@@ -339,6 +351,8 @@
     if (!record || record.status !== 'Planned') { notify('Only a Planned follow-up can be completed.', 'err'); return; }
     var customer = customerById(record.customerId);
     openModal('<h3>Complete Follow-up</h3><p class="muted">' + esc(customer && customer.name || record.customerId) + ' · ' + esc(purposeText(record)) + ' · due ' + formatDay(record.dueDate) + '</p>'
+      + '<div class="field"><label>Contact Method *</label><select id="fuContactMethod" onchange="ZEZMS.customerFollowups.toggleContactMethodOther()">' + optionsHTML(contactMethods(), '— select actual contact method —') + '</select></div>'
+      + '<div class="field" id="fuContactMethodOtherWrap" hidden><label>Other Contact Method</label><input id="fuContactMethodOther" maxlength="120"></div>'
       + '<div class="field"><label>Outcome (optional)</label><select id="fuOutcome" onchange="ZEZMS.customerFollowups.toggleOutcomeDetail()">' + optionsHTML(OUTCOMES, '— no outcome selected —') + '</select></div>'
       + '<div class="field" id="fuOutcomeDetailWrap" hidden><label>Other Outcome Detail (optional)</label><input id="fuOutcomeDetail" maxlength="240"></div>'
       + '<div class="row"><button class="btn" onclick="ZEZMS.customerFollowups.complete(\'' + attr(record.followupId) + '\')">Mark Completed</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>');
@@ -347,14 +361,22 @@
     var select = document.getElementById('fuOutcome'), wrap = document.getElementById('fuOutcomeDetailWrap');
     if (wrap) wrap.hidden = !select || select.value !== 'Other';
   }
+  function toggleContactMethodOther() {
+    var select = document.getElementById('fuContactMethod'), wrap = document.getElementById('fuContactMethodOtherWrap');
+    if (wrap) wrap.hidden = !select || select.value !== 'Other';
+  }
   function complete(id) {
     if (!ownerAdmin()) { notify('Only Owner or Admin can complete customer follow-ups.', 'err'); return; }
     var record = findFollowup(id);
     if (!record || record.status !== 'Planned') { notify('Only a Planned follow-up can be completed.', 'err'); return; }
+    var contactMethod = clean((document.getElementById('fuContactMethod') || {}).value);
+    if (contactMethods().indexOf(contactMethod) < 0) { notify('Contact Method is required.', 'err'); return; }
     var outcome = clean((document.getElementById('fuOutcome') || {}).value);
     if (outcome && OUTCOMES.indexOf(outcome) < 0) { notify('Choose a valid Outcome.', 'err'); return; }
     var followAgain = outcome === 'Follow-up Again';
     record.status = 'Completed'; record.completedAt = now(); record.updatedAt = record.completedAt;
+    record.contactMethod = contactMethod;
+    record.contactMethodOther = contactMethod === 'Other' ? clean((document.getElementById('fuContactMethodOther') || {}).value).slice(0, 120) : '';
     record.outcome = outcome; record.outcomeDetail = outcome === 'Other' ? clean((document.getElementById('fuOutcomeDetail') || {}).value).slice(0, 240) : '';
     saveDB(); closeModal(); notify('Follow-up marked Completed.');
     if (typeof render === 'function') render();
@@ -379,9 +401,9 @@
     var records = ensureDB().filter(function (record) { return clean(record.customerId) === clean(customerId) && (includeCancelled || record.status !== 'Cancelled'); })
       .map(function (record) { return normalizedFollowup(record, todayNumber); })
       .sort(function (a,b) { return b.dueNumber - a.dueNumber || Date.parse(b.updatedAt || '') - Date.parse(a.updatedAt || ''); });
-    if (!records.length) return '<tr><td colspan="6" class="empty">No follow-up history for this customer.</td></tr>';
+    if (!records.length) return '<tr><td colspan="7" class="empty">No follow-up history for this customer.</td></tr>';
     return records.map(function (record) {
-      return '<tr><td>' + formatDay(record.dueDate) + '</td><td>' + esc(purposeText(record)) + '</td><td>' + statusBadge(record.derivedStatus) + '</td><td>' + (record.completedAt ? formatTimestamp(record.completedAt) : '—') + '</td><td>' + esc(record.outcome ? record.outcome + (record.outcomeDetail ? ' — ' + record.outcomeDetail : '') : '—') + '</td><td>' + esc(record.notes || '—') + '</td></tr>';
+      return '<tr><td>' + formatDay(record.dueDate) + '</td><td>' + (record.completedAt ? formatTimestamp(record.completedAt) : '—') + '</td><td>' + esc(purposeText(record)) + '</td><td>' + esc(contactMethodText(record)) + '</td><td>' + esc(record.outcome ? record.outcome + (record.outcomeDetail ? ' — ' + record.outcomeDetail : '') : '—') + '</td><td>' + statusBadge(record.derivedStatus) + '</td><td>' + esc(record.notes || '—') + '</td></tr>';
     }).join('');
   }
   function customerDetailHTML(customerId) {
@@ -392,12 +414,12 @@
     var last = model.lastContactByCustomer.get(id), next = model.nextByCustomer.get(id);
     return '<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">Follow-up &amp; Contact History</h3><p class="muted" style="margin:5px 0 0">Last Purchase and Last Contact remain separate relationship facts.</p></div><div class="row"><button class="btn" onclick="ZEZMS.customerFollowups.openSchedule(\'' + attr(id) + '\')">Schedule Follow-up</button><button class="btn ghost" onclick="ZEZMS.customerFollowups.openHistory(\'' + attr(id) + '\')">View Follow-up History</button></div></div>'
       + '<div class="grid g2" style="margin-top:12px"><div class="statline"><span>Next Planned Follow-up</span><b>' + (next ? formatDay(next.dueDate) + (next.dayDelta < 0 ? ' · ' + Math.abs(next.dayDelta) + ' days overdue' : '') : '—') + '</b></div><div class="statline"><span>Last Completed Follow-up / Last Contact Date</span><b>' + (last ? formatTimestamp(last.completedAt) : '—') + '</b></div><div class="statline"><span>Planned Follow-ups</span><b>' + planned.length + '</b></div><div class="statline"><span>Completed Follow-ups</span><b>' + completed.length + '</b></div></div>'
-      + '<div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Due Date</th><th>Purpose</th><th>Status</th><th>Completed Date</th><th>Outcome</th><th>Notes</th></tr></thead><tbody>' + historyRows(id, false) + '</tbody></table></div></div>';
+      + '<div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Due Date</th><th>Completed Date</th><th>Purpose</th><th>Contact Method</th><th>Outcome</th><th>Status</th><th>Notes</th></tr></thead><tbody>' + historyRows(id, false) + '</tbody></table></div></div>';
   }
   function openHistory(customerId) {
     if (!ownerAdmin()) { notify('Only Owner or Admin can view full follow-up history.', 'err'); return; }
     var customer = customerById(customerId);
-    openModal('<h3>Follow-up History — ' + esc(customer && customer.name || customerId) + '</h3><p class="muted">Completed and cancelled records remain auditable. No delete action is provided.</p><div class="table-wrap"><table><thead><tr><th>Due Date</th><th>Purpose</th><th>Status</th><th>Completed Date</th><th>Outcome</th><th>Notes</th></tr></thead><tbody>' + historyRows(customerId, true) + '</tbody></table></div><div class="row" style="margin-top:12px"><button class="btn" onclick="closeModal();ZEZMS.customerFollowups.openSchedule(\'' + attr(customerId) + '\')">Schedule Follow-up</button><button class="btn ghost" onclick="closeModal()">Close</button></div>');
+    openModal('<h3>Follow-up History — ' + esc(customer && customer.name || customerId) + '</h3><p class="muted">Completed and cancelled records remain auditable. No delete action is provided.</p><div class="table-wrap"><table><thead><tr><th>Due Date</th><th>Completed Date</th><th>Purpose</th><th>Contact Method</th><th>Outcome</th><th>Status</th><th>Notes</th></tr></thead><tbody>' + historyRows(customerId, true) + '</tbody></table></div><div class="row" style="margin-top:12px"><button class="btn" onclick="closeModal();ZEZMS.customerFollowups.openSchedule(\'' + attr(customerId) + '\')">Schedule Follow-up</button><button class="btn ghost" onclick="closeModal()">Close</button></div>');
   }
   function openCustomer(customerId) {
     runtime.selectedCustomerId = clean(customerId);
@@ -412,7 +434,7 @@
     version:VERSION, build:BUILD, release:RELEASE, purposes:PURPOSES, statuses:STATUSES, outcomes:OUTCOMES,
     ensureDB:ensureDB, viewHTML:viewHTML, customerDetailHTML:customerDetailHTML,
     openSchedule:openSchedule, togglePurposeDetail:togglePurposeDetail, saveScheduled:saveScheduled,
-    openComplete:openComplete, toggleOutcomeDetail:toggleOutcomeDetail, complete:complete, cancel:cancel,
+    openComplete:openComplete, toggleOutcomeDetail:toggleOutcomeDetail, toggleContactMethodOther:toggleContactMethodOther, complete:complete, cancel:cancel,
     openHistory:openHistory, openCustomer:openCustomer, findById:findFollowup,
     getRuntimeSnapshot:function () { return {renderCount:runtime.renderCount, selectedCustomerId:runtime.selectedCustomerId, recordCount:ensureDB().length}; },
     _test:Object.freeze({ deriveModel:deriveModel, dayNumber:dayNumber, localDay:localDay, normalizedFollowup:normalizedFollowup, makeId:makeId, dueText:dueText })

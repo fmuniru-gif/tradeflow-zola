@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#0f766e" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="description" content="Zola Electronics Zone - Sales, inventory, Customer Master, customer follow-ups, branded documents and secure one-click local printing" />
-<meta name="zezms-build" content="20260820-customer-retention-r47" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
-<title>Zola Electronics Zone - TradeFlow v3.13.0 - Customer Follow-ups</title>
+<meta name="description" content="Zola Electronics Zone - Sales, inventory, Customer Master, manual customer outreach, customer follow-ups, Product Catalog search and secure one-click local printing" />
+<meta name="zezms-build" content="20260820-customer-outreach-r48" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
+<title>Zola Electronics Zone - TradeFlow v3.14.0 - Customer Outreach</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260820-customer-retention-r47';
+  const BUILD = '20260820-customer-outreach-r48';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1117,7 +1117,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.13.0 · Customer Follow-ups · Customer Master · Direct Print Bridge · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.14.0 · Manual Customer Outreach · Customer Follow-ups · Product Catalog Search · Direct Print Bridge · Tamale · GH₵</div>
     <div id="sharedDeviceLoginPanel">
       <div class="field">
         <label>Staff member</label>
@@ -1150,7 +1150,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.13.0 · Customer Follow-ups · Customer Master · Direct Print Bridge · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.14.0 · Manual Customer Outreach · Customer Follow-ups · Product Catalog Search · Direct Print Bridge · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1224,10 +1224,10 @@ html.zezms-phone-layout .kpi-freeze-pane{
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.13.0 — Customer Retention & Follow-up Management — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.14.0 — Customer Outreach & Contact Actions — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.13.0';
+const APP_VERSION = '3.14.0';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 // Code-level accidental-entry guard for Price Adjustment and VAT only.
@@ -1962,14 +1962,39 @@ function viewDashboard(){
 }
 
 /* ===== PRODUCTS ===== */
+function productCatalogSearchModel(){
+  if(ZEZMS.productCatalogSearch && typeof ZEZMS.productCatalogSearch.model==='function'){
+    return ZEZMS.productCatalogSearch.model(DB.products);
+  }
+  return {entries:DB.products.map((product,index)=>({product,index})),total:DB.products.length,active:false,name:'',productId:''};
+}
+function productCatalogRowsHTML(model){
+  const rows = model.entries.map(entry=>{
+    const p=entry.product, i=entry.index;
+    return `<tr>
+      <td class="mono">${esc(p.id||'—')}</td><td>${esc(p.name)}</td><td>${esc(p.category||'')}</td>
+      <td class="mono right">${fmtN(p.uPrice)}</td>
+      <td class="mono right">${fmtN(stockOnHand(p.name))}</td>
+      <td><button class="btn sm ghost" onclick="editProduct(${i})">Edit</button>
+          <button class="btn sm danger" onclick="delProduct(${i})">Del</button></td>
+    </tr>`;
+  }).join('');
+  if(rows) return rows;
+  return model.active
+    ? `<tr><td colspan="6" class="empty">No products match the current search.</td></tr>`
+    : `<tr><td colspan="6" class="empty">No products yet — add one below.</td></tr>`;
+}
+function renderProductCatalogRows(){
+  const model=productCatalogSearchModel();
+  const body=$('productCatalogBody'), count=$('productCatalogCount');
+  if(body) body.innerHTML=productCatalogRowsHTML(model);
+  if(count) count.textContent=String(model.entries.length);
+}
 function viewProducts(){
-  const rows = DB.products.map((p,i)=>`<tr>
-    <td class="mono">${esc(p.id||'—')}</td><td>${esc(p.name)}</td><td>${esc(p.category||'')}</td>
-    <td class="mono right">${fmtN(p.uPrice)}</td>
-    <td class="mono right">${fmtN(stockOnHand(p.name))}</td>
-    <td><button class="btn sm ghost" onclick="editProduct(${i})">Edit</button>
-        <button class="btn sm danger" onclick="delProduct(${i})">Del</button></td>
-  </tr>`).join('') || `<tr><td colspan="6" class="empty">No products yet — add one below.</td></tr>`;
+  const catalog=productCatalogSearchModel();
+  const rows=productCatalogRowsHTML(catalog);
+  const searchControls=ZEZMS.productCatalogSearch && typeof ZEZMS.productCatalogSearch.controlsHTML==='function'
+    ? ZEZMS.productCatalogSearch.controlsHTML() : '';
   return `<div class="grid g2">
     <div class="card">
       <h3>Add product</h3>
@@ -1980,10 +2005,11 @@ function viewProducts(){
       <button class="btn" onclick="addProduct()">Save product</button>
     </div>
     <div class="card">
-      <h3>Catalog (${DB.products.length})</h3>
+      <h3>Product Catalog (<span id="productCatalogCount">${catalog.entries.length}</span>)</h3>
+      ${searchControls}
       <div class="table-wrap"><table>
         <thead><tr><th>Product ID</th><th>Name</th><th>Category</th><th class="right">U Price</th><th class="right">On hand</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody id="productCatalogBody">${rows}</tbody>
       </table></div>
     </div>
   </div>`;
@@ -4553,7 +4579,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260820-customer-retention-r47').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260820-customer-outreach-r48').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4588,11 +4614,11 @@ document.addEventListener('keydown', (e)=>{
 <script src="js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39"></script>
 <script>
 /* Embedded so Owner Recovery does not depend on a newly added external file. */
-/* ZEZMS v3.13.0 — Customer Retention & Follow-up Management */
+/* ZEZMS v3.14.0 — Customer Outreach & Contact Actions */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260820-customer-retention-r47';
+const BUILD='20260820-customer-outreach-r48';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
@@ -4925,12 +4951,12 @@ setTimeout(function(){
 
 <script>
 /* Embedded Secure Device Enrollment controller. */
-/* ZEZMS v3.13.0 — Customer Retention & Follow-up Management */
+/* ZEZMS v3.14.0 — Customer Outreach & Contact Actions */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260820-customer-retention-r47';
+  const BUILD = '20260820-customer-outreach-r48';
   let branches = [];
   let lastPairing = null;
   let enrolledDevices = [];
@@ -5278,10 +5304,12 @@ setTimeout(function(){
 <script src="js/stock-velocity-v390.js?v=20260820-customer-retention-r47"></script>
 <script src="js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43"></script>
-<script src="js/customer-master-v3120.js?v=20260820-customer-retention-r47"></script>
-<script src="js/customer-followups-v3130.js?v=20260820-customer-retention-r47"></script>
+<script src="js/customer-master-v3120.js?v=20260820-customer-outreach-r48"></script>
+<script src="js/customer-outreach-v3140.js?v=20260820-customer-outreach-r48"></script>
+<script src="js/customer-followups-v3130.js?v=20260820-customer-outreach-r48"></script>
+<script src="js/product-catalog-search-v3140.js?v=20260820-customer-outreach-r48"></script>
 <script src="js/print-readiness-v3120.js?v=20260817-loopback-network-r47"></script>
 <script src="js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47"></script>
-<script src="js/navigation-v3101.js?v=20260820-customer-retention-r47"></script>
+<script src="js/navigation-v3101.js?v=20260820-customer-outreach-r48"></script>
 </body>
 </html>

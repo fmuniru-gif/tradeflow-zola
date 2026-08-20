@@ -1,4 +1,4 @@
-/* ZEZMS TradeFlow Owner Edition v3.13.0
+/* ZEZMS TradeFlow Owner Edition v3.14.0
    Persistent Customer Master & Relationship Management Foundation.
    Profile data is persisted; every financial/relationship value is derived from
    completed sales and is never written back to the Customer Master. */
@@ -6,9 +6,9 @@
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var VERSION = '3.13.0';
-  var BUILD = '20260820-customer-retention-r47';
-  var RELEASE = 'Customer Retention & Follow-up Management';
+  var VERSION = '3.14.0';
+  var BUILD = '20260820-customer-outreach-r48';
+  var RELEASE = 'Customer Outreach & Contact Actions';
   var MAX_NOTES = 1000;
   var runtime = {
     byId: new Map(), byPhone: new Map(), byHistoricalPhone: new Map(), byName: new Map(), searchRows: [],
@@ -441,8 +441,10 @@
       + '<div class="statline"><span>Lifetime Sales</span><b>' + esc(moneyValue(row.lifetimeSales)) + '</b></div><div class="statline"><span>Average Transaction Value</span><b>' + esc(moneyValue(row.average)) + '</b></div>'
       + '<div class="statline"><span>Total Quantity Purchased</span><b>' + row.totalQuantity + '</b></div><div class="statline"><span>Distinct Products</span><b>' + row.products.size + '</b></div>'
       + '<div class="statline"><span>Distinct Categories</span><b>' + row.categories.size + '</b></div><div class="statline"><span>Repeat Customer</span><b>' + (row.transactions > 1 ? 'Yes' : 'No') + '</b></div>'
-      + '<div class="statline"><span>Most Used Sales Source</span><b>' + esc(row.mostUsedChannel) + '</b></div></div></div>'
+      + '<div class="statline"><span>Most Used Sales Source</span><b>' + esc(row.mostUsedChannel) + '</b></div>'
+      + (ZEZMS.customerOutreach && typeof ZEZMS.customerOutreach.relationshipSummaryHTML === 'function' ? ZEZMS.customerOutreach.relationshipSummaryHTML(c.customerId) : '') + '</div></div>'
       + '<div class="card" style="margin-top:12px"><h3>Purchase History</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Receipt/Transaction ID</th><th>Product</th><th class="right">Quantity</th><th class="right">Sales Value</th><th>Sales Source</th></tr></thead><tbody>' + history + '</tbody></table></div></div>'
+      + (ZEZMS.customerOutreach && typeof ZEZMS.customerOutreach.customerDetailHTML === 'function' ? ZEZMS.customerOutreach.customerDetailHTML(c.customerId) : '')
       + (ZEZMS.customerFollowups && typeof ZEZMS.customerFollowups.customerDetailHTML === 'function' ? ZEZMS.customerFollowups.customerDetailHTML(c.customerId) : '');
   }
   function viewHTML() {

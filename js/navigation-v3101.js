@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  var VERSION = '3.13.0';
-  var BUILD = '20260820-customer-retention-r47';
+  var VERSION = '3.14.0';
+  var BUILD = '20260820-customer-outreach-r48';
   window.ZEZMS = window.ZEZMS || {};
 
   if (window.ZEZMS.navigationV3101 && window.ZEZMS.navigationV3101.build === BUILD) {

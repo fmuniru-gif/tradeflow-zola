@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition with Customer Retention and Follow-up Management, persistent Customer Master, authenticated local-bridge printing, branded documents and FIFO inventory.",
-  "start_url": "./index.html?build=20260820-customer-retention-r47",
+  "description": "ZEZMS Owner Edition with manual Customer Outreach and Contact Actions, Customer Follow-ups, Product Catalog Name/ID search, authenticated local-bridge printing and FIFO inventory.",
+  "start_url": "./index.html?build=20260820-customer-outreach-r48",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

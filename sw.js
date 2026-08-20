@@ -1,5 +1,5 @@
-/* ZEZMS Owner Edition v3.13.0 - customer retention and follow-up management */
-const CACHE = 'zezms-customer-retention-20260820-r47';
+/* ZEZMS Owner Edition v3.14.0 - manual customer outreach and Product Catalog search */
+const CACHE = 'zezms-customer-outreach-20260820-r48';
 const ASSETS = [
   './',
   './index.html',
@@ -48,11 +48,13 @@ const ASSETS = [
   './js/stock-velocity-v390.js?v=20260820-customer-retention-r47',
   './js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39',
   './js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43',
-  './js/customer-master-v3120.js?v=20260820-customer-retention-r47',
-  './js/customer-followups-v3130.js?v=20260820-customer-retention-r47',
+  './js/customer-master-v3120.js?v=20260820-customer-outreach-r48',
+  './js/customer-outreach-v3140.js?v=20260820-customer-outreach-r48',
+  './js/customer-followups-v3130.js?v=20260820-customer-outreach-r48',
+  './js/product-catalog-search-v3140.js?v=20260820-customer-outreach-r48',
   './js/print-readiness-v3120.js?v=20260817-loopback-network-r47',
   './js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47',
-  './js/navigation-v3101.js?v=20260820-customer-retention-r47',
+  './js/navigation-v3101.js?v=20260820-customer-outreach-r48',
 ];
 
 self.addEventListener('install', (event) => {
