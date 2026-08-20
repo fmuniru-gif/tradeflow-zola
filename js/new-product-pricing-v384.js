@@ -7,7 +7,7 @@
       && window.viewDashboard && window.viewDashboard.__zezmsNewProductPricingV384) return;
 
   const VERSION = '3.8.4';
-  const BUILD = '20260811-new-product-pricing-r37';
+  const BUILD = '20260820-customer-retention-r47';
   const CURRENCY_TOLERANCE = 0.01;
   let activeMode = 'existing';
 
@@ -62,7 +62,7 @@
     const marginRaw=raw('newPricingMargin');
     const marketRaw=raw('newPricingMarketPrice');
     const contemplatedRaw=raw('newPricingContemplatedPrice');
-    const proposedQuantity=finite(quantityRaw);
+    const proposedQuantity=quantityRaw==='' ? 1 : finite(quantityRaw);
     const supplierCost=finite(supplierRaw);
     const acquisitionCosts=acquisitionRaw==='' ? 0 : finite(acquisitionRaw);
     const businessCost=businessRaw==='' ? 0 : finite(businessRaw);
@@ -187,7 +187,7 @@
   }
 
   function reset() {
-    const defaults={newPricingProductName:'',newPricingQuantity:'1',newPricingSupplierCost:'',newPricingAcquisitionCosts:'0',newPricingBusinessCost:'0',newPricingMargin:'',newPricingMarketPrice:'',newPricingContemplatedPrice:''};
+    const defaults={newPricingProductName:'',newPricingQuantity:'',newPricingSupplierCost:'',newPricingAcquisitionCosts:'',newPricingBusinessCost:'',newPricingMargin:'',newPricingMarketPrice:'',newPricingContemplatedPrice:''};
     Object.keys(defaults).forEach(function(id){const target=node(id);if(target)target.value=defaults[id];});
     clearResults();
     const validation=node('newPricingValidation');
@@ -221,10 +221,10 @@
       + '<div class="card" style="margin-bottom:12px"><div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">New Product Pricing Simulator</h2><p class="muted" style="margin:6px 0 0"><b>New Product:</b> Estimate pricing before purchasing or creating the product in inventory.</p></div><span class="badge warn">Runtime only</span></div>'
       + '<p class="muted">This simulator does not create a product, Product ID, Stock In record, Purchase Order, supplier entry or saved selling price.</p>'
       + '<div class="grid g2"><div class="field"><label>Product Name / Description</label><input id="newPricingProductName" type="text" placeholder="43&quot; Smart TV" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
-      + '<div class="field"><label>Proposed Quantity</label><input id="newPricingQuantity" type="number" min="1" step="1" value="1" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
+      + '<div class="field"><label>Proposed Quantity</label><input id="newPricingQuantity" type="number" min="1" step="1" value="" placeholder="1" data-semantic-default="1" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
       + '<div class="field"><label>Supplier Unit Cost</label><input id="newPricingSupplierCost" type="number" min="0" step="0.01" placeholder="GH\u20b5 0.00" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
-      + '<div class="field"><label>Additional Batch Acquisition Costs</label><input id="newPricingAcquisitionCosts" type="number" min="0" step="0.01" value="0" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
-      + '<div class="field"><label>Additional Business Cost / Unit</label><input id="newPricingBusinessCost" type="number" min="0" step="0.01" value="0" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
+      + '<div class="field"><label>Additional Batch Acquisition Costs</label><input id="newPricingAcquisitionCosts" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
+      + '<div class="field"><label>Additional Business Cost / Unit</label><input id="newPricingBusinessCost" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
       + '<div class="field"><label>Target Gross Margin %</label><input id="newPricingMargin" type="number" min="0" max="99.99" step="0.01" placeholder="0.00 to 99.99" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
       + '<div class="field"><label>Market / Competitor Price</label><input id="newPricingMarketPrice" type="number" min="0" step="0.01" placeholder="Optional" oninput="ZEZMS.newProductPricing.recalculate()" /></div>'
       + '<div class="field"><label>Contemplated Selling Price</label><input id="newPricingContemplatedPrice" type="number" min="0" step="0.01" placeholder="Optional" oninput="ZEZMS.newProductPricing.recalculate()" /></div></div>'

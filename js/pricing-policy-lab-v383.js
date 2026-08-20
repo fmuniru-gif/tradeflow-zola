@@ -7,7 +7,7 @@
       && window.viewDashboard && window.viewDashboard.__zezmsPricingPolicyLabV383) return;
 
   const VERSION = '3.8.3';
-  const BUILD = '20260811-pricing-policy-lab-r36';
+  const BUILD = '20260820-customer-retention-r47';
   const CURRENCY_TOLERANCE = 0.01;
   let currentProducts = Object.freeze([]);
 
@@ -230,7 +230,7 @@
     const contemplated=document.getElementById('policyLabContemplatedPrice');
     if (select) select.value='';
     if (margin) margin.value='';
-    if (additional) additional.value='0';
+    if (additional) additional.value='';
     if (contemplated) contemplated.value='';
     displaySelectedProduct(null);
     clearResultValues();
@@ -257,7 +257,7 @@
       + '<div class="card" style="margin-bottom:12px"><div class="grid g2">'
       + '<div class="field"><label>Product</label><select id="policyLabProduct" onchange="ZEZMS.pricingPolicyLab.recalculate()"><option value="">\u2014 select current stocked product \u2014</option>' + options + '</select></div>'
       + '<div class="field"><label>Target Gross Margin %</label><input id="policyLabMargin" type="number" min="0" max="99.99" step="0.01" placeholder="0.00 to 99.99" oninput="ZEZMS.pricingPolicyLab.recalculate()" /></div>'
-      + '<div class="field"><label>Additional Business Cost/Unit</label><input id="policyLabAdditionalCost" type="number" min="0" step="0.01" value="0" oninput="ZEZMS.pricingPolicyLab.recalculate()" /></div>'
+      + '<div class="field"><label>Additional Business Cost/Unit</label><input id="policyLabAdditionalCost" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" oninput="ZEZMS.pricingPolicyLab.recalculate()" /></div>'
       + '<div class="field"><label>Contemplated Selling Price</label><input id="policyLabContemplatedPrice" type="number" min="0" step="0.01" placeholder="Optional" oninput="ZEZMS.pricingPolicyLab.recalculate()" /></div></div>'
       + '<div id="policyLabValidation" class="muted">Enter a Target Gross Margin % to begin the temporary scenario.</div>'
       + '<div class="grid g2" style="margin-top:12px"><div><h3>Selected Current-Stock Reference</h3>'

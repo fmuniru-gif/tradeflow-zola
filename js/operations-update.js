@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260816-direct-print-bridge-r46';
+  const BUILD = '20260820-customer-retention-r47';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
@@ -1182,8 +1182,9 @@
     const name = ($('acName').value || '').trim();
     const contact = ($('acContact').value || '').trim();
     const description = ($('acDesc').value || '').trim();
-    const balance = Number($('acBal').value) || 0;
+    const balance = readNumberWithDefault($('acBal'), 0);
     if (!name) { toast('Name required', 'err'); return; }
+    if (!Number.isFinite(balance)) { toast('Opening balance must be a valid number.', 'err'); return; }
     const id = getOrCreateAccount(accTab, name, contact, description);
     const account = DB[accTab].find((item) => item.id === id);
     const before = Number(account.balance) || 0;
@@ -1261,11 +1262,11 @@
   addExpense = function () {
     const description = ($('exDesc').value || '').trim();
     const category = $('exCat').value;
-    const amount = Number($('exAmt').value) || 0;
+    const amount = readNumberWithDefault($('exAmt'), 0);
     const date = $('exDate').value || new Date().toISOString().slice(0, 10);
     const wallet = $('exWallet').value;
     if (!description) { toast('Description required', 'err'); return; }
-    if (amount <= 0) { toast('Amount must be > 0', 'err'); return; }
+    if (!Number.isFinite(amount) || amount <= 0) { toast('Amount must be > 0', 'err'); return; }
 
     const expenseId = idStamp('EXP-');
     let cashEntry = null;
@@ -1653,7 +1654,7 @@
           <div class="field"><label>Action</label>
             <select id="cbAction"><option>Add</option><option>Deduct</option></select>
           </div>
-          <div class="field"><label>Amount (GH₵)</label><input id="cbAmt" type="number" min="0" step="0.01" value="0" /></div>
+          <div class="field"><label>Amount (GH₵)</label><input id="cbAmt" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
           <div class="field"><label>Note</label><input id="cbNote" placeholder="optional" /></div>
           <button class="btn" onclick="doCashMove()">Post</button>
           <div class="statline" style="margin-top:12px"><span>Total buckets</span><b class="mono">${fmt(KPI_CashBuckets_Total())}</b></div>
@@ -1725,7 +1726,7 @@
           <div class="field"><label>Name</label><input id="acName" /></div>
           <div class="field"><label>Contact / Phone</label><input id="acContact" /></div>
           <div class="field"><label>Description</label><input id="acDesc" /></div>
-          <div class="field"><label>Opening balance (GH₵)</label><input id="acBal" type="number" step="0.01" value="0" /></div>
+          <div class="field"><label>Opening balance (GH₵)</label><input id="acBal" type="number" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
           <button class="btn" onclick="addAccount()">Save</button>
         </div>
         <div class="card">

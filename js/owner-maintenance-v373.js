@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260808-owner-maintenance-r32';
+  const BUILD = '20260820-customer-retention-r47';
   const OPEN = 'OPEN';
   const COMMITTED = 'COMMITTED';
   const CANCELLED = 'CANCELLED';
@@ -18,7 +18,7 @@
   function emptyDraft() {
     return {
       lines: [], supplierId: '', supplierReference: '', expectedDate: '',
-      notes: '', amountPaid: 0, wallet: ''
+      notes: '', amountPaid: '', wallet: ''
     };
   }
 
@@ -222,6 +222,7 @@
     ensureModel();
     const total = purchaseOrderTotal(purchaseOrderDraft.lines);
     const paid = Number(purchaseOrderDraft.amountPaid) || 0;
+    const paidActual = purchaseOrderDraft.amountPaid === '' || purchaseOrderDraft.amountPaid == null ? '' : paid;
     const outstanding = purchaseOrderOutstanding();
     const editingOrder = editingPurchaseOrderId ? findPurchaseOrder(editingPurchaseOrderId) : null;
     const editBanner = editingOrder
@@ -242,8 +243,8 @@
       + '<div class="field" style="position:relative;flex:1"><label>Search by product ID</label>'
       + '<input id="poSearchId" placeholder="Type product ID..." autocomplete="off" oninput="purchaseOrderSearch(\'id\')" onkeydown="purchaseOrderSearchKey(event,\'id\')"><div id="poSuggestId" class="suggest"></div></div></div>'
       + '<div class="field"><label>Product *</label><select id="poProduct" onchange="purchaseOrderProductChanged()"><option value="">- select existing product -</option>' + productOptions() + '</select></div>'
-      + '<div class="row mobile-number-row"><div class="field" style="flex:1"><label>Quantity</label><input id="poQty" type="number" min="0.01" step="1" value="1"></div>'
-      + '<div class="field" style="flex:1"><label>Unit cost</label><input id="poUnitCost" type="number" min="0" step="0.01" value="0"></div></div>'
+      + '<div class="row mobile-number-row"><div class="field" style="flex:1"><label>Quantity</label><input id="poQty" type="number" min="0.01" step="1" value="" placeholder="1" data-semantic-default="1"></div>'
+      + '<div class="field" style="flex:1"><label>Unit cost</label><input id="poUnitCost" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0"></div></div>'
       + '<div class="row"><button class="btn" onclick="addPurchaseOrderLine()">Add product</button>'
       + (canManageProducts() ? '<button class="btn ghost" onclick="openNewPurchaseOrderProduct()">Add new product</button>' : '')
       + '<button class="btn ghost" onclick="clearPurchaseOrderProductEntry()">Clear entry</button></div></div></div>'
@@ -252,7 +253,7 @@
       + '<tbody>' + orderLinesHTML() + '</tbody></table></div></div>'
       + '<div class="card pos-totals"><h3>Payment and creditor posting</h3>'
       + '<div class="statline"><span>Order total</span><b class="mono" id="poOrderTotal">' + fmt(total) + '</b></div>'
-      + '<div class="field" style="margin-top:10px"><label>Amount already paid to supplier (GH₵)</label><input id="poAmountPaid" type="number" min="0" step="0.01" value="' + paid + '" oninput="purchaseOrderPaymentChanged(this.value)"></div>'
+      + '<div class="field" style="margin-top:10px"><label>Amount already paid to supplier (GH₵)</label><input id="poAmountPaid" type="number" min="0" step="0.01" value="' + paidActual + '" placeholder="0" data-semantic-default="0" oninput="purchaseOrderPaymentChanged(this.value)"></div>'
       + '<div class="field"><label>Payment wallet (required when amount paid is above zero)</label><select id="poWallet" onchange="purchaseOrderDraftField(\'wallet\',this.value)"><option value="">- select wallet -</option>' + walletOptions() + '</select></div>'
       + '<div class="statline"><span>Balance added to supplier creditor account</span><b class="mono" id="poOutstanding">' + fmt(outstanding) + '</b></div>'
       + '<div class="row" style="margin-top:12px"><button class="btn" onclick="savePurchaseOrder(false)">' + (editingOrder ? 'Update purchase order' : 'Save purchase order') + '</button>'
@@ -357,19 +358,19 @@
     if (select) select.value = '';
     const qty = document.getElementById('poQty');
     const cost = document.getElementById('poUnitCost');
-    if (qty) qty.value = '1';
-    if (cost) cost.value = '0';
+    if (qty) qty.value = '';
+    if (cost) cost.value = '';
   };
 
   window.addPurchaseOrderLine = function () {
     if (!requirePurchaseOrderAccess(false)) return;
     const productId = text((document.getElementById('poProduct') || {}).value);
     const product = findProductById(productId);
-    const qty = Number((document.getElementById('poQty') || {}).value) || 0;
-    const unitCost = Number((document.getElementById('poUnitCost') || {}).value) || 0;
+    const qty = readNumberWithDefault(document.getElementById('poQty'), 1);
+    const unitCost = readNumberWithDefault(document.getElementById('poUnitCost'), 0);
     if (!product) { toast('Select an existing product.', 'err'); return; }
-    if (qty <= 0) { toast('Quantity must be greater than zero.', 'err'); return; }
-    if (unitCost <= 0) { toast('Unit cost must be greater than zero.', 'err'); return; }
+    if (!Number.isFinite(qty) || qty <= 0) { toast('Quantity must be greater than zero.', 'err'); return; }
+    if (!Number.isFinite(unitCost) || unitCost <= 0) { toast('Unit cost must be greater than zero.', 'err'); return; }
     purchaseOrderDraft.lines.push({
       id: idStamp('POL-'), productId: product.id, product: product.name,
       category: product.category || '', qty: qty, unitCost: unitCost,
@@ -386,7 +387,7 @@
   };
 
   window.purchaseOrderPaymentChanged = function (value) {
-    purchaseOrderDraft.amountPaid = Math.max(0, Number(value) || 0);
+    purchaseOrderDraft.amountPaid = text(value).trim() === '' ? '' : Math.max(0, readNumberWithDefault(value, 0));
     const node = document.getElementById('poOutstanding');
     if (node) node.textContent = fmt(purchaseOrderOutstanding());
   };
@@ -406,8 +407,8 @@
       + '<div class="field"><label>Product name *</label><input id="poNewProductName"></div>'
       + '<div class="field"><label>Product ID (optional)</label><input id="poNewProductId" placeholder="Automatic short ID when blank"></div>'
       + '<div class="field"><label>Category</label><input id="poNewProductCategory"></div>'
-      + '<div class="row mobile-number-row"><div class="field" style="flex:1"><label>Cost price *</label><input id="poNewProductCost" type="number" min="0.01" step="0.01" value="0"></div>'
-      + '<div class="field" style="flex:1"><label>Selling price *</label><input id="poNewProductPrice" type="number" min="0.01" step="0.01" value="0"></div></div>'
+      + '<div class="row mobile-number-row"><div class="field" style="flex:1"><label>Cost price *</label><input id="poNewProductCost" type="number" min="0.01" step="0.01" value="" placeholder="0" data-semantic-default="0"></div>'
+      + '<div class="field" style="flex:1"><label>Selling price *</label><input id="poNewProductPrice" type="number" min="0.01" step="0.01" value="" placeholder="0" data-semantic-default="0"></div></div>'
       + '<div class="row"><button class="btn" onclick="saveNewPurchaseOrderProduct()">Save product</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>');
   };
 
@@ -416,8 +417,8 @@
     const name = text((document.getElementById('poNewProductName') || {}).value).trim();
     const requestedId = normalizeProductId(text((document.getElementById('poNewProductId') || {}).value));
     const category = text((document.getElementById('poNewProductCategory') || {}).value).trim();
-    const unitCost = Math.max(0, Number((document.getElementById('poNewProductCost') || {}).value) || 0);
-    const unitPrice = Math.max(0, Number((document.getElementById('poNewProductPrice') || {}).value) || 0);
+    const unitCost = Math.max(0, readNumberWithDefault(document.getElementById('poNewProductCost'), 0));
+    const unitPrice = Math.max(0, readNumberWithDefault(document.getElementById('poNewProductPrice'), 0));
     if (!name) { toast('Product name is required.', 'err'); return; }
     if (unitCost <= 0) { toast('Cost price must be greater than zero.', 'err'); return; }
     if (unitPrice <= 0) { toast('Selling price must be greater than zero.', 'err'); return; }
@@ -474,7 +475,7 @@
     if (referenceField) purchaseOrderDraft.supplierReference = text(referenceField.value).trim();
     if (expectedDateField) purchaseOrderDraft.expectedDate = text(expectedDateField.value).trim();
     if (notesField) purchaseOrderDraft.notes = text(notesField.value).trim();
-    if (paidField) purchaseOrderDraft.amountPaid = Math.max(0, Number(paidField.value) || 0);
+    if (paidField) purchaseOrderDraft.amountPaid = text(paidField.value).trim() === '' ? '' : Math.max(0, readNumberWithDefault(paidField, 0));
     if (walletField) purchaseOrderDraft.wallet = text(walletField.value);
   }
 
@@ -1034,7 +1035,7 @@
       + '<div class="doc-total"><div><span>Order total</span><b>GH₵ ' + fmtN(order.total) + '</b></div><div><span>Amount paid</span><b>GH₵ ' + fmtN(order.amountPaid) + '</b></div>'
       + '<div class="grand"><span>SUPPLIER BALANCE</span><b>GH₵ ' + fmtN(order.outstanding) + '</b></div></div>'
       + (order.notes ? '<div style="margin-top:18px"><b>Notes:</b> ' + esc(order.notes) + '</div>' : '')
-      + '<div class="signature-grid"><div class="signature-line">Authorised by</div><div class="signature-line">Supplier acknowledgement</div></div></div>';
+      + '<div class="signature-grid"><div class="signature-block"><span class="approved-stamp">APPROVED</span><div class="signature-line">Authorised by</div></div><div class="signature-block"><div class="signature-line">Supplier acknowledgement</div></div></div></div>';
   }
 
   window.showPurchaseOrder = function (id) {
@@ -1072,7 +1073,7 @@
       + '.document-paper{background:#fff;color:#111;padding:0;font-size:12px;line-height:1.45}.doc-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:14px}'
       + '.doc-title{font-size:25px;font-weight:900;letter-spacing:2px;text-align:right}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #999;padding:6px;vertical-align:top}th{background:#eee;text-align:left}'
       + '.doc-total{width:330px;max-width:100%;margin-left:auto;margin-top:12px}.doc-total div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #ddd}.doc-total .grand{font-size:15px;font-weight:900;border-top:2px solid #111;border-bottom:2px solid #111}'
-      + '.signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}.signature-line{border-top:1px solid #111;padding-top:5px;text-align:center}'
+      + '.signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}.signature-block{display:flex;min-height:58px;flex-direction:column;justify-content:flex-end}.signature-line{border-top:1px solid #111;padding-top:5px;text-align:center}.approved-stamp{display:inline-flex;align-self:center;align-items:center;justify-content:center;margin:0 0 9px;padding:4px 12px;border:2px solid #0f6f4b;border-radius:5px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 11px/1 Arial,Helvetica,sans-serif;letter-spacing:1.4px;transform:rotate(-2deg)}'
       + '</style></head><body>' + purchaseOrderPaperHTML(order) + '</body></html>');
     doc.close();
     setTimeout(function () {
@@ -1129,7 +1130,7 @@
   syncNavigationAccess();
   installReceiptEditButtons();
   ZEZMS.ownerMaintenance = {
-    version: '3.7.3', build: BUILD, ensureModel: ensureModel,
+    version: '3.13.0', build: BUILD, ensureModel: ensureModel,
     findPurchaseOrder: findPurchaseOrder, purchaseOrderPaperHTML: purchaseOrderPaperHTML,
     accountFilters: accountFilters, viewPurchaseOrders: viewPurchaseOrders
   };

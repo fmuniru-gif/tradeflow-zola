@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  var VERSION = '3.12.0';
-  var BUILD = '20260815-customer-master-print-readiness-r45';
+  var VERSION = '3.13.0';
+  var BUILD = '20260820-customer-retention-r47';
   window.ZEZMS = window.ZEZMS || {};
 
   if (window.ZEZMS.navigationV3101 && window.ZEZMS.navigationV3101.build === BUILD) {
@@ -30,6 +30,7 @@
     'stock-velocity': { title: 'Stock Velocity & Reorder Planning', targetId: 'stockVelocityLab' },
     'portfolio-signals': { title: 'Portfolio Signals & Capital Allocation', targetId: 'portfolioSignalsLab' },
     'customer-master': { title: 'Customer Master', renderer: 'customerMaster' },
+    'customer-followups': { title: 'Customer Follow-ups', renderer: 'customerFollowups' },
     'customer-intelligence': { title: 'Customer Relationship Intelligence', targetId: 'customerIntelligenceLab' }
   });
 
@@ -77,6 +78,7 @@
         { view: 'stock-velocity', label: 'Stock Velocity & Reorder Planning', icon: '◈', permissionView: 'dashboard' },
         { view: 'portfolio-signals', label: 'Portfolio Signals & Capital Allocation', icon: '◈', permissionView: 'dashboard' },
         { view: 'customer-master', label: 'Customer Master', icon: '👤', permissionView: 'dashboard' },
+        { view: 'customer-followups', label: 'Customer Follow-ups', icon: '📅', permissionView: 'customer-followups' },
         { view: 'customer-intelligence', label: 'Customer Relationship Intelligence', icon: '◈', permissionView: 'dashboard' }
       ]
     }
@@ -143,6 +145,13 @@
       return '<div class="management-direct-view" data-management-view="customer-master" data-build="' + BUILD + '">'
         + window.ZEZMS.customerMaster.viewHTML() + '</div>';
     }
+    if (route.renderer === 'customerFollowups') {
+      if (!window.ZEZMS.customerFollowups || typeof window.ZEZMS.customerFollowups.viewHTML !== 'function') {
+        return '<div class="card"><h3>Customer Follow-ups</h3><p class="muted">The Customer Follow-up module could not be mounted.</p></div>';
+      }
+      return '<div class="management-direct-view" data-management-view="customer-followups" data-build="' + BUILD + '">'
+        + window.ZEZMS.customerFollowups.viewHTML() + '</div>';
+    }
 
     var template = createTemplate(fullDashboardHTML());
     var source = template.content.querySelector('[id="' + route.targetId + '"]');
@@ -162,7 +171,7 @@
     if (view === 'undo' && auth && typeof auth.can === 'function') {
       return !!auth.can('UNDO_TRANSACTION');
     }
-    if (view === 'customer-master') {
+    if (view === 'customer-master' || view === 'customer-followups') {
       try {
         if (auth && typeof auth.getContext === 'function') {
           var role = String((auth.getContext() || {}).role || '').toUpperCase();
@@ -359,7 +368,7 @@
   function wrapAccessControl() {
     if (!auth || !originalCanView || auth.__navigationV3101AccessWrapped) return;
     auth.canView = function (view) {
-      if (view === 'customer-master') return canOpenView(view);
+      if (view === 'customer-master' || view === 'customer-followups') return canOpenView(view);
       var child = CHILD_BY_VIEW[view];
       var permissionView = child && child.permissionView ? child.permissionView : view;
       if (view === 'undo' && typeof auth.can === 'function') return !!auth.can('UNDO_TRANSACTION');

@@ -1,9 +1,9 @@
-/* ZEZMS Owner Edition v3.11.0 - branded offline PDF exports */
+/* ZEZMS Owner Edition v3.13.0 - branded offline PDF exports */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260814-sales-channel-capture-r43';
+  const BUILD = '20260820-customer-retention-r47';
   const DOCUMENT_WATERMARK_ASSET = 'assets/zez-document-watermark.jpg';
   const DOCUMENT_WATERMARK_OPACITY = 0.10;
   const A4 = { width: 595, height: 842 };
@@ -504,7 +504,7 @@
       { label: 'Supplier balance', value: 'GHS ' + number(record.outstanding), strong: true }
     ]);
     if (record.notes) pdf.paragraph('Notes: ' + record.notes, { size: 8.5 });
-    pdf.signatures('Authorised by', 'Supplier acknowledgement');
+    pdf.signatures('Authorised by', 'Supplier acknowledgement', { approved: true });
     return pdf.finish();
   }
 
@@ -582,7 +582,7 @@
 
   installRegisterButtons();
   ZEZMS.pdfExport = {
-    version: '3.11.0', build: BUILD, SimplePDF: SimplePDF,
+    version: '3.13.0', build: BUILD, SimplePDF: SimplePDF,
     buildReceiptPDF: buildReceiptPDF, buildInvoicePDF: buildInvoicePDF,
     buildWaybillPDF: buildWaybillPDF, buildPurchaseOrderPDF: buildPurchaseOrderPDF,
     loadDocumentWatermark: loadDocumentWatermark,

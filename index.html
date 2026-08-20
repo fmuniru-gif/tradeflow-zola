@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#0f766e" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="description" content="Zola Electronics Zone - Sales, Inventory, branded documents, Customer Master and secure one-click local printing" />
-<meta name="zezms-build" content="20260817-loopback-network-r47" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
-<title>Zola Electronics Zone - TradeFlow v3.12.1 - Direct Print Bridge</title>
+<meta name="description" content="Zola Electronics Zone - Sales, inventory, Customer Master, customer follow-ups, branded documents and secure one-click local printing" />
+<meta name="zezms-build" content="20260820-customer-retention-r47" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
+<title>Zola Electronics Zone - TradeFlow v3.13.0 - Customer Follow-ups</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260817-loopback-network-r47';
+  const BUILD = '20260820-customer-retention-r47';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1117,7 +1117,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.12.1 · Customer Master · Direct Print Bridge · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.13.0 · Customer Follow-ups · Customer Master · Direct Print Bridge · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</div>
     <div id="sharedDeviceLoginPanel">
       <div class="field">
         <label>Staff member</label>
@@ -1150,7 +1150,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.12.1 · Customer Master · Direct Print Bridge · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.13.0 · Customer Follow-ups · Customer Master · Direct Print Bridge · Sales Channels · Invoice VAT · Auto Month · Sync M4 · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1218,20 +1218,30 @@ html.zezms-phone-layout .kpi-freeze-pane{
 <script src="js/product-search-metrics.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/product-search-facade.js?v=20260812-portfolio-signals-r39"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1"></script>
-<script src="js/cloud-sync.js?v=20260815-customer-master-print-readiness-r45"></script>
-<script src="js/backup-manager.js?v=20260815-customer-master-print-readiness-r45"></script>
+<script src="js/cloud-sync.js?v=20260820-customer-retention-r47"></script>
+<script src="js/backup-manager.js?v=20260820-customer-retention-r47"></script>
+<script src="js/input-defaults-v3130.js?v=20260820-customer-retention-r47"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.12.1 — One-Click Direct Printing & Mobile Wireless Print Bridge — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.13.0 — Customer Retention & Follow-up Management — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.12.1';
+const APP_VERSION = '3.13.0';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 // Code-level accidental-entry guard for Price Adjustment and VAT only.
 const TRANSACTION_ENTRY_GUARD_PIN = '0000';
 const PROTECTED_ENTRY_PIN = TRANSACTION_ENTRY_GUARD_PIN; // compatibility alias
+function readNumberWithDefault(input, fallback){
+  if(ZEZMS.inputDefaults && typeof ZEZMS.inputDefaults.readNumberWithDefault==='function'){
+    return ZEZMS.inputDefaults.readNumberWithDefault(input, fallback);
+  }
+  const raw = String(input && input.value != null ? input.value : input == null ? '' : input).trim();
+  if(raw==='') return Number(fallback);
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : NaN;
+}
 function normalizeVatPercent(value){
   const n = Number(value);
   if(!Number.isFinite(n)) return 0;
@@ -1374,6 +1384,7 @@ function defaultDB(){
     selectedMonth: m,
     products: [],          // master product catalog (name, category, uPrice, ...)
     customers: [],         // persistent customer profiles; financial metrics remain transaction-derived
+    customerFollowups: [], // persistent CRM workflow linked only by customerId
     stockRows: [],         // FIFO cost-tier rows: {id, productName, category, year, month, qtyIn, rStock, uCost, qtyOut, uPrice, disc, tSales, profit, aPrice, productId}
     sales: [],             // sale headers
     saleLines: [],         // sale line allocations
@@ -1419,7 +1430,7 @@ function loadDB(){
     // migrations / guards
     if(!DB.cashBalances) DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
     CASH_TYPES.forEach(t=>{ if(DB.cashBalances[t]==null) DB.cashBalances[t]=0; });
-    ['products','customers','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','monthRollovers','receipts','invoices','waybills','purchaseOrders','undoLog','inventoryTxns','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
+    ['products','customers','customerFollowups','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','monthRollovers','receipts','invoices','waybills','purchaseOrders','undoLog','inventoryTxns','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
     DB.backupSettings = Object.assign({
       autoBackupEnabled:false,
       schedule:'manual',
@@ -1965,7 +1976,7 @@ function viewProducts(){
       <div class="field"><label>Product name</label><input id="pName" placeholder="e.g. Mooved 32&quot;" /></div>
       <div class="field"><label>Product ID (optional)</label><input id="pId" placeholder="Leave blank for a short automatic ID, e.g. MV-32" autocomplete="off" /></div>
       <div class="field"><label>Category</label><input id="pCat" placeholder="e.g. Television" /></div>
-      <div class="field"><label>Unit price (GH₵)</label><input id="pPrice" type="number" min="0" step="0.01" value="0" /></div>
+      <div class="field"><label>Unit price (GH₵)</label><input id="pPrice" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
       <button class="btn" onclick="addProduct()">Save product</button>
     </div>
     <div class="card">
@@ -2000,8 +2011,9 @@ function addProduct(){
   const name = ($('pName').value||'').trim();
   const requestedId = normalizeProductId(($('pId')&&$('pId').value)||'');
   const category = ($('pCat').value||'').trim();
-  const uPrice = Number($('pPrice').value)||0;
+  const uPrice = readNumberWithDefault($('pPrice'),0);
   if(!name){ toast('Product name required','err'); return; }
+  if(!Number.isFinite(uPrice) || uPrice<0){ toast('Unit price must be a valid number of zero or more.','err'); return; }
   if(DB.products.some(p=>p.name.toLowerCase()===name.toLowerCase())){
     toast('Product already exists','warn'); return;
   }
@@ -2228,9 +2240,9 @@ function viewStockIn(){
       </div>
       <div class="field"><label>Category</label><input id="siCat" /></div>
       <div class="row">
-        <div class="field" style="flex:1"><label>Qty In</label><input id="siQty" type="number" min="0" step="1" value="1" /></div>
-        <div class="field" style="flex:1"><label>Unit Cost (GH₵)</label><input id="siCost" type="number" min="0" step="0.01" value="0" /></div>
-        <div class="field" style="flex:1"><label>Unit Price (GH₵)</label><input id="siPrice" type="number" min="0" step="0.01" value="0" /></div>
+        <div class="field" style="flex:1"><label>Qty In</label><input id="siQty" type="number" min="0" step="1" value="" placeholder="1" data-semantic-default="1" /></div>
+        <div class="field" style="flex:1"><label>Unit Cost (GH₵)</label><input id="siCost" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
+        <div class="field" style="flex:1"><label>Unit Price (GH₵)</label><input id="siPrice" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
       </div>
       <div class="row">
         <div class="field" style="flex:1"><label>Year</label><input id="siYear" type="number" value="${DB.selectedYear}" /></div>
@@ -2257,13 +2269,15 @@ function doStockIn(){
   const requestedId = normalizeProductId(($('siNewId')&&$('siNewId').value)||'');
   let name = selectedName || enteredName;
   const category = ($('siCat').value||'').trim();
-  const qty = Number($('siQty').value)||0;
-  const uCost = Number($('siCost').value)||0;
-  let uPrice = Number($('siPrice').value)||0;
+  const qty = readNumberWithDefault($('siQty'),1);
+  const uCost = readNumberWithDefault($('siCost'),0);
+  let uPrice = readNumberWithDefault($('siPrice'),0);
   const year = Number($('siYear').value)||DB.selectedYear;
   const month = Number($('siMonth').value)||DB.selectedMonth;
   if(!name){ toast('Select an existing product or enter a new product name.','err'); return; }
-  if(qty<=0){ toast('Qty must be > 0','err'); return; }
+  if(!Number.isFinite(qty) || qty<=0){ toast('Qty must be > 0','err'); return; }
+  if(!Number.isFinite(uCost) || uCost<0){ toast('Unit Cost must be a valid number of zero or more.','err'); return; }
+  if(!Number.isFinite(uPrice) || uPrice<0){ toast('Unit Price must be a valid number of zero or more.','err'); return; }
 
   let prod = selectedName ? findProductByName(selectedName) : null;
   if(!prod){
@@ -2430,7 +2444,8 @@ function viewPOS(){
   const vatRate = currentSaleVatPercent();
   const vat = round2(sub * vatRate / 100);
   const grand = round2(sub + vat);
-  const paid = cart._paid != null ? cart._paid : 0;
+  const paidInput = cart._paid == null ? '' : cart._paid;
+  const paid = readNumberWithDefault(paidInput,0);
   const balDisplay = round2(paid - grand);
 
   return `<div class="sale-layout">
@@ -2461,14 +2476,14 @@ function viewPOS(){
         ${available.length?'':`<div class="empty" style="margin-bottom:10px">No available products in ${monthName(lm.month)} ${lm.year}.</div>`}
         <div class="row mobile-number-row">
           <div class="field" style="flex:1"><label>Qty</label>
-            <input id="posQty" type="number" min="0.01" step="1" value="1" /></div>
+            <input id="posQty" type="number" min="0.01" step="1" value="" placeholder="1" data-semantic-default="1" /></div>
           <div class="field" style="flex:1"><label>Unit price (locked)</label>
             <input id="posUPrice" type="number" step="0.01" value="0" readonly /></div>
           <div class="field" style="flex:1"><label>Price adj (dbl-click / PIN)</label>
             <input id="posPriceAdj" type="number" step="0.01" value="0" readonly
               ondblclick="unlockPriceAdj()" title="Double-click to request authorised price adjustment" /></div>
           <div class="field" style="flex:1"><label>Discount (GH₵)</label>
-            <input id="posDisc" type="number" min="0" step="0.01" value="0" /></div>
+            <input id="posDisc" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
         </div>
         <div class="row">
           <span class="pill">Remaining qty: <b class="mono" id="posRemQty">0</b></span>
@@ -2530,7 +2545,7 @@ function viewPOS(){
         <div class="statline"><span>VAT amount (<span id="posVatRateLabel">${fmtN(vatRate)}</span>%)</span><b class="mono" id="posVat">${fmtN(vat)}</b></div>
         <div class="statline"><span>Grand total</span><b class="mono" id="posGrand">${fmtN(grand)}</b></div>
         <div class="field" style="margin-top:10px"><label>Amount paid</label>
-          <input id="posAmountPaid" type="number" min="0" step="0.01" value="${paid}"
+          <input id="posAmountPaid" type="number" min="0" step="0.01" value="${escAttr(paidInput)}" placeholder="0" data-semantic-default="0"
             oninput="onAmountPaidChange()" /></div>
         <div class="statline"><span>Balance (paid − grand)</span><b class="mono" id="posBalance">${fmtN(balDisplay)}</b></div>
         <p class="muted" style="font-size:11px;margin:8px 0 0">If Amount paid &lt; Grand total, outstanding goes to DEBTORS (credit sale).</p>
@@ -2560,8 +2575,10 @@ function refreshSaleTotals(){
   const vatRate = currentSaleVatPercent();
   const vat = round2(sub * vatRate / 100);
   const grand = round2(sub + vat);
-  const paid = Number(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid || 0);
-  cart._paid = paid;
+  const paidField = $('posAmountPaid');
+  const paidRaw = paidField ? String(paidField.value||'').trim() : String(cart._paid==null?'':cart._paid).trim();
+  const paid = readNumberWithDefault(paidRaw,0);
+  cart._paid = paidRaw==='' ? '' : paid;
   if($('posSubtotal')) $('posSubtotal').textContent = fmtN(sub);
   if($('posVatRateLabel')) $('posVatRateLabel').textContent = fmtN(vatRate);
   if($('posVat')) $('posVat').textContent = fmtN(vat);
@@ -2569,7 +2586,9 @@ function refreshSaleTotals(){
   if($('posBalance')) $('posBalance').textContent = fmtN(round2(paid - grand));
 }
 function onAmountPaidChange(){
-  cart._paid = Number($('posAmountPaid').value)||0;
+  const field = $('posAmountPaid');
+  const raw = field ? String(field.value||'').trim() : '';
+  cart._paid = raw==='' ? '' : readNumberWithDefault(raw,0);
   refreshSaleTotals();
 }
 function rankProductMatch(value, query){
@@ -2676,10 +2695,10 @@ function clearProductEntry(){
   if($('posSearchName')) $('posSearchName').value='';
   if($('posSearchId')) $('posSearchId').value='';
   if($('posProduct')) $('posProduct').value='';
-  if($('posQty')) $('posQty').value='1';
+  if($('posQty')) $('posQty').value='';
   if($('posUPrice')) $('posUPrice').value='0';
   if($('posPriceAdj')){ $('posPriceAdj').value='0'; if(!priceAdjUnlocked) $('posPriceAdj').readOnly=true; }
-  if($('posDisc')) $('posDisc').value='0';
+  if($('posDisc')) $('posDisc').value='';
   if($('posRemQty')) $('posRemQty').textContent='0';
   ['posSuggest','posSuggestName','posSuggestId'].forEach(id=>{ const b=$(id); if(b){ b.classList.remove('show'); b.innerHTML=''; } });
 }
@@ -2696,8 +2715,8 @@ function addItemToList(){
     return;
   }
 
-  const qty = Number($('posQty').value)||0;
-  if(qty <= 0){ toast('Quantity must be > 0.', 'err'); return; }
+  const qty = readNumberWithDefault($('posQty'),1);
+  if(!Number.isFinite(qty) || qty <= 0){ toast('Quantity must be > 0.', 'err'); return; }
 
   const base = Number($('posUPrice').value)||0;
   const adj = Number($('posPriceAdj').value)||0;
@@ -2707,7 +2726,8 @@ function addItemToList(){
     return;
   }
   const uPrice = base + adj; // effective
-  const disc = Number($('posDisc').value)||0;
+  const disc = readNumberWithDefault($('posDisc'),0);
+  if(!Number.isFinite(disc) || disc<0){ toast('Discount must be a valid number of zero or more.', 'err'); return; }
 
   const avail = stockOnHand(name);
   const already = cart.filter(c=>c.name===name).reduce((s,c)=>s+c.qty, 0);
@@ -2819,7 +2839,7 @@ function getOrCreateDebtorID(debtorName, contact){
 
 function resetSaleOutForm(){
   cart = [];
-  cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = 0; cart._vatRate = 0;
+  cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = ''; cart._vatRate = 0;
   cart._customerId = '';
   cart._salesChannel = 'Walk-in'; cart._salesChannelOther = '';
   priceAdjUnlocked = false;
@@ -2875,7 +2895,7 @@ function printReceiptSale(){
   const vatRate = currentSaleVatPercent();
   const vatAmount = round2(subtotal * vatRate / 100);
   const totalWithVAT = round2(subtotal + vatAmount);
-  const amountPaid = Number(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid || 0);
+  const amountPaid = readNumberWithDefault(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid,0);
   const outstanding = round2(totalWithVAT - amountPaid); // for register/debtor
   const receiptBal = round2(amountPaid - totalWithVAT); // for printed receipt
 
@@ -3075,7 +3095,7 @@ function viewCash(){
         <select id="cbType">${CASH_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
       <div class="field"><label>Action</label>
         <select id="cbAction"><option>Add</option><option>Deduct</option></select></div>
-      <div class="field"><label>Amount (GH₵)</label><input id="cbAmt" type="number" min="0" step="0.01" value="0" /></div>
+      <div class="field"><label>Amount (GH₵)</label><input id="cbAmt" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
       <div class="field"><label>Note</label><input id="cbNote" placeholder="optional" /></div>
       <button class="btn" onclick="doCashMove()">Post</button>
       <div class="statline" style="margin-top:12px"><span>Total buckets</span><b class="mono">${fmt(KPI_CashBuckets_Total())}</b></div>
@@ -3110,9 +3130,9 @@ function adjustCash(type, action, amount, note){
 function doCashMove(){
   const type = $('cbType').value;
   const action = $('cbAction').value;
-  const amount = Number($('cbAmt').value)||0;
+  const amount = readNumberWithDefault($('cbAmt'),0);
   const note = ($('cbNote').value||'').trim();
-  if(amount<=0){ toast('Amount must be > 0','err'); return; }
+  if(!Number.isFinite(amount) || amount<=0){ toast('Amount must be > 0','err'); return; }
   if(action==='Deduct' && amount > (Number(DB.cashBalances[type])||0)+1e-9){
     toast('Insufficient balance in '+type,'err'); return;
   }
@@ -3139,7 +3159,7 @@ function viewExpenses(){
       <div class="field"><label>Description</label><input id="exDesc" /></div>
       <div class="field"><label>Category</label>
         <select id="exCat">${EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
-      <div class="field"><label>Amount (GH₵)</label><input id="exAmt" type="number" min="0" step="0.01" value="0" /></div>
+      <div class="field"><label>Amount (GH₵)</label><input id="exAmt" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
       <div class="field"><label>Date</label><input id="exDate" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
       <div class="field"><label>Pay from wallet (optional deduct)</label>
         <select id="exWallet"><option value="">— no cash deduct —</option>${CASH_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
@@ -3158,11 +3178,11 @@ function viewExpenses(){
 function addExpense(){
   const description = ($('exDesc').value||'').trim();
   const category = $('exCat').value;
-  const amount = Number($('exAmt').value)||0;
+  const amount = readNumberWithDefault($('exAmt'),0);
   const date = $('exDate').value || new Date().toISOString().slice(0,10);
   const wallet = $('exWallet').value;
   if(!description){ toast('Description required','err'); return; }
-  if(amount<=0){ toast('Amount must be > 0','err'); return; }
+  if(!Number.isFinite(amount) || amount<=0){ toast('Amount must be > 0','err'); return; }
   if(wallet){
     if(amount > (Number(DB.cashBalances[wallet])||0)+1e-9){
       toast('Insufficient wallet balance','err'); return;
@@ -3206,7 +3226,7 @@ function viewAccounts(){
       <div class="field"><label>Name</label><input id="acName" /></div>
       <div class="field"><label>Contact / Phone</label><input id="acContact" /></div>
       <div class="field"><label>Description</label><input id="acDesc" /></div>
-      <div class="field"><label>Opening balance (GH₵)</label><input id="acBal" type="number" step="0.01" value="0" /></div>
+      <div class="field"><label>Opening balance (GH₵)</label><input id="acBal" type="number" step="0.01" value="" placeholder="0" data-semantic-default="0" /></div>
       <button class="btn" onclick="addAccount()">Save</button>
     </div>
     <div class="card">
@@ -3247,8 +3267,9 @@ function addAccount(){
   const name = ($('acName').value||'').trim();
   const contact = ($('acContact').value||'').trim();
   const description = ($('acDesc').value||'').trim();
-  const bal = Number($('acBal').value)||0;
+  const bal = readNumberWithDefault($('acBal'),0);
   if(!name){ toast('Name required','err'); return; }
+  if(!Number.isFinite(bal)){ toast('Opening balance must be a valid number.','err'); return; }
   const id = getOrCreateAccount(accTab, name, contact, description);
   const a = DB[accTab].find(x=>x.id===id);
   if(bal){
@@ -3476,6 +3497,7 @@ function importDB(){
       if(!data || typeof data!=='object') throw new Error('Invalid file');
       DB = Object.assign(defaultDB(), data);
       if(!Array.isArray(DB.customers)) DB.customers = [];
+      if(!Array.isArray(DB.customerFollowups)) DB.customerFollowups = [];
       saveDB();
       toast('Import complete');
       render();
@@ -4531,7 +4553,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260817-loopback-network-r47').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260820-customer-retention-r47').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4554,33 +4576,33 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260817-loopback-network-r47"></script>
+<script src="js/operations-update.js?v=20260820-customer-retention-r47"></script>
 <script src="js/auto-month-rollover.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/invoice-waybill.js?v=20260817-loopback-network-r47"></script>
+<script src="js/invoice-waybill.js?v=20260820-customer-retention-r47"></script>
 <script src="js/mobile-vertical-layout.js?v=20260817-loopback-network-r47"></script>
 <script src="js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/commercial-foundation.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/owner-maintenance-v373.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/pdf-export.js?v=20260814-sales-channel-capture-r43"></script>
+<script src="js/owner-maintenance-v373.js?v=20260820-customer-retention-r47"></script>
+<script src="js/pdf-export.js?v=20260820-customer-retention-r47"></script>
 <script src="js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39"></script>
 <script>
 /* Embedded so Owner Recovery does not depend on a newly added external file. */
-/* ZEZMS v3.12.1 — One-Click Direct Printing & Mobile Wireless Print Bridge */
+/* ZEZMS v3.13.0 — Customer Retention & Follow-up Management */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260817-loopback-network-r47';
+const BUILD='20260820-customer-retention-r47';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
- ADMIN:['LOGIN','VIEW_DASHBOARD','SALE_OUT','VIEW_RECEIPTS','STOCK_IN','VIEW_PRODUCTS','MANAGE_PRODUCTS','VIEW_STOCK','VIEW_CASH','MANAGE_CASH','VIEW_EXPENSES','MANAGE_EXPENSES','VIEW_ACCOUNTS','MANAGE_ACCOUNTS','VIEW_REPORTS','MANAGE_SYNC','MANAGE_SETTINGS','MANAGE_STAFF','UNDO_TRANSACTION','PRICE_ADJUSTMENT','EXPORT_BACKUP','IMPORT_DATA','RESET_DATA','MANAGE_DOCUMENTS','VIEW_AUDIT'],
+ ADMIN:['LOGIN','VIEW_DASHBOARD','SALE_OUT','VIEW_RECEIPTS','STOCK_IN','VIEW_PRODUCTS','MANAGE_PRODUCTS','VIEW_STOCK','VIEW_CASH','MANAGE_CASH','VIEW_EXPENSES','MANAGE_EXPENSES','VIEW_ACCOUNTS','MANAGE_ACCOUNTS','VIEW_REPORTS','VIEW_CUSTOMER_FOLLOWUPS','MANAGE_SYNC','MANAGE_SETTINGS','MANAGE_STAFF','UNDO_TRANSACTION','PRICE_ADJUSTMENT','EXPORT_BACKUP','IMPORT_DATA','RESET_DATA','MANAGE_DOCUMENTS','VIEW_AUDIT'],
  MANAGER:['LOGIN','VIEW_DASHBOARD','SALE_OUT','VIEW_RECEIPTS','STOCK_IN','VIEW_PRODUCTS','MANAGE_PRODUCTS','VIEW_STOCK','VIEW_CASH','MANAGE_CASH','VIEW_EXPENSES','MANAGE_EXPENSES','VIEW_ACCOUNTS','MANAGE_ACCOUNTS','VIEW_REPORTS','UNDO_TRANSACTION','PRICE_ADJUSTMENT','EXPORT_BACKUP','MANAGE_DOCUMENTS'],
  CASHIER:['LOGIN','SALE_OUT','VIEW_RECEIPTS'],
  READ_ONLY:['LOGIN','VIEW_DASHBOARD','VIEW_RECEIPTS','VIEW_PRODUCTS','VIEW_STOCK','VIEW_CASH','VIEW_EXPENSES','VIEW_ACCOUNTS','VIEW_REPORTS','EXPORT_BACKUP'],
  AUDITOR:['LOGIN','VIEW_DASHBOARD','VIEW_RECEIPTS','VIEW_PRODUCTS','VIEW_STOCK','VIEW_CASH','VIEW_EXPENSES','VIEW_ACCOUNTS','VIEW_REPORTS','EXPORT_BACKUP','VIEW_AUDIT']
 };
-const VIEW={dashboard:'VIEW_DASHBOARD',pos:'SALE_OUT',receipts:'VIEW_RECEIPTS',stockin:'STOCK_IN',products:'VIEW_PRODUCTS',stock:'VIEW_STOCK',cash:'VIEW_CASH',expenses:'VIEW_EXPENSES',accounts:'VIEW_ACCOUNTS',reports:'VIEW_REPORTS',sync:'MANAGE_SYNC',settings:'MANAGE_SETTINGS'};
+const VIEW={dashboard:'VIEW_DASHBOARD',pos:'SALE_OUT',receipts:'VIEW_RECEIPTS',stockin:'STOCK_IN',products:'VIEW_PRODUCTS',stock:'VIEW_STOCK',cash:'VIEW_CASH',expenses:'VIEW_EXPENSES',accounts:'VIEW_ACCOUNTS',reports:'VIEW_REPORTS','customer-followups':'VIEW_CUSTOMER_FOLLOWUPS',sync:'MANAGE_SYNC',settings:'MANAGE_SETTINGS'};
 const WRAP={quickSaleOut:'SALE_OUT',printReceiptSale:'SALE_OUT',doStockIn:'STOCK_IN',addProduct:'MANAGE_PRODUCTS',saveEditProduct:'MANAGE_PRODUCTS',delProduct:'MANAGE_PRODUCTS',doCashMove:'MANAGE_CASH',addExpense:'MANAGE_EXPENSES',delExpense:'MANAGE_EXPENSES',addAccount:'MANAGE_ACCOUNTS',applySettle:'MANAGE_ACCOUNTS',deleteAccountHolder:'MANAGE_ACCOUNTS',saveElectronicInvoice:'MANAGE_DOCUMENTS',saveElectronicWaybill:'MANAGE_DOCUMENTS',voidCommercialDocument:'MANAGE_DOCUMENTS',waybillFromInvoice:'MANAGE_DOCUMENTS',undoLast:'UNDO_TRANSACTION',undoInventoryTransaction:'UNDO_TRANSACTION',undoLastInventoryTransaction:'UNDO_TRANSACTION',undoAccountTransaction:'UNDO_TRANSACTION',undoLastAccountTransaction:'UNDO_TRANSACTION',undoSelectedAccountTransaction:'UNDO_TRANSACTION',undoCashTransaction:'UNDO_TRANSACTION',undoLastCashTransaction:'UNDO_TRANSACTION',undoSelectedCashTransaction:'UNDO_TRANSACTION',saveBiz:'MANAGE_SETTINGS',resetAll:'RESET_DATA',importDB:'IMPORT_DATA',importExcelWorkbook:'IMPORT_DATA',restoreFromLocal:'IMPORT_DATA',restoreCloudBackupAt:'IMPORT_DATA',m4SaveConfiguration:'MANAGE_SYNC',m4CreateCloudAccount:'MANAGE_SYNC',m4SignIn:'MANAGE_SYNC',m4SignOut:'MANAGE_SYNC',m4BootstrapThisDevice:'MANAGE_SYNC',m4DownloadCloudMaster:'MANAGE_SYNC'};
 const REAUTH=new Set(['MANAGE_STAFF','MANAGE_SETTINGS','MANAGE_SYNC','IMPORT_DATA','RESET_DATA']);
 let wrapped=false,recoveryClient=null,recoverySession=null,recoveryFactors=[];
@@ -4903,12 +4925,12 @@ setTimeout(function(){
 
 <script>
 /* Embedded Secure Device Enrollment controller. */
-/* ZEZMS v3.12.1 — One-Click Direct Printing & Mobile Wireless Print Bridge */
+/* ZEZMS v3.13.0 — Customer Retention & Follow-up Management */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260817-loopback-network-r47';
+  const BUILD = '20260820-customer-retention-r47';
   let branches = [];
   let lastPairing = null;
   let enrolledDevices = [];
@@ -5251,14 +5273,15 @@ setTimeout(function(){
 <script src="js/management-intelligence-v380.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/margin-intelligence-v381.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/pricing-guidance-v382.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/pricing-policy-lab-v383.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/new-product-pricing-v384.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/stock-velocity-v390.js?v=20260812-portfolio-signals-r39"></script>
+<script src="js/pricing-policy-lab-v383.js?v=20260820-customer-retention-r47"></script>
+<script src="js/new-product-pricing-v384.js?v=20260820-customer-retention-r47"></script>
+<script src="js/stock-velocity-v390.js?v=20260820-customer-retention-r47"></script>
 <script src="js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43"></script>
-<script src="js/customer-master-v3120.js?v=20260815-customer-master-print-readiness-r45"></script>
+<script src="js/customer-master-v3120.js?v=20260820-customer-retention-r47"></script>
+<script src="js/customer-followups-v3130.js?v=20260820-customer-retention-r47"></script>
 <script src="js/print-readiness-v3120.js?v=20260817-loopback-network-r47"></script>
 <script src="js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47"></script>
-<script src="js/navigation-v3101.js?v=20260815-customer-master-print-readiness-r45"></script>
+<script src="js/navigation-v3101.js?v=20260820-customer-retention-r47"></script>
 </body>
 </html>

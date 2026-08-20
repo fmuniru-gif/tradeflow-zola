@@ -1,4 +1,4 @@
-/* ZEZMS TradeFlow Owner Edition v3.12.0
+/* ZEZMS TradeFlow Owner Edition v3.13.0
    Persistent Customer Master & Relationship Management Foundation.
    Profile data is persisted; every financial/relationship value is derived from
    completed sales and is never written back to the Customer Master. */
@@ -6,9 +6,9 @@
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var VERSION = '3.12.0';
-  var BUILD = '20260815-customer-master-print-readiness-r45';
-  var RELEASE = 'Persistent Customer Master & Wireless Print Readiness';
+  var VERSION = '3.13.0';
+  var BUILD = '20260820-customer-retention-r47';
+  var RELEASE = 'Customer Retention & Follow-up Management';
   var MAX_NOTES = 1000;
   var runtime = {
     byId: new Map(), byPhone: new Map(), byHistoricalPhone: new Map(), byName: new Map(), searchRows: [],
@@ -442,7 +442,8 @@
       + '<div class="statline"><span>Total Quantity Purchased</span><b>' + row.totalQuantity + '</b></div><div class="statline"><span>Distinct Products</span><b>' + row.products.size + '</b></div>'
       + '<div class="statline"><span>Distinct Categories</span><b>' + row.categories.size + '</b></div><div class="statline"><span>Repeat Customer</span><b>' + (row.transactions > 1 ? 'Yes' : 'No') + '</b></div>'
       + '<div class="statline"><span>Most Used Sales Source</span><b>' + esc(row.mostUsedChannel) + '</b></div></div></div>'
-      + '<div class="card" style="margin-top:12px"><h3>Purchase History</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Receipt/Transaction ID</th><th>Product</th><th class="right">Quantity</th><th class="right">Sales Value</th><th>Sales Source</th></tr></thead><tbody>' + history + '</tbody></table></div></div>';
+      + '<div class="card" style="margin-top:12px"><h3>Purchase History</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Receipt/Transaction ID</th><th>Product</th><th class="right">Quantity</th><th class="right">Sales Value</th><th>Sales Source</th></tr></thead><tbody>' + history + '</tbody></table></div></div>'
+      + (ZEZMS.customerFollowups && typeof ZEZMS.customerFollowups.customerDetailHTML === 'function' ? ZEZMS.customerFollowups.customerDetailHTML(c.customerId) : '');
   }
   function viewHTML() {
     if(!ownerAdmin()) return '<div class="card"><div class="empty">Customer Master is available only to Owner or Admin.</div></div>';
@@ -553,6 +554,7 @@
     viewHTML:viewHTML, search:search, selectCustomer:selectCustomer, saveSelectedProfile:saveSelectedProfile,
     openManualCreate:openManualCreate, createManual:createManual,
     posLookupHTML:posLookupHTML, searchPOS:searchPOS, selectPOS:selectPOS, onPOSTelephoneInput:onPOSTelephoneInput,
+    getRelationshipSnapshot:preparedModel,
     getRuntimeSnapshot:function () { return { indexVersion:runtime.indexVersion, customerCount:runtime.searchRows.length, selectedId:runtime.selectedId, modelReady:!!runtime.model }; },
     _test:{ preparedModel:preparedModel, transactionRows:transactionRows }
   };

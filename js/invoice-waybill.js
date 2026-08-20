@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260816-direct-print-bridge-r46';
+  const BUILD = '20260820-customer-retention-r47';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
@@ -209,17 +209,19 @@
     const qty = document.getElementById(prefix + 'Qty');
     const rem = document.getElementById(prefix + 'RemQty');
     if (select) select.value = '';
-    if (qty) qty.value = '1';
+    if (qty) qty.value = '';
     if (rem) rem.textContent = '0';
     [prefix + 'SuggestName', prefix + 'SuggestId'].forEach((id) => {
       const box = document.getElementById(id);
       if (box) { box.classList.remove('show'); box.innerHTML = ''; }
     });
     if (prefix === 'inv') {
-      ['invUPrice', 'invPriceAdj', 'invDisc'].forEach((id) => {
+      ['invUPrice', 'invPriceAdj'].forEach((id) => {
         const element = document.getElementById(id);
         if (element) element.value = '0';
       });
+      const discount = document.getElementById('invDisc');
+      if (discount) discount.value = '';
       invoicePriceAdjustmentUnlocked = false;
       const adjustment = document.getElementById('invPriceAdj');
       if (adjustment) adjustment.readOnly = true;
@@ -239,12 +241,12 @@
   function addInvoiceLine() {
     const item = selectedProduct('inv');
     if (!item) { toast('Select an available product.', 'err'); return; }
-    const qty = Number(document.getElementById('invQty').value) || 0;
+    const qty = readNumberWithDefault(document.getElementById('invQty'), 1);
     const base = Number(document.getElementById('invUPrice').value) || 0;
     const adjustment = Number(document.getElementById('invPriceAdj').value) || 0;
-    const discount = Number(document.getElementById('invDisc').value) || 0;
-    if (qty <= 0) { toast('Quantity must be greater than zero.', 'err'); return; }
-    if (discount < 0) { toast('Discount cannot be negative.', 'err'); return; }
+    const discount = readNumberWithDefault(document.getElementById('invDisc'), 0);
+    if (!Number.isFinite(qty) || qty <= 0) { toast('Quantity must be greater than zero.', 'err'); return; }
+    if (!Number.isFinite(discount) || discount < 0) { toast('Discount cannot be negative.', 'err'); return; }
     if (Math.abs(adjustment) > 1e-9 && !invoicePriceAdjustmentUnlocked) {
       toast('Invoice price adjustment is locked. Double-click it and enter the price PIN.', 'warn');
       return;
@@ -269,10 +271,10 @@
   function addWaybillLine() {
     const item = selectedProduct('wb');
     if (!item) { toast('Select an available product.', 'err'); return; }
-    const qty = Number(document.getElementById('wbQty').value) || 0;
+    const qty = readNumberWithDefault(document.getElementById('wbQty'), 1);
     const unit = String(document.getElementById('wbUnit').value || 'pcs').trim();
     const remarks = String(document.getElementById('wbLineRemarks').value || '').trim();
-    if (qty <= 0) { toast('Quantity must be greater than zero.', 'err'); return; }
+    if (!Number.isFinite(qty) || qty <= 0) { toast('Quantity must be greater than zero.', 'err'); return; }
     const used = alreadyDrafted(waybillDraft.lines, item.name);
     if (used + qty > Number(item.qty) + 1e-9) {
       toast(`Cannot add ${qty} units. ${item.name} has ${fmtN(item.qty)} available and ${fmtN(used)} already in this waybill.`, 'err');
@@ -690,10 +692,10 @@
           <div class="field" style="position:relative;flex:1"><label>Search by product ID</label>
           <input id="invSearchId" placeholder="Type product ID…" autocomplete="off" oninput="invoiceSearchId()" onkeydown="commercialSearchKey(event,'inv','id')"><div id="invSuggestId" class="suggest"></div></div></div>
         <div class="field"><label>Available product — ${monthName(lm.month)} ${lm.year}</label><select id="invProduct" onchange="commercialProductChanged('inv')">${productOptions()}</select></div>
-        <div class="row mobile-number-row"><div class="field" style="flex:1"><label>Qty</label><input id="invQty" type="number" min="0.01" step="1" value="1"></div>
+        <div class="row mobile-number-row"><div class="field" style="flex:1"><label>Qty</label><input id="invQty" type="number" min="0.01" step="1" value="" placeholder="1" data-semantic-default="1"></div>
           <div class="field" style="flex:1"><label>Unit price (locked)</label><input id="invUPrice" type="number" step="0.01" value="0" readonly></div>
           <div class="field" style="flex:1"><label>Price adj (dbl-click / PIN)</label><input id="invPriceAdj" type="number" step="0.01" value="0" readonly ondblclick="unlockInvoicePriceAdjustment()"></div>
-          <div class="field" style="flex:1"><label>Discount (GH₵)</label><input id="invDisc" type="number" min="0" step="0.01" value="0"></div></div>
+          <div class="field" style="flex:1"><label>Discount (GH₵)</label><input id="invDisc" type="number" min="0" step="0.01" value="" placeholder="0" data-semantic-default="0"></div></div>
         <div class="row"><span class="pill">Remaining qty: <b id="invRemQty" class="mono">0</b></span><span class="pill">Open month: ${monthName(lm.month)} ${lm.year}</span></div>
         <div class="row" style="margin-top:10px"><button class="btn" onclick="addInvoiceItem()">Add item</button><button class="btn ghost" onclick="clearCommercialEntry('inv')">Clear entry</button></div>
         <p class="muted" style="font-size:12px;margin:10px 0 0">The invoice checks current stock availability but does not deduct or reserve stock. Stock is posted only after loading the invoice into Sale Out and completing the sale.</p>
@@ -750,7 +752,7 @@
         <div class="row mobile-search-row"><div class="field" style="position:relative;flex:1"><label>Search by product name</label><input id="wbSearchName" placeholder="Type product name…" autocomplete="off" oninput="waybillSearchName()" onkeydown="commercialSearchKey(event,'wb','name')"><div id="wbSuggestName" class="suggest"></div></div>
           <div class="field" style="position:relative;flex:1"><label>Search by product ID</label><input id="wbSearchId" placeholder="Type product ID…" autocomplete="off" oninput="waybillSearchId()" onkeydown="commercialSearchKey(event,'wb','id')"><div id="wbSuggestId" class="suggest"></div></div></div>
         <div class="field"><label>Available product — ${monthName(lm.month)} ${lm.year}</label><select id="wbProduct" onchange="commercialProductChanged('wb')">${productOptions()}</select></div>
-        <div class="row mobile-number-row waybill-number-row"><div class="field" style="flex:1"><label>Quantity</label><input id="wbQty" type="number" min="0.01" step="1" value="1"></div>
+        <div class="row mobile-number-row waybill-number-row"><div class="field" style="flex:1"><label>Quantity</label><input id="wbQty" type="number" min="0.01" step="1" value="" placeholder="1" data-semantic-default="1"></div>
           <div class="field" style="flex:1"><label>Unit</label><input id="wbUnit" value="pcs" placeholder="pcs, boxes, sets…"></div>
           <div class="field" style="flex:2"><label>Line remarks</label><input id="wbLineRemarks" placeholder="Serial numbers or condition (optional)"></div></div>
         <div class="row"><span class="pill">Remaining qty: <b id="wbRemQty" class="mono">0</b></span><span class="pill">Open month: ${monthName(lm.month)} ${lm.year}</span></div>

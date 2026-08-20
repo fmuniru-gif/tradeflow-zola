@@ -2,7 +2,7 @@
   'use strict';
 
   var VERSION = '3.9.0';
-  var BUILD = '20260811-stock-velocity-r38';
+  var BUILD = '20260820-customer-retention-r47';
   var RELEASE = 'Stock Velocity & Reorder Planning Lab';
   var WINDOWS = [30, 60, 90];
   var DEFAULT_WINDOW = 90;
@@ -885,7 +885,7 @@
   function resetScenario(){
     setValue('velocityWindow', String(DEFAULT_WINDOW));
     setValue('velocityLeadTime', '');
-    setValue('velocitySafetyDays', '0');
+    setValue('velocitySafetyDays', '');
     setValue('velocityTargetDays', '');
     changeWindow(DEFAULT_WINDOW);
   }
@@ -1007,7 +1007,7 @@
       + '  <div class="grid g4" style="margin-top:12px">'
       + '    <div class="field"><label for="velocityWindow">Sales lookback</label><select id="velocityWindow" onchange="ZEZMS.stockVelocity.changeWindow(this.value)"><option value="30">Last 30 days</option><option value="60">Last 60 days</option><option value="90" selected>Last 90 days</option></select></div>'
       + '    <div class="field"><label for="velocityLeadTime">Supplier lead time (days)</label><input id="velocityLeadTime" type="number" min="0" step="1" inputmode="numeric" placeholder="Required" oninput="ZEZMS.stockVelocity.recalculate()"></div>'
-      + '    <div class="field"><label for="velocitySafetyDays">Safety Buffer — Days</label><input id="velocitySafetyDays" type="number" min="0" step="1" inputmode="numeric" value="0" oninput="ZEZMS.stockVelocity.recalculate()"></div>'
+      + '    <div class="field"><label for="velocitySafetyDays">Safety Buffer — Days</label><input id="velocitySafetyDays" type="number" min="0" step="1" inputmode="numeric" value="" placeholder="0" data-semantic-default="0" oninput="ZEZMS.stockVelocity.recalculate()"></div>'
       + '    <div class="field"><label for="velocityTargetDays">Target Cover After Receipt — Days</label><input id="velocityTargetDays" type="number" min="0" step="1" inputmode="numeric" placeholder="Required" oninput="ZEZMS.stockVelocity.recalculate()"></div>'
       + '  </div>'
       + '  <div class="row wrap" style="margin-top:10px"><button class="btn primary" type="button" onclick="ZEZMS.stockVelocity.recalculate()">Recalculate Scenario</button><button class="btn" type="button" onclick="ZEZMS.stockVelocity.resetScenario()">Reset Reorder Planning</button></div>'

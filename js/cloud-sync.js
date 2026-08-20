@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260815-customer-master-print-readiness-r45';
+  const BUILD = '20260820-customer-retention-r47';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -14,7 +14,7 @@
   const PULL_PAGE_SIZE = 500;
 
   const COLLECTIONS = [
-    'products', 'customers', 'stockRows', 'debtors', 'creditors', 'depositors',
+    'products', 'customers', 'customerFollowups', 'stockRows', 'debtors', 'creditors', 'depositors',
     'sales', 'receipts', 'invoices', 'waybills', 'purchaseOrders', 'saleLines', 'accountTxns', 'cashLog',
     'expenses', 'inventoryTxns', 'undoLog', 'debtorsMonthly',
     'creditorsMonthly', 'depositorsMonthly', 'kpiHistory', 'monthRollovers'
@@ -214,7 +214,7 @@
 
   function entityKey(item) {
     if (!item || typeof item !== 'object') return '';
-    return String(item.id || item.customerId || item.receiptNo || item._syncId || '');
+    return String(item.id || item.followupId || item.customerId || item.receiptNo || item._syncId || '');
   }
 
   function ensureSyncIds(database) {
@@ -403,6 +403,7 @@
     if (insert('invoices')) return 'INVOICE';
     if (insert('waybills')) return 'WAYBILL';
     if (insert('purchaseOrders')) return 'PURCHASE_ORDER';
+    if (insert('customerFollowups') || patches.some(function (patch) { return patch.collection === 'customerFollowups'; })) return 'CUSTOMER_FOLLOWUP_UPSERT';
     if (insert('customers') || patches.some(function (patch) { return patch.collection === 'customers'; })) return 'CUSTOMER_UPSERT';
     if (insert('sales') || insert('receipts')) return 'SALE_OUT';
     const account = insert('accountTxns');
@@ -501,6 +502,18 @@
     return target;
   }
 
+  function mergeCustomerFollowup(target, incoming) {
+    if (!target || !incoming) return target;
+    const incomingTime = timestampValue(incoming.updatedAt);
+    const targetTime = timestampValue(target.updatedAt);
+    if (!incomingTime || (targetTime && incomingTime <= targetTime)) return target;
+    const stableId = String(target.followupId || incoming.followupId || '');
+    Object.keys(target).forEach(function (field) { delete target[field]; });
+    Object.assign(target, clone(incoming));
+    target.followupId = stableId;
+    return target;
+  }
+
   function applyPatch(patch, operation) {
     const database = getDatabase();
     if (!database) throw new Error('Local database is unavailable while applying a cloud operation.');
@@ -511,6 +524,10 @@
       if (found.item) {
         if (patch.collection === 'customers') {
           mergeCustomerProfile(found.item, patch.value);
+          return;
+        }
+        if (patch.collection === 'customerFollowups') {
+          mergeCustomerFollowup(found.item, patch.value);
           return;
         }
         if (!equal(found.item, patch.value)) {
@@ -551,6 +568,10 @@
       }
       if (patch.collection === 'customers' && patch.fallback
           && timestampValue(patch.fallback.updatedAt) < timestampValue(found.item.updatedAt)) {
+        return;
+      }
+      if (patch.collection === 'customerFollowups' && patch.fallback) {
+        mergeCustomerFollowup(found.item, patch.fallback);
         return;
       }
       patch.changes.forEach(function (change) {
@@ -652,6 +673,9 @@
       }
       if (operation.patches.some(function (patch) { return patch.collection === 'customers'; })) {
         window.dispatchEvent(new CustomEvent('zezms-customer-master-updated'));
+      }
+      if (operation.patches.some(function (patch) { return patch.collection === 'customerFollowups'; })) {
+        window.dispatchEvent(new CustomEvent('zezms-customer-followups-updated'));
       }
     } catch (_) {}
     try { if (!(options && options.silent) && typeof render === 'function') render(); } catch (_) {}

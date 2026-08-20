@@ -195,7 +195,7 @@
 
     const restored = Object.assign(defaultDB(), data);
     const arrayKeys = [
-      'products', 'customers', 'stockRows', 'sales', 'saleLines', 'debtors', 'creditors',
+      'products', 'customers', 'customerFollowups', 'stockRows', 'sales', 'saleLines', 'debtors', 'creditors',
       'depositors', 'debtorsMonthly', 'creditorsMonthly', 'depositorsMonthly',
       'accountTxns', 'cashLog', 'expenses', 'kpiHistory', 'receipts',
       'invoices', 'waybills', 'purchaseOrders',
