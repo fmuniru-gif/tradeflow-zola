@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
   const OPEN = 'OPEN';
   const COMMITTED = 'COMMITTED';
   const CANCELLED = 'CANCELLED';
@@ -748,12 +748,13 @@
       return sum + round2((Number(line.qty) || 0) * (Number(line.uPrice) || 0) - (Number(line.disc) || 0));
     }, 0));
     const vatRate = normalizeVatPercent(receiptEditDraft ? receiptEditDraft.vatRate : 0);
-    const vatAmount = round2(subtotal * vatRate / 100);
     const withholdingTaxRate = normalizeVatPercent(receiptEditDraft ? receiptEditDraft.withholdingTaxRate : 0);
-    const withholdingTaxAmount = round2(subtotal * withholdingTaxRate / 100);
-    return { subtotal: subtotal, vatRate: vatRate, vatAmount: vatAmount,
-      withholdingTaxRate: withholdingTaxRate, withholdingTaxAmount: withholdingTaxAmount,
-      total: round2(subtotal + vatAmount - withholdingTaxAmount) };
+    const summary = calculateSaleOutTaxSummary(subtotal, vatRate, withholdingTaxRate);
+    return { subtotal: summary.subtotal, vatRate: summary.vatRate, vatAmount: summary.vatAmount,
+      withholdingTaxRate: summary.withholdingTaxRate, withholdingTax:summary.withholdingTax,
+      withholdingTaxAmount: summary.withholdingTax,
+      grossTotal:summary.grossAmountDue, total:summary.grossAmountDue,
+      netAmountCollectible:summary.netAmountCollectible };
   }
 
   function receiptProductOptions(selected) {
@@ -785,15 +786,16 @@
       + '<div class="field"><label>Location</label><input id="receiptEditLocation" value="' + escAttr(receiptEditDraft.location) + '" oninput="receiptEditField(\'location\',this.value)"></div>'
       + '<div class="field"><label>Amount paid</label><input id="receiptEditPaid" type="number" min="0" step="0.01" value="' + (Number(receiptEditDraft.amountPaid) || 0) + '" oninput="receiptEditField(\'amountPaid\',this.value);refreshReceiptEditTotals()"></div>'
       + '<div class="field"><label>VAT percentage</label><input id="receiptEditVat" type="number" min="0" max="100" step="0.01" value="' + totals.vatRate + '" oninput="receiptEditField(\'vatRate\',this.value);refreshReceiptEditTotals()"></div>'
-      + '<div class="field"><label>Withholding Tax percentage</label><input id="receiptEditWithholdingTax" type="number" min="0" max="100" step="0.01" value="' + (totals.withholdingTaxRate || '') + '" placeholder="0" data-semantic-default="0" readonly onclick="unlockReceiptEditWithholdingTax()" oninput="receiptEditField(\'withholdingTaxRate\',this.value);refreshReceiptEditTotals()"><small class="muted">PIN 0000 is required to change this Sale Out tax.</small></div></div>'
+      + '<div class="field"><label>Withholding Tax percentage</label><input id="receiptEditWithholdingTax" type="number" min="0" max="100" step="0.01" value="' + (totals.withholdingTaxRate || '') + '" placeholder="0" data-semantic-default="0" readonly onclick="unlockReceiptEditWithholdingTax()" oninput="receiptEditField(\'withholdingTaxRate\',this.value);refreshReceiptEditTotals()"><small class="muted">PIN 0000 is required. WHT is deducted from the collectible and does not reduce gross sales.</small></div></div>'
       + '<div class="table-wrap"><table><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Discount</th><th class="right">Total</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<div class="row" style="margin-top:10px"><select id="receiptEditNewProduct" style="flex:1"><option value="">- add another product -</option>' + receiptProductOptions('') + '</select>'
       + '<button class="btn ghost" onclick="addReceiptEditLine()">Add item</button></div>'
       + '<div class="card" style="margin-top:12px"><div class="statline"><span>Subtotal</span><b id="receiptEditSubtotal">' + fmt(totals.subtotal) + '</b></div>'
       + '<div class="statline"><span>VAT</span><b id="receiptEditVatAmount">' + fmt(totals.vatAmount) + '</b></div>'
       + '<div class="statline"><span>Withholding Tax deduction</span><b id="receiptEditWithholdingTaxAmount">−' + fmt(totals.withholdingTaxAmount) + '</b></div>'
-      + '<div class="statline"><span>Grand total</span><b id="receiptEditGrandTotal">' + fmt(totals.total) + '</b></div>'
-      + '<div class="statline"><span>Debtor balance</span><b id="receiptEditOutstanding">' + fmt(Math.max(0, round2(totals.total - (Number(receiptEditDraft.amountPaid) || 0)))) + '</b></div></div>'
+      + '<div class="statline"><span>Gross Amount Due</span><b id="receiptEditGrossTotal">' + fmt(totals.grossTotal) + '</b></div>'
+      + '<div class="statline"><span>Net Amount Collectible</span><b id="receiptEditGrandTotal">' + fmt(totals.netAmountCollectible) + '</b></div>'
+      + '<div class="statline"><span>Debtor balance</span><b id="receiptEditOutstanding">' + fmt(Math.max(0, round2(totals.netAmountCollectible - (Number(receiptEditDraft.amountPaid) || 0)))) + '</b></div></div>'
       + '<div class="row" style="margin-top:12px"><button class="btn ok" onclick="saveReceiptEdit()">Save corrected receipt</button>'
       + '<button class="btn ghost" onclick="cancelReceiptEdit()">Cancel</button></div>';
   }
@@ -858,8 +860,9 @@
     const values = {
       receiptEditSubtotal: totals.subtotal, receiptEditVatAmount: totals.vatAmount,
       receiptEditWithholdingTaxAmount: -totals.withholdingTaxAmount,
-      receiptEditGrandTotal: totals.total,
-      receiptEditOutstanding: Math.max(0, round2(totals.total - (Number(receiptEditDraft.amountPaid) || 0)))
+      receiptEditGrossTotal: totals.grossTotal,
+      receiptEditGrandTotal: totals.netAmountCollectible,
+      receiptEditOutstanding: Math.max(0, round2(totals.netAmountCollectible - (Number(receiptEditDraft.amountPaid) || 0)))
     };
     Object.keys(values).forEach(function (id) {
       const node = document.getElementById(id);
@@ -953,7 +956,7 @@
           amount: round2(Number(line.qty) * Number(line.uPrice) - (Number(line.disc) || 0)), fifo: allocations
         };
       });
-      const outstanding = Math.max(0, round2(totals.total - receiptEditDraft.amountPaid));
+      const outstanding = Math.max(0, round2(totals.netAmountCollectible - receiptEditDraft.amountPaid));
       if (outstanding > 0) {
         const debtorId = getOrCreateDebtorID(receiptEditDraft.customerName, receiptEditDraft.contact);
         const debtor = DB.debtors.find(function (item) { return text(item.id) === text(debtorId); });
@@ -969,14 +972,18 @@
       Object.assign(receipt, {
         customerName: receiptEditDraft.customerName, contact: receiptEditDraft.contact, location: receiptEditDraft.location,
         subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vatAmount,
-        withholdingTaxRate: totals.withholdingTaxRate, withholdingTaxAmount: totals.withholdingTaxAmount, totalAmount: totals.total,
+        withholdingTaxRate: totals.withholdingTaxRate, withholdingTax:totals.withholdingTax,
+        withholdingTaxAmount: totals.withholdingTaxAmount, grossTotal:totals.grossTotal,
+        totalAmount: totals.grossTotal, netAmountCollectible:totals.netAmountCollectible,
         amountPaid: receiptEditDraft.amountPaid, balance: outstanding, credit: outstanding > 0,
         lines: receiptLines, editRevision: (Number(receipt.editRevision) || 0) + 1, updatedAt: nowISO(), updatedBy: session.cashier
       });
       Object.assign(sale, {
         customer: receiptEditDraft.customerName, contact: receiptEditDraft.contact, location: receiptEditDraft.location,
         subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vatAmount,
-        withholdingTaxRate: totals.withholdingTaxRate, withholdingTaxAmount: totals.withholdingTaxAmount, total: totals.total,
+        withholdingTaxRate: totals.withholdingTaxRate, withholdingTax:totals.withholdingTax,
+        withholdingTaxAmount: totals.withholdingTaxAmount, grossTotal:totals.grossTotal,
+        total: totals.grossTotal, netAmountCollectible:totals.netAmountCollectible,
         paid: receiptEditDraft.amountPaid, balance: outstanding,
         pay: outstanding > 0 ? (receiptEditDraft.amountPaid > 0 ? 'PARTIAL' : 'CREDIT') : 'PAID',
         lines: saleLines, editRevision: (Number(sale.editRevision) || 0) + 1, updatedAt: nowISO(), updatedBy: session.cashier

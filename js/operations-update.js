@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
@@ -366,17 +366,25 @@
       disc: Number(line.disc) || 0,
       total: Number(line.total != null ? line.total : line.amount) || 0
     }));
-    const total = Number(sale.total != null ? sale.total : sale.totalAmount) || 0;
     const lineSubtotal = round2(lines.reduce((sum, line) => sum + (Number(line.total) || 0), 0));
     const subtotal = Number(sale.subtotal != null ? sale.subtotal : lineSubtotal) || 0;
-    const vatAmount = round2(Number(sale.vatAmount != null ? sale.vatAmount : total - subtotal) || 0);
+    const withholdingTax = round2(Number(sale.withholdingTax != null ? sale.withholdingTax : sale.withholdingTaxAmount) || 0);
+    const storedTotal = Number(sale.total != null ? sale.total : sale.totalAmount) || 0;
+    const grossTotal = round2(Number(sale.grossTotal != null
+      ? sale.grossTotal
+      : (sale.netAmountCollectible != null ? storedTotal : storedTotal + withholdingTax)) || 0);
+    const vatAmount = round2(Number(sale.vatAmount != null ? sale.vatAmount : grossTotal - subtotal) || 0);
     const derivedRate = subtotal > 0 ? round2((vatAmount / subtotal) * 100) : 0;
     const vatRate = normalizeVatPercent(sale.vatRate != null ? sale.vatRate : derivedRate);
-    const withholdingTaxAmount = round2(Number(sale.withholdingTaxAmount) || 0);
     const withholdingTaxRate = normalizeVatPercent(sale.withholdingTaxRate != null
       ? sale.withholdingTaxRate
-      : (subtotal > 0 ? withholdingTaxAmount / subtotal * 100 : 0));
+      : (subtotal > 0 ? withholdingTax / subtotal * 100 : 0));
+    const netAmountCollectible = round2(Math.max(0, Number(sale.netAmountCollectible != null
+      ? sale.netAmountCollectible
+      : grossTotal - withholdingTax) || 0));
     const paid = Number(sale.paid != null ? sale.paid : sale.amountPaid) || 0;
+    const balanceOwed = Math.max(0, round2(netAmountCollectible - paid));
+    const changeDue = Math.max(0, round2(paid - netAmountCollectible));
     return {
       receiptNo: sale.receiptNo || sale.id || '',
       customer: sale.customer || sale.customerName || '',
@@ -386,13 +394,16 @@
       vatRate,
       vatAmount,
       withholdingTaxRate,
-      withholdingTaxAmount,
-      total,
+      withholdingTax,
+      withholdingTaxAmount:withholdingTax,
+      grossTotal,
+      total:grossTotal,
+      netAmountCollectible,
       paid,
-      balance: sale.balance != null && sale.total != null
-        ? Number(sale.balance) || 0
-        : round2(paid - total),
-      outstanding: Math.max(0, round2(total - paid)),
+      balance:balanceOwed,
+      balanceOwed,
+      changeDue,
+      outstanding:balanceOwed,
       cashier: sale.cashier || '',
       cashierTel: sale.cashierTel || '',
       salesChannel: recordedSalesChannel(sale),
@@ -424,7 +435,7 @@
       ? normalizeVatPercent(sale.vatRate)
       : (subtotal > 0 ? round2((vat / subtotal) * 100) : 0);
     const withholdingTaxRate = normalizeVatPercent(sale.withholdingTaxRate || 0);
-    const withholdingTaxAmount = round2(sale.withholdingTaxAmount || 0);
+    const withholdingTax = round2(sale.withholdingTax || 0);
 
     return `<div class="receipt-paper" id="receiptPrint" style="position:relative">
       <div class="document-branding-watermark" aria-hidden="true"></div><div class="receipt-document-content">
@@ -451,10 +462,11 @@
       <div class="receipt-summary">
         <div>Subtotal: ${fmtN(subtotal)}</div>
         <div>VAT (${fmtN(vatRate)}%): ${fmtN(vat)}</div>
-        <div>Withholding Tax (${fmtN(withholdingTaxRate)}%): −${fmtN(withholdingTaxAmount)}</div>
-        <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
+        <div><b>Gross Amount Due: ${fmtN(sale.grossTotal)}</b></div>
+        ${withholdingTax > 0 ? `<div>Withholding Tax (${fmtN(withholdingTaxRate)}%): −${fmtN(withholdingTax)}</div><div><b>Net Amount Collectible: ${fmtN(sale.netAmountCollectible)}</b></div>` : ''}
         <div class="receipt-paid">Amount Paid: ${fmtN(sale.paid)}</div>
-        <div>Balance: ${fmtN(sale.balance)}</div>
+        <div>Balance Owed: ${fmtN(sale.balanceOwed)}</div>
+        ${sale.changeDue > 0 ? `<div>Change Due: ${fmtN(sale.changeDue)}</div>` : ''}
       </div>
       <div class="receipt-signature">
         <span class="approved-stamp">APPROVED</span><br>
@@ -685,21 +697,26 @@
         && date.getDate() === today.getDate();
     };
 
-    const receiptRecords = DB.receipts.map((receipt) => ({
-      kind: 'RECEIPT',
-      id: receipt.receiptNo,
-      date: receipt.date,
-      cashier: receipt.cashier || '',
-      customer: receipt.customerName || '',
-      contact: receipt.contact || '',
-      total: Number(receipt.totalAmount) || 0,
-      balance: Number(receipt.balance) || 0,
-      status: receipt.voided || receipt.status === 'VOID' || receipt.status === UNDONE
-        ? 'VOID'
-        : ((receipt.credit || Number(receipt.balance) > 0) ? 'CREDIT' : 'PAID'),
-      salesChannel: salesSourceText(receipt, 'Unspecified'),
-      source: receipt
-    }));
+    const receiptRecords = DB.receipts.map((receipt) => {
+      const normalized = normalizeReceiptPayload(receipt);
+      return {
+        kind: 'RECEIPT',
+        id: receipt.receiptNo,
+        date: receipt.date,
+        cashier: receipt.cashier || '',
+        customer: receipt.customerName || '',
+        contact: receipt.contact || '',
+        total: normalized.grossTotal,
+        withholdingTax: normalized.withholdingTax,
+        netAmountCollectible: normalized.netAmountCollectible,
+        balance: normalized.balanceOwed,
+        status: receipt.voided || receipt.status === 'VOID' || receipt.status === UNDONE
+          ? 'VOID'
+          : ((receipt.credit || normalized.balanceOwed > 0) ? 'CREDIT' : 'PAID'),
+        salesChannel: salesSourceText(receipt, 'Unspecified'),
+        source: receipt
+      };
+    });
 
     const quickRecords = DB.inventoryTxns
       .filter((transaction) => transaction.type === 'SALE_OUT' && transaction.subtype === 'QUICK')
@@ -711,6 +728,8 @@
         customer: transaction.customerName || 'Walk-in / not captured',
         contact: transaction.customerPhone || '',
         total: Number(transaction.amount) || 0,
+        withholdingTax: 0,
+        netAmountCollectible: Number(transaction.amount) || 0,
         balance: 0,
         status: transaction.status === UNDONE ? 'UNDONE' : 'COMPLETED',
         salesChannel: salesSourceText(transaction, 'Unspecified'),
@@ -750,7 +769,7 @@
         <td>${esc(record.customer)}</td>
         <td>${esc(record.contact || '—')}</td>
         <td>${esc(record.salesChannel || 'Unspecified')}</td>
-        <td class="mono right">${fmt(record.total)}</td>
+        <td class="mono right">${fmt(record.total)}${record.kind === 'RECEIPT' && record.withholdingTax > 0 ? `<small class="muted" style="display:block">WHT −${fmt(record.withholdingTax)} · Net ${fmt(record.netAmountCollectible)}</small>` : ''}</td>
         <td class="mono right">${record.balance > 0 ? fmt(record.balance) : '—'}</td>
         <td style="font-size:11px">${record.date ? new Date(record.date).toLocaleString() : '—'}</td>
         <td>${esc(record.cashier)}</td>
@@ -774,7 +793,7 @@
         <span id="salesRecordsSearchCount" class="pill search-count">${list.length} ${list.length === 1 ? 'sales record' : 'sales records'}</span>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Sale type</th><th>Record #</th><th>Customer</th><th>Contact</th><th>Sales Source</th><th class="right">Total</th><th class="right">Balance owed</th><th>Date</th><th>Cashier</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Sale type</th><th>Record #</th><th>Customer</th><th>Contact</th><th>Sales Source</th><th class="right">Gross total</th><th class="right">Balance owed</th><th>Date</th><th>Cashier</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="salesRecordsBody">${rows}${emptyRow}<tr id="salesRecordsNoMatch" style="display:none"><td colspan="11" class="empty">No receipt matches that customer name.</td></tr></tbody>
       </table></div>
     </div>`;

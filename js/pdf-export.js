@@ -3,7 +3,7 @@
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
   const DOCUMENT_WATERMARK_ASSET = 'assets/zez-document-watermark.jpg';
   const DOCUMENT_WATERMARK_OPACITY = 0.10;
   const A4 = { width: 595, height: 842 };
@@ -386,12 +386,19 @@
         total: Number(line.total != null ? line.total : line.amount) || 0
       };
     });
-    const total = Number(source.total != null ? source.total : source.totalAmount) || 0;
     const subtotal = Number(source.subtotal != null ? source.subtotal : lines.reduce(function (sum, line) { return sum + line.total; }, 0)) || 0;
-    const vat = Number(source.vatAmount != null ? source.vatAmount : total - subtotal) || 0;
-    const withholdingTax = Number(source.withholdingTaxAmount) || 0;
+    const withholdingTax = Number(source.withholdingTax != null ? source.withholdingTax : source.withholdingTaxAmount) || 0;
+    const storedTotal = Number(source.total != null ? source.total : source.totalAmount) || 0;
+    const grossTotal = Number(source.grossTotal != null
+      ? source.grossTotal
+      : (source.netAmountCollectible != null ? storedTotal : storedTotal + withholdingTax)) || 0;
+    const vat = Number(source.vatAmount != null ? source.vatAmount : grossTotal - subtotal) || 0;
+    const netAmountCollectible = Math.max(0, Number(source.netAmountCollectible != null
+      ? source.netAmountCollectible
+      : grossTotal - withholdingTax) || 0);
     const paid = Number(source.paid != null ? source.paid : source.amountPaid) || 0;
-    const balance = source.balance != null ? Number(source.balance) || 0 : Math.max(0, total - paid);
+    const balance = Math.max(0, netAmountCollectible - paid);
+    const changeDue = Math.max(0, paid - netAmountCollectible);
     return {
       receiptNo: source.receiptNo || source.id || '', customer: source.customer || source.customerName || '',
       contact: source.contact || '', location: source.location || '', date: source.date,
@@ -399,7 +406,8 @@
       vatRate: Number(source.vatRate) || (subtotal > 0 ? vat / subtotal * 100 : 0), vat: vat,
       withholdingTaxRate: Number(source.withholdingTaxRate) || (subtotal > 0 ? withholdingTax / subtotal * 100 : 0),
       withholdingTax: withholdingTax,
-      total: total, paid: paid, balance: balance,
+      grossTotal: grossTotal, total: grossTotal, netAmountCollectible: netAmountCollectible,
+      paid: paid, balance: balance, changeDue:changeDue,
       salesSource: salesChannel ? (salesChannel === 'Other' && salesChannelOther ? salesChannel + ' - ' + salesChannelOther : salesChannel) : '',
       status: source.voided || source.status === 'VOID' || source.status === 'UNDONE' ? 'VOID' : (balance > 0 ? 'CREDIT' : 'PAID')
     };
@@ -420,14 +428,23 @@
       receipt.lines.map(function (line) { return [line.product, number(line.qty), number(line.unitPrice), number(line.discount), number(line.total)]; }),
       [142, 34, 65, 58, 64], ['left', 'right', 'right', 'right', 'right']
     );
-    pdf.summary([
+    const summaryRows = [
       { label: 'Subtotal', value: 'GHS ' + number(receipt.subtotal) },
       { label: 'VAT (' + number(receipt.vatRate) + '%)', value: 'GHS ' + number(receipt.vat) },
-      { label: 'Withholding Tax (' + number(receipt.withholdingTaxRate) + '%)', value: '-GHS ' + number(receipt.withholdingTax) },
-      { label: 'Grand total', value: 'GHS ' + number(receipt.total), strong: true },
+      { label: 'Gross Amount Due', value: 'GHS ' + number(receipt.grossTotal), strong: true }
+    ];
+    if (receipt.withholdingTax > 0) {
+      summaryRows.push(
+        { label: 'Withholding Tax (' + number(receipt.withholdingTaxRate) + '%)', value: '-GHS ' + number(receipt.withholdingTax) },
+        { label: 'Net Amount Collectible', value: 'GHS ' + number(receipt.netAmountCollectible), strong: true }
+      );
+    }
+    summaryRows.push(
       { label: 'Amount paid', value: 'GHS ' + number(receipt.paid) },
       { label: 'Balance owed', value: 'GHS ' + number(receipt.balance), strong: receipt.balance > 0 }
-    ]);
+    );
+    if (receipt.changeDue > 0) summaryRows.push({ label: 'Change due', value: 'GHS ' + number(receipt.changeDue) });
+    pdf.summary(summaryRows);
     pdf.signatures('Cashier signature', 'Customer signature', { approved: true });
     pdf.paragraph('Thank you for your business.', { align: 'center', bold: true, size: 11 });
     return pdf.finish();

@@ -6,7 +6,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
   var VERSION = '3.15.0';
-  var BUILD = '20260821-sales-pipeline-stock-warranty-r49';
+  var BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
   var CLAIM_STATUSES = Object.freeze(['Open', 'In Progress', 'Resolved', 'Rejected', 'Cancelled']);
   var RESOLUTIONS = Object.freeze(['Repaired', 'Replaced', 'No Fault Found', 'Warranty Exclusion', 'Goodwill Assistance', 'Other']);
   var historicalPreview = null;

@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone - Sales, inventory, Customer Master, manual customer outreach, customer follow-ups, Product Catalog search and secure one-click local printing" />
-<meta name="zezms-build" content="20260821-sales-pipeline-stock-warranty-r49" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
+<meta name="zezms-build" content="20260821-sales-pipeline-stock-warranty-wht-r50" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
 <title>Zola Electronics Zone - TradeFlow v3.15.0 - Sales Pipeline, Stock Corrections and Warranty</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1218,9 +1218,9 @@ html.zezms-phone-layout .kpi-freeze-pane{
 <script src="js/product-search-metrics.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/product-search-facade.js?v=20260812-portfolio-signals-r39"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1"></script>
-<script src="js/cloud-sync.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/backup-manager.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/input-defaults-v3130.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/cloud-sync.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/backup-manager.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/input-defaults-v3130.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
 
 <script>
 /* =========================================================
@@ -1274,21 +1274,61 @@ function normalizeWithholdingTaxPercent(value){
 function currentSaleWithholdingTaxPercent(){
   return normalizeWithholdingTaxPercent(cart && cart._withholdingTaxRate != null ? cart._withholdingTaxRate : 0);
 }
+function calculateSaleOutTaxSummary(subtotalValue, vatPercentValue, withholdingTaxPercentValue){
+  const parsedSubtotal = Number(subtotalValue);
+  const subtotal = round2(Number.isFinite(parsedSubtotal) ? Math.max(0, parsedSubtotal) : 0);
+  const vatRate = normalizeVatPercent(vatPercentValue);
+  const withholdingTaxRate = normalizeWithholdingTaxPercent(withholdingTaxPercentValue);
+  const vatAmount = round2(subtotal * vatRate / 100);
+  const grossAmountDue = round2(subtotal + vatAmount);
+  const calculatedWithholdingTax = round2(subtotal * withholdingTaxRate / 100);
+  const withholdingTax = round2(Math.max(0, Math.min(grossAmountDue, calculatedWithholdingTax)));
+  const netAmountCollectible = round2(Math.max(0, grossAmountDue - withholdingTax));
+  return {
+    subtotal, vatRate, vatAmount,
+    grossAmountDue, grossTotal:grossAmountDue,
+    withholdingTaxRate, withholdingTax, withholdingTaxAmount:withholdingTax,
+    netAmountCollectible
+  };
+}
+function resetSaleWithholdingTaxControl(){
+  if(cart && typeof cart === 'object') delete cart._withholdingTaxRate;
+  withholdingTaxRateUnlocked = false;
+  const input = $('posWithholdingTaxRate');
+  if(input){ input.value = ''; input.readOnly = true; }
+}
+function acceptSaleWithholdingTaxInput(input){
+  const raw = input ? String(input.value == null ? '' : input.value).trim() : '';
+  if(raw === ''){
+    delete cart._withholdingTaxRate;
+    refreshSaleTotals();
+    return true;
+  }
+  const parsed = Number(raw);
+  if(!Number.isFinite(parsed) || parsed < 0 || parsed > 100){
+    if(input) input.value = currentSaleWithholdingTaxPercent() || '';
+    toast('Enter a valid Withholding Tax percentage from 0 to 100.', 'err');
+    return false;
+  }
+  cart._withholdingTaxRate = round2(parsed);
+  refreshSaleTotals();
+  return true;
+}
 function onSaleWithholdingTaxRateChange(){
   const input = $('posWithholdingTaxRate');
   if(!withholdingTaxRateUnlocked){
     if(input) input.value = currentSaleWithholdingTaxPercent() || '';
     return;
   }
-  cart._withholdingTaxRate = normalizeWithholdingTaxPercent(input ? readNumberWithDefault(input,0) : cart._withholdingTaxRate);
-  if(input && document.activeElement !== input) input.value = cart._withholdingTaxRate || '';
-  refreshSaleTotals();
+  acceptSaleWithholdingTaxInput(input);
 }
 function clampSaleWithholdingTaxRate(){
   const input = $('posWithholdingTaxRate');
-  cart._withholdingTaxRate = normalizeWithholdingTaxPercent(input ? readNumberWithDefault(input,0) : cart._withholdingTaxRate);
-  if(input) input.value = cart._withholdingTaxRate || '';
-  refreshSaleTotals();
+  if(!withholdingTaxRateUnlocked){
+    if(input){ input.value = currentSaleWithholdingTaxPercent() || ''; input.readOnly = true; }
+    return;
+  }
+  if(acceptSaleWithholdingTaxInput(input) && input) input.value = currentSaleWithholdingTaxPercent() || '';
 }
 const BUSINESS = {
   name: 'Zola Electronics Zone',
@@ -1875,6 +1915,7 @@ function nav(view){
     toast(msgs[view] || 'Only admin can open this page.', 'err');
     view = 'pos';
   }
+  if(currentView === 'pos' && view !== 'pos') resetSaleWithholdingTaxControl();
   currentView = view;
   document.querySelectorAll('#mainNav button[data-view]').forEach(b=>{
     b.classList.toggle('active', b.dataset.view===view);
@@ -2504,15 +2545,17 @@ function viewPOS(){
     </tr>`;
   }).join('') || `<tr><td colspan="6" class="empty">No items added.</td></tr>`;
 
-  const sub = cartSubtotal();
-  const vatRate = currentSaleVatPercent();
-  const vat = round2(sub * vatRate / 100);
-  const withholdingTaxRate = currentSaleWithholdingTaxPercent();
-  const withholdingTax = round2(sub * withholdingTaxRate / 100);
-  const grand = round2(sub + vat - withholdingTax);
+  const taxSummary = calculateSaleOutTaxSummary(cartSubtotal(), currentSaleVatPercent(), currentSaleWithholdingTaxPercent());
+  const sub = taxSummary.subtotal;
+  const vatRate = taxSummary.vatRate;
+  const vat = taxSummary.vatAmount;
+  const withholdingTaxRate = taxSummary.withholdingTaxRate;
+  const withholdingTax = taxSummary.withholdingTax;
+  const grossAmountDue = taxSummary.grossAmountDue;
+  const netAmountCollectible = taxSummary.netAmountCollectible;
   const paidInput = cart._paid == null ? '' : cart._paid;
   const paid = readNumberWithDefault(paidInput,0);
-  const balDisplay = round2(paid - grand);
+  const balDisplay = round2(paid - netAmountCollectible);
 
   return `<div class="sale-layout">
     <div>
@@ -2610,16 +2653,18 @@ function viewPOS(){
             title="Click and enter PIN 0000 to change VAT" /></div>
         <div class="statline"><span>VAT amount (<span id="posVatRateLabel">${fmtN(vatRate)}</span>%)</span><b class="mono" id="posVat">${fmtN(vat)}</b></div>
         <div class="field" style="margin-top:10px"><label>Withholding Tax percentage (%)</label>
-          <input id="posWithholdingTaxRate" type="number" min="0" max="100" step="0.01" value="${withholdingTaxRate?escAttr(withholdingTaxRate):''}" placeholder="0" data-semantic-default="0" readonly
+          <input id="posWithholdingTaxRate" type="number" inputmode="decimal" min="0" max="100" step="0.01" value="${withholdingTaxRate?escAttr(withholdingTaxRate):''}" placeholder="0" data-semantic-default="0" readonly
             onclick="unlockSaleWithholdingTaxRate()" oninput="onSaleWithholdingTaxRateChange()" onchange="clampSaleWithholdingTaxRate()"
             title="Click and enter PIN 0000 to change Withholding Tax" /></div>
         <div class="statline"><span>Withholding Tax deduction (<span id="posWithholdingTaxRateLabel">${fmtN(withholdingTaxRate)}</span>%)</span><b class="mono" id="posWithholdingTax">${fmtN(withholdingTax)}</b></div>
-        <div class="statline"><span>Grand total (Subtotal + VAT − Withholding Tax)</span><b class="mono" id="posGrand">${fmtN(grand)}</b></div>
+        <p class="muted" style="font-size:11px;margin:6px 0 0">Withholding Tax is deducted from the amount collectible; it does not reduce the gross sale. It applies to Print Receipt sales only, not Quick Sale Out.</p>
+        <div class="statline"><span>Gross Amount Due (Subtotal + VAT)</span><b class="mono" id="posGrossAmountDue">${fmtN(grossAmountDue)}</b></div>
+        <div class="statline"><span>Net Amount Collectible</span><b class="mono" id="posGrand">${fmtN(netAmountCollectible)}</b></div>
         <div class="field" style="margin-top:10px"><label>Amount paid</label>
           <input id="posAmountPaid" type="number" min="0" step="0.01" value="${escAttr(paidInput)}" placeholder="0" data-semantic-default="0"
             oninput="onAmountPaidChange()" /></div>
-        <div class="statline"><span>Balance (paid − grand)</span><b class="mono" id="posBalance">${fmtN(balDisplay)}</b></div>
-        <p class="muted" style="font-size:11px;margin:8px 0 0">If Amount paid &lt; Grand total, outstanding goes to DEBTORS (credit sale).</p>
+        <div class="statline"><span>Balance (paid − net collectible)</span><b class="mono" id="posBalance">${fmtN(balDisplay)}</b></div>
+        <p class="muted" style="font-size:11px;margin:8px 0 0">If Amount paid &lt; Net Amount Collectible, the outstanding balance goes to DEBTORS (credit sale).</p>
         <div class="row" style="margin-top:12px">
           <button class="btn" style="flex:1" onclick="printReceiptSale()">🖨️ Print Receipt</button>
           <button class="btn ok" style="flex:1" onclick="quickSaleOut()">⚡ Quick Sale Out</button>
@@ -2644,12 +2689,14 @@ function cartSubtotal(){
   return round2(cart.reduce((s,c)=> s + (c.qty*c.uPrice - (c.disc||0)), 0));
 }
 function refreshSaleTotals(){
-  const sub = cartSubtotal();
-  const vatRate = currentSaleVatPercent();
-  const vat = round2(sub * vatRate / 100);
-  const withholdingTaxRate = currentSaleWithholdingTaxPercent();
-  const withholdingTax = round2(sub * withholdingTaxRate / 100);
-  const grand = round2(sub + vat - withholdingTax);
+  const taxSummary = calculateSaleOutTaxSummary(cartSubtotal(), currentSaleVatPercent(), currentSaleWithholdingTaxPercent());
+  const sub = taxSummary.subtotal;
+  const vatRate = taxSummary.vatRate;
+  const vat = taxSummary.vatAmount;
+  const withholdingTaxRate = taxSummary.withholdingTaxRate;
+  const withholdingTax = taxSummary.withholdingTax;
+  const grossAmountDue = taxSummary.grossAmountDue;
+  const netAmountCollectible = taxSummary.netAmountCollectible;
   const paidField = $('posAmountPaid');
   const paidRaw = paidField ? String(paidField.value||'').trim() : String(cart._paid==null?'':cart._paid).trim();
   const paid = readNumberWithDefault(paidRaw,0);
@@ -2659,8 +2706,9 @@ function refreshSaleTotals(){
   if($('posVat')) $('posVat').textContent = fmtN(vat);
   if($('posWithholdingTaxRateLabel')) $('posWithholdingTaxRateLabel').textContent = fmtN(withholdingTaxRate);
   if($('posWithholdingTax')) $('posWithholdingTax').textContent = fmtN(withholdingTax);
-  if($('posGrand')) $('posGrand').textContent = fmtN(grand);
-  if($('posBalance')) $('posBalance').textContent = fmtN(round2(paid - grand));
+  if($('posGrossAmountDue')) $('posGrossAmountDue').textContent = fmtN(grossAmountDue);
+  if($('posGrand')) $('posGrand').textContent = fmtN(netAmountCollectible);
+  if($('posBalance')) $('posBalance').textContent = fmtN(round2(paid - netAmountCollectible));
 }
 function onAmountPaidChange(){
   const field = $('posAmountPaid');
@@ -2930,12 +2978,11 @@ function getOrCreateDebtorID(debtorName, contact){
 function resetSaleOutForm(){
   cart = [];
   cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = ''; cart._vatRate = 0;
-  cart._withholdingTaxRate = 0;
   cart._customerId = '';
   cart._salesChannel = 'Walk-in'; cart._salesChannelOther = '';
   priceAdjUnlocked = false;
   vatRateUnlocked = false;
-  withholdingTaxRateUnlocked = false;
+  resetSaleWithholdingTaxControl();
 }
 
 function quickSaleOut(){
@@ -2984,15 +3031,11 @@ function printReceiptSale(){
     : '';
   const sourceQuotationId = String(cart._sourceQuotationId||'');
 
-  const subtotal = cartSubtotal();
-  const vatRate = currentSaleVatPercent();
-  const vatAmount = round2(subtotal * vatRate / 100);
-  const withholdingTaxRate = currentSaleWithholdingTaxPercent();
-  const withholdingTaxAmount = round2(subtotal * withholdingTaxRate / 100);
-  const totalPayable = round2(subtotal + vatAmount - withholdingTaxAmount);
+  const taxSummary = calculateSaleOutTaxSummary(cartSubtotal(), currentSaleVatPercent(), currentSaleWithholdingTaxPercent());
+  const {subtotal, vatRate, vatAmount, grossAmountDue, withholdingTaxRate, withholdingTax, withholdingTaxAmount, netAmountCollectible} = taxSummary;
   const amountPaid = readNumberWithDefault(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid,0);
-  const outstanding = round2(totalPayable - amountPaid); // for register/debtor
-  const receiptBal = round2(amountPaid - totalPayable); // for printed receipt
+  const outstanding = Math.max(0, round2(netAmountCollectible - amountPaid));
+  const changeDue = Math.max(0, round2(amountPaid - netAmountCollectible));
 
   const receiptNo = idStamp('SR-');
   const items = cart.map(c => ({
@@ -3039,8 +3082,11 @@ function printReceiptSale(){
     vatRate,
     vatAmount,
     withholdingTaxRate,
+    withholdingTax,
     withholdingTaxAmount,
-    totalAmount: totalPayable,
+    grossTotal: grossAmountDue,
+    totalAmount: grossAmountDue,
+    netAmountCollectible,
     amountPaid,
     balance: outstanding > 0 ? outstanding : 0,
     date: nowISO(),
@@ -3065,8 +3111,11 @@ function printReceiptSale(){
     vatRate,
     vatAmount,
     withholdingTaxRate,
+    withholdingTax,
     withholdingTaxAmount,
-    total: totalPayable,
+    grossTotal: grossAmountDue,
+    total: grossAmountDue,
+    netAmountCollectible,
     paid: amountPaid,
     balance: outstanding,
     pay: outstanding > 0 ? (amountPaid > 0 ? 'PARTIAL' : 'CREDIT') : 'PAID',
@@ -3102,9 +3151,10 @@ function printReceiptSale(){
   }
   const saleSnap = {
     receiptNo, customerId:resolvedCustomerId, customer, location, contact: tel,
-    subtotal, vatRate, vatAmount, withholdingTaxRate, withholdingTaxAmount,
-    total: totalPayable, paid: amountPaid,
-    balance: receiptBal, outstanding,
+    subtotal, vatRate, vatAmount, grossTotal:grossAmountDue,
+    withholdingTaxRate, withholdingTax, withholdingTaxAmount, netAmountCollectible,
+    total: grossAmountDue, paid: amountPaid,
+    balance: outstanding, outstanding, changeDue,
     cashier: session.cashier, cashierTel: session.tel,
     salesChannel: selectedSalesChannel, salesChannelOther: selectedSalesChannelOther,
     date: nowISO(), lines: items
@@ -3144,6 +3194,11 @@ function showReceiptModal(sale){
       <td style="text-align:right">${fmtN(l.total)}</td>
     </tr>`).join('');
   const biz = DB.business || BUSINESS;
+  const grossAmountDue = round2(Number(sale.grossTotal != null ? sale.grossTotal : sale.total) || 0);
+  const withholdingTax = round2(Number(sale.withholdingTax != null ? sale.withholdingTax : sale.withholdingTaxAmount) || 0);
+  const netAmountCollectible = round2(Number(sale.netAmountCollectible != null ? sale.netAmountCollectible : grossAmountDue - withholdingTax) || 0);
+  const balanceOwed = Math.max(0, round2(netAmountCollectible - (Number(sale.paid) || 0)));
+  const changeDue = Math.max(0, round2((Number(sale.paid) || 0) - netAmountCollectible));
   openModal(`
     <div class="receipt-paper" id="receiptPrint">
       <div class="center" style="color:#00f;font-weight:800;font-size:18px;letter-spacing:1px">SALES RECEIPT</div>
@@ -3167,10 +3222,11 @@ function showReceiptModal(sale){
       <div style="margin-top:10px;text-align:right;color:#111">
         <div>Subtotal: ${fmtN(sale.subtotal != null ? sale.subtotal : sale.total)}</div>
         <div>VAT (${fmtN(sale.vatRate || 0)}%): ${fmtN(sale.vatAmount || 0)}</div>
-        <div>Withholding Tax (${fmtN(sale.withholdingTaxRate || 0)}%): −${fmtN(sale.withholdingTaxAmount || 0)}</div>
-        <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
+        <div><b>Gross Amount Due: ${fmtN(grossAmountDue)}</b></div>
+        ${withholdingTax > 0 ? `<div>Withholding Tax (${fmtN(sale.withholdingTaxRate || 0)}%): −${fmtN(withholdingTax)}</div><div><b>Net Amount Collectible: ${fmtN(netAmountCollectible)}</b></div>` : ''}
         <div style="margin-top:6px">Amount Paid: ${fmtN(sale.paid)}</div>
-        <div>Balance: ${fmtN(sale.balance)}</div>
+        <div>Balance Owed: ${fmtN(balanceOwed)}</div>
+        ${changeDue > 0 ? `<div>Change Due: ${fmtN(changeDue)}</div>` : ''}
       </div>
       <div style="margin-top:14px;color:#111">
         Cashier Signature: ........................<br>
@@ -4664,7 +4720,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260821-sales-pipeline-stock-warranty-r49').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260821-sales-pipeline-stock-warranty-wht-r50').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4687,15 +4743,15 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/operations-update.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
 <script src="js/auto-month-rollover.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/invoice-waybill.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/invoice-waybill.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
 <script src="js/mobile-vertical-layout.js?v=20260817-loopback-network-r47"></script>
 <script src="js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/commercial-foundation.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/owner-maintenance-v373.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/pdf-export.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/owner-maintenance-v373.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/pdf-export.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
 <script src="js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39"></script>
 <script>
 /* Embedded so Owner Recovery does not depend on a newly added external file. */
@@ -4703,7 +4759,7 @@ document.addEventListener('keydown', (e)=>{
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260821-sales-pipeline-stock-warranty-r49';
+const BUILD='20260821-sales-pipeline-stock-warranty-wht-r50';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
@@ -5041,7 +5097,7 @@ setTimeout(function(){
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
   let branches = [];
   let lastPairing = null;
   let enrolledDevices = [];
@@ -5389,15 +5445,15 @@ setTimeout(function(){
 <script src="js/stock-velocity-v390.js?v=20260820-customer-retention-r47"></script>
 <script src="js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43"></script>
-<script src="js/customer-master-v3120.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/customer-outreach-v3140.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/customer-followups-v3130.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/product-catalog-search-v3140.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/sales-pipeline-v3150.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/stock-corrections-v3150.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
-<script src="js/warranty-management-v3150.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/customer-master-v3120.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/customer-outreach-v3140.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/customer-followups-v3130.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/product-catalog-search-v3140.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/sales-pipeline-v3150.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/stock-corrections-v3150.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
+<script src="js/warranty-management-v3150.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
 <script src="js/print-readiness-v3120.js?v=20260817-loopback-network-r47"></script>
 <script src="js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47"></script>
-<script src="js/navigation-v3101.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/navigation-v3101.js?v=20260821-sales-pipeline-stock-warranty-wht-r50"></script>
 </body>
 </html>

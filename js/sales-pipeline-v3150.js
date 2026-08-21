@@ -6,7 +6,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
   var VERSION = '3.15.0';
-  var BUILD = '20260821-sales-pipeline-stock-warranty-r49';
+  var BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
   var OPPORTUNITY_STATUSES = Object.freeze(['New', 'Contacted', 'Quotation Prepared', 'Negotiating', 'Won', 'Lost', 'Cancelled']);
   var QUOTATION_STATUSES = Object.freeze(['Draft', 'Issued', 'Accepted', 'Rejected', 'Expired', 'Converted', 'Cancelled']);
   var LOST_REASONS = Object.freeze(['Price', 'Product Unavailable', 'Customer Chose Competitor', 'Customer Postponed Purchase', 'No Response', 'Financing/Budget', 'Requirement Changed', 'Other']);
@@ -343,7 +343,7 @@
     cart._salesChannel = (opportunity(record.opportunityId) || {}).salesChannel || 'Walk-in';
     cart._salesChannelOther = '';
     cart._vatRate = Number(record.vatRate) || 0;
-    cart._withholdingTaxRate = 0;
+    delete cart._withholdingTaxRate;
     try { withholdingTaxRateUnlocked = false; } catch (_) {}
     cart._paid = '';
     cart._sourceQuotationId = record.quotationId;

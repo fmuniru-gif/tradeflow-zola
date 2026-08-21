@@ -2,7 +2,7 @@
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
   "description": "ZEZMS Owner Edition v3.15.0 with Sales Opportunities, Quotations, audited Stock Corrections, Warranty Management, Customer Outreach and authenticated local-bridge printing.",
-  "start_url": "./index.html?build=20260821-sales-pipeline-stock-warranty-r49",
+  "start_url": "./index.html?build=20260821-sales-pipeline-stock-warranty-wht-r50",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

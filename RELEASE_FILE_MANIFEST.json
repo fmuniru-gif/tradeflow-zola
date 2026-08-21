@@ -1,21 +1,23 @@
 {
-  "version": "3.12.1",
-  "build": "20260816-direct-print-bridge-r46",
-  "release": "One-Click Direct Printing & Mobile Wireless Print Bridge",
+  "version": "3.15.0",
+  "build": "20260821-sales-pipeline-stock-warranty-wht-r50",
+  "release": "Stage 6A — Sales Pipeline + Audited Stock Corrections + Warranty Management",
   "sql_required": false,
   "sql_baseline": "M5A3",
   "anonymous_signins_required": true,
-  "operational_baseline": "3.12.0-r45",
+  "operational_baseline": "3.14.0-r48",
   "database_key": "tradeflow_v321_zola",
-  "customer_sync": "M4 JSON operations / CUSTOMER_UPSERT",
+  "customer_sync": "M4 JSON operations / existing Customer Master and Follow-up semantics retained",
+  "stage6a_sync": "M4 JSON operations / SALES_OPPORTUNITY_UPSERT + QUOTATION_UPSERT + idempotent STOCK_CORRECTION_UPSERT + WARRANTY_SETTINGS_UPSERT + WARRANTY_UPSERT + WARRANTY_CLAIM_UPSERT",
+  "withholding_tax": "Normal Sale Out-only percentage; gross subtotal + VAT preserved; WHT deducted only from net collectible; 0000 entry guard",
   "print_transports": [
     "system-dialog",
     "local-bridge"
   ],
-  "print_bridge_version": "1.0.0",
+  "print_bridge_version": "1.0.4",
   "print_protocol": "ZEZPRINT/1",
   "print_bridge_storage_key": "zezms_print_bridge_v1",
-  "protected_baseline_zip_sha256": "2b1ef684fb3d98e5cf52c0c147d0bf00a22134ae94de073235faf2a43a60258c",
+  "protected_baseline": "ZEZMS TradeFlow Owner Edition v3.14.0 / 20260820-customer-outreach-r48",
   "files": [
     {
       "path": "A5_RECEIPT_PRINT_v3.4.10_RELEASE_NOTES.md",
@@ -168,6 +170,26 @@
       "sha256": "3d25ef35646517d452e85788fca816f3c20486144eadb647c6adbf7174087fed"
     },
     {
+      "path": "CUSTOMER_OUTREACH_v3.14.0_RELEASE_NOTES.md",
+      "bytes": 5207,
+      "sha256": "4dcdce56a82efec7a816f6b0ded8a4af2e2d748cd44a308aefe3076143ccb8c5"
+    },
+    {
+      "path": "CUSTOMER_OUTREACH_v3.14.0_TEST_REPORT.md",
+      "bytes": 6150,
+      "sha256": "733f8a4da450ccd17b8a23ee6e503530c650b0f8011b3f4543a4e65e6f306846"
+    },
+    {
+      "path": "CUSTOMER_RETENTION_v3.13.0_RELEASE_NOTES.md",
+      "bytes": 7463,
+      "sha256": "00e6464d9848fff098dc4e103a0643273427b6bb4aa38b710398c7e52a6d9141"
+    },
+    {
+      "path": "CUSTOMER_RETENTION_v3.13.0_TEST_REPORT.md",
+      "bytes": 5257,
+      "sha256": "f83c313cae83525b2fed51ee4b65891a5956121acd2ddd1a0032f8edd405a0e7"
+    },
+    {
       "path": "DAILY_SALES_DYNAMIC_STOCK_SHORT_IDS_v3.4.19_RELEASE_NOTES.md",
       "bytes": 1859,
       "sha256": "5f37578e9d15f5e8583ee897979e90e22b9b9f594cdbd46f94508ec9ee6fa2e4"
@@ -179,8 +201,8 @@
     },
     {
       "path": "DEPLOY_GITHUB.md",
-      "bytes": 2034,
-      "sha256": "55e9c4b0a68c3fade5fd0aa3b818907b2ef8df4dcf378669f8f961c288438194"
+      "bytes": 2007,
+      "sha256": "58dd181a1447267dc9f8ca4da73697aa8125dfac206e3306db0af16784c4ea37"
     },
     {
       "path": "DEVELOPER_EDITION_NOTES.md",
@@ -229,8 +251,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 266151,
-      "sha256": "30b3c5362ac6a36301cc1313ecf71d924652fe606a703cef00affbc4914a74ba"
+      "bytes": 279468,
+      "sha256": "6b27a2a4affa2e4da3a3b103fcabf342d298efb95721a6a379b6c1727029abde"
     },
     {
       "path": "INVITATION_RUNTIME_FIX_v3.6.5_PROCEDURE.md",
@@ -269,8 +291,8 @@
     },
     {
       "path": "js/backup-manager.js",
-      "bytes": 31411,
-      "sha256": "0dd88280df6e8568d73dab5d0007539fdc27b2906e59404b375e9c716bfb92fc"
+      "bytes": 32020,
+      "sha256": "2d6ff4a8d117461aea3d37ad7759cce87479a923adc680cb7b63999dd9140b90"
     },
     {
       "path": "js/bootpatch.js",
@@ -279,8 +301,8 @@
     },
     {
       "path": "js/cloud-sync.js",
-      "bytes": 73573,
-      "sha256": "54260e3f6337531517157d05b440b2ce19c58a8eaf15782cad35a57ff35a9718"
+      "bytes": 76960,
+      "sha256": "f97803dedc5fa9a0c7ca615f9a606b522cb42169a8f13d13faaf16cd4b9db06b"
     },
     {
       "path": "js/commercial-foundation.js",
@@ -298,14 +320,24 @@
       "sha256": "2899702816d2c01264b228dc77ae9c8c75cc2a562dcf16aa17efde57817d9bff"
     },
     {
+      "path": "js/customer-followups-v3130.js",
+      "bytes": 35141,
+      "sha256": "c966cb9ff0483b6b8a160b268980b51c1d3a26f29fa2791f890a29a52243d994"
+    },
+    {
       "path": "js/customer-intelligence-v3100.js",
       "bytes": 63973,
       "sha256": "3b320f741eeb89f35e38468a5141a17f25189f7c038ec35e58652701886600a5"
     },
     {
       "path": "js/customer-master-v3120.js",
-      "bytes": 38067,
-      "sha256": "5d91e96fbc61a0010965d2ddef6567ee013971ae95a078ac903c09376912602c"
+      "bytes": 38756,
+      "sha256": "eb0d0bff59daa27ef3ef15faf8a9f013d1da8ef8f2e43c29d603d64f25cf1bb8"
+    },
+    {
+      "path": "js/customer-outreach-v3140.js",
+      "bytes": 15173,
+      "sha256": "4954fe725a549e2462703fc0cd64ef891b547a0982aed1bd078a7cc71c978a35"
     },
     {
       "path": "js/db-events.js",
@@ -329,8 +361,8 @@
     },
     {
       "path": "js/direct-print-bridge-v3121.js",
-      "bytes": 28930,
-      "sha256": "b5a5371d06790122ca164ecee6510ef88c77b41518ff3a78fcaa628b41a55f9a"
+      "bytes": 29241,
+      "sha256": "d03a5ccca7e1edd76bad309d9fc539648cdbcc25be2a6083662fcb79f09d50a9"
     },
     {
       "path": "js/events.js",
@@ -343,9 +375,14 @@
       "sha256": "632b4148f501c7b751109e1be39a1a3bd3bb52bcf8dc5d666db0bc3166bf58c8"
     },
     {
+      "path": "js/input-defaults-v3130.js",
+      "bytes": 1244,
+      "sha256": "a2aaeb779da58daec419874d2089c77c7424154c2dd0191c788a2aca757febbe"
+    },
+    {
       "path": "js/invoice-waybill.js",
-      "bytes": 57939,
-      "sha256": "37818b0656661c1828c624b9d1c7a0c9d451203ca0600fd86051256c5a104b58"
+      "bytes": 58348,
+      "sha256": "5902accd7fc4eefb634c25260e1279fde22d07433c75b5006f94e190f7e945e0"
     },
     {
       "path": "js/kpi-freeze-pane.js",
@@ -379,13 +416,13 @@
     },
     {
       "path": "js/navigation-v3101.js",
-      "bytes": 20253,
-      "sha256": "c888c5b7e5b4cd3206acfa333c8e5347fcb11c0f64ece15a137cbcdf9ea64ce4"
+      "bytes": 21832,
+      "sha256": "d277b65111d2fee165537f541c8ba6c8ea6177b06db407de1547db3f90b76712"
     },
     {
       "path": "js/new-product-pricing-v384.js",
-      "bytes": 25635,
-      "sha256": "d44544c46e261f4d7013571f00ec7e6d0fcd377457832e0e8263fc24ebfa8353"
+      "bytes": 25777,
+      "sha256": "e57bde41d4d32495e3bb343e7bae9849ccc7c3c18919177ddb64ffa1c0ffdf5c"
     },
     {
       "path": "js/notifications-module.js",
@@ -394,18 +431,18 @@
     },
     {
       "path": "js/operations-update.js",
-      "bytes": 86814,
-      "sha256": "244fcb9e89a14ea9ddfa0b45153e8d2ef74071cf4b94661f5394083af805c327"
+      "bytes": 90417,
+      "sha256": "61262a6b8757304d48e1327101a1b52cefab5ea1c8b4a176059d9196217286df"
     },
     {
       "path": "js/owner-maintenance-v373.js",
-      "bytes": 67503,
-      "sha256": "61446272efad808b3351171815295822eeafda95c0513878c8f477409da97751"
+      "bytes": 71388,
+      "sha256": "568ebb726b066b4da04ff5f6be85ef81974984b366743b1719ab8282f5ea2597"
     },
     {
       "path": "js/pdf-export.js",
-      "bytes": 28641,
-      "sha256": "fec30711942214f2d152ad7c86c15300159ac07ccf0a251494b4b84f2b70f697"
+      "bytes": 29950,
+      "sha256": "32905775d58f035d3c7cf8699ef6cd4dc1222a7a0fa5146871a8f7a9dc3181f3"
     },
     {
       "path": "js/portfolio-signals-v391.js",
@@ -419,13 +456,18 @@
     },
     {
       "path": "js/pricing-policy-lab-v383.js",
-      "bytes": 24338,
-      "sha256": "40e0b902feaad713fe409d188e47e9431105595481a70759ffc58dc8badaf321"
+      "bytes": 24378,
+      "sha256": "3d1213110afbfda8715bf3bf811ca9c17e38cb3212d15f10b1b80fafff51e8c7"
     },
     {
       "path": "js/print-readiness-v3120.js",
       "bytes": 7674,
       "sha256": "78305c787bdfd0a6377ac7890e083bd4e60d452c0c27863aa39b91c8783168c9"
+    },
+    {
+      "path": "js/product-catalog-search-v3140.js",
+      "bytes": 4535,
+      "sha256": "52eaf57d049f04d656192a04357c82725de6c70cb32272f5714d78c3adc209cb"
     },
     {
       "path": "js/product-search-adapter.js",
@@ -468,9 +510,14 @@
       "sha256": "422274c6fed874e84521134860dd6e21fbf12f9d2be8410dae3c142075d2683e"
     },
     {
+      "path": "js/sales-pipeline-v3150.js",
+      "bytes": 55623,
+      "sha256": "b9e2beb97775bb8cba6c35cfe1ca9cf5a8785db254036bf00c32544543617873"
+    },
+    {
       "path": "js/shared-device-auth.js",
-      "bytes": 37465,
-      "sha256": "d2627969660dfb4e0f47e949c8649395c9a1858e8961573e993db5fe10dab9cc"
+      "bytes": 37531,
+      "sha256": "5a3ddc7f916d9c7531b62402dec43dca483eea0a666181e9bb7904f45858fe65"
     },
     {
       "path": "js/staff-auth.js",
@@ -478,9 +525,14 @@
       "sha256": "26da6a334f02750e863ef5e3608d1967a52bb64bace2fef60040ae425cb8505a"
     },
     {
+      "path": "js/stock-corrections-v3150.js",
+      "bytes": 25587,
+      "sha256": "253bf0c93bd034eef6a501f39b94b31829ba79155b77222f36df4da2cd9ff0d5"
+    },
+    {
       "path": "js/stock-velocity-v390.js",
-      "bytes": 53994,
-      "sha256": "573bdcf20c8547ae7148bf69844f48410a10806a6801fa70ad6b789d120e887c"
+      "bytes": 54038,
+      "sha256": "f8f55c45ea1baedd5775a1721beb4dd5914c729a6c510122b9a141a5699fa6ed"
     },
     {
       "path": "js/storage.js",
@@ -501,6 +553,11 @@
       "path": "js/utils-module.js",
       "bytes": 270,
       "sha256": "ebc628e52732d1fd72c4d2354891929cf372a0fab8ee82c11c25ac6050651abb"
+    },
+    {
+      "path": "js/warranty-management-v3150.js",
+      "bytes": 39110,
+      "sha256": "7b98200a8b1092211f6bdf017f521c59bea1fe1ce022bcffe4bf6a229f0ea2b3"
     },
     {
       "path": "KPI_FREEZE_TOP5_v3.4.15_RELEASE_NOTES.md",
@@ -609,8 +666,8 @@
     },
     {
       "path": "manifest.json",
-      "bytes": 1385,
-      "sha256": "7a80fdb28bdbb06132254fe719197a139abe5be957c34d3910cf8dedfe7fe22a"
+      "bytes": 1407,
+      "sha256": "1f4c1373550427744c7bd7eba54c22fd43d4158c328e7a2e6dfe0f683694a746"
     },
     {
       "path": "MARGIN_PRICING_INTELLIGENCE_v3.8.1_RELEASE_NOTES.md",
@@ -869,8 +926,8 @@
     },
     {
       "path": "print-bridge/windows/scripts/Install-ZEZPrintBridge.ps1",
-      "bytes": 1661,
-      "sha256": "ee9fe911d3700e054ec777e5ef9f751ff9fac2bfbd7951bb8098a5bf10b3f125"
+      "bytes": 1905,
+      "sha256": "f9167aa3f04c7cf66e8308f03c5b0e6104b48628c3debdcd097d01a6b36bd868"
     },
     {
       "path": "print-bridge/windows/scripts/Publish-Windows-x64.ps1",
@@ -884,8 +941,8 @@
     },
     {
       "path": "print-bridge/windows/ZEZPrintBridge.Tests/BridgeCoreTests.cs",
-      "bytes": 10713,
-      "sha256": "12d0c155be3361d577d7a72c6f38991f7ee7c10aa46ec0ab884f942f2c3342eb"
+      "bytes": 11533,
+      "sha256": "530bda753313f0833f822757c8c243e751244db8a979d55f61c509985a3aca07"
     },
     {
       "path": "print-bridge/windows/ZEZPrintBridge.Tests/ZEZPrintBridge.Tests.csproj",
@@ -910,7 +967,7 @@
     {
       "path": "print-bridge/windows/ZEZPrintBridge/BridgeConstants.cs",
       "bytes": 577,
-      "sha256": "53efa7618413c3ee218cb6eadecbab5239b5d059bc1ec31811d1d37ab4f5fc95"
+      "sha256": "f3ea1ce6d54d751d11425f61be59b20e203171a92c7fdc860d1655d700840930"
     },
     {
       "path": "print-bridge/windows/ZEZPrintBridge/Configuration/AppPaths.cs",
@@ -949,8 +1006,8 @@
     },
     {
       "path": "print-bridge/windows/ZEZPrintBridge/Printing/WebView2PrintRenderer.cs",
-      "bytes": 6832,
-      "sha256": "19989179a12538c52c82b06828fdedf1b840a617a543e031985fa37c92d1e183"
+      "bytes": 8048,
+      "sha256": "1ec2581a9dae658e0f597b7e57f1d423348a4e22d276a4a06e105eb9de560cea"
     },
     {
       "path": "print-bridge/windows/ZEZPrintBridge/Program.cs",
@@ -995,12 +1052,12 @@
     {
       "path": "print-bridge/windows/ZEZPrintBridge/ZEZPrintBridge.csproj",
       "bytes": 1251,
-      "sha256": "450a5640921ebb6c21a231c1ae10531a4a8323445807889717e9feb2190ca576"
+      "sha256": "a21706ccc3d0181793d0e9e80d35a18922ea8bfb52d81574ddd5c315fa29f790"
     },
     {
       "path": "README.md",
-      "bytes": 8015,
-      "sha256": "83bddb6748060a6737467a1a2be1f59af037e2af2c82b228ea46e042fcd60d4f"
+      "bytes": 3974,
+      "sha256": "93881b8bd3e4aee1a18aaf3791cf7f7829cc9167faf00187a609d6dd508ca9f3"
     },
     {
       "path": "RECEIPT_NAME_SEARCH_ACCOUNT_UNDO_v3.4.24_RELEASE_NOTES.md",
@@ -1051,6 +1108,16 @@
       "path": "SAFE_HISTORICAL_KPI_RECOVERY_v3.4.22_TEST_REPORT.md",
       "bytes": 431,
       "sha256": "f03938b306b07d16646dae9bf282af58b49bc55cecfdfb73f39440e9fdd26d0c"
+    },
+    {
+      "path": "SALES_PIPELINE_STOCK_WARRANTY_v3.15.0_RELEASE_NOTES.md",
+      "bytes": 15459,
+      "sha256": "29fd395fb17a9c60c5aa3f5e584e08d9297294bdc4fdad39512ef2a099124886"
+    },
+    {
+      "path": "SALES_PIPELINE_STOCK_WARRANTY_v3.15.0_TEST_REPORT.md",
+      "bytes": 15170,
+      "sha256": "43906d09eef46197bf9af5947fc54830d7bae328d4a157afa3636e255777b772"
     },
     {
       "path": "SALES_RECORDS_RECEIPT_PRINT_v3.4.9_RELEASE_NOTES.md",
@@ -1184,13 +1251,38 @@
     },
     {
       "path": "sw.js",
-      "bytes": 5082,
-      "sha256": "7913cdc6326c61312c54b74019a3c264a2c6340f9ff311b0fe24548112d1c73e"
+      "bytes": 5777,
+      "sha256": "805064dbcbc5c3da2f3516ea41126ba28894354868eae1b0e379705a2caed210"
+    },
+    {
+      "path": "tests/browser-fixture-v3140.html",
+      "bytes": 4761,
+      "sha256": "f28b0101d1b784cb06f2d0719f4bdfd85eb2ba89697cd075d1b49831af5965d9"
+    },
+    {
+      "path": "tests/browser-fixture-v3150.html",
+      "bytes": 7353,
+      "sha256": "ebdf379fb7508a09618886baf0c7fd9593bc963e2ba60303ed3c4a4ebb2e1122"
+    },
+    {
+      "path": "tests/browser-mobile-v3140.html",
+      "bytes": 346,
+      "sha256": "e2a36283f1f0b62801d8b2bed6b91f6d92d79a36f93a39db9d1652767dc1387c"
+    },
+    {
+      "path": "tests/browser-mobile-v3150.html",
+      "bytes": 428,
+      "sha256": "91159fef5e9de81a579ca567a3fade6fe1807ea2b48b9c1dbbcd9aae5d21dac2"
     },
     {
       "path": "tests/customer-backup-v3120.test.js",
       "bytes": 2110,
       "sha256": "89c7c8c3f403ef66f050adbe749a4b9b7291b248de31a2837785b6ced24286b8"
+    },
+    {
+      "path": "tests/customer-followup-sync-backup-v3130.test.js",
+      "bytes": 6744,
+      "sha256": "ab74125f3efa27717a77766d7833493d6512525c422c305d3cd61a19f77f3bb1"
     },
     {
       "path": "tests/customer-sync-v3120.test.js",
@@ -1199,8 +1291,8 @@
     },
     {
       "path": "tests/direct-print-v3121.test.js",
-      "bytes": 10163,
-      "sha256": "e799f0a8d367e7010bce72bc9b39185cbab3361169b33f7a52a7376818354ef5"
+      "bytes": 10421,
+      "sha256": "ab775228c677731778f92ab80c1bf5ba1b7293558d20bca26f57344d3bf47a9e"
     },
     {
       "path": "tests/fixtures/direct-print-settings.html",
@@ -1214,18 +1306,63 @@
     },
     {
       "path": "tests/generate-release-manifest.js",
-      "bytes": 1680,
-      "sha256": "25ecb4d7ecbdb5a1d40bdd3f7ae32a7509bc388b65d3ac69cab0d3e058d7858d"
+      "bytes": 2084,
+      "sha256": "51b4989c0520f6df54457b23f7c279d2a5478f206a7879197d6b35f29108c71f"
     },
     {
       "path": "tests/offline-lifecycle-v3121.test.js",
-      "bytes": 3517,
-      "sha256": "a1717f248fbf99717acb161ffb064f90f4ce8f8d506a717df59d91d1448568e7"
+      "bytes": 3523,
+      "sha256": "5f1d60f42d6f78391564bc3d396ce1fca160144fac2b45bfccdcb1d7894f05e4"
+    },
+    {
+      "path": "tests/offline-lifecycle-v3150.test.js",
+      "bytes": 4415,
+      "sha256": "17d61ad383a0a579054e1d9b26de56c76a532ac400553d1f2ab95e163539f854"
+    },
+    {
+      "path": "tests/outreach-sync-backup-v3140.test.js",
+      "bytes": 4473,
+      "sha256": "0240d8afebed83383da688933fe609860eab68af39bb4f13ce426d7a5fdfb7b3"
+    },
+    {
+      "path": "tests/placeholder-defaults-v3130.test.js",
+      "bytes": 9344,
+      "sha256": "b38d58a305fe5b2409df244ff65f1d631082461eceb3388c0d609b738e25596a"
+    },
+    {
+      "path": "tests/product-catalog-search-v3140.test.js",
+      "bytes": 5676,
+      "sha256": "6da5bd72d05a4ce0b22be4ff9b06e716c6b0e8505d6d91a300f59fb5becb917b"
+    },
+    {
+      "path": "tests/protected-regression-v3130.test.js",
+      "bytes": 10099,
+      "sha256": "d44f63b72b468857178c7bd8bd96b3f112a2d2840f0e1ef711ea4f99067c758b"
+    },
+    {
+      "path": "tests/protected-regression-v3140.test.js",
+      "bytes": 10693,
+      "sha256": "ed54d80861c2376b6ccd0fce6006f34d6cf874455f1f788e8f2ee88e83b483ce"
+    },
+    {
+      "path": "tests/purchase-order-stamp-v3130.test.js",
+      "bytes": 6220,
+      "sha256": "7d5b5daf2b21e0774ee2bfedb3a4083f983b1b0b6a2f5a7f7e2c2d755f6a8629"
     },
     {
       "path": "tests/release-verification-v3121.test.js",
-      "bytes": 21924,
-      "sha256": "486ecaedc7f6ff0517d761bb3dfbac2c9b99811d4b198e83ad30e9ca48a3b936"
+      "bytes": 21979,
+      "sha256": "c64f2810e50732a9d50168bae8e9aa4271f92f0ff9d3873e7a9fc5e0f8fa4ecf"
+    },
+    {
+      "path": "tests/release-verification-v3130.test.js",
+      "bytes": 3811,
+      "sha256": "c5c2b1e451db399ee32ff119f734d1fd9024def268c13715ba75e48b71d469bd"
+    },
+    {
+      "path": "tests/release-verification-v3140.test.js",
+      "bytes": 6194,
+      "sha256": "ce64d990c17a41a761be5133524ca6fe9a1c34773ee89aa6c4712704f55a06cb"
     },
     {
       "path": "tests/stage5c-performance.test.js",
@@ -1234,8 +1371,53 @@
     },
     {
       "path": "tests/stage5c-v3120.test.js",
-      "bytes": 17340,
-      "sha256": "c593e5f735cc55a31f68d9a2017bd6cc9d56076a4ea65d1110e75735c7e2c16e"
+      "bytes": 17460,
+      "sha256": "a88101135830d13025d293a236a78d0b546c2285cf1b7579f2a5c223bb20f605"
+    },
+    {
+      "path": "tests/stage5d-v3130.test.js",
+      "bytes": 12000,
+      "sha256": "5c6593f97e838604b77addf9ee0470de68d32c58c617b920ced9dc6c16b44392"
+    },
+    {
+      "path": "tests/stage5e-outreach-v3140.test.js",
+      "bytes": 10597,
+      "sha256": "f71502a1d7e5609b1d55528ace3e4a5e1e7fa852052977de5451ea908a29310b"
+    },
+    {
+      "path": "tests/stage6a-engine-v3150.test.js",
+      "bytes": 9361,
+      "sha256": "6b1ffc2e2310e8ce3652a1ef8636865b49ff437a7a09c5b6c1aa7a6a4240a259"
+    },
+    {
+      "path": "tests/stage6a-matrix-v3150.test.js",
+      "bytes": 29221,
+      "sha256": "16729a0515481fd07be327ae1d65ebe737e06b46faf468f400c99cc6bd2e5ba6"
+    },
+    {
+      "path": "tests/syntax-v3150.test.js",
+      "bytes": 1223,
+      "sha256": "bb14c7a503573fa54cfcb2aabc9d7bdac92aa23901938fb4356f3d4e4bc6463c"
+    },
+    {
+      "path": "tests/verify-release-manifest-v3130.test.js",
+      "bytes": 1294,
+      "sha256": "78b40ee5f1f26df9a56b31def5ed02cec2c7a613e9a7785345a97c249bf61902"
+    },
+    {
+      "path": "tests/verify-release-manifest-v3140.test.js",
+      "bytes": 1402,
+      "sha256": "fdcb87d30097955fe18b511ef5730accd910781f4abebea4c0e7583e434b4a00"
+    },
+    {
+      "path": "tests/verify-release-manifest-v3150.test.js",
+      "bytes": 1535,
+      "sha256": "c23de6a2a110c61ea70fdf9874f8ec1707d640c627c447947ed0849d3040ce93"
+    },
+    {
+      "path": "tests/withholding-tax-v3150.test.js",
+      "bytes": 15012,
+      "sha256": "ade94a4b974e489e6709c667d3fbdc5e37fca8c5eeb1488c2588958f47da1870"
     },
     {
       "path": "UNIFIED_CUSTOMER_CAPTURE_v3.11.1_RELEASE_NOTES.md",
