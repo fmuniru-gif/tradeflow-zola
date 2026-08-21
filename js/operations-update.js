@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260820-customer-retention-r47';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';
@@ -372,6 +372,10 @@
     const vatAmount = round2(Number(sale.vatAmount != null ? sale.vatAmount : total - subtotal) || 0);
     const derivedRate = subtotal > 0 ? round2((vatAmount / subtotal) * 100) : 0;
     const vatRate = normalizeVatPercent(sale.vatRate != null ? sale.vatRate : derivedRate);
+    const withholdingTaxAmount = round2(Number(sale.withholdingTaxAmount) || 0);
+    const withholdingTaxRate = normalizeVatPercent(sale.withholdingTaxRate != null
+      ? sale.withholdingTaxRate
+      : (subtotal > 0 ? withholdingTaxAmount / subtotal * 100 : 0));
     const paid = Number(sale.paid != null ? sale.paid : sale.amountPaid) || 0;
     return {
       receiptNo: sale.receiptNo || sale.id || '',
@@ -381,6 +385,8 @@
       subtotal,
       vatRate,
       vatAmount,
+      withholdingTaxRate,
+      withholdingTaxAmount,
       total,
       paid,
       balance: sale.balance != null && sale.total != null
@@ -417,6 +423,8 @@
     const vatRate = sale.vatRate != null
       ? normalizeVatPercent(sale.vatRate)
       : (subtotal > 0 ? round2((vat / subtotal) * 100) : 0);
+    const withholdingTaxRate = normalizeVatPercent(sale.withholdingTaxRate || 0);
+    const withholdingTaxAmount = round2(sale.withholdingTaxAmount || 0);
 
     return `<div class="receipt-paper" id="receiptPrint" style="position:relative">
       <div class="document-branding-watermark" aria-hidden="true"></div><div class="receipt-document-content">
@@ -443,6 +451,7 @@
       <div class="receipt-summary">
         <div>Subtotal: ${fmtN(subtotal)}</div>
         <div>VAT (${fmtN(vatRate)}%): ${fmtN(vat)}</div>
+        <div>Withholding Tax (${fmtN(withholdingTaxRate)}%): −${fmtN(withholdingTaxAmount)}</div>
         <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
         <div class="receipt-paid">Amount Paid: ${fmtN(sale.paid)}</div>
         <div>Balance: ${fmtN(sale.balance)}</div>
@@ -854,6 +863,7 @@
       ? ZEZMS.customerMaster.resolveCustomerId({ phone:quickCapture.customerPhone, selectedId:quickCapture.customerId || (cart._customerId||'') })
       : '';
     quickCapture.location = String(($('posLoc') && $('posLoc').value) || cart._loc || '').trim().slice(0, 200);
+    const sourceQuotationId = String(cart._sourceQuotationId || '');
     const cartSnapshot = cart.map((line) => deepClone(line));
     const undoStart = DB.undoLog.length;
     const lines = [];
@@ -880,7 +890,7 @@
       entry.inventoryTxnId = transactionId;
       entry.type = 'SALE_OUT_ALLOC';
     });
-    DB.inventoryTxns.push({
+    const quickTransaction = {
       id: transactionId,
       type: 'SALE_OUT',
       subtype: 'QUICK',
@@ -901,7 +911,8 @@
       amount: lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
       reference: transactionId,
       details: { lines, saleMode: 'QUICK' }
-    });
+    };
+    DB.inventoryTxns.push(quickTransaction);
     saveDB();
     try {
       if(window.ZEZMS && ZEZMS.customerMaster && ZEZMS.customerMaster.upsertAfterCommittedSale) {
@@ -917,6 +928,17 @@
     } catch(customerMasterError) {
       console.error('Completed Quick Sale Customer Master update failed', customerMasterError);
       toast('Quick Sale completed, but Customer Master could not be updated: ' + (customerMasterError.message || customerMasterError), 'warn');
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('zezms-sale-committed', { detail: {
+        transactionId:transactionId, saleType:'QUICK', sourceQuotationId:sourceQuotationId,
+        customerId:quickCapture.customerId, customerName:quickCapture.customerName,
+        customerPhone:quickCapture.customerPhone, location:quickCapture.location,
+        date:saleDate, lines:deepClone(lines), saleRecord:deepClone(quickTransaction)
+      } }));
+    } catch (postSaleIntegrationError) {
+      console.error('Completed Quick Sale post-sale integration failed', postSaleIntegrationError);
+      toast('Quick Sale completed, but a post-sale register could not be updated: ' + (postSaleIntegrationError.message || postSaleIntegrationError), 'warn');
     }
     resetSaleOutForm();
     toast('Quick Sale Out recorded · ' + transactionId);
@@ -1093,8 +1115,10 @@
 
   function performInventoryUndo(transactionId) {
     let message = '';
+    let reversedSaleTransactionId = '';
     if (transactionId.startsWith('SALE:')) {
-      message = reverseReceiptSale(transactionId.slice(5));
+      reversedSaleTransactionId = transactionId.slice(5);
+      message = reverseReceiptSale(reversedSaleTransactionId);
     } else if (transactionId.startsWith('LEGACY_STOCK:')) {
       message = reverseLegacyStock(Number(transactionId.split(':')[1]));
     } else {
@@ -1102,8 +1126,15 @@
       if (!txn) throw new Error('Inventory transaction not found.');
       if (txn.status === UNDONE) throw new Error('This transaction has already been undone.');
       if (txn.type === 'STOCK_IN') message = reverseStockInTransaction(txn);
-      else if (txn.type === 'SALE_OUT' && txn.subtype === 'QUICK') message = reverseQuickSale(txn);
+      else if (txn.type === 'SALE_OUT' && txn.subtype === 'QUICK') {
+        reversedSaleTransactionId = txn.id;
+        message = reverseQuickSale(txn);
+      }
       else throw new Error('This transaction type cannot be undone automatically.');
+    }
+    if (reversedSaleTransactionId) {
+      try { window.dispatchEvent(new CustomEvent('zezms-sale-reversed', { detail:{ transactionId:reversedSaleTransactionId } })); }
+      catch (postReversalError) { console.error('Sale-reversal integration failed', postReversalError); }
     }
     saveDB();
     toast(message);
@@ -1387,6 +1418,8 @@
     if (String(txn.txnType || '').toLowerCase().includes('credit sale') && txn.receiptNo) {
       const message = reverseReceiptSale(txn.receiptNo);
       txn.undoReason = String(reason || '').trim();
+      try { window.dispatchEvent(new CustomEvent('zezms-sale-reversed', { detail:{ transactionId:txn.receiptNo } })); }
+      catch (postReversalError) { console.error('Sale-reversal integration failed', postReversalError); }
       saveDB();
       toast(message);
       render();

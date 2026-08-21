@@ -16,7 +16,7 @@
     'Product Requested', 'Purchase Completed', 'Follow-up Again', 'Other'
   ]);
   var MAX_NOTES = 1200;
-  var runtime = { selectedCustomerId:'', renderCount:0 };
+  var runtime = { selectedCustomerId:'', pendingOpportunityId:'', renderCount:0 };
 
   function clean(value) { return value == null ? '' : String(value).trim(); }
   function list(value) { return Array.isArray(value) ? value : []; }
@@ -300,14 +300,16 @@
     }).join('');
   }
 
-  function openSchedule(customerId) {
+  function openSchedule(customerId, options) {
     if (!ownerAdmin()) { notify('Only Owner or Admin can schedule customer follow-ups.', 'err'); return; }
+    runtime.pendingOpportunityId = clean(options && options.opportunityId);
     var choices = customerOptions(customerId);
     if (!choices) {
       if (typeof openModal === 'function') openModal('<h3>Schedule Follow-up</h3><div class="empty">Create or build an identifiable Customer Master record first.</div><div class="row"><button class="btn ghost" onclick="closeModal();nav(\'customer-master\')">Open Customer Master</button></div>');
       return;
     }
     openModal('<h3>Schedule Follow-up</h3><div class="field"><label>Customer *</label><select id="fuCustomer"><option value="">— select Customer Master record —</option>' + choices + '</select></div>'
+      + (runtime.pendingOpportunityId ? '<div class="statline"><span>Sales Opportunity</span><b class="mono">' + esc(runtime.pendingOpportunityId) + '</b></div>' : '')
       + '<div class="field"><label>Due Date *</label><input id="fuDueDate" type="date"></div>'
       + '<div class="field"><label>Purpose *</label><select id="fuPurpose" onchange="ZEZMS.customerFollowups.togglePurposeDetail()">' + optionsHTML(PURPOSES, '— select purpose —') + '</select></div>'
       + '<div class="field" id="fuPurposeDetailWrap" hidden><label>Other Purpose Detail (optional)</label><input id="fuPurposeDetail" maxlength="200"></div>'
@@ -329,6 +331,7 @@
     var timestamp = now();
     var record = {
       followupId:makeId(), customerId:customerId, dueDate:dueDate, purpose:purpose,
+      opportunityId:runtime.pendingOpportunityId,
       purposeDetail:purpose === 'Other' ? clean((document.getElementById('fuPurposeDetail') || {}).value).slice(0, 200) : '',
       notes:clean((document.getElementById('fuNotes') || {}).value).slice(0, MAX_NOTES),
       status:'Planned', createdAt:timestamp, updatedAt:timestamp, completedAt:'', outcome:'', outcomeDetail:'',
@@ -337,6 +340,7 @@
     ensureDB().push(record);
     saveDB();
     runtime.selectedCustomerId = customerId;
+    runtime.pendingOpportunityId = '';
     closeModal();
     notify('Planned follow-up saved.');
     if (typeof render === 'function') render();

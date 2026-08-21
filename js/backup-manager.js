@@ -195,7 +195,8 @@
 
     const restored = Object.assign(defaultDB(), data);
     const arrayKeys = [
-      'products', 'customers', 'customerFollowups', 'stockRows', 'sales', 'saleLines', 'debtors', 'creditors',
+      'products', 'customers', 'customerFollowups', 'salesOpportunities', 'quotations',
+      'stockRows', 'stockCorrections', 'warranties', 'warrantyClaims', 'sales', 'saleLines', 'debtors', 'creditors',
       'depositors', 'debtorsMonthly', 'creditorsMonthly', 'depositorsMonthly',
       'accountTxns', 'cashLog', 'expenses', 'kpiHistory', 'receipts',
       'invoices', 'waybills', 'purchaseOrders',
@@ -204,6 +205,12 @@
     arrayKeys.forEach(function (key) {
       if (!Array.isArray(restored[key])) restored[key] = [];
     });
+    if (!restored.warrantySettings || typeof restored.warrantySettings !== 'object' || Array.isArray(restored.warrantySettings)) {
+      restored.warrantySettings = { defaultMonths:12, categoryOverrides:{}, configured:false, updatedAt:'' };
+    }
+    if (!restored.warrantySettings.categoryOverrides || typeof restored.warrantySettings.categoryOverrides !== 'object' || Array.isArray(restored.warrantySettings.categoryOverrides)) {
+      restored.warrantySettings.categoryOverrides = {};
+    }
 
     restored.backupSettings = Object.assign(
       defaultSettings(),

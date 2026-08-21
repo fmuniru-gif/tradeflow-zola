@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260820-customer-retention-r47';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
   const OPEN = 'OPEN';
   const COMMITTED = 'COMMITTED';
   const CANCELLED = 'CANCELLED';
@@ -737,6 +737,7 @@
 
   /* ---------------- Safe receipt editing ---------------- */
   let receiptEditDraft = null;
+  let receiptEditWithholdingTaxUnlocked = false;
 
   function canEditReceipts() {
     return staffCan('MANAGE_DOCUMENTS');
@@ -748,7 +749,11 @@
     }, 0));
     const vatRate = normalizeVatPercent(receiptEditDraft ? receiptEditDraft.vatRate : 0);
     const vatAmount = round2(subtotal * vatRate / 100);
-    return { subtotal: subtotal, vatRate: vatRate, vatAmount: vatAmount, total: round2(subtotal + vatAmount) };
+    const withholdingTaxRate = normalizeVatPercent(receiptEditDraft ? receiptEditDraft.withholdingTaxRate : 0);
+    const withholdingTaxAmount = round2(subtotal * withholdingTaxRate / 100);
+    return { subtotal: subtotal, vatRate: vatRate, vatAmount: vatAmount,
+      withholdingTaxRate: withholdingTaxRate, withholdingTaxAmount: withholdingTaxAmount,
+      total: round2(subtotal + vatAmount - withholdingTaxAmount) };
   }
 
   function receiptProductOptions(selected) {
@@ -779,12 +784,14 @@
       + '<div class="field"><label>Telephone *</label><input id="receiptEditContact" value="' + escAttr(receiptEditDraft.contact) + '" oninput="receiptEditField(\'contact\',this.value)"></div>'
       + '<div class="field"><label>Location</label><input id="receiptEditLocation" value="' + escAttr(receiptEditDraft.location) + '" oninput="receiptEditField(\'location\',this.value)"></div>'
       + '<div class="field"><label>Amount paid</label><input id="receiptEditPaid" type="number" min="0" step="0.01" value="' + (Number(receiptEditDraft.amountPaid) || 0) + '" oninput="receiptEditField(\'amountPaid\',this.value);refreshReceiptEditTotals()"></div>'
-      + '<div class="field"><label>VAT percentage</label><input id="receiptEditVat" type="number" min="0" max="100" step="0.01" value="' + totals.vatRate + '" oninput="receiptEditField(\'vatRate\',this.value);refreshReceiptEditTotals()"></div></div>'
+      + '<div class="field"><label>VAT percentage</label><input id="receiptEditVat" type="number" min="0" max="100" step="0.01" value="' + totals.vatRate + '" oninput="receiptEditField(\'vatRate\',this.value);refreshReceiptEditTotals()"></div>'
+      + '<div class="field"><label>Withholding Tax percentage</label><input id="receiptEditWithholdingTax" type="number" min="0" max="100" step="0.01" value="' + (totals.withholdingTaxRate || '') + '" placeholder="0" data-semantic-default="0" readonly onclick="unlockReceiptEditWithholdingTax()" oninput="receiptEditField(\'withholdingTaxRate\',this.value);refreshReceiptEditTotals()"><small class="muted">PIN 0000 is required to change this Sale Out tax.</small></div></div>'
       + '<div class="table-wrap"><table><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Discount</th><th class="right">Total</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<div class="row" style="margin-top:10px"><select id="receiptEditNewProduct" style="flex:1"><option value="">- add another product -</option>' + receiptProductOptions('') + '</select>'
       + '<button class="btn ghost" onclick="addReceiptEditLine()">Add item</button></div>'
       + '<div class="card" style="margin-top:12px"><div class="statline"><span>Subtotal</span><b id="receiptEditSubtotal">' + fmt(totals.subtotal) + '</b></div>'
       + '<div class="statline"><span>VAT</span><b id="receiptEditVatAmount">' + fmt(totals.vatAmount) + '</b></div>'
+      + '<div class="statline"><span>Withholding Tax deduction</span><b id="receiptEditWithholdingTaxAmount">−' + fmt(totals.withholdingTaxAmount) + '</b></div>'
       + '<div class="statline"><span>Grand total</span><b id="receiptEditGrandTotal">' + fmt(totals.total) + '</b></div>'
       + '<div class="statline"><span>Debtor balance</span><b id="receiptEditOutstanding">' + fmt(Math.max(0, round2(totals.total - (Number(receiptEditDraft.amountPaid) || 0)))) + '</b></div></div>'
       + '<div class="row" style="margin-top:12px"><button class="btn ok" onclick="saveReceiptEdit()">Save corrected receipt</button>'
@@ -807,11 +814,13 @@
     if (Number(sale.year) !== Number(period.year) || Number(sale.month) !== Number(period.month)) {
       toast('Only receipts in the current open stock period can be edited safely.', 'warn'); return;
     }
+    receiptEditWithholdingTaxUnlocked = false;
     receiptEditDraft = {
       receiptNo: receipt.receiptNo, customerName: receipt.customerName || sale.customer || '',
       contact: receipt.contact || sale.contact || '', location: receipt.location || sale.location || '',
       amountPaid: Number(receipt.amountPaid != null ? receipt.amountPaid : sale.paid) || 0,
       vatRate: normalizeVatPercent(receipt.vatRate != null ? receipt.vatRate : sale.vatRate),
+      withholdingTaxRate: normalizeVatPercent(receipt.withholdingTaxRate != null ? receipt.withholdingTaxRate : sale.withholdingTaxRate),
       lines: deepClone((receipt.lines || []).map(function (line) {
         return { product: line.product || line.name || '', qty: Number(line.qty) || 0, uPrice: Number(line.uPrice != null ? line.uPrice : line.price) || 0, disc: Number(line.disc) || 0 };
       }))
@@ -821,7 +830,17 @@
 
   window.receiptEditField = function (field, value) {
     if (!receiptEditDraft || !Object.prototype.hasOwnProperty.call(receiptEditDraft, field)) return;
-    receiptEditDraft[field] = field === 'amountPaid' || field === 'vatRate' ? Math.max(0, Number(value) || 0) : value;
+    receiptEditDraft[field] = field === 'amountPaid' || field === 'vatRate' || field === 'withholdingTaxRate' ? Math.max(0, Number(value) || 0) : value;
+  };
+
+  window.unlockReceiptEditWithholdingTax = function () {
+    const input = document.getElementById('receiptEditWithholdingTax');
+    if (receiptEditWithholdingTaxUnlocked) { if (input) { input.readOnly = false; input.focus(); } return; }
+    promptPIN('Withholding Tax Entry Guard', TRANSACTION_ENTRY_GUARD_PIN, function () {
+      receiptEditWithholdingTaxUnlocked = true;
+      if (input) { input.readOnly = false; input.focus(); }
+      toast('Withholding Tax entry unlocked.');
+    }, true);
   };
 
   window.receiptEditLineChanged = function (index, field, value) {
@@ -838,6 +857,7 @@
     const totals = receiptEditTotals();
     const values = {
       receiptEditSubtotal: totals.subtotal, receiptEditVatAmount: totals.vatAmount,
+      receiptEditWithholdingTaxAmount: -totals.withholdingTaxAmount,
       receiptEditGrandTotal: totals.total,
       receiptEditOutstanding: Math.max(0, round2(totals.total - (Number(receiptEditDraft.amountPaid) || 0)))
     };
@@ -864,6 +884,7 @@
 
   window.cancelReceiptEdit = function () {
     receiptEditDraft = null;
+    receiptEditWithholdingTaxUnlocked = false;
     closeModal();
   };
 
@@ -912,6 +933,7 @@
     receiptEditDraft.location = text((document.getElementById('receiptEditLocation') || {}).value).trim();
     receiptEditDraft.amountPaid = Math.max(0, Number((document.getElementById('receiptEditPaid') || {}).value) || 0);
     receiptEditDraft.vatRate = normalizeVatPercent((document.getElementById('receiptEditVat') || {}).value);
+    receiptEditDraft.withholdingTaxRate = normalizeVatPercent((document.getElementById('receiptEditWithholdingTax') || {}).value);
     const totals = receiptEditTotals();
     if (!receiptEditDraft.customerName || !receiptEditDraft.contact) { toast('Customer name and telephone are required.', 'err'); return; }
     if (!receiptEditDraft.lines.length) { toast('At least one receipt line is required.', 'err'); return; }
@@ -946,13 +968,15 @@
       });
       Object.assign(receipt, {
         customerName: receiptEditDraft.customerName, contact: receiptEditDraft.contact, location: receiptEditDraft.location,
-        subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vatAmount, totalAmount: totals.total,
+        subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vatAmount,
+        withholdingTaxRate: totals.withholdingTaxRate, withholdingTaxAmount: totals.withholdingTaxAmount, totalAmount: totals.total,
         amountPaid: receiptEditDraft.amountPaid, balance: outstanding, credit: outstanding > 0,
         lines: receiptLines, editRevision: (Number(receipt.editRevision) || 0) + 1, updatedAt: nowISO(), updatedBy: session.cashier
       });
       Object.assign(sale, {
         customer: receiptEditDraft.customerName, contact: receiptEditDraft.contact, location: receiptEditDraft.location,
-        subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vatAmount, total: totals.total,
+        subtotal: totals.subtotal, vatRate: totals.vatRate, vatAmount: totals.vatAmount,
+        withholdingTaxRate: totals.withholdingTaxRate, withholdingTaxAmount: totals.withholdingTaxAmount, total: totals.total,
         paid: receiptEditDraft.amountPaid, balance: outstanding,
         pay: outstanding > 0 ? (receiptEditDraft.amountPaid > 0 ? 'PARTIAL' : 'CREDIT') : 'PAID',
         lines: saleLines, editRevision: (Number(sale.editRevision) || 0) + 1, updatedAt: nowISO(), updatedBy: session.cashier
@@ -968,7 +992,7 @@
         linkedInvoice.vatRate = totals.vatRate;
         linkedInvoice.vatAmount = totals.vatAmount;
         linkedInvoice.vat = totals.vatAmount;
-        linkedInvoice.total = totals.total;
+        linkedInvoice.total = round2(totals.subtotal + totals.vatAmount);
         linkedInvoice.lines = receiptEditDraft.lines.map(function (line) {
           const product = findProductByName(line.product);
           const basePrice = product ? getBaseUnitPrice(product.name) : Number(line.uPrice) || 0;
@@ -1130,7 +1154,7 @@
   syncNavigationAccess();
   installReceiptEditButtons();
   ZEZMS.ownerMaintenance = {
-    version: '3.13.0', build: BUILD, ensureModel: ensureModel,
+    version: '3.15.0', build: BUILD, ensureModel: ensureModel,
     findPurchaseOrder: findPurchaseOrder, purchaseOrderPaperHTML: purchaseOrderPaperHTML,
     accountFilters: accountFilters, viewPurchaseOrders: viewPurchaseOrders
   };

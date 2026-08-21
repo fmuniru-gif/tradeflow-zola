@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  var VERSION = '3.14.0';
-  var BUILD = '20260820-customer-outreach-r48';
+  var VERSION = '3.15.0';
+  var BUILD = '20260821-sales-pipeline-stock-warranty-r49';
   window.ZEZMS = window.ZEZMS || {};
 
   if (window.ZEZMS.navigationV3101 && window.ZEZMS.navigationV3101.build === BUILD) {
@@ -43,6 +43,8 @@
       key: 'sales', label: 'Sales', icon: '🛒', children: [
         { view: 'pos', label: 'Sale Out', icon: '🛒' },
         { view: 'receipts', label: 'Sales Records', icon: '🧾' },
+        { view: 'quotations', label: 'Quotations', icon: '📋' },
+        { view: 'sales-opportunities', label: 'Sales Opportunities', icon: '🎯' },
         { view: 'invoices', label: 'Invoices', icon: '📄' },
         { view: 'waybills', label: 'Waybills', icon: '🚚' }
       ]
@@ -56,7 +58,8 @@
     {
       key: 'stock', label: 'Stock', icon: '📦', children: [
         { view: 'products', label: 'Products', icon: '📦', permissionView: 'products' },
-        { view: 'stock', label: 'Stock Balance', icon: '📋', permissionView: 'stock' }
+        { view: 'stock', label: 'Stock Balance', icon: '📋', permissionView: 'stock' },
+        { view: 'stock-corrections', label: 'Stock Corrections', icon: '🧰' }
       ]
     },
     {
@@ -79,7 +82,8 @@
         { view: 'portfolio-signals', label: 'Portfolio Signals & Capital Allocation', icon: '◈', permissionView: 'dashboard' },
         { view: 'customer-master', label: 'Customer Master', icon: '👤', permissionView: 'dashboard' },
         { view: 'customer-followups', label: 'Customer Follow-ups', icon: '📅', permissionView: 'customer-followups' },
-        { view: 'customer-intelligence', label: 'Customer Relationship Intelligence', icon: '◈', permissionView: 'dashboard' }
+        { view: 'customer-intelligence', label: 'Customer Relationship Intelligence', icon: '◈', permissionView: 'dashboard' },
+        { view: 'warranty-management', label: 'Warranty Management', icon: '🛡️' }
       ]
     }
   ]);
@@ -100,6 +104,10 @@
     TITLES.waybills = 'Waybills';
     TITLES.kpiCharts = 'KPI Bar Charts';
     TITLES.undo = 'Undo Transactions';
+    TITLES.quotations = 'Quotations';
+    TITLES['sales-opportunities'] = 'Sales Opportunities';
+    TITLES['stock-corrections'] = 'Stock Corrections';
+    TITLES['warranty-management'] = 'Warranty Management';
     Object.keys(MANAGEMENT_ROUTES).forEach(function (route) {
       TITLES[route] = MANAGEMENT_ROUTES[route].title;
     });
@@ -171,7 +179,8 @@
     if (view === 'undo' && auth && typeof auth.can === 'function') {
       return !!auth.can('UNDO_TRANSACTION');
     }
-    if (view === 'customer-master' || view === 'customer-followups') {
+    if (view === 'customer-master' || view === 'customer-followups' || view === 'quotations'
+      || view === 'sales-opportunities' || view === 'stock-corrections' || view === 'warranty-management') {
       try {
         if (auth && typeof auth.getContext === 'function') {
           var role = String((auth.getContext() || {}).role || '').toUpperCase();
@@ -368,7 +377,8 @@
   function wrapAccessControl() {
     if (!auth || !originalCanView || auth.__navigationV3101AccessWrapped) return;
     auth.canView = function (view) {
-      if (view === 'customer-master' || view === 'customer-followups') return canOpenView(view);
+      if (view === 'customer-master' || view === 'customer-followups' || view === 'quotations'
+        || view === 'sales-opportunities' || view === 'stock-corrections' || view === 'warranty-management') return canOpenView(view);
       var child = CHILD_BY_VIEW[view];
       var permissionView = child && child.permissionView ? child.permissionView : view;
       if (view === 'undo' && typeof auth.can === 'function') return !!auth.can('UNDO_TRANSACTION');

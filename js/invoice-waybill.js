@@ -652,6 +652,8 @@
     cart._tel = invoice.contact || '';
     cart._paid = 0;
     cart._vatRate = normalizeVatPercent(invoice.vatRate != null ? invoice.vatRate : (Number(invoice.subtotal) > 0 ? ((Number(invoice.vatAmount != null ? invoice.vatAmount : invoice.vat) || 0) / Number(invoice.subtotal)) * 100 : 0));
+    cart._withholdingTaxRate = 0;
+    try { withholdingTaxRateUnlocked = false; } catch (_) {}
     cart._sourceInvoiceId = invoice.id;
     nav('pos');
     toast('Invoice loaded into Sale Out. Complete payment and print the receipt to post stock and KPIs.');

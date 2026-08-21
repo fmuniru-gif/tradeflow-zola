@@ -1,9 +1,9 @@
-/* ZEZMS Owner Edition v3.13.0 - branded offline PDF exports */
+/* ZEZMS Owner Edition v3.15.0 - branded offline PDF exports */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260820-customer-retention-r47';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
   const DOCUMENT_WATERMARK_ASSET = 'assets/zez-document-watermark.jpg';
   const DOCUMENT_WATERMARK_OPACITY = 0.10;
   const A4 = { width: 595, height: 842 };
@@ -389,6 +389,7 @@
     const total = Number(source.total != null ? source.total : source.totalAmount) || 0;
     const subtotal = Number(source.subtotal != null ? source.subtotal : lines.reduce(function (sum, line) { return sum + line.total; }, 0)) || 0;
     const vat = Number(source.vatAmount != null ? source.vatAmount : total - subtotal) || 0;
+    const withholdingTax = Number(source.withholdingTaxAmount) || 0;
     const paid = Number(source.paid != null ? source.paid : source.amountPaid) || 0;
     const balance = source.balance != null ? Number(source.balance) || 0 : Math.max(0, total - paid);
     return {
@@ -396,6 +397,8 @@
       contact: source.contact || '', location: source.location || '', date: source.date,
       cashier: source.cashier || '', lines: lines, subtotal: subtotal,
       vatRate: Number(source.vatRate) || (subtotal > 0 ? vat / subtotal * 100 : 0), vat: vat,
+      withholdingTaxRate: Number(source.withholdingTaxRate) || (subtotal > 0 ? withholdingTax / subtotal * 100 : 0),
+      withholdingTax: withholdingTax,
       total: total, paid: paid, balance: balance,
       salesSource: salesChannel ? (salesChannel === 'Other' && salesChannelOther ? salesChannel + ' - ' + salesChannelOther : salesChannel) : '',
       status: source.voided || source.status === 'VOID' || source.status === 'UNDONE' ? 'VOID' : (balance > 0 ? 'CREDIT' : 'PAID')
@@ -420,6 +423,7 @@
     pdf.summary([
       { label: 'Subtotal', value: 'GHS ' + number(receipt.subtotal) },
       { label: 'VAT (' + number(receipt.vatRate) + '%)', value: 'GHS ' + number(receipt.vat) },
+      { label: 'Withholding Tax (' + number(receipt.withholdingTaxRate) + '%)', value: '-GHS ' + number(receipt.withholdingTax) },
       { label: 'Grand total', value: 'GHS ' + number(receipt.total), strong: true },
       { label: 'Amount paid', value: 'GHS ' + number(receipt.paid) },
       { label: 'Balance owed', value: 'GHS ' + number(receipt.balance), strong: receipt.balance > 0 }
@@ -582,7 +586,7 @@
 
   installRegisterButtons();
   ZEZMS.pdfExport = {
-    version: '3.13.0', build: BUILD, SimplePDF: SimplePDF,
+    version: '3.15.0', build: BUILD, SimplePDF: SimplePDF,
     buildReceiptPDF: buildReceiptPDF, buildInvoicePDF: buildInvoicePDF,
     buildWaybillPDF: buildWaybillPDF, buildPurchaseOrderPDF: buildPurchaseOrderPDF,
     loadDocumentWatermark: loadDocumentWatermark,

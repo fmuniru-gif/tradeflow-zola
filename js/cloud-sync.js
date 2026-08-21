@@ -3,7 +3,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260820-customer-retention-r47';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
@@ -14,7 +14,8 @@
   const PULL_PAGE_SIZE = 500;
 
   const COLLECTIONS = [
-    'products', 'customers', 'customerFollowups', 'stockRows', 'debtors', 'creditors', 'depositors',
+    'products', 'customers', 'customerFollowups', 'salesOpportunities', 'quotations',
+    'stockRows', 'stockCorrections', 'warranties', 'warrantyClaims', 'debtors', 'creditors', 'depositors',
     'sales', 'receipts', 'invoices', 'waybills', 'purchaseOrders', 'saleLines', 'accountTxns', 'cashLog',
     'expenses', 'inventoryTxns', 'undoLog', 'debtorsMonthly',
     'creditorsMonthly', 'depositorsMonthly', 'kpiHistory', 'monthRollovers'
@@ -214,7 +215,8 @@
 
   function entityKey(item) {
     if (!item || typeof item !== 'object') return '';
-    return String(item.id || item.followupId || item.customerId || item.receiptNo || item._syncId || '');
+    return String(item.id || item.followupId || item.opportunityId || item.quotationId || item.correctionId
+      || item.warrantyId || item.claimId || item.customerId || item.receiptNo || item._syncId || '');
   }
 
   function ensureSyncIds(database) {
@@ -381,7 +383,7 @@
       }
     });
 
-    ['selectedYear', 'selectedMonth', 'business', 'settings', 'security', 'sharedDeviceDirectory'].forEach(function (root) {
+    ['selectedYear', 'selectedMonth', 'business', 'settings', 'security', 'sharedDeviceDirectory', 'warrantySettings'].forEach(function (root) {
       if (!equal(before[root], after[root])) {
         patches.push({ action: 'root-set', root: root, value: clone(after[root]), before: clone(before[root]) });
       }
@@ -398,6 +400,12 @@
     };
     const rollover = insert('monthRollovers');
     if (rollover) return 'MONTH_ROLLOVER';
+    if (insert('stockCorrections') || patches.some(function (patch) { return patch.collection === 'stockCorrections'; })) return 'STOCK_CORRECTION_UPSERT';
+    if (insert('salesOpportunities') || patches.some(function (patch) { return patch.collection === 'salesOpportunities'; })) return 'SALES_OPPORTUNITY_UPSERT';
+    if (insert('quotations') || patches.some(function (patch) { return patch.collection === 'quotations'; })) return 'QUOTATION_UPSERT';
+    if (insert('warrantyClaims') || patches.some(function (patch) { return patch.collection === 'warrantyClaims'; })) return 'WARRANTY_CLAIM_UPSERT';
+    if (insert('warranties') || patches.some(function (patch) { return patch.collection === 'warranties'; })) return 'WARRANTY_UPSERT';
+    if (patches.some(function (patch) { return patch.action === 'root-set' && patch.root === 'warrantySettings'; })) return 'WARRANTY_SETTINGS_UPSERT';
     const inventory = insert('inventoryTxns');
     if (inventory && inventory.value && inventory.value.type) return String(inventory.value.type).toUpperCase();
     if (insert('invoices')) return 'INVOICE';
@@ -652,6 +660,21 @@
 
   function applyOperation(operation, options) {
     if (!operation || !Array.isArray(operation.patches)) return false;
+    const correctionInsert = operation.patches.find(function (patch) {
+      return patch && patch.action === 'insert' && patch.collection === 'stockCorrections'
+        && patch.value && patch.value.correctionId;
+    });
+    if (correctionInsert) {
+      const database = getDatabase();
+      const alreadyApplied = database && Array.isArray(database.stockCorrections)
+        && database.stockCorrections.some(function (record) {
+          return String(record.correctionId || '') === String(correctionInsert.value.correctionId || '');
+        });
+      if (alreadyApplied) {
+        observedSnapshot = cleanSnapshot(database);
+        return true;
+      }
+    }
     applyingRemote = true;
     try {
       operation.patches.forEach(function (patch) { applyPatch(patch, operation); });
@@ -676,6 +699,12 @@
       }
       if (operation.patches.some(function (patch) { return patch.collection === 'customerFollowups'; })) {
         window.dispatchEvent(new CustomEvent('zezms-customer-followups-updated'));
+      }
+      if (operation.patches.some(function (patch) {
+        return ['salesOpportunities','quotations','stockCorrections','warranties','warrantyClaims'].indexOf(patch.collection) >= 0
+          || patch.action === 'root-set' && patch.root === 'warrantySettings';
+      })) {
+        window.dispatchEvent(new CustomEvent('zezms-stage6a-records-updated'));
       }
     } catch (_) {}
     try { if (!(options && options.silent) && typeof render === 'function') render(); } catch (_) {}

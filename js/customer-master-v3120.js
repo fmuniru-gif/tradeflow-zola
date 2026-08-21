@@ -444,6 +444,7 @@
       + '<div class="statline"><span>Most Used Sales Source</span><b>' + esc(row.mostUsedChannel) + '</b></div>'
       + (ZEZMS.customerOutreach && typeof ZEZMS.customerOutreach.relationshipSummaryHTML === 'function' ? ZEZMS.customerOutreach.relationshipSummaryHTML(c.customerId) : '') + '</div></div>'
       + '<div class="card" style="margin-top:12px"><h3>Purchase History</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Receipt/Transaction ID</th><th>Product</th><th class="right">Quantity</th><th class="right">Sales Value</th><th>Sales Source</th></tr></thead><tbody>' + history + '</tbody></table></div></div>'
+      + (ZEZMS.warrantyManagement && typeof ZEZMS.warrantyManagement.customerSummaryHTML === 'function' ? ZEZMS.warrantyManagement.customerSummaryHTML(c.customerId) : '')
       + (ZEZMS.customerOutreach && typeof ZEZMS.customerOutreach.customerDetailHTML === 'function' ? ZEZMS.customerOutreach.customerDetailHTML(c.customerId) : '')
       + (ZEZMS.customerFollowups && typeof ZEZMS.customerFollowups.customerDetailHTML === 'function' ? ZEZMS.customerFollowups.customerDetailHTML(c.customerId) : '');
   }

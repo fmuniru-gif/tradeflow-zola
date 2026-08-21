@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="description" content="Zola Electronics Zone - Sales, inventory, Customer Master, manual customer outreach, customer follow-ups, Product Catalog search and secure one-click local printing" />
-<meta name="zezms-build" content="20260820-customer-outreach-r48" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
-<title>Zola Electronics Zone - TradeFlow v3.14.0 - Customer Outreach</title>
+<meta name="zezms-build" content="20260821-sales-pipeline-stock-warranty-r49" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
+<title>Zola Electronics Zone - TradeFlow v3.15.0 - Sales Pipeline, Stock Corrections and Warranty</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260820-customer-outreach-r48';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1117,7 +1117,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.14.0 · Manual Customer Outreach · Customer Follow-ups · Product Catalog Search · Direct Print Bridge · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.15.0 · Sales Pipeline · Audited Stock Corrections · Warranty Management · Tamale · GH₵</div>
     <div id="sharedDeviceLoginPanel">
       <div class="field">
         <label>Staff member</label>
@@ -1150,7 +1150,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.14.0 · Manual Customer Outreach · Customer Follow-ups · Product Catalog Search · Direct Print Bridge · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.15.0 · Sales Pipeline · Audited Stock Corrections · Warranty Management · Direct Print Bridge · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1218,19 +1218,19 @@ html.zezms-phone-layout .kpi-freeze-pane{
 <script src="js/product-search-metrics.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/product-search-facade.js?v=20260812-portfolio-signals-r39"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1"></script>
-<script src="js/cloud-sync.js?v=20260820-customer-retention-r47"></script>
-<script src="js/backup-manager.js?v=20260820-customer-retention-r47"></script>
-<script src="js/input-defaults-v3130.js?v=20260820-customer-retention-r47"></script>
+<script src="js/cloud-sync.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/backup-manager.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/input-defaults-v3130.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.14.0 — Customer Outreach & Contact Actions — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.15.0 — Sales Pipeline, Audited Stock Corrections & Warranty Management — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.14.0';
+const APP_VERSION = '3.15.0';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
-// Code-level accidental-entry guard for Price Adjustment and VAT only.
+// Code-level accidental-entry guard for Price Adjustment, VAT and Sale Out Withholding Tax only.
 const TRANSACTION_ENTRY_GUARD_PIN = '0000';
 const PROTECTED_ENTRY_PIN = TRANSACTION_ENTRY_GUARD_PIN; // compatibility alias
 function readNumberWithDefault(input, fallback){
@@ -1264,6 +1264,30 @@ function clampSaleVatRate(){
   const input = $('posVatRate');
   cart._vatRate = normalizeVatPercent(input ? input.value : cart._vatRate);
   if(input) input.value = cart._vatRate;
+  refreshSaleTotals();
+}
+function normalizeWithholdingTaxPercent(value){
+  const n = Number(value);
+  if(!Number.isFinite(n)) return 0;
+  return round2(Math.max(0, Math.min(100, n)));
+}
+function currentSaleWithholdingTaxPercent(){
+  return normalizeWithholdingTaxPercent(cart && cart._withholdingTaxRate != null ? cart._withholdingTaxRate : 0);
+}
+function onSaleWithholdingTaxRateChange(){
+  const input = $('posWithholdingTaxRate');
+  if(!withholdingTaxRateUnlocked){
+    if(input) input.value = currentSaleWithholdingTaxPercent() || '';
+    return;
+  }
+  cart._withholdingTaxRate = normalizeWithholdingTaxPercent(input ? readNumberWithDefault(input,0) : cart._withholdingTaxRate);
+  if(input && document.activeElement !== input) input.value = cart._withholdingTaxRate || '';
+  refreshSaleTotals();
+}
+function clampSaleWithholdingTaxRate(){
+  const input = $('posWithholdingTaxRate');
+  cart._withholdingTaxRate = normalizeWithholdingTaxPercent(input ? readNumberWithDefault(input,0) : cart._withholdingTaxRate);
+  if(input) input.value = cart._withholdingTaxRate || '';
   refreshSaleTotals();
 }
 const BUSINESS = {
@@ -1345,6 +1369,7 @@ let cart = [];
 let currentView = 'pos';
 let priceAdjUnlocked = false;
 let vatRateUnlocked = false;
+let withholdingTaxRateUnlocked = false;
 let lastKPIDayKey = '';
 
 
@@ -1385,7 +1410,10 @@ function defaultDB(){
     products: [],          // master product catalog (name, category, uPrice, ...)
     customers: [],         // persistent customer profiles; financial metrics remain transaction-derived
     customerFollowups: [], // persistent CRM workflow linked only by customerId
+    salesOpportunities: [],// pre-sale opportunities linked to Customer Master
+    quotations: [],        // commercial proposals; no stock/account posting
     stockRows: [],         // FIFO cost-tier rows: {id, productName, category, year, month, qtyIn, rStock, uCost, qtyOut, uPrice, disc, tSales, profit, aPrice, productId}
+    stockCorrections: [],  // permanent audited non-sale stock adjustments
     sales: [],             // sale headers
     saleLines: [],         // sale line allocations
     security: deepClone(DEFAULT_SECURITY),
@@ -1407,6 +1435,9 @@ function defaultDB(){
     purchaseOrders: [],
     undoLog: [],
     inventoryTxns: [],
+    warranties: [],
+    warrantyClaims: [],
+    warrantySettings: { defaultMonths:12, categoryOverrides:{}, configured:false, updatedAt:'' },
     backupHistory: [],
     backupSettings: {
       autoBackupEnabled: false,
@@ -1430,7 +1461,11 @@ function loadDB(){
     // migrations / guards
     if(!DB.cashBalances) DB.cashBalances = { 'Cash in Hand':0, 'Bank Savings':0, 'MOMO':0, 'Others':0 };
     CASH_TYPES.forEach(t=>{ if(DB.cashBalances[t]==null) DB.cashBalances[t]=0; });
-    ['products','customers','customerFollowups','stockRows','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','monthRollovers','receipts','invoices','waybills','purchaseOrders','undoLog','inventoryTxns','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
+    ['products','customers','customerFollowups','salesOpportunities','quotations','stockRows','stockCorrections','sales','saleLines','debtors','creditors','depositors','debtorsMonthly','creditorsMonthly','depositorsMonthly','accountTxns','cashLog','expenses','kpiHistory','monthRollovers','receipts','invoices','waybills','purchaseOrders','undoLog','inventoryTxns','warranties','warrantyClaims','backupHistory'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k]=[]; });
+    if(!DB.warrantySettings || typeof DB.warrantySettings!=='object' || Array.isArray(DB.warrantySettings)) DB.warrantySettings={defaultMonths:12,categoryOverrides:{},configured:false,updatedAt:''};
+    if(!Number.isFinite(Number(DB.warrantySettings.defaultMonths))) DB.warrantySettings.defaultMonths=12;
+    DB.warrantySettings.defaultMonths=Math.max(0,Math.min(60,Math.round(Number(DB.warrantySettings.defaultMonths))));
+    if(!DB.warrantySettings.categoryOverrides || typeof DB.warrantySettings.categoryOverrides!=='object' || Array.isArray(DB.warrantySettings.categoryOverrides)) DB.warrantySettings.categoryOverrides={};
     DB.backupSettings = Object.assign({
       autoBackupEnabled:false,
       schedule:'manual',
@@ -1691,6 +1726,7 @@ function doLogin(){
   session.adminMode = (c.role === 'ADMIN');
   priceAdjUnlocked = false;
   vatRateUnlocked = false;
+  withholdingTaxRateUnlocked = false;
   cart = [];
   $('loginScreen').style.display = 'none';
   $('appShell').style.display = 'flex';
@@ -1709,6 +1745,7 @@ function doLogout(){
   cart = [];
   priceAdjUnlocked = false;
   vatRateUnlocked = false;
+  withholdingTaxRateUnlocked = false;
   $('appShell').style.display = 'none';
   $('loginScreen').style.display = 'flex';
   $('loginPass').value = '';
@@ -2422,8 +2459,9 @@ function viewStock(){
     <td class="mono right">${fmtN(p.qty)}</td>
     <td class="mono right">${fmt(p.value)}</td>
     <td style="font-size:11px;color:var(--muted)">${p.tiers.map(t=>fmtN(t.qty)+'@'+fmtN(t.cost)).join(', ')||'—'}</td>
+    <td>${window.ZEZMS&&ZEZMS.stockCorrections&&ZEZMS.stockCorrections.actionsHTML?ZEZMS.stockCorrections.actionsHTML(p.id,p.name):''}</td>
   </tr>`).join('');
-  const tableRows = rows || `<tr><td colspan="6" class="empty">No stock in ${monthName(DB.selectedMonth)} ${DB.selectedYear}</td></tr>`;
+  const tableRows = rows || `<tr><td colspan="7" class="empty">No stock in ${monthName(DB.selectedMonth)} ${DB.selectedYear}</td></tr>`;
   const visibleStockValue = list.reduce((sum,item)=>sum+(Number(item.value)||0),0);
   const visibleStockQty = list.reduce((sum,item)=>sum+(Number(item.qty)||0),0);
   return periodSelectorHTML() + `<div class="card">
@@ -2443,8 +2481,8 @@ function viewStock(){
     </div>
     <div class="row" style="margin-bottom:10px"><button class="btn sm ghost" onclick="clearStockBalanceSearch()">Clear searches</button></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Product ID</th><th>Product</th><th>Category</th><th class="right">R Stock</th><th class="right">Value</th><th>FIFO tiers</th></tr></thead>
-      <tbody id="stockBalanceBody">${tableRows}${rows?'<tr id="stockBalanceNoMatch" style="display:none"><td colspan="6" class="empty">No product matches the search.</td></tr>':''}</tbody>
+      <thead><tr><th>Product ID</th><th>Product</th><th>Category</th><th class="right">R Stock</th><th class="right">Value</th><th>FIFO tiers</th><th>Actions</th></tr></thead>
+      <tbody id="stockBalanceBody">${tableRows}${rows?'<tr id="stockBalanceNoMatch" style="display:none"><td colspan="7" class="empty">No product matches the search.</td></tr>':''}</tbody>
     </table></div>
   </div>`;
 }
@@ -2469,7 +2507,9 @@ function viewPOS(){
   const sub = cartSubtotal();
   const vatRate = currentSaleVatPercent();
   const vat = round2(sub * vatRate / 100);
-  const grand = round2(sub + vat);
+  const withholdingTaxRate = currentSaleWithholdingTaxPercent();
+  const withholdingTax = round2(sub * withholdingTaxRate / 100);
+  const grand = round2(sub + vat - withholdingTax);
   const paidInput = cart._paid == null ? '' : cart._paid;
   const paid = readNumberWithDefault(paidInput,0);
   const balDisplay = round2(paid - grand);
@@ -2533,7 +2573,7 @@ function viewPOS(){
           <tbody id="posItemsBody">${listRows}</tbody>
         </table></div>
         <div class="row" style="margin-top:8px">
-          <button class="btn sm danger" onclick="cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;refreshSaleTotals();render()">Clear all items</button>
+          <button class="btn sm danger" onclick="cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;withholdingTaxRateUnlocked=false;refreshSaleTotals();render()">Clear all items</button>
         </div>
       </div>
     </div>
@@ -2569,7 +2609,12 @@ function viewPOS(){
             onclick="unlockSaleVatRate()" oninput="onSaleVatRateChange()" onchange="clampSaleVatRate()"
             title="Click and enter PIN 0000 to change VAT" /></div>
         <div class="statline"><span>VAT amount (<span id="posVatRateLabel">${fmtN(vatRate)}</span>%)</span><b class="mono" id="posVat">${fmtN(vat)}</b></div>
-        <div class="statline"><span>Grand total</span><b class="mono" id="posGrand">${fmtN(grand)}</b></div>
+        <div class="field" style="margin-top:10px"><label>Withholding Tax percentage (%)</label>
+          <input id="posWithholdingTaxRate" type="number" min="0" max="100" step="0.01" value="${withholdingTaxRate?escAttr(withholdingTaxRate):''}" placeholder="0" data-semantic-default="0" readonly
+            onclick="unlockSaleWithholdingTaxRate()" oninput="onSaleWithholdingTaxRateChange()" onchange="clampSaleWithholdingTaxRate()"
+            title="Click and enter PIN 0000 to change Withholding Tax" /></div>
+        <div class="statline"><span>Withholding Tax deduction (<span id="posWithholdingTaxRateLabel">${fmtN(withholdingTaxRate)}</span>%)</span><b class="mono" id="posWithholdingTax">${fmtN(withholdingTax)}</b></div>
+        <div class="statline"><span>Grand total (Subtotal + VAT − Withholding Tax)</span><b class="mono" id="posGrand">${fmtN(grand)}</b></div>
         <div class="field" style="margin-top:10px"><label>Amount paid</label>
           <input id="posAmountPaid" type="number" min="0" step="0.01" value="${escAttr(paidInput)}" placeholder="0" data-semantic-default="0"
             oninput="onAmountPaidChange()" /></div>
@@ -2591,6 +2636,8 @@ function bindPOS(){
   }
   const vatInput = $('posVatRate');
   if(vatInput) vatInput.readOnly = !vatRateUnlocked;
+  const withholdingTaxInput = $('posWithholdingTaxRate');
+  if(withholdingTaxInput) withholdingTaxInput.readOnly = !withholdingTaxRateUnlocked;
 }
 function round2(n){ return Math.round((Number(n)||0)*100)/100; }
 function cartSubtotal(){
@@ -2600,7 +2647,9 @@ function refreshSaleTotals(){
   const sub = cartSubtotal();
   const vatRate = currentSaleVatPercent();
   const vat = round2(sub * vatRate / 100);
-  const grand = round2(sub + vat);
+  const withholdingTaxRate = currentSaleWithholdingTaxPercent();
+  const withholdingTax = round2(sub * withholdingTaxRate / 100);
+  const grand = round2(sub + vat - withholdingTax);
   const paidField = $('posAmountPaid');
   const paidRaw = paidField ? String(paidField.value||'').trim() : String(cart._paid==null?'':cart._paid).trim();
   const paid = readNumberWithDefault(paidRaw,0);
@@ -2608,6 +2657,8 @@ function refreshSaleTotals(){
   if($('posSubtotal')) $('posSubtotal').textContent = fmtN(sub);
   if($('posVatRateLabel')) $('posVatRateLabel').textContent = fmtN(vatRate);
   if($('posVat')) $('posVat').textContent = fmtN(vat);
+  if($('posWithholdingTaxRateLabel')) $('posWithholdingTaxRateLabel').textContent = fmtN(withholdingTaxRate);
+  if($('posWithholdingTax')) $('posWithholdingTax').textContent = fmtN(withholdingTax);
   if($('posGrand')) $('posGrand').textContent = fmtN(grand);
   if($('posBalance')) $('posBalance').textContent = fmtN(round2(paid - grand));
 }
@@ -2714,6 +2765,19 @@ function unlockSaleVatRate(){
     const input = $('posVatRate');
     if(input){ input.readOnly = false; input.focus(); }
     toast('VAT entry unlocked.', 'ok');
+  }, true);
+}
+function unlockSaleWithholdingTaxRate(){
+  const el = $('posWithholdingTaxRate');
+  if(withholdingTaxRateUnlocked){
+    if(el){ el.readOnly = false; el.focus(); }
+    return;
+  }
+  promptPIN('Withholding Tax Entry Guard', TRANSACTION_ENTRY_GUARD_PIN, ()=>{
+    withholdingTaxRateUnlocked = true;
+    const input = $('posWithholdingTaxRate');
+    if(input){ input.readOnly = false; input.focus(); }
+    toast('Withholding Tax entry unlocked.', 'ok');
   }, true);
 }
 function clearProductEntry(){
@@ -2866,10 +2930,12 @@ function getOrCreateDebtorID(debtorName, contact){
 function resetSaleOutForm(){
   cart = [];
   cart._cust = ''; cart._loc = ''; cart._tel = ''; cart._paid = ''; cart._vatRate = 0;
+  cart._withholdingTaxRate = 0;
   cart._customerId = '';
   cart._salesChannel = 'Walk-in'; cart._salesChannelOther = '';
   priceAdjUnlocked = false;
   vatRateUnlocked = false;
+  withholdingTaxRateUnlocked = false;
 }
 
 function quickSaleOut(){
@@ -2916,14 +2982,17 @@ function printReceiptSale(){
   const resolvedCustomerId = ZEZMS.customerMaster && ZEZMS.customerMaster.resolveCustomerId
     ? ZEZMS.customerMaster.resolveCustomerId({phone:tel, selectedId:cart._customerId||''})
     : '';
+  const sourceQuotationId = String(cart._sourceQuotationId||'');
 
   const subtotal = cartSubtotal();
   const vatRate = currentSaleVatPercent();
   const vatAmount = round2(subtotal * vatRate / 100);
-  const totalWithVAT = round2(subtotal + vatAmount);
+  const withholdingTaxRate = currentSaleWithholdingTaxPercent();
+  const withholdingTaxAmount = round2(subtotal * withholdingTaxRate / 100);
+  const totalPayable = round2(subtotal + vatAmount - withholdingTaxAmount);
   const amountPaid = readNumberWithDefault(($('posAmountPaid')&&$('posAmountPaid').value) || cart._paid,0);
-  const outstanding = round2(totalWithVAT - amountPaid); // for register/debtor
-  const receiptBal = round2(amountPaid - totalWithVAT); // for printed receipt
+  const outstanding = round2(totalPayable - amountPaid); // for register/debtor
+  const receiptBal = round2(amountPaid - totalPayable); // for printed receipt
 
   const receiptNo = idStamp('SR-');
   const items = cart.map(c => ({
@@ -2969,7 +3038,9 @@ function printReceiptSale(){
     subtotal,
     vatRate,
     vatAmount,
-    totalAmount: totalWithVAT,
+    withholdingTaxRate,
+    withholdingTaxAmount,
+    totalAmount: totalPayable,
     amountPaid,
     balance: outstanding > 0 ? outstanding : 0,
     date: nowISO(),
@@ -2993,7 +3064,9 @@ function printReceiptSale(){
     subtotal,
     vatRate,
     vatAmount,
-    total: totalWithVAT,
+    withholdingTaxRate,
+    withholdingTaxAmount,
+    total: totalPayable,
     paid: amountPaid,
     balance: outstanding,
     pay: outstanding > 0 ? (amountPaid > 0 ? 'PARTIAL' : 'CREDIT') : 'PAID',
@@ -3029,13 +3102,23 @@ function printReceiptSale(){
   }
   const saleSnap = {
     receiptNo, customerId:resolvedCustomerId, customer, location, contact: tel,
-    subtotal, vatRate, vatAmount,
-    total: totalWithVAT, paid: amountPaid,
+    subtotal, vatRate, vatAmount, withholdingTaxRate, withholdingTaxAmount,
+    total: totalPayable, paid: amountPaid,
     balance: receiptBal, outstanding,
     cashier: session.cashier, cashierTel: session.tel,
     salesChannel: selectedSalesChannel, salesChannelOther: selectedSalesChannelOther,
     date: nowISO(), lines: items
   };
+  try{
+    window.dispatchEvent(new CustomEvent('zezms-sale-committed',{detail:{
+      transactionId:receiptNo, saleType:'RECEIPT', sourceQuotationId,
+      customerId:resolvedCustomerId, customerName:customer, customerPhone:tel,
+      location, date:saleSnap.date, lines:deepClone(items), saleRecord:deepClone(saleSnap)
+    }}));
+  }catch(postSaleIntegrationError){
+    console.error('Completed receipt post-sale integration failed',postSaleIntegrationError);
+    toast('Sale completed, but a post-sale register could not be updated: '+(postSaleIntegrationError.message||postSaleIntegrationError),'warn');
+  }
   resetSaleOutForm();
   toast('Sale recorded · '+receiptNo);
   showReceiptModal(saleSnap);
@@ -3084,6 +3167,7 @@ function showReceiptModal(sale){
       <div style="margin-top:10px;text-align:right;color:#111">
         <div>Subtotal: ${fmtN(sale.subtotal != null ? sale.subtotal : sale.total)}</div>
         <div>VAT (${fmtN(sale.vatRate || 0)}%): ${fmtN(sale.vatAmount || 0)}</div>
+        <div>Withholding Tax (${fmtN(sale.withholdingTaxRate || 0)}%): −${fmtN(sale.withholdingTaxAmount || 0)}</div>
         <div><b>Grand Total: ${fmtN(sale.total)}</b></div>
         <div style="margin-top:6px">Amount Paid: ${fmtN(sale.paid)}</div>
         <div>Balance: ${fmtN(sale.balance)}</div>
@@ -3802,6 +3886,7 @@ function resetAll(){
     cart=[];
     priceAdjUnlocked=false;
     vatRateUnlocked=false;
+    withholdingTaxRateUnlocked=false;
     toast('Data wiped');
     nav(isElevated()?'dashboard':'pos');
   });
@@ -4579,7 +4664,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260820-customer-outreach-r48').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260821-sales-pipeline-stock-warranty-r49').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4602,23 +4687,23 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 </script>
-<script src="js/operations-update.js?v=20260820-customer-retention-r47"></script>
+<script src="js/operations-update.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
 <script src="js/auto-month-rollover.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/invoice-waybill.js?v=20260820-customer-retention-r47"></script>
+<script src="js/invoice-waybill.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
 <script src="js/mobile-vertical-layout.js?v=20260817-loopback-network-r47"></script>
 <script src="js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/commercial-foundation.js?v=20260812-portfolio-signals-r39"></script>
-<script src="js/owner-maintenance-v373.js?v=20260820-customer-retention-r47"></script>
-<script src="js/pdf-export.js?v=20260820-customer-retention-r47"></script>
+<script src="js/owner-maintenance-v373.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/pdf-export.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
 <script src="js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39"></script>
 <script>
 /* Embedded so Owner Recovery does not depend on a newly added external file. */
-/* ZEZMS v3.14.0 — Customer Outreach & Contact Actions */
+/* ZEZMS v3.15.0 — Sales Pipeline, Stock Corrections & Warranty */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260820-customer-outreach-r48';
+const BUILD='20260821-sales-pipeline-stock-warranty-r49';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
@@ -4770,8 +4855,8 @@ async function refreshUsersFromCloud(showNotice){
     return false;
   }
 }
-async function login(){const id=String((document.getElementById('sharedLoginUser')||{}).value||''),password=String((document.getElementById('sharedLoginPassword')||{}).value||''),u=model().users.find(x=>x.id===id),btn=document.getElementById('sharedLoginButton');if(!u||!u.passwordHash){status('Select Owner recovery / first setup to create staff passwords.','error');return;}if(!password){status('Enter the selected staff member’s password.','error');return;}const lock=u.lockedUntil?new Date(u.lockedUntil).getTime():0;if(lock>Date.now()){status(`Too many failed attempts. Try again in ${Math.ceil((lock-Date.now())/1000)} seconds.`,'error');return;}if(btn){btn.disabled=true;btn.textContent='Checking password…';}status('Checking the local staff password…','working');try{if(!await verify(u,password)){u.failedAttempts=Number(u.failedAttempts||0)+1;if(u.failedAttempts>=5){u.failedAttempts=0;u.lockedUntil=new Date(Date.now()+30000).toISOString();}saveDB();status(`Incorrect password for ${u.name}.`,'error');return;}u.failedAttempts=0;u.lockedUntil='';u.lastLoginAt=stamp();saveDB();session.cashier=u.name;session.tel=u.tel||'';session.role=['OWNER','ADMIN','MANAGER','READ_ONLY','AUDITOR'].includes(u.role)?'ADMIN':'CASHIER2';session.sig=u.signatureFile||'';session.isCashier2=u.role==='CASHIER';session.adminMode=false;session.commercialRole=u.role;session.sharedUserId=u.id;session.businessId=model().businessId;cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';updateUserBadge();applyRoleUI();updatePeriodUI();audit('STAFF_SIGNED_IN',{userId:u.id});nav(fallback());toast('Welcome, '+String(u.name).split(' ')[0]+'!');if(['OWNER','ADMIN'].includes(u.role))setTimeout(()=>{autoPublishDirectory();},800);}catch(e){console.error(e);status(e.message||String(e),'error');}finally{if(btn){btn.disabled=false;btn.textContent='Sign in to this shared device';}}}
-async function logout(){if(session.sharedUserId)audit('STAFF_SIGNED_OUT',{userId:session.sharedUserId});session={cashier:null,tel:null,role:null,adminMode:false,sig:null,isCashier2:false};cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;document.getElementById('appShell').style.display='none';document.getElementById('loginScreen').style.display='flex';const p=document.getElementById('sharedLoginPassword');if(p)p.value='';refreshUsers();}
+async function login(){const id=String((document.getElementById('sharedLoginUser')||{}).value||''),password=String((document.getElementById('sharedLoginPassword')||{}).value||''),u=model().users.find(x=>x.id===id),btn=document.getElementById('sharedLoginButton');if(!u||!u.passwordHash){status('Select Owner recovery / first setup to create staff passwords.','error');return;}if(!password){status('Enter the selected staff member’s password.','error');return;}const lock=u.lockedUntil?new Date(u.lockedUntil).getTime():0;if(lock>Date.now()){status(`Too many failed attempts. Try again in ${Math.ceil((lock-Date.now())/1000)} seconds.`,'error');return;}if(btn){btn.disabled=true;btn.textContent='Checking password…';}status('Checking the local staff password…','working');try{if(!await verify(u,password)){u.failedAttempts=Number(u.failedAttempts||0)+1;if(u.failedAttempts>=5){u.failedAttempts=0;u.lockedUntil=new Date(Date.now()+30000).toISOString();}saveDB();status(`Incorrect password for ${u.name}.`,'error');return;}u.failedAttempts=0;u.lockedUntil='';u.lastLoginAt=stamp();saveDB();session.cashier=u.name;session.tel=u.tel||'';session.role=['OWNER','ADMIN','MANAGER','READ_ONLY','AUDITOR'].includes(u.role)?'ADMIN':'CASHIER2';session.sig=u.signatureFile||'';session.isCashier2=u.role==='CASHIER';session.adminMode=false;session.commercialRole=u.role;session.sharedUserId=u.id;session.businessId=model().businessId;cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;withholdingTaxRateUnlocked=false;document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';updateUserBadge();applyRoleUI();updatePeriodUI();audit('STAFF_SIGNED_IN',{userId:u.id});nav(fallback());toast('Welcome, '+String(u.name).split(' ')[0]+'!');if(['OWNER','ADMIN'].includes(u.role))setTimeout(()=>{autoPublishDirectory();},800);}catch(e){console.error(e);status(e.message||String(e),'error');}finally{if(btn){btn.disabled=false;btn.textContent='Sign in to this shared device';}}}
+async function logout(){if(session.sharedUserId)audit('STAFF_SIGNED_OUT',{userId:session.sharedUserId});session={cashier:null,tel:null,role:null,adminMode:false,sig:null,isCashier2:false};cart=[];priceAdjUnlocked=false;vatRateUnlocked=false;withholdingTaxRateUnlocked=false;document.getElementById('appShell').style.display='none';document.getElementById('loginScreen').style.display='flex';const p=document.getElementById('sharedLoginPassword');if(p)p.value='';refreshUsers();}
 function badge(){const n=document.getElementById('uiUserName'),b=document.getElementById('uiUserRole');if(n)n.textContent=session.cashier||'—';if(b){b.textContent=role().replace('_',' ');b.className=role()==='CASHIER'?'badge cashier':'badge admin';}}
 function roleUI(){document.querySelectorAll('#mainNav button[data-view]').forEach(b=>b.style.display=canView(b.dataset.view)?'':'none');const sw=document.getElementById('navAdminMode');if(sw){sw.style.display='';sw.textContent='⇄ Switch Staff';sw.style.background='rgba(20,184,166,.18)';sw.style.color='#99f6e4';}document.querySelectorAll('[data-admin-only]').forEach(e=>{if(e.id==='navAdminMode')return;const v=e.dataset&&e.dataset.view;e.style.display=v?(canView(v)?'':'none'):'';});badge();}
 function afterRender(){const a=document.getElementById('legacyPinSecurityCard'),b=document.getElementById('legacyLocalUsersCard');if(a)a.remove();if(b)b.remove();if(['READ_ONLY','AUDITOR'].includes(role())){const names=Object.keys(WRAP);document.querySelectorAll('#viewRoot button[onclick]').forEach(x=>{const c=String(x.getAttribute('onclick')||'');if(names.some(n=>c.includes(n+'(')))x.style.display='none';});document.querySelectorAll('#viewRoot input:not([type="search"]),#viewRoot select,#viewRoot textarea').forEach(f=>{if(!f.closest('.period-selector')&&!String(f.id||'').startsWith('receiptNameSearch')&&!String(f.id||'').startsWith('stockSearch'))f.disabled=true;});}}
@@ -4788,7 +4873,7 @@ function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;cons
 async function saveUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can manage staff.');if(!await reauth('Confirm staff-account change'))return;const u=model().users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(role()==='ADMIN'&&u.role==='OWNER')throw new Error('An Admin cannot modify the Owner account.');await upsert({name:String((document.getElementById('sharedEditName')||{}).value||''),tel:String((document.getElementById('sharedEditTel')||{}).value||''),role:String((document.getElementById('sharedEditRole')||{}).value||u.role),password:String((document.getElementById('sharedEditPassword')||{}).value||''),active:String((document.getElementById('sharedEditActive')||{}).value||'1')==='1'},id);closeModal();audit('STAFF_ACCOUNT_UPDATED',{userId:id});render();refreshUsers();toast('Staff account updated.');}catch(e){toast(e.message||String(e),'err');}}
 async function deleteUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can delete staff.');const m=model(),u=m.users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(u.role==='OWNER')throw new Error('The Owner account cannot be deleted.');if(u.id===session.sharedUserId)throw new Error('You cannot delete the account that is currently signed in.');if(!window.confirm(`Permanently delete ${u.name}? This cannot be undone.`))return;if(!await reauth('Confirm permanent staff deletion'))return;const index=m.users.findIndex(x=>x.id===id);if(index<0)throw new Error('Staff account not found.');m.users.splice(index,1);audit('STAFF_ACCOUNT_DELETED',{userId:id,name:u.name,role:u.role});writeDirectoryRoot();saveDB();closeModal();render();refreshUsers();const published=await autoPublishDirectory();toast(published?'Staff account deleted and published to authorised devices.':'Staff account deleted locally. Publish staff access when Cloud Sync is available.',published?'ok':'warn');}catch(e){toast(e.message||String(e),'err');}}
 function cloud(){const s=ZEZMS.cloudSync;return s&&typeof s.getState==='function'?s.getState():{};}
-function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.12.0'};}
+function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.15.0'};}
 function recovery(){const s=cloud();if(!s.supabaseUrl||!s.publishableKey||!window.supabase)throw new Error('Supabase configuration is unavailable on this device.');if(!recoveryClient)recoveryClient=window.supabase.createClient(String(s.supabaseUrl).replace(/\/$/,''),String(s.publishableKey),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:RECOVERY_KEY}});return recoveryClient;}
 
 function sharedModal(html){
@@ -4951,12 +5036,12 @@ setTimeout(function(){
 
 <script>
 /* Embedded Secure Device Enrollment controller. */
-/* ZEZMS v3.14.0 — Customer Outreach & Contact Actions */
+/* ZEZMS v3.15.0 — Sales Pipeline, Stock Corrections & Warranty */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260820-customer-outreach-r48';
+  const BUILD = '20260821-sales-pipeline-stock-warranty-r49';
   let branches = [];
   let lastPairing = null;
   let enrolledDevices = [];
@@ -5248,7 +5333,7 @@ setTimeout(function(){
       if(!branchId)throw new Error('Select the branch for the new device.');
       const result=await pair.client.rpc('zezms_m5a3_create_device_pairing',{
         p_business_id:businessId,p_device_name:deviceName,p_branch_id:branchId,
-        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.12.0'
+        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.15.0'
       });
       if(result.error)throw result.error;
       lastPairing=normalizeRow(result.data);
@@ -5304,12 +5389,15 @@ setTimeout(function(){
 <script src="js/stock-velocity-v390.js?v=20260820-customer-retention-r47"></script>
 <script src="js/portfolio-signals-v391.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/customer-intelligence-v3100.js?v=20260814-sales-channel-capture-r43"></script>
-<script src="js/customer-master-v3120.js?v=20260820-customer-outreach-r48"></script>
-<script src="js/customer-outreach-v3140.js?v=20260820-customer-outreach-r48"></script>
-<script src="js/customer-followups-v3130.js?v=20260820-customer-outreach-r48"></script>
-<script src="js/product-catalog-search-v3140.js?v=20260820-customer-outreach-r48"></script>
+<script src="js/customer-master-v3120.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/customer-outreach-v3140.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/customer-followups-v3130.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/product-catalog-search-v3140.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/sales-pipeline-v3150.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/stock-corrections-v3150.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
+<script src="js/warranty-management-v3150.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
 <script src="js/print-readiness-v3120.js?v=20260817-loopback-network-r47"></script>
 <script src="js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47"></script>
-<script src="js/navigation-v3101.js?v=20260820-customer-outreach-r48"></script>
+<script src="js/navigation-v3101.js?v=20260821-sales-pipeline-stock-warranty-r49"></script>
 </body>
 </html>
