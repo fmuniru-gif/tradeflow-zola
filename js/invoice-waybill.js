@@ -1,10 +1,10 @@
-/* ZEZMS TradeFlow v3.4.11 — Electronic Invoice & Waybill
+/* ZEZMS TradeFlow v3.15.1 — Electronic Invoice & Waybill
    Creates printable commercial documents without posting stock or KPI changes.
    An invoice can be loaded into Sale Out; stock is deducted only when the sale is completed. */
 (function () {
   'use strict';
 
-  const BUILD = '20260820-customer-retention-r47';
+  const BUILD = '20260821-stage6a-ui-integration-fix-r50';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const VOID = 'VOID';
@@ -92,6 +92,11 @@
       .doc-void td{opacity:.7;background:rgba(100,116,139,.12)!important}
       .doc-converted td{background:rgba(34,197,94,.08)!important}
       .doc-help{border-left:4px solid var(--teal);padding:10px 12px;background:rgba(15,118,110,.08);border-radius:8px;font-size:12px;color:var(--muted)}
+      .document-customer-lookup{position:relative}
+      .document-customer-lookup input{background:#081221;color:#f8fafc;border:1px solid #475569;caret-color:#f8fafc}
+      .document-customer-lookup input::placeholder{color:#94a3b8;opacity:1}
+      .document-customer-lookup input:focus{color:#fff;border-color:var(--teal2);outline:2px solid rgba(45,212,191,.35);outline-offset:1px}
+      .document-customer-lookup .suggest{max-width:100%;overflow-x:hidden}
       @media(max-width:900px){.document-layout{grid-template-columns:1fr}}
       @media print{.document-paper{box-shadow:none;padding:0}}
     `;
@@ -236,6 +241,78 @@
   function alreadyDrafted(lines, productName) {
     return lines.filter((line) => line.product === productName)
       .reduce((sum, line) => sum + (Number(line.qty) || 0), 0);
+  }
+
+  function customerLookupHTML(type) {
+    const invoice = type === 'invoice';
+    const prefix = invoice ? 'inv' : 'wb';
+    return `<div class="field document-customer-lookup"><label>Find Customer</label>
+      <input id="${prefix}CustomerLookup" type="search" autocomplete="off" placeholder="Search name, telephone or Customer ID"
+        oninput="searchDocumentCustomers('${type}',this.value)" onkeydown="documentCustomerLookupKey(event,'${type}')">
+      <div id="${prefix}CustomerResults" class="suggest"></div></div>
+      <div id="${prefix}CustomerLookupStatus" class="muted" style="font-size:11px;margin:-4px 0 8px"></div>`;
+  }
+
+  function searchDocumentCustomers(type, value) {
+    const prefix = type === 'invoice' ? 'inv' : 'wb';
+    const box = document.getElementById(prefix + 'CustomerResults');
+    if (!box) return;
+    const term = String(value || '').trim();
+    if (!term) { box.innerHTML = ''; box.classList.remove('show'); return; }
+    const master = window.ZEZMS && ZEZMS.customerMaster;
+    const matches = master && typeof master.searchExisting === 'function' ? master.searchExisting(term, 10) : [];
+    box.innerHTML = matches.length ? matches.map((customer) =>
+      `<div onclick="selectDocumentCustomer('${type}','${escAttr(customer.customerId)}')"><b>${esc(customer.name || 'Unnamed customer')}</b><br>` +
+      `<span class="muted">${esc(customer.phone || 'No telephone')}${customer.location ? ' · ' + esc(customer.location) : ''}</span></div>`
+    ).join('') : '<div class="none">No Customer Master match</div>';
+    box.classList.add('show');
+  }
+
+  function selectDocumentCustomer(type, customerId) {
+    const master = window.ZEZMS && ZEZMS.customerMaster;
+    const customer = master && typeof master.findById === 'function' ? master.findById(customerId) : null;
+    if (!customer) { toast('Customer Master record is unavailable.', 'err'); return; }
+    const invoice = type === 'invoice';
+    const prefix = invoice ? 'inv' : 'wb';
+    if (invoice) {
+      invoiceDraft.customer = customer.name || '';
+      invoiceDraft.contact = customer.phone || '';
+      invoiceDraft.location = customer.location || '';
+      const name = document.getElementById('invCustomer');
+      const phone = document.getElementById('invContact');
+      const location = document.getElementById('invLocation');
+      if (name) name.value = invoiceDraft.customer;
+      if (phone) phone.value = invoiceDraft.contact;
+      if (location) location.value = invoiceDraft.location;
+    } else {
+      waybillDraft.consignee = customer.name || '';
+      waybillDraft.contact = customer.phone || '';
+      waybillDraft.location = customer.location || '';
+      const name = document.getElementById('wbConsignee');
+      const phone = document.getElementById('wbContact');
+      const location = document.getElementById('wbLocation');
+      if (name) name.value = waybillDraft.consignee;
+      if (phone) phone.value = waybillDraft.contact;
+      if (location) location.value = waybillDraft.location;
+    }
+    const input = document.getElementById(prefix + 'CustomerLookup');
+    if (input) input.value = customer.customerId + ' · ' + (customer.name || '');
+    const box = document.getElementById(prefix + 'CustomerResults');
+    if (box) { box.innerHTML = ''; box.classList.remove('show'); }
+    const status = document.getElementById(prefix + 'CustomerLookupStatus');
+    if (status) status.textContent = 'Selected Customer Master record: ' + (customer.name || '') + ' (' + customer.customerId + ').';
+  }
+
+  function documentCustomerLookupKey(event, type) {
+    if (!event) return;
+    const prefix = type === 'invoice' ? 'inv' : 'wb';
+    const box = document.getElementById(prefix + 'CustomerResults');
+    if (event.key === 'Escape' && box) { box.innerHTML = ''; box.classList.remove('show'); }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const first = box && box.querySelector('div:not(.none)');
+      if (first) first.click();
+    }
   }
 
   function addInvoiceLine() {
@@ -706,6 +783,7 @@
         <div class="row" style="margin-top:8px"><button class="btn sm danger" onclick="clearCommercialDraft('invoice')">Clear draft</button></div></div>
       </div><div>
       <div class="card" style="margin-bottom:12px"><h3>Customer and terms</h3>
+        ${customerLookupHTML('invoice')}
         <div class="field"><label>Customer name *</label><input id="invCustomer" value="${escAttr(invoiceDraft.customer)}" oninput="invoiceDraftField('customer',this.value)"></div>
         <div class="field"><label>Location</label><input id="invLocation" value="${escAttr(invoiceDraft.location)}" oninput="invoiceDraftField('location',this.value)"></div>
         <div class="field"><label>Telephone *</label><input id="invContact" value="${escAttr(invoiceDraft.contact)}" oninput="invoiceDraftField('contact',this.value)"></div>
@@ -765,6 +843,7 @@
         <div class="row" style="margin-top:8px"><button class="btn sm danger" onclick="clearCommercialDraft('waybill')">Clear draft</button></div></div>
       </div><div>
       <div class="card" style="margin-bottom:12px"><h3>Delivery information</h3>
+        ${customerLookupHTML('waybill')}
         <div class="field"><label>Consignee / Customer *</label><input id="wbConsignee" value="${escAttr(waybillDraft.consignee)}" oninput="waybillDraftField('consignee',this.value)"></div>
         <div class="field"><label>Delivery location</label><input id="wbLocation" value="${escAttr(waybillDraft.location)}" oninput="waybillDraftField('location',this.value)"></div>
         <div class="field"><label>Telephone</label><input id="wbContact" value="${escAttr(waybillDraft.contact)}" oninput="waybillDraftField('contact',this.value)"></div>
@@ -834,6 +913,9 @@
   window.invoiceSearchId = () => searchSuggestions('inv', 'id');
   window.waybillSearchName = () => searchSuggestions('wb', 'name');
   window.waybillSearchId = () => searchSuggestions('wb', 'id');
+  window.searchDocumentCustomers = searchDocumentCustomers;
+  window.selectDocumentCustomer = selectDocumentCustomer;
+  window.documentCustomerLookupKey = documentCustomerLookupKey;
   window.pickCommercialProduct = pickProduct;
   window.commercialProductChanged = productChanged;
   window.clearCommercialEntry = clearEntry;
@@ -889,9 +971,10 @@
   installNavigation();
   window.ZEZMS = window.ZEZMS || {};
   ZEZMS.commercialDocuments = {
-    version: '3.4.10', build: BUILD, ensureModel,
+    version: '3.15.1', build: BUILD, ensureModel,
     viewInvoices, viewWaybills, createInvoice, createWaybill,
     loadInvoiceToSale, prepareWaybillFromInvoice, editDocument,
-    documentHTML, buildCommercialPrintDocument, printCommercialDocument, systemPrintCommercialDocument
+    documentHTML, buildCommercialPrintDocument, printCommercialDocument, systemPrintCommercialDocument,
+    searchDocumentCustomers, selectDocumentCustomer
   };
 }());

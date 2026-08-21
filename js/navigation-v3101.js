@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  var VERSION = '3.15.0';
-  var BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
+  var VERSION = '3.15.1';
+  var BUILD = '20260821-stage6a-ui-integration-fix-r50';
   window.ZEZMS = window.ZEZMS || {};
 
   if (window.ZEZMS.navigationV3101 && window.ZEZMS.navigationV3101.build === BUILD) {

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
+  const BUILD = '20260821-stage6a-ui-integration-fix-r50';
   const DOCUMENT_WATERMARK_URL = new URL('assets/zez-document-watermark.jpg', document.baseURI).href;
   const ACTIVE = 'ACTIVE';
   const UNDONE = 'UNDONE';

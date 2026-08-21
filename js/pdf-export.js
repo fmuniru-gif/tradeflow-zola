@@ -1,9 +1,9 @@
-/* ZEZMS Owner Edition v3.15.0 - branded offline PDF exports */
+/* ZEZMS Owner Edition v3.15.1 - branded offline PDF exports */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
+  const BUILD = '20260821-stage6a-ui-integration-fix-r50';
   const DOCUMENT_WATERMARK_ASSET = 'assets/zez-document-watermark.jpg';
   const DOCUMENT_WATERMARK_OPACITY = 0.10;
   const A4 = { width: 595, height: 842 };
@@ -603,7 +603,7 @@
 
   installRegisterButtons();
   ZEZMS.pdfExport = {
-    version: '3.15.0', build: BUILD, SimplePDF: SimplePDF,
+    version: '3.15.1', build: BUILD, SimplePDF: SimplePDF,
     buildReceiptPDF: buildReceiptPDF, buildInvoicePDF: buildInvoicePDF,
     buildWaybillPDF: buildWaybillPDF, buildPurchaseOrderPDF: buildPurchaseOrderPDF,
     loadDocumentWatermark: loadDocumentWatermark,

@@ -1,12 +1,12 @@
-/* ZEZMS TradeFlow Owner Edition v3.15.0
+/* ZEZMS TradeFlow Owner Edition v3.15.1
    Stage 6A sales opportunities and quotations.
    Quotations are commercial proposals only: this module never posts stock, cash, debt or profit. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var VERSION = '3.15.0';
-  var BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
+  var VERSION = '3.15.1';
+  var BUILD = '20260821-stage6a-ui-integration-fix-r50';
   var OPPORTUNITY_STATUSES = Object.freeze(['New', 'Contacted', 'Quotation Prepared', 'Negotiating', 'Won', 'Lost', 'Cancelled']);
   var QUOTATION_STATUSES = Object.freeze(['Draft', 'Issued', 'Accepted', 'Rejected', 'Expired', 'Converted', 'Cancelled']);
   var LOST_REASONS = Object.freeze(['Price', 'Product Unavailable', 'Customer Chose Competitor', 'Customer Postponed Purchase', 'No Response', 'Financing/Budget', 'Requirement Changed', 'Other']);
@@ -143,6 +143,16 @@
     return '<option value="">Select an existing Customer Master customer</option>' + (DB.customers || []).slice().sort(function (a, b) {
       return String(a.name || '').localeCompare(String(b.name || ''));
     }).map(function (item) {
+      var id = item.customerId || item.id || '';
+      return '<option value="' + attr(id) + '"' + (String(id) === String(selectedId || '') ? ' selected' : '') + '>'
+        + esc(item.name || 'Unnamed') + ' · ' + esc(item.phone || '') + '</option>';
+    }).join('');
+  }
+  function customerOptionsFor(records, selectedId) {
+    var list = (records || []).slice();
+    var selected = selectedId ? customer(selectedId) : null;
+    if (selected && !list.some(function (item) { return String(item.customerId || item.id || '') === String(selectedId); })) list.unshift(selected);
+    return '<option value="">Select an existing Customer Master customer</option>' + list.map(function (item) {
       var id = item.customerId || item.id || '';
       return '<option value="' + attr(id) + '"' + (String(id) === String(selectedId || '') ? ' selected' : '') + '>'
         + esc(item.name || 'Unnamed') + ' · ' + esc(item.phone || '') + '</option>';
@@ -412,26 +422,95 @@
     var selectedCustomer = item.customerId || (preOp && preOp.customerId) || '';
     var selectedOpportunity = item.opportunityId || preselectedOpportunityId || '';
     var defaultVat = item.vatRate != null ? item.vatRate : 0;
-    return '<h3>' + (item.quotationId ? 'Edit Draft Quotation' : 'New Quotation') + '</h3>'
+    return '<div id="quotationEditModal" class="quotation-edit-modal"><h3>' + (item.quotationId ? 'Edit Draft Quotation' : 'New Quotation') + '</h3>'
       + '<p class="muted">This is a commercial proposal only. Saving or accepting it does not reserve stock or post a sale.</p>'
+      + '<div class="card quote-customer-card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Customer</h3><button type="button" class="btn sm ghost" onclick="ZEZMS.salesPipeline.toggleQuoteNewCustomer()">New Customer</button></div>'
+      + '<div class="field" style="position:relative;margin-top:10px"><label>Find existing Customer Master customer</label><input id="quoteCustomerLookup" type="search" autocomplete="off" placeholder="Search name, telephone or Customer ID" oninput="ZEZMS.salesPipeline.filterQuoteCustomers(this.value)"></div>'
       + '<div class="grid g2"><div class="field"><label>Existing Customer Master customer</label><select id="quoteCustomer" onchange="ZEZMS.salesPipeline.refreshOpportunityOptions()">' + customerOptions(selectedCustomer) + '</select></div>'
       + '<div class="field"><label>Sales Opportunity</label><select id="quoteOpportunity">' + opportunitySelectOptions(selectedCustomer, selectedOpportunity) + '</select></div></div>'
+      + '<div id="quoteNewCustomerPanel" class="card" hidden><h4 style="margin:0 0 8px">Add New Customer</h4><div class="grid g2"><div class="field"><label>Customer Name *</label><input id="quoteNewCustomerName" maxlength="120" autocomplete="name"></div><div class="field"><label>Telephone *</label><input id="quoteNewCustomerPhone" maxlength="40" inputmode="tel" autocomplete="tel" oninput="ZEZMS.salesPipeline.quoteCustomerPhoneChanged(this.value)"></div><div class="field"><label>Location</label><input id="quoteNewCustomerLocation" maxlength="200"></div><div class="field"><label>Notes</label><textarea id="quoteNewCustomerNotes" maxlength="1000" rows="3"></textarea></div></div><div id="quoteCustomerDuplicate" class="muted" style="margin-bottom:8px"></div><div class="row"><button type="button" class="btn" onclick="ZEZMS.salesPipeline.saveQuoteCustomerAndUse()">Save Customer &amp; Use</button><button type="button" class="btn ghost" onclick="ZEZMS.salesPipeline.toggleQuoteNewCustomer(false)">Cancel</button></div></div></div>'
       + '<div class="grid g3"><div class="field"><label>Quotation Date</label><input id="quoteDate" type="date" value="' + attr(item.quotationDate || localDate()) + '"></div>'
       + '<div class="field"><label>Valid Until</label><input id="quoteValid" type="date" value="' + attr(item.validUntil || '') + '"></div>'
       + '<div class="field"><label>VAT %</label><input id="quoteVat" type="number" min="0" max="100" step="0.01" value="' + attr(defaultVat || '') + '" placeholder="0" data-semantic-default="0" oninput="ZEZMS.salesPipeline.renderDraftLines()"></div></div>'
       + '<div class="card" style="margin:8px 0"><h3>Add Product</h3>' + productDatalist()
       + '<div class="row"><div class="field" style="flex:1"><label>Search Product Name or Product ID</label><input id="quoteProductSearch" list="quoteProductOptions" placeholder="Partial search is available in the list"></div>'
-      + '<button class="btn" style="margin-top:18px" onclick="ZEZMS.salesPipeline.addDraftProduct()">Add Product</button></div></div>'
+      + '<button type="button" class="btn" style="margin-top:18px" onclick="ZEZMS.salesPipeline.addDraftProduct()">Add Product</button></div></div>'
       + '<div id="quoteDraftLines"></div>'
       + '<div class="grid g2"><div class="field"><label>Notes</label><textarea id="quoteNotes" rows="3">' + esc(item.notes || '') + '</textarea></div><div class="field"><label>Terms</label><textarea id="quoteTerms" rows="3">' + esc(item.terms || '') + '</textarea></div></div>'
-      + '<div class="row"><button class="btn" onclick="ZEZMS.salesPipeline.saveQuotationForm()">Save Draft</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>';
+      + '<div class="row"><button type="button" class="btn" onclick="ZEZMS.salesPipeline.saveQuotationForm()">Save Draft</button><button type="button" class="btn ghost" onclick="closeModal()">Cancel</button></div></div>';
   }
   function openQuotationForm(quotationId, opportunityId) {
     requireOwnerAdmin();
     var item = quotationId ? quotation(quotationId) : null;
     if (item && item.status !== 'Draft') throw new Error('Commercial terms are protected after issue. Duplicate this quotation as a revision.');
-    openModal(quoteEditor(item, opportunityId));
+    openModal(quoteEditor(item, opportunityId), 'modal-wide-quotation');
     setTimeout(renderDraftLines, 0);
+  }
+  function filterQuoteCustomers(value) {
+    var select = document.getElementById('quoteCustomer');
+    if (!select) return;
+    var selectedId = select.value;
+    var query = String(value || '').trim();
+    var matches = query && ZEZMS.customerMaster && typeof ZEZMS.customerMaster.searchExisting === 'function'
+      ? ZEZMS.customerMaster.searchExisting(query, 25)
+      : (DB.customers || []).slice().sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || '')); });
+    select.innerHTML = customerOptionsFor(matches, selectedId);
+    select.value = selectedId;
+  }
+  function toggleQuoteNewCustomer(force) {
+    var panel = document.getElementById('quoteNewCustomerPanel');
+    if (!panel) return;
+    panel.hidden = typeof force === 'boolean' ? !force : !panel.hidden;
+    if (!panel.hidden) {
+      var name = document.getElementById('quoteNewCustomerName');
+      if (name) name.focus();
+    }
+  }
+  function showQuoteDuplicate(customerRecord) {
+    var host = document.getElementById('quoteCustomerDuplicate');
+    if (!host) return;
+    host.innerHTML = customerRecord
+      ? 'Existing customer found: <b>' + esc(customerRecord.name || 'Unnamed customer') + '</b> · <button type="button" class="btn sm ghost" onclick="ZEZMS.salesPipeline.useQuoteExistingCustomer(\'' + attr(customerRecord.customerId) + '\')">Use Existing Customer</button>'
+      : '';
+  }
+  function quoteCustomerPhoneChanged(value) {
+    var found = null;
+    try { if (ZEZMS.customerMaster && ZEZMS.customerMaster.findByPhone) found = ZEZMS.customerMaster.findByPhone(value); } catch (_) {}
+    showQuoteDuplicate(found);
+    return found;
+  }
+  function useQuoteExistingCustomer(customerId) {
+    var selected = customer(customerId);
+    var select = document.getElementById('quoteCustomer');
+    if (!selected || !select) return;
+    select.innerHTML = customerOptions(customerId);
+    select.value = customerId;
+    var lookup = document.getElementById('quoteCustomerLookup');
+    if (lookup) lookup.value = selected.customerId + ' · ' + (selected.name || '');
+    refreshOpportunityOptions();
+    toggleQuoteNewCustomer(false);
+    showQuoteDuplicate(null);
+  }
+  function saveQuoteCustomerAndUse() {
+    try {
+      requireOwnerAdmin();
+      var master = ZEZMS.customerMaster;
+      if (!master || typeof master.upsertProfile !== 'function' || typeof master.phoneKey !== 'function') throw new Error('Customer Master creation service is unavailable.');
+      var name = String((document.getElementById('quoteNewCustomerName') || {}).value || '').trim();
+      var phone = String((document.getElementById('quoteNewCustomerPhone') || {}).value || '').trim();
+      if (!name) throw new Error('Customer Name is required.');
+      if (!phone || !master.phoneKey(phone)) throw new Error('A usable telephone number is required.');
+      var duplicate = master.findByPhone(phone);
+      if (duplicate) { showQuoteDuplicate(duplicate); notify('This telephone already belongs to an existing customer.', 'warn'); return; }
+      var result = master.upsertProfile({
+        name:name, phone:phone,
+        location:String((document.getElementById('quoteNewCustomerLocation') || {}).value || ''),
+        notes:String((document.getElementById('quoteNewCustomerNotes') || {}).value || ''), source:'manual'
+      }, { manual:true, persist:true });
+      if (!result || !result.customer) throw new Error('Customer Master could not create this customer.');
+      useQuoteExistingCustomer(result.customer.customerId);
+      notify(result.created ? 'Customer created and selected.' : 'Existing customer selected.');
+    } catch (error) { notify(error.message || String(error), 'err'); }
   }
   function refreshOpportunityOptions() {
     var customerId = document.getElementById('quoteCustomer').value;
@@ -483,9 +562,9 @@
         + '<td><input aria-label="Quantity" type="number" min="0.01" step="0.01" value="' + attr(line.quantity) + '" onchange="ZEZMS.salesPipeline.syncDraftLine(' + index + ',\'quantity\',this.value)"></td>'
         + '<td><input aria-label="Unit price" type="number" min="0" step="0.01" value="' + attr(line.unitPrice) + '" onchange="ZEZMS.salesPipeline.syncDraftLine(' + index + ',\'unitPrice\',this.value)"></td>'
         + '<td><input aria-label="Discount" type="number" min="0" step="0.01" value="' + attr(line.discount) + '" onchange="ZEZMS.salesPipeline.syncDraftLine(' + index + ',\'discount\',this.value)"></td>'
-        + '<td class="mono right">' + number(line.lineTotal) + '</td><td><button class="btn sm danger" onclick="ZEZMS.salesPipeline.removeDraftLine(' + index + ')">Remove</button></td></tr>';
+        + '<td class="mono right">' + number(line.lineTotal) + '</td><td><button type="button" class="btn sm danger" onclick="ZEZMS.salesPipeline.removeDraftLine(' + index + ')">Remove</button></td></tr>';
     }).join('') || '<tr><td colspan="8" class="empty">No quotation products added.</td></tr>';
-    host.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Product</th><th>Category</th><th class="right">Current Stock</th><th>Qty</th><th>Unit Price</th><th>Discount</th><th class="right">Line Total</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    host.innerHTML = '<div class="table-wrap quotation-line-table"><table><colgroup><col class="quote-col-product"><col class="quote-col-category"><col class="quote-col-stock"><col class="quote-col-qty"><col class="quote-col-price"><col class="quote-col-discount"><col class="quote-col-total"><col class="quote-col-action"></colgroup><thead><tr><th>Product</th><th>Category</th><th class="right">Current Stock</th><th>Qty</th><th>Unit Price</th><th>Discount</th><th class="right">Line Total</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<div class="card" style="margin:10px 0"><div class="statline"><span>Subtotal</span><b>' + money(computed.subtotal) + '</b></div><div class="statline"><span>Discount</span><b>' + money(computed.discount) + '</b></div><div class="statline"><span>VAT (' + number(computed.vatRate) + '%)</span><b>' + money(computed.vatAmount) + '</b></div><div class="statline"><span>Grand Total</span><b>' + money(computed.grandTotal) + '</b></div></div>';
   }
   function saveQuotationForm() {
@@ -596,7 +675,7 @@
       + '<table style="width:100%;margin-top:14px;border-collapse:collapse"><thead><tr><th>#</th><th>Product ID</th><th>Product</th><th class="right">Qty</th><th class="right">Unit Price</th><th class="right">Discount</th><th class="right">Total</th></tr></thead><tbody>' + rows + '</tbody></table>'
       + '<div style="margin:14px 0 0 auto;max-width:280px"><div class="statline"><span>Subtotal</span><b>' + money(computed.subtotal) + '</b></div><div class="statline"><span>Discount</span><b>' + money(computed.discount) + '</b></div><div class="statline"><span>VAT (' + number(computed.vatRate) + '%)</span><b>' + money(computed.vatAmount) + '</b></div><div class="statline"><span>Grand Total</span><b>' + money(computed.grandTotal) + '</b></div></div>'
       + (record.notes ? '<p><b>Notes:</b> ' + esc(record.notes) + '</p>' : '') + (record.terms ? '<p><b>Terms:</b> ' + esc(record.terms) + '</p>' : '')
-      + '<div style="margin-top:50px;width:46%;border-top:1px solid #111;text-align:center;padding-top:5px">Authorised Signature</div><p class="muted" style="margin-top:25px">This quotation is an offer only and is not proof of payment, stock reservation or completed sale.</p></div></div>';
+      + '<div class="signature-grid"><div class="signature-block"><span class="approved-stamp">APPROVED</span><div class="signature-line">Authorised Signature</div></div><div class="signature-block"><div class="signature-line">Customer acknowledgement</div></div></div><p class="muted" style="margin-top:25px">This quotation is an offer only and is not proof of payment, stock reservation or completed sale.</p></div></div>';
   }
   function viewQuotation(quotationId) {
     var record = quotation(quotationId);
@@ -611,7 +690,7 @@
     document.body.appendChild(frame);
     var doc = frame.contentDocument;
     doc.open();
-    doc.write('<!doctype html><html><head><title>Quotation ' + esc(record.quotationId) + '</title><style>@page{size:A5;margin:10mm}body{font:11px Arial;color:#111}.row{display:flex;gap:10px}.grid{display:grid}.g2{grid-template-columns:1fr 1fr}.right{text-align:right}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:4px}.statline{display:flex;justify-content:space-between;padding:3px}.quotation-paper{position:relative}.quotation-content{position:relative;z-index:2}.quotation-watermark{position:absolute;inset:0;background:url(assets/zez-document-watermark.jpg) center/contain no-repeat;opacity:.10;z-index:1}.muted{color:#555}</style></head><body>' + quoteDocumentHTML(record, true) + '</body></html>');
+    doc.write('<!doctype html><html><head><title>Quotation ' + esc(record.quotationId) + '</title><style>@page{size:A5;margin:10mm}body{font:11px Arial;color:#111}.row{display:flex;gap:10px}.grid{display:grid}.g2{grid-template-columns:1fr 1fr}.right{text-align:right}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:4px}.statline{display:flex;justify-content:space-between;padding:3px}.quotation-paper{position:relative}.quotation-content{position:relative;z-index:2}.quotation-watermark{position:absolute;inset:0;background:url(assets/zez-document-watermark.jpg) center/contain no-repeat;opacity:.10;z-index:1}.muted{color:#555}.signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}.signature-block{display:flex;min-height:58px;flex-direction:column;justify-content:flex-end}.signature-line{border-top:1px solid #111;padding-top:5px;text-align:center}.approved-stamp{display:inline-flex;align-self:center;align-items:center;justify-content:center;margin:0 0 9px;padding:4px 12px;border:2px solid #0f6f4b;border-radius:5px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 11px/1 Arial,Helvetica,sans-serif;letter-spacing:1.4px;transform:rotate(-2deg)}</style></head><body>' + quoteDocumentHTML(record, true) + '</body></html>');
     doc.close();
     setTimeout(function () { try { frame.contentWindow.focus(); frame.contentWindow.print(); } finally { setTimeout(function () { frame.remove(); }, 1000); } }, 250);
   }
@@ -640,7 +719,7 @@
       pdf.summary([{label:'Subtotal',value:'GHS ' + number(computed.subtotal)},{label:'Discount',value:'GHS ' + number(computed.discount)},{label:'VAT (' + number(computed.vatRate) + '%)',value:'GHS ' + number(computed.vatAmount)},{label:'Grand total',value:'GHS ' + number(computed.grandTotal),strong:true}]);
       if (record.notes) pdf.paragraph('Notes: ' + record.notes, { size:8.5 });
       if (record.terms) pdf.paragraph('Terms: ' + record.terms, { size:8.5 });
-      pdf.signatures('Authorised Signature', 'Customer acknowledgement', { approved:false });
+      pdf.signatures('Authorised Signature', 'Customer acknowledgement', { approved:true });
       pdf.paragraph('This quotation is an offer only and is not proof of payment, stock reservation or completed sale.', { size:8 });
       var bytes = pdf.finish();
       var blob = new Blob([bytes], { type:'application/pdf' });
@@ -652,7 +731,7 @@
   function installStyles() {
     if (document.getElementById('salesPipelineV3150Styles')) return;
     var style = document.createElement('style'); style.id = 'salesPipelineV3150Styles';
-    style.textContent = '.quotation-paper{position:relative;background:#fff;color:#111;padding:18px;min-height:520px}.quotation-content{position:relative;z-index:2}.quotation-watermark{position:absolute;inset:0;background:url(assets/zez-document-watermark.jpg) center/contain no-repeat;opacity:.10;z-index:1;pointer-events:none}.quotation-paper table th,.quotation-paper table td{border:1px solid #999;padding:5px}.quotation-paper .muted{color:#555}@media(max-width:600px){[data-sales-pipeline] .table-wrap,[data-quotations] .table-wrap{overflow-x:auto}.quotation-paper{padding:10px}.quotation-paper h1{font-size:20px}}';
+    style.textContent = '.modal.modal-wide-quotation{width:min(97vw,1280px);max-width:1280px}#quotationEditModal{min-width:0}#quotationEditModal input,#quotationEditModal select,#quotationEditModal textarea{background:#081221;color:#f8fafc;border:1px solid #475569;caret-color:#f8fafc}#quotationEditModal input::placeholder,#quotationEditModal textarea::placeholder{color:#94a3b8;opacity:1}#quotationEditModal input:focus,#quotationEditModal select:focus,#quotationEditModal textarea:focus{color:#fff;border-color:var(--teal2);outline:2px solid rgba(45,212,191,.35);outline-offset:1px}#quotationEditModal input[readonly],#quotationEditModal input:disabled,#quotationEditModal select:disabled,#quotationEditModal textarea:disabled{background:#111c2f;color:#cbd5e1;opacity:1}#quotationEditModal option{background:#081221;color:#f8fafc}#quotationEditModal .quotation-line-table table{width:100%;min-width:1040px;table-layout:fixed}#quotationEditModal .quote-col-product{width:28%}#quotationEditModal .quote-col-category{width:12%}#quotationEditModal .quote-col-stock{width:12%}#quotationEditModal .quote-col-qty{width:9%}#quotationEditModal .quote-col-price{width:12%}#quotationEditModal .quote-col-discount{width:11%}#quotationEditModal .quote-col-total{width:11%}#quotationEditModal .quote-col-action{width:9%}#quotationEditModal .quotation-line-table input{width:100%;min-width:0}.quotation-paper{position:relative;background:#fff;color:#111;padding:18px;min-height:520px}.quotation-content{position:relative;z-index:2}.quotation-watermark{position:absolute;inset:0;background:url(assets/zez-document-watermark.jpg) center/contain no-repeat;opacity:.10;z-index:1;pointer-events:none}.quotation-paper table th,.quotation-paper table td{border:1px solid #999;padding:5px}.quotation-paper .muted{color:#555}.quotation-paper .signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}.quotation-paper .signature-block{display:flex;min-height:58px;flex-direction:column;justify-content:flex-end}.quotation-paper .signature-line{border-top:1px solid #111;padding-top:5px;text-align:center}.quotation-paper .approved-stamp{display:inline-flex;align-self:center;align-items:center;justify-content:center;margin:0 0 9px;padding:4px 12px;border:2px solid #0f6f4b;border-radius:5px;color:#0f6f4b;background:rgba(255,255,255,.42);font:900 11px/1 Arial,Helvetica,sans-serif;letter-spacing:1.4px;transform:rotate(-2deg)}@media(max-width:600px){.modal.modal-wide-quotation{width:100%;max-width:none}#quotationEditModal .grid.g2,#quotationEditModal .grid.g3{grid-template-columns:1fr}#quotationEditModal .quotation-line-table{max-width:100%;overflow-x:auto}[data-sales-pipeline] .table-wrap,[data-quotations] .table-wrap{overflow-x:auto}.quotation-paper{padding:10px}.quotation-paper h1{font-size:20px}}';
     document.head.appendChild(style);
   }
   function installRender() {
@@ -689,7 +768,10 @@
     openOpportunityForm:function (id) { try { openOpportunityForm(id); } catch (error) { notify(error.message || error, 'err'); } },
     saveOpportunityForm:saveOpportunityForm, toggleLostReason:toggleLostReason, scheduleFollowup:scheduleFollowup,
     openQuotationForm:function (id, opId) { try { openQuotationForm(id, opId); } catch (error) { notify(error.message || error, 'err'); } },
-    refreshOpportunityOptions:refreshOpportunityOptions, addDraftProduct:addDraftProduct, syncDraftLine:syncDraftLine,
+    refreshOpportunityOptions:refreshOpportunityOptions, filterQuoteCustomers:filterQuoteCustomers,
+    toggleQuoteNewCustomer:toggleQuoteNewCustomer, quoteCustomerPhoneChanged:quoteCustomerPhoneChanged,
+    useQuoteExistingCustomer:useQuoteExistingCustomer, saveQuoteCustomerAndUse:saveQuoteCustomerAndUse,
+    addDraftProduct:addDraftProduct, syncDraftLine:syncDraftLine,
     removeDraftLine:removeDraftLine, renderDraftLines:renderDraftLines, saveQuotationForm:saveQuotationForm,
     changeQuotationStatus:changeQuotationStatus, reviseQuotation:reviseQuotation, loadQuote:loadQuote,
     filterQuotations:filterQuotations, viewQuotation:viewQuotation, printQuotation:printQuotation, downloadQuotationPDF:downloadQuotationPDF,

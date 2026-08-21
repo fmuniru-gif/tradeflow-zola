@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
+  const BUILD = '20260821-stage6a-ui-integration-fix-r50';
   const OPEN = 'OPEN';
   const COMMITTED = 'COMMITTED';
   const CANCELLED = 'CANCELLED';
@@ -739,6 +739,34 @@
   let receiptEditDraft = null;
   let receiptEditWithholdingTaxUnlocked = false;
 
+  function installReceiptEditStyles() {
+    if (document.getElementById('receiptEditV3151Styles')) return;
+    const style = document.createElement('style');
+    style.id = 'receiptEditV3151Styles';
+    style.textContent = `
+      .modal.modal-wide-edit-receipt{width:min(96vw,1180px);max-width:1180px}
+      #editReceiptModal{min-width:0}
+      #editReceiptModal input,#editReceiptModal select,#editReceiptModal textarea{background:#081221;color:#f8fafc;border:1px solid #475569;caret-color:#f8fafc}
+      #editReceiptModal input::placeholder,#editReceiptModal textarea::placeholder{color:#94a3b8;opacity:1}
+      #editReceiptModal input:focus,#editReceiptModal select:focus,#editReceiptModal textarea:focus{color:#fff;border-color:var(--teal2);outline:2px solid rgba(45,212,191,.35);outline-offset:1px}
+      #editReceiptModal input[readonly],#editReceiptModal input:disabled,#editReceiptModal select:disabled,#editReceiptModal textarea:disabled{background:#111c2f;color:#cbd5e1;opacity:1}
+      #editReceiptModal option{background:#081221;color:#f8fafc}
+      #editReceiptModal .receipt-edit-lines table{width:100%;min-width:820px;table-layout:fixed}
+      #editReceiptModal .receipt-edit-lines .receipt-edit-product{width:42%}
+      #editReceiptModal .receipt-edit-lines .receipt-edit-qty{width:11%}
+      #editReceiptModal .receipt-edit-lines .receipt-edit-price{width:15%}
+      #editReceiptModal .receipt-edit-lines .receipt-edit-discount{width:15%}
+      #editReceiptModal .receipt-edit-lines input,#editReceiptModal .receipt-edit-lines select{width:100%;min-width:0}
+      #editReceiptWhtGuard{border-color:var(--teal);background:rgba(15,118,110,.10)}
+      @media(max-width:600px){
+        .modal.modal-wide-edit-receipt{width:100%;max-width:none}
+        #editReceiptModal .grid.g2{grid-template-columns:1fr}
+        #editReceiptModal .receipt-edit-lines{max-width:100%;overflow-x:auto}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function canEditReceipts() {
     return staffCan('MANAGE_DOCUMENTS');
   }
@@ -777,31 +805,32 @@
         + '<td><input type="number" min="0" step="0.01" value="' + (Number(line.uPrice) || 0) + '" oninput="receiptEditLineChanged(' + index + ',\'uPrice\',this.value)"></td>'
         + '<td><input type="number" min="0" step="0.01" value="' + (Number(line.disc) || 0) + '" oninput="receiptEditLineChanged(' + index + ',\'disc\',this.value)"></td>'
         + '<td class="right mono" id="receiptEditLineTotal' + index + '">' + fmt(round2((Number(line.qty) || 0) * (Number(line.uPrice) || 0) - (Number(line.disc) || 0))) + '</td>'
-        + '<td><button class="btn sm danger" onclick="removeReceiptEditLine(' + index + ')">Remove</button></td></tr>';
-    }).join();
-    return '<h3>Edit receipt ' + esc(receiptEditDraft.receiptNo) + '</h3>'
+        + '<td><button type="button" class="btn sm danger" onclick="removeReceiptEditLine(' + index + ')">Remove</button></td></tr>';
+    }).join('');
+    return '<div id="editReceiptModal" class="edit-receipt-modal"><h3>Edit receipt ' + esc(receiptEditDraft.receiptNo) + '</h3>'
       + '<p class="muted">Saving recalculates this current-period sale, its FIFO stock allocation and any debtor balance. The receipt number remains unchanged.</p>'
       + '<div class="grid g2"><div class="field"><label>Customer *</label><input id="receiptEditCustomer" value="' + escAttr(receiptEditDraft.customerName) + '" oninput="receiptEditField(\'customerName\',this.value)"></div>'
       + '<div class="field"><label>Telephone *</label><input id="receiptEditContact" value="' + escAttr(receiptEditDraft.contact) + '" oninput="receiptEditField(\'contact\',this.value)"></div>'
       + '<div class="field"><label>Location</label><input id="receiptEditLocation" value="' + escAttr(receiptEditDraft.location) + '" oninput="receiptEditField(\'location\',this.value)"></div>'
       + '<div class="field"><label>Amount paid</label><input id="receiptEditPaid" type="number" min="0" step="0.01" value="' + (Number(receiptEditDraft.amountPaid) || 0) + '" oninput="receiptEditField(\'amountPaid\',this.value);refreshReceiptEditTotals()"></div>'
       + '<div class="field"><label>VAT percentage</label><input id="receiptEditVat" type="number" min="0" max="100" step="0.01" value="' + totals.vatRate + '" oninput="receiptEditField(\'vatRate\',this.value);refreshReceiptEditTotals()"></div>'
-      + '<div class="field"><label>Withholding Tax percentage</label><input id="receiptEditWithholdingTax" type="number" min="0" max="100" step="0.01" value="' + (totals.withholdingTaxRate || '') + '" placeholder="0" data-semantic-default="0" readonly onclick="unlockReceiptEditWithholdingTax()" oninput="receiptEditField(\'withholdingTaxRate\',this.value);refreshReceiptEditTotals()"><small class="muted">PIN 0000 is required. WHT is deducted from the collectible and does not reduce gross sales.</small></div></div>'
-      + '<div class="table-wrap"><table><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Discount</th><th class="right">Total</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '<div class="field"><label>Withholding Tax percentage</label><div class="row"><input id="receiptEditWithholdingTax" style="flex:1" type="number" min="0" max="100" step="0.01" value="' + (totals.withholdingTaxRate || '') + '" placeholder="0" data-semantic-default="0"' + (receiptEditWithholdingTaxUnlocked ? '' : ' readonly') + ' onclick="unlockReceiptEditWithholdingTax(event)" oninput="receiptEditField(\'withholdingTaxRate\',this.value);refreshReceiptEditTotals()"><button type="button" class="btn sm ghost" onclick="unlockReceiptEditWithholdingTax(event)">' + (receiptEditWithholdingTaxUnlocked ? 'WHT unlocked' : 'Unlock WHT') + '</button></div><small class="muted">PIN 0000 is required. WHT is deducted from the collectible and does not reduce gross sales.</small></div></div>'
+      + '<div id="receiptEditWhtGuard" class="card" hidden><h4 style="margin:0 0 8px">Withholding Tax Entry Guard</h4><div class="field"><label>Enter PIN</label><input id="receiptEditWhtPin" type="password" inputmode="numeric" autocomplete="off" maxlength="4" onkeydown="receiptEditWhtPinKey(event)"></div><div class="row"><button type="button" class="btn" onclick="verifyReceiptEditWhtPin(event)">Unlock</button><button type="button" class="btn ghost" onclick="cancelReceiptEditWhtPin(event)">Cancel</button></div></div>'
+      + '<div class="table-wrap receipt-edit-lines"><table><colgroup><col class="receipt-edit-product"><col class="receipt-edit-qty"><col class="receipt-edit-price"><col class="receipt-edit-discount"><col><col></colgroup><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Discount</th><th class="right">Total</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<div class="row" style="margin-top:10px"><select id="receiptEditNewProduct" style="flex:1"><option value="">- add another product -</option>' + receiptProductOptions('') + '</select>'
-      + '<button class="btn ghost" onclick="addReceiptEditLine()">Add item</button></div>'
+      + '<button type="button" class="btn ghost" onclick="addReceiptEditLine()">Add item</button></div>'
       + '<div class="card" style="margin-top:12px"><div class="statline"><span>Subtotal</span><b id="receiptEditSubtotal">' + fmt(totals.subtotal) + '</b></div>'
       + '<div class="statline"><span>VAT</span><b id="receiptEditVatAmount">' + fmt(totals.vatAmount) + '</b></div>'
       + '<div class="statline"><span>Withholding Tax deduction</span><b id="receiptEditWithholdingTaxAmount">−' + fmt(totals.withholdingTaxAmount) + '</b></div>'
       + '<div class="statline"><span>Gross Amount Due</span><b id="receiptEditGrossTotal">' + fmt(totals.grossTotal) + '</b></div>'
       + '<div class="statline"><span>Net Amount Collectible</span><b id="receiptEditGrandTotal">' + fmt(totals.netAmountCollectible) + '</b></div>'
       + '<div class="statline"><span>Debtor balance</span><b id="receiptEditOutstanding">' + fmt(Math.max(0, round2(totals.netAmountCollectible - (Number(receiptEditDraft.amountPaid) || 0)))) + '</b></div></div>'
-      + '<div class="row" style="margin-top:12px"><button class="btn ok" onclick="saveReceiptEdit()">Save corrected receipt</button>'
-      + '<button class="btn ghost" onclick="cancelReceiptEdit()">Cancel</button></div>';
+      + '<div class="row" style="margin-top:12px"><button type="button" class="btn ok" onclick="saveReceiptEdit()">Save corrected receipt</button>'
+      + '<button type="button" class="btn ghost" onclick="cancelReceiptEdit()">Cancel</button></div></div>';
   }
 
   function openReceiptEditModal() {
-    openModal(receiptEditModalHTML());
+    openModal(receiptEditModalHTML(), 'modal-wide-edit-receipt');
   }
 
   window.editStoredReceipt = function (receiptNo) {
@@ -835,14 +864,46 @@
     receiptEditDraft[field] = field === 'amountPaid' || field === 'vatRate' || field === 'withholdingTaxRate' ? Math.max(0, Number(value) || 0) : value;
   };
 
-  window.unlockReceiptEditWithholdingTax = function () {
+  window.unlockReceiptEditWithholdingTax = function (event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
     const input = document.getElementById('receiptEditWithholdingTax');
     if (receiptEditWithholdingTaxUnlocked) { if (input) { input.readOnly = false; input.focus(); } return; }
-    promptPIN('Withholding Tax Entry Guard', TRANSACTION_ENTRY_GUARD_PIN, function () {
-      receiptEditWithholdingTaxUnlocked = true;
-      if (input) { input.readOnly = false; input.focus(); }
-      toast('Withholding Tax entry unlocked.');
-    }, true);
+    const guard = document.getElementById('receiptEditWhtGuard');
+    if (guard) guard.hidden = false;
+    const pin = document.getElementById('receiptEditWhtPin');
+    if (pin) { pin.value = ''; pin.focus(); }
+  };
+
+  window.verifyReceiptEditWhtPin = function (event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    const pin = document.getElementById('receiptEditWhtPin');
+    if (!pin || pin.value !== TRANSACTION_ENTRY_GUARD_PIN) {
+      if (pin) { pin.value = ''; pin.focus(); }
+      toast('Incorrect PIN. Withholding Tax remains locked.', 'err');
+      return;
+    }
+    receiptEditWithholdingTaxUnlocked = true;
+    const guard = document.getElementById('receiptEditWhtGuard');
+    if (guard) guard.hidden = true;
+    const input = document.getElementById('receiptEditWithholdingTax');
+    if (input) { input.readOnly = false; input.focus(); }
+    toast('Withholding Tax entry unlocked.');
+  };
+
+  window.cancelReceiptEditWhtPin = function (event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    const guard = document.getElementById('receiptEditWhtGuard');
+    if (guard) guard.hidden = true;
+    const pin = document.getElementById('receiptEditWhtPin');
+    if (pin) pin.value = '';
+    const input = document.getElementById('receiptEditWithholdingTax');
+    if (input) input.readOnly = true;
+  };
+
+  window.receiptEditWhtPinKey = function (event) {
+    if (!event) return;
+    if (event.key === 'Enter') window.verifyReceiptEditWhtPin(event);
+    else if (event.key === 'Escape') window.cancelReceiptEditWhtPin(event);
   };
 
   window.receiptEditLineChanged = function (index, field, value) {
@@ -1157,11 +1218,12 @@
   };
 
   ensureModel();
+  installReceiptEditStyles();
   installNavigation();
   syncNavigationAccess();
   installReceiptEditButtons();
   ZEZMS.ownerMaintenance = {
-    version: '3.15.0', build: BUILD, ensureModel: ensureModel,
+    version: '3.15.1', build: BUILD, ensureModel: ensureModel,
     findPurchaseOrder: findPurchaseOrder, purchaseOrderPaperHTML: purchaseOrderPaperHTML,
     accountFilters: accountFilters, viewPurchaseOrders: viewPurchaseOrders
   };

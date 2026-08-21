@@ -1,12 +1,12 @@
-/* ZEZMS TradeFlow Owner Edition v3.15.0
+/* ZEZMS TradeFlow Owner Edition v3.15.1
    Warranty policy, entitlements, historical reconstruction and claims.
    Claim outcomes never post stock, cash, sales, purchase orders or corrections. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var VERSION = '3.15.0';
-  var BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
+  var VERSION = '3.15.1';
+  var BUILD = '20260821-stage6a-ui-integration-fix-r50';
   var CLAIM_STATUSES = Object.freeze(['Open', 'In Progress', 'Resolved', 'Rejected', 'Cancelled']);
   var RESOLUTIONS = Object.freeze(['Repaired', 'Replaced', 'No Fault Found', 'Warranty Exclusion', 'Goodwill Assistance', 'Other']);
   var historicalPreview = null;
@@ -412,6 +412,13 @@
     };
     render.__warrantyManagementV3150 = true;
   }
+  function installStyles() {
+    if (document.getElementById('warrantyManagementV3151Styles')) return;
+    var style = document.createElement('style');
+    style.id = 'warrantyManagementV3151Styles';
+    style.textContent = '[data-warranty-management] #warrantyDefaultMonths,[data-warranty-management] .warranty-category-months{background:#081221;color:#f8fafc;border:1px solid #475569;caret-color:#f8fafc;opacity:1}[data-warranty-management] #warrantyDefaultMonths::placeholder,[data-warranty-management] .warranty-category-months::placeholder{color:#94a3b8;opacity:1}[data-warranty-management] #warrantyDefaultMonths:focus,[data-warranty-management] .warranty-category-months:focus{color:#fff;border-color:var(--teal2);outline:2px solid rgba(45,212,191,.35);outline-offset:1px}[data-warranty-management] #warrantyDefaultMonths:disabled,[data-warranty-management] #warrantyDefaultMonths[readonly],[data-warranty-management] .warranty-category-months:disabled,[data-warranty-management] .warranty-category-months[readonly]{background:#111c2f;color:#cbd5e1;opacity:1}@media(max-width:600px){[data-warranty-management] .warranty-category-months{min-width:118px}}';
+    document.head.appendChild(style);
+  }
   window.addEventListener('zezms-sale-committed', function (event) {
     try {
       var result = createForCompletedSale(event && event.detail || {});
@@ -422,7 +429,7 @@
     try { voidBySale(event && event.detail && event.detail.transactionId, { noSave:true }); }
     catch (error) { console.error('Warranty void after sale reversal failed', error); }
   });
-  ensureModel(); installRender();
+  ensureModel(); installStyles(); installRender();
   ZEZMS.warrantyManagement = {
     version:VERSION, build:BUILD, claimStatuses:CLAIM_STATUSES, resolutions:RESOLUTIONS,
     ensureModel:ensureModel, policyMonths:policyMonths, savePolicy:savePolicy,

@@ -1,11 +1,11 @@
-/* ZEZMS TradeFlow Owner Edition v3.15.0
+/* ZEZMS TradeFlow Owner Edition v3.15.1
    Audited stock corrections. recordSaleOutFIFO() is deliberately not called or modified. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var VERSION = '3.15.0';
-  var BUILD = '20260821-sales-pipeline-stock-warranty-wht-r50';
+  var VERSION = '3.15.1';
+  var BUILD = '20260821-stage6a-ui-integration-fix-r50';
   var TYPES = Object.freeze(['Quantity Increase', 'Quantity Decrease']);
   var REASONS = Object.freeze(['Physical Count Adjustment', 'Damaged Stock', 'Lost/Missing Stock', 'Found Stock', 'Data Entry Correction', 'Stock-In Omission', 'Other']);
   var pendingCorrection = null;
@@ -248,8 +248,19 @@
       DB.stockRows = beforeRows; DB.stockCorrections = beforeCorrections; throw error;
     }
   }
-  function productOptions(selectedId) {
-    return '<option value="">Select Product</option>' + (DB.products || []).slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }).map(function (item) {
+  function matchingProducts(nameQuery, idQuery) {
+    var name = String(nameQuery || '').trim().toLowerCase();
+    var productId = String(idQuery || '').trim().toLowerCase();
+    return (DB.products || []).filter(function (item) {
+      return (!name || String(item.name || '').toLowerCase().indexOf(name) >= 0)
+        && (!productId || String(item.id || '').toLowerCase().indexOf(productId) >= 0);
+    }).slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+  }
+  function productOptions(selectedId, nameQuery, idQuery) {
+    var products = matchingProducts(nameQuery, idQuery);
+    var selected = productById(selectedId);
+    if (selected && !products.some(function (item) { return String(item.id || '') === String(selectedId); })) products.unshift(selected);
+    return '<option value="">Select Product</option>' + products.map(function (item) {
       return '<option value="' + attr(item.id || '') + '"' + (String(item.id || '') === String(selectedId || '') ? ' selected' : '') + '>' + esc((item.id || 'No ID') + ' · ' + item.name) + '</option>';
     }).join('');
   }
@@ -257,14 +268,16 @@
   function correctionForm(productId) {
     var product = productById(productId);
     var guide = product ? weightedCost(product) : 0;
-    return '<h3>Correct Stock</h3><p class="muted">Owner/Admin audited correction. This is not a sale, purchase order, supplier payment or direct lot-cost editor.</p>'
+    return '<div id="stockCorrectionModal"><h3>Correct Stock</h3><p class="muted">Owner/Admin audited correction. This is not a sale, purchase order, supplier payment or direct lot-cost editor.</p>'
+      + '<div class="grid g2"><div class="field"><label>Search Product Name</label><input id="stockCorrectionSearchName" type="search" autocomplete="off" placeholder="Partial, case-insensitive" oninput="ZEZMS.stockCorrections.filterProducts()"></div><div class="field"><label>Search Product ID</label><input id="stockCorrectionSearchId" type="search" autocomplete="off" placeholder="Partial or exact Product ID" oninput="ZEZMS.stockCorrections.filterProducts()"></div></div>'
+      + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn sm ghost" onclick="ZEZMS.stockCorrections.clearProductSearch()">Clear Search</button><span id="stockCorrectionSearchCount" class="pill">' + (DB.products || []).length + ' products</span></div>'
       + '<div class="field"><label>Product</label><select id="scProduct" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + productOptions(productId) + '</select></div>'
       + '<div class="grid g2"><div class="field"><label>Correction Type</label><select id="scType" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(TYPES, 'Quantity Increase') + '</select></div><div class="field"><label>Correction Qty</label><input id="scQty" type="number" min="0.01" step="0.01" placeholder="Enter actual discrepancy"></div></div>'
       + '<div id="scCostWrap" class="field"><label>Actual Unit Cost</label><input id="scCost" type="number" min="0.01" step="0.01" placeholder="Required; enter actual cost basis"><small class="muted">Reference weighted cost only: <span id="scWeightedCost">' + money(guide) + '</span>. It is not inserted into the textbox.</small></div>'
       + '<div class="field"><label>Reason</label><select id="scReason" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(REASONS, 'Physical Count Adjustment') + '</select></div>'
       + '<div id="scOtherWrap" class="field" hidden><label>Other reason detail</label><input id="scOther" maxlength="250"></div>'
       + '<div class="field"><label>Notes</label><textarea id="scNotes" rows="3"></textarea></div>'
-      + '<div class="row"><button class="btn warn" onclick="ZEZMS.stockCorrections.previewCorrection()">Preview Correction</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>';
+      + '<div class="row"><button type="button" class="btn warn" onclick="ZEZMS.stockCorrections.previewCorrection()">Preview Correction</button><button type="button" class="btn ghost" onclick="closeModal()">Cancel</button></div></div>';
   }
   function openCorrection(productId) {
     try { requireOwnerAdmin(); openModal(correctionForm(productId)); refreshCorrectionForm(); }
@@ -277,6 +290,25 @@
     var cost = document.getElementById('scCostWrap'); if (cost) cost.hidden = type !== 'Quantity Increase';
     var other = document.getElementById('scOtherWrap'); if (other) other.hidden = reason !== 'Other';
     var guide = document.getElementById('scWeightedCost'); if (guide) guide.textContent = money(product ? weightedCost(product) : 0);
+  }
+  function filterProducts() {
+    var select = document.getElementById('scProduct');
+    if (!select) return;
+    var selectedId = select.value;
+    var name = String((document.getElementById('stockCorrectionSearchName') || {}).value || '').trim();
+    var productId = String((document.getElementById('stockCorrectionSearchId') || {}).value || '').trim();
+    var matches = matchingProducts(name, productId);
+    select.innerHTML = productOptions(selectedId, name, productId);
+    select.value = selectedId;
+    var count = document.getElementById('stockCorrectionSearchCount');
+    if (count) count.textContent = matches.length + (matches.length === 1 ? ' product' : ' products');
+  }
+  function clearProductSearch() {
+    var name = document.getElementById('stockCorrectionSearchName');
+    var productId = document.getElementById('stockCorrectionSearchId');
+    if (name) name.value = '';
+    if (productId) productId.value = '';
+    filterProducts();
   }
   function previewCorrection() {
     try {
@@ -338,14 +370,22 @@
     };
     render.__stockCorrectionsV3150 = true;
   }
-  ensureModel(); installRender();
+  function installStyles() {
+    if (document.getElementById('stockCorrectionsV3151Styles')) return;
+    var style = document.createElement('style');
+    style.id = 'stockCorrectionsV3151Styles';
+    style.textContent = '#stockCorrectionModal input,#stockCorrectionModal select,#stockCorrectionModal textarea{background:#081221;color:#f8fafc;border:1px solid #475569;caret-color:#f8fafc}#stockCorrectionModal input::placeholder,#stockCorrectionModal textarea::placeholder{color:#94a3b8;opacity:1}#stockCorrectionModal input:focus,#stockCorrectionModal select:focus,#stockCorrectionModal textarea:focus{color:#fff;border-color:var(--teal2);outline:2px solid rgba(45,212,191,.35);outline-offset:1px}#stockCorrectionModal input[readonly],#stockCorrectionModal input:disabled,#stockCorrectionModal select:disabled{background:#111c2f;color:#cbd5e1;opacity:1}#stockCorrectionModal option{background:#081221;color:#f8fafc}@media(max-width:600px){#stockCorrectionModal .grid.g2{grid-template-columns:1fr}}';
+    document.head.appendChild(style);
+  }
+  ensureModel(); installStyles(); installRender();
   ZEZMS.stockCorrections = {
     version:VERSION, build:BUILD, types:TYPES, reasons:REASONS,
     ensureModel:ensureModel, currentQuantity:currentQuantity, weightedCost:weightedCost,
     prepareCorrection:prepareCorrection, commitCorrection:commitCorrection, reverseCorrection:reverseCorrection,
     actionsHTML:actionsHTML, openCorrection:openCorrection, refreshCorrectionForm:refreshCorrectionForm,
+    filterProducts:filterProducts, clearProductSearch:clearProductSearch,
     previewCorrection:previewCorrection, confirmCorrection:confirmCorrection, reverseFromUI:reverseFromUI,
     viewHTML:viewCorrections,
-    _test:{ orderedDepletionPlan:orderedDepletionPlan, remaining:remaining, matchesRow:matchesRow }
+    _test:{ orderedDepletionPlan:orderedDepletionPlan, remaining:remaining, matchesRow:matchesRow, matchingProducts:matchingProducts }
   };
 }());

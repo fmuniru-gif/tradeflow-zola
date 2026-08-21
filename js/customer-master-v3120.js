@@ -7,7 +7,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
   var VERSION = '3.14.0';
-  var BUILD = '20260820-customer-outreach-r48';
+  var BUILD = '20260821-stage6a-ui-integration-fix-r50';
   var RELEASE = 'Customer Outreach & Contact Actions';
   var MAX_NOTES = 1000;
   var runtime = {
@@ -505,6 +505,24 @@
     } catch(error) { notify('Customer could not be created: ' + (error.message || error), 'err'); }
   }
 
+  function searchExisting(value, limit) {
+    refreshIndex();
+    var term = canonical(value);
+    if(!term) return [];
+    var maximum = Math.max(1, Math.min(25, Number(limit) || 10));
+    return runtime.searchRows.filter(function (row) {
+      return row.haystack.indexOf(term) >= 0;
+    }).slice(0, maximum).map(function (row) {
+      var customer = row.customer;
+      return {
+        customerId:customer.customerId,
+        name:customer.name || '',
+        phone:customer.phone || '',
+        location:customer.location || ''
+      };
+    });
+  }
+
   function posLookupHTML() {
     refreshIndex();
     return '<div class="field" style="position:relative"><label>Find Customer</label><input id="posCustomerLookup" autocomplete="off" placeholder="Search name, telephone or Customer ID" oninput="ZEZMS.customerMaster.searchPOS(this.value)"><div id="posCustomerResults" class="suggest"></div></div><div id="posCustomerMatch" class="muted" style="font-size:11px;margin:-4px 0 8px"></div>';
@@ -556,6 +574,7 @@
     buildHistoryPreview:buildHistoryPreview, showBuildPreview:showBuildPreview, confirmBuildFromHistory:confirmBuildFromHistory,
     viewHTML:viewHTML, search:search, selectCustomer:selectCustomer, saveSelectedProfile:saveSelectedProfile,
     openManualCreate:openManualCreate, createManual:createManual,
+    searchExisting:searchExisting,
     posLookupHTML:posLookupHTML, searchPOS:searchPOS, selectPOS:selectPOS, onPOSTelephoneInput:onPOSTelephoneInput,
     getRelationshipSnapshot:preparedModel,
     getRuntimeSnapshot:function () { return { indexVersion:runtime.indexVersion, customerCount:runtime.searchRows.length, selectedId:runtime.selectedId, modelReady:!!runtime.model }; },
