@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  var VERSION = '3.15.1';
-  var BUILD = '20260821-stage6a-ui-integration-fix-r50';
+  var VERSION = '3.16.0';
+  var BUILD = '20260822-supplier-procurement-intelligence-r51';
   window.ZEZMS = window.ZEZMS || {};
 
   if (window.ZEZMS.navigationV3101 && window.ZEZMS.navigationV3101.build === BUILD) {
@@ -29,6 +29,7 @@
     'pricing-policy': { title: 'Pricing Policy Lab', targetId: 'pricingPolicyLab' },
     'stock-velocity': { title: 'Stock Velocity & Reorder Planning', targetId: 'stockVelocityLab' },
     'portfolio-signals': { title: 'Portfolio Signals & Capital Allocation', targetId: 'portfolioSignalsLab' },
+    'supplier-procurement': { title: 'Supplier & Procurement Intelligence', renderer: 'supplierProcurement' },
     'customer-master': { title: 'Customer Master', renderer: 'customerMaster' },
     'customer-followups': { title: 'Customer Follow-ups', renderer: 'customerFollowups' },
     'customer-intelligence': { title: 'Customer Relationship Intelligence', targetId: 'customerIntelligenceLab' }
@@ -80,6 +81,7 @@
         { view: 'pricing-policy', label: 'Pricing Policy Lab', icon: '◈', permissionView: 'dashboard' },
         { view: 'stock-velocity', label: 'Stock Velocity & Reorder Planning', icon: '◈', permissionView: 'dashboard' },
         { view: 'portfolio-signals', label: 'Portfolio Signals & Capital Allocation', icon: '◈', permissionView: 'dashboard' },
+        { view: 'supplier-procurement', label: 'Supplier & Procurement Intelligence', icon: '◈', permissionView: 'dashboard' },
         { view: 'customer-master', label: 'Customer Master', icon: '👤', permissionView: 'dashboard' },
         { view: 'customer-followups', label: 'Customer Follow-ups', icon: '📅', permissionView: 'customer-followups' },
         { view: 'customer-intelligence', label: 'Customer Relationship Intelligence', icon: '◈', permissionView: 'dashboard' },
@@ -160,6 +162,13 @@
       return '<div class="management-direct-view" data-management-view="customer-followups" data-build="' + BUILD + '">'
         + window.ZEZMS.customerFollowups.viewHTML() + '</div>';
     }
+    if (route.renderer === 'supplierProcurement') {
+      if (!window.ZEZMS.supplierProcurement || typeof window.ZEZMS.supplierProcurement.viewHTML !== 'function') {
+        return '<div class="card"><h3>Supplier &amp; Procurement Intelligence</h3><p class="muted">The Stage 6B module could not be mounted.</p></div>';
+      }
+      return '<div class="management-direct-view" data-management-view="supplier-procurement" data-build="' + BUILD + '">'
+        + window.ZEZMS.supplierProcurement.viewHTML() + '</div>';
+    }
 
     var template = createTemplate(fullDashboardHTML());
     var source = template.content.querySelector('[id="' + route.targetId + '"]');
@@ -179,7 +188,7 @@
     if (view === 'undo' && auth && typeof auth.can === 'function') {
       return !!auth.can('UNDO_TRANSACTION');
     }
-    if (view === 'customer-master' || view === 'customer-followups' || view === 'quotations'
+    if (view === 'customer-master' || view === 'customer-followups' || view === 'supplier-procurement' || view === 'quotations'
       || view === 'sales-opportunities' || view === 'stock-corrections' || view === 'warranty-management') {
       try {
         if (auth && typeof auth.getContext === 'function') {
@@ -377,7 +386,7 @@
   function wrapAccessControl() {
     if (!auth || !originalCanView || auth.__navigationV3101AccessWrapped) return;
     auth.canView = function (view) {
-      if (view === 'customer-master' || view === 'customer-followups' || view === 'quotations'
+      if (view === 'customer-master' || view === 'customer-followups' || view === 'supplier-procurement' || view === 'quotations'
         || view === 'sales-opportunities' || view === 'stock-corrections' || view === 'warranty-management') return canOpenView(view);
       var child = CHILD_BY_VIEW[view];
       var permissionView = child && child.permissionView ? child.permissionView : view;

@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.15.1 with Stage 6A UI and integration stabilization, Customer Outreach and authenticated local-bridge printing.",
-  "start_url": "./index.html?build=20260821-stage6a-ui-integration-fix-r50",
+  "description": "ZEZMS Owner Edition v3.16.0 with Supplier & Procurement Intelligence, runtime replenishment planning and authenticated local-bridge printing.",
+  "start_url": "./index.html?build=20260822-supplier-procurement-intelligence-r51",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

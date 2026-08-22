@@ -819,6 +819,14 @@
           suggestedReorderQuantity: product.suggestedReorderQuantity,
           planningStatus: product.planningStatus
         };
+      }),
+      outOfStockProducts: outOfStockPlanning.map(function(product){
+        return {
+          key: product.key,
+          inventoryPosition: product.inventoryPosition,
+          suggestedReorderQuantity: product.suggestedReorderQuantity,
+          planningStatus: product.planningStatus
+        };
       })
     };
     var preview = currentPlanning.concat(outOfStockPlanning);
@@ -905,33 +913,46 @@
     return runtime.planningSnapshot;
   }
 
+  function ensureProductSnapshot(){
+    if(!runtime.baseModel) buildBaseModel(DEFAULT_WINDOW);
+    return productSnapshot();
+  }
+
   function productSnapshot(){
     var model = runtime.baseModel;
-    if(!model) return Object.freeze({ windowDays:null, startDay:null, endDay:null, products:Object.freeze([]), planning:null });
+    if(!model) return Object.freeze({ windowDays:null, startDay:null, endDay:null, products:Object.freeze([]), outOfStockProducts:Object.freeze([]), incoming:null, planning:null });
+    function productValue(product){
+      return {
+        key: product.key,
+        productId: product.productId,
+        product: product.product,
+        category: product.category,
+        remainingQty: product.remainingQty,
+        totalRemainingCost: product.totalRemainingCost,
+        weightedCost: product.weightedCost,
+        listedPrice: product.listedPrice,
+        unitsSold: product.unitsSold,
+        averageDailyVelocity: product.averageDailyVelocity,
+        thirtyDayPace: product.thirtyDayPace,
+        estimatedDaysOfCover: product.estimatedDaysOfCover,
+        lastSaleDate: product.lastSaleDate,
+        incomingOpenPOQty: product.incomingOpenPOQty,
+        incomingKnown: product.incomingKnown,
+        inventoryPosition: safeAdd(product.remainingQty, product.incomingKnown ? product.incomingOpenPOQty : 0)
+      };
+    }
     return freezeSnapshotValue({
       windowDays: model.windowDays,
       startDay: model.startDay,
       endDay: model.endDay,
-      products: model.products.map(function(product){
-        return {
-          key: product.key,
-          productId: product.productId,
-          product: product.product,
-          category: product.category,
-          remainingQty: product.remainingQty,
-          totalRemainingCost: product.totalRemainingCost,
-          weightedCost: product.weightedCost,
-          listedPrice: product.listedPrice,
-          unitsSold: product.unitsSold,
-          averageDailyVelocity: product.averageDailyVelocity,
-          thirtyDayPace: product.thirtyDayPace,
-          estimatedDaysOfCover: product.estimatedDaysOfCover,
-          lastSaleDate: product.lastSaleDate,
-          incomingOpenPOQty: product.incomingOpenPOQty,
-          incomingKnown: product.incomingKnown,
-          inventoryPosition: safeAdd(product.remainingQty, product.incomingKnown ? product.incomingOpenPOQty : 0)
-        };
-      }),
+      products: model.products.map(productValue),
+      outOfStockProducts: model.outOfStock.map(productValue),
+      incoming: {
+        available:model.incoming.available,
+        totalUnits:model.incoming.available ? Array.from(model.incoming.incoming.values()).reduce(function(sum, value){ return safeAdd(sum, value); }, 0) : null,
+        openOrdersUsed:model.incoming.openOrdersUsed,
+        linesUsed:model.incoming.linesUsed
+      },
       planning: currentPlanningSnapshot()
     });
   }
@@ -1093,6 +1114,7 @@
     recalculate: recalculate,
     resetScenario: resetScenario,
     getProductSnapshot: productSnapshot,
+    ensureProductSnapshot: ensureProductSnapshot,
     getRuntimeSnapshot: function(){
       var model = runtime.baseModel;
       return Object.freeze({

@@ -4,7 +4,7 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260821-stage6a-ui-integration-fix-r50';
+  const BUILD = '20260822-supplier-procurement-intelligence-r51';
   const OPEN = 'OPEN';
   const COMMITTED = 'COMMITTED';
   const CANCELLED = 'CANCELLED';
@@ -400,6 +400,41 @@
     purchaseOrderProductSelection = '';
     render();
   };
+
+  function preparePurchaseOrderDraft(payload) {
+    if (!requirePurchaseOrderAccess(false)) return false;
+    payload = payload || {};
+    const supplier = (DB.creditors || []).find(function (item) { return text(item.id) === text(payload.supplierId); });
+    if (!supplier) { toast('The selected planning supplier is not an existing creditor.', 'err'); return false; }
+    const preparedLines = (Array.isArray(payload.lines) ? payload.lines : []).map(function (line) {
+      const product = findProductById(line && line.productId) || findProductByName(line && line.product);
+      const qty = Number(line && line.qty);
+      const unitCost = Number(line && line.unitCost);
+      if (!product || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(unitCost) || unitCost <= 0) return null;
+      return {
+        id:idStamp('POL-'), productId:product.id, product:product.name, category:product.category || '',
+        qty:qty, unitCost:unitCost, total:round2(qty * unitCost)
+      };
+    });
+    if (!preparedLines.length || preparedLines.some(function (line) { return !line; })) {
+      toast('Every planning line needs an existing product, positive quantity and positive Unit Cost.', 'err');
+      return false;
+    }
+    if ((purchaseOrderDraft.lines.length || purchaseOrderDraft.supplierId) && !confirm('Replace the current unsaved Purchase Order draft with the selected replenishment plan?')) return false;
+    resetDraft();
+    Object.assign(purchaseOrderDraft, {
+      supplierId:supplier.id,
+      lines:preparedLines,
+      notes:'Prepared from Stage 6B Replenishment Planning. Review every line before Save.',
+      amountPaid:'', wallet:'', supplierReference:'', expectedDate:''
+    });
+    editingPurchaseOrderId = '';
+    purchaseOrderProductSelection = '';
+    closeModal();
+    nav('purchaseorders');
+    toast('Draft Purchase Order prepared for review. Nothing has been saved or committed.');
+    return true;
+  }
 
   window.openNewPurchaseOrderProduct = function () {
     if (!canManageProducts()) { toast('Product-management permission is required.', 'err'); return; }
@@ -1223,8 +1258,9 @@
   syncNavigationAccess();
   installReceiptEditButtons();
   ZEZMS.ownerMaintenance = {
-    version: '3.15.1', build: BUILD, ensureModel: ensureModel,
+    version: '3.16.0', build: BUILD, ensureModel: ensureModel,
     findPurchaseOrder: findPurchaseOrder, purchaseOrderPaperHTML: purchaseOrderPaperHTML,
-    accountFilters: accountFilters, viewPurchaseOrders: viewPurchaseOrders
+    accountFilters: accountFilters, viewPurchaseOrders: viewPurchaseOrders,
+    preparePurchaseOrderDraft: preparePurchaseOrderDraft
   };
 }());
