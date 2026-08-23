@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.16.2 - Ledger Integrity Stabilization */
-const CACHE = 'zezms-ledger-integrity-20260823-r53';
-const PATCHED_INDEX_CACHE = 'zezms-r53-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.16.2 - Ledger Integrity Stabilization r53A */
+const CACHE = 'zezms-ledger-integrity-20260823-r53a';
+const PATCHED_INDEX_CACHE = 'zezms-r53a-baseline-cache-v2';
 const ASSETS = [
   './',
   './index.html',
