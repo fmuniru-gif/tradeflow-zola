@@ -1,5 +1,6 @@
-/* ZEZMS Owner Edition v3.16.1 - Cross-Device Data Integrity */
-const CACHE = 'zezms-sync-integrity-20260823-r52';
+/* ZEZMS Owner Edition v3.16.2 - Ledger Integrity Stabilization */
+const CACHE = 'zezms-ledger-integrity-20260823-r53';
+const PATCHED_INDEX_CACHE = 'zezms-r53-baseline-cache-v1';
 const ASSETS = [
   './',
   './index.html',
@@ -74,7 +75,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys
-        .filter((key) => key !== CACHE && !key.startsWith('zezms-commercial-pilot-'))
+        .filter((key) => key !== CACHE && key !== PATCHED_INDEX_CACHE && !key.startsWith('zezms-commercial-pilot-'))
         .map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
