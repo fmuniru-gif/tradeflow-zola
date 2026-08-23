@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.16.0 with Supplier & Procurement Intelligence, runtime replenishment planning and authenticated local-bridge printing.",
-  "start_url": "./index.html?build=20260822-supplier-procurement-intelligence-r51",
+  "description": "ZEZMS Owner Edition v3.16.1 with cross-device data-integrity forensics, safe reconciliation and authenticated local-bridge printing.",
+  "start_url": "./index.html?build=20260823-sync-integrity-r52",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

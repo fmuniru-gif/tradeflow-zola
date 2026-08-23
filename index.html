@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#0f766e" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="description" content="Zola Electronics Zone - Sales, inventory, Customer Master, manual customer outreach, customer follow-ups, Product Catalog search and secure one-click local printing" />
-<meta name="zezms-build" content="20260822-supplier-procurement-intelligence-r51" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
-<title>Zola Electronics Zone - TradeFlow v3.16.0 - Supplier &amp; Procurement Intelligence</title>
+<meta name="description" content="Zola Electronics Zone - TradeFlow Owner Edition with cross-device data integrity, sales, inventory, CRM and secure local printing" />
+<meta name="zezms-build" content="20260823-sync-integrity-r52" /><meta name="zezms-mobile-engine" content="portrait-readable-v28" />
+<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f766e'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='white' font-family='Arial Black'%3EZ%3C/text%3E%3C/svg%3E" />
 
@@ -82,7 +82,7 @@
 <script>
 (function(){
   'use strict';
-  const BUILD = '20260822-supplier-procurement-intelligence-r51';
+  const BUILD = '20260823-sync-integrity-r52';
   const MARKER = 'zezms-active-build';
   try {
     if (localStorage.getItem(MARKER) === BUILD) return;
@@ -1117,7 +1117,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <div style="width:64px;height:64px;border-radius:16px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">Z</div>
     </div>
     <h1>Zola Electronics Zone</h1>
-    <div class="sub">TradeFlow v3.16.0 · Supplier &amp; Procurement Intelligence · Tamale · GH₵</div>
+    <div class="sub">TradeFlow v3.16.1 · Cross-Device Data Integrity · Tamale · GH₵</div>
     <div id="sharedDeviceLoginPanel">
       <div class="field">
         <label>Staff member</label>
@@ -1150,7 +1150,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <h1>Zola Electronics Zone</h1>
-      <p>TradeFlow PWA · v3.16.0 · Supplier &amp; Procurement Intelligence · Direct Print Bridge · Tamale · GH₵</p>
+      <p>TradeFlow PWA · v3.16.1 · Cross-Device Data Integrity · Direct Print Bridge · Tamale · GH₵</p>
     </div>
     <nav class="nav" id="mainNav">
       <div class="sec" data-admin-only>Main</div>
@@ -1167,6 +1167,7 @@ html.zezms-phone-layout .kpi-freeze-pane{
       <button data-view="reports" data-admin-only onclick="nav('reports')">📈 Reports</button>
       <div class="sec">System</div>
       <button data-view="sync" data-admin-only onclick="nav('sync')">🔄 Sync / Backup</button>
+      <button data-view="integrity" data-admin-only onclick="nav('integrity')">🛡️ Data Integrity &amp; Sync</button>
       <button data-view="settings" data-admin-only onclick="nav('settings')">⚙️ Settings</button>
       <button id="navAdminMode" onclick="toggleAdminModeBtn()">🔐 Admin Mode (OFF)</button>
       <button onclick="doLogout()">🚪 Logout</button>
@@ -1218,16 +1219,16 @@ html.zezms-phone-layout .kpi-freeze-pane{
 <script src="js/product-search-metrics.js?v=20260812-portfolio-signals-r39"></script>
 <script src="js/product-search-facade.js?v=20260812-portfolio-signals-r39"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1"></script>
-<script src="js/cloud-sync.js?v=20260822-supplier-procurement-intelligence-r51"></script>
+<script src="js/cloud-sync.js?v=20260823-sync-integrity-r52"></script>
 <script src="js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51"></script>
 <script src="js/input-defaults-v3130.js?v=20260822-supplier-procurement-intelligence-r51"></script>
 
 <script>
 /* =========================================================
-   TradeFlow PWA v3.16.0 — Supplier & Procurement Intelligence — Zola Electronics Zone (Tamale)
+   TradeFlow PWA v3.16.1 — Cross-Device Data Integrity — Zola Electronics Zone (Tamale)
    Full offline sales / inventory / cash / accounts / KPIs
    ========================================================= */
-const APP_VERSION = '3.16.0';
+const APP_VERSION = '3.16.1';
 const DB_KEY = 'tradeflow_v321_zola';
 const VAT_RATE = 0; // legacy default decimal rate (0 = no VAT)
 // Code-level accidental-entry guard for Price Adjustment, VAT and Sale Out Withholding Tax only.
@@ -1422,10 +1423,15 @@ const pad = (n) => String(n).padStart(2,'0');
 function idStamp(prefix){
   const d = new Date();
   const ms = String(d.getMilliseconds()).padStart(3,'0');
-  let suffix = Math.random().toString(36).slice(2,6).toUpperCase();
+  let suffix = '';
   try{
-    if(window.crypto && typeof crypto.randomUUID==='function') suffix = crypto.randomUUID().slice(0,4).toUpperCase();
+    if(window.crypto && typeof crypto.randomUUID==='function') suffix = crypto.randomUUID().replace(/-/g,'').toUpperCase();
+    else if(window.crypto && typeof crypto.getRandomValues==='function'){
+      const bytes=new Uint8Array(16); crypto.getRandomValues(bytes);
+      suffix=Array.from(bytes).map(value=>value.toString(16).padStart(2,'0')).join('').toUpperCase();
+    }
   }catch(_){ }
+  if(!suffix) throw new Error('This browser cannot safely create globally unique transaction IDs. Upgrade the browser before recording a transaction.');
   return prefix + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + '-' + ms + '-' + suffix;
 }
 function toast(msg, type='ok'){
@@ -1890,7 +1896,7 @@ const TITLES = {
   dashboard:'Dashboard KPIs', pos:'Sale Out', stockin:'Stock In', products:'Products',
   stock:'Stock Balance', cash:'Cash Balances', expenses:'Expenses', accounts:'Accounts',
   receipts:'Sales Records', reports:'Reports',
-  sync:'Sync / Backup', settings:'Settings'
+  sync:'Sync / Backup', integrity:'Data Integrity & Sync', settings:'Settings'
 };
 const CASHIER2_ALLOWED = new Set(['pos','receipts']);
 function nav(view){
@@ -1909,7 +1915,8 @@ function nav(view){
       reports: 'Only admin can view reports.',
       products: 'Only admin can manage products.',
       stock: 'Only admin can view Stock Balance.',
-      sync: 'Only admin can access Sync / Backup.',
+       sync: 'Only admin can access Sync / Backup.',
+       integrity: 'Only admin can access Data Integrity & Sync.',
       settings: 'Only admin can access Settings.'
     };
     toast(msgs[view] || 'Only admin can open this page.', 'err');
@@ -1979,6 +1986,7 @@ function render(){
       case 'receipts': root.innerHTML=viewReceipts(); break;
       case 'reports': root.innerHTML=viewReports(); break;
       case 'sync': root.innerHTML=viewSync(); break;
+      case 'integrity': root.innerHTML=ZEZMS.syncIntegrity && ZEZMS.syncIntegrity.viewHTML ? ZEZMS.syncIntegrity.viewHTML() : '<div class="empty">Data Integrity module unavailable.</div>'; break;
       case 'settings': root.innerHTML=viewSettings(); break;
       default: root.innerHTML='<div class="empty">Unknown view</div>';
     }
@@ -4749,7 +4757,7 @@ function registerSW(){
   if(!('serviceWorker' in navigator)) return;
   if(location.protocol==='file:') return;
 
-  navigator.serviceWorker.register('./sw.js?v=20260822-supplier-procurement-intelligence-r51').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=20260823-sync-integrity-r52').then(reg=>{
     reg.update().catch(()=>{});
   }).catch(err=>{
     console.warn('Service worker registration failed', err);
@@ -4784,11 +4792,11 @@ document.addEventListener('keydown', (e)=>{
 <script src="js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39"></script>
 <script>
 /* Embedded so Owner Recovery does not depend on a newly added external file. */
-/* ZEZMS v3.16.0 — Supplier & Procurement Intelligence */
+/* ZEZMS v3.16.1 — Cross-Device Data Integrity */
 (function(){
 'use strict';
 window.ZEZMS=window.ZEZMS||{};
-const BUILD='20260822-supplier-procurement-intelligence-r51';
+const BUILD='20260823-sync-integrity-r52';
 const ITER=210000, RECOVERY_KEY='zezms-shared-device-owner-recovery', DIRECTORY_MARKER_KEY='zezms-shared-device-directory-published';
 const ROLES={
  OWNER:['*'],
@@ -4798,7 +4806,7 @@ const ROLES={
  READ_ONLY:['LOGIN','VIEW_DASHBOARD','VIEW_RECEIPTS','VIEW_PRODUCTS','VIEW_STOCK','VIEW_CASH','VIEW_EXPENSES','VIEW_ACCOUNTS','VIEW_REPORTS','EXPORT_BACKUP'],
  AUDITOR:['LOGIN','VIEW_DASHBOARD','VIEW_RECEIPTS','VIEW_PRODUCTS','VIEW_STOCK','VIEW_CASH','VIEW_EXPENSES','VIEW_ACCOUNTS','VIEW_REPORTS','EXPORT_BACKUP','VIEW_AUDIT']
 };
-const VIEW={dashboard:'VIEW_DASHBOARD',pos:'SALE_OUT',receipts:'VIEW_RECEIPTS',stockin:'STOCK_IN',products:'VIEW_PRODUCTS',stock:'VIEW_STOCK',cash:'VIEW_CASH',expenses:'VIEW_EXPENSES',accounts:'VIEW_ACCOUNTS',reports:'VIEW_REPORTS','customer-followups':'VIEW_CUSTOMER_FOLLOWUPS',sync:'MANAGE_SYNC',settings:'MANAGE_SETTINGS'};
+const VIEW={dashboard:'VIEW_DASHBOARD',pos:'SALE_OUT',receipts:'VIEW_RECEIPTS',stockin:'STOCK_IN',products:'VIEW_PRODUCTS',stock:'VIEW_STOCK',cash:'VIEW_CASH',expenses:'VIEW_EXPENSES',accounts:'VIEW_ACCOUNTS',reports:'VIEW_REPORTS','customer-followups':'VIEW_CUSTOMER_FOLLOWUPS',sync:'MANAGE_SYNC',integrity:'MANAGE_SYNC',settings:'MANAGE_SETTINGS'};
 const WRAP={quickSaleOut:'SALE_OUT',printReceiptSale:'SALE_OUT',doStockIn:'STOCK_IN',addProduct:'MANAGE_PRODUCTS',saveEditProduct:'MANAGE_PRODUCTS',delProduct:'MANAGE_PRODUCTS',doCashMove:'MANAGE_CASH',addExpense:'MANAGE_EXPENSES',delExpense:'MANAGE_EXPENSES',addAccount:'MANAGE_ACCOUNTS',applySettle:'MANAGE_ACCOUNTS',deleteAccountHolder:'MANAGE_ACCOUNTS',saveElectronicInvoice:'MANAGE_DOCUMENTS',saveElectronicWaybill:'MANAGE_DOCUMENTS',voidCommercialDocument:'MANAGE_DOCUMENTS',waybillFromInvoice:'MANAGE_DOCUMENTS',undoLast:'UNDO_TRANSACTION',undoInventoryTransaction:'UNDO_TRANSACTION',undoLastInventoryTransaction:'UNDO_TRANSACTION',undoAccountTransaction:'UNDO_TRANSACTION',undoLastAccountTransaction:'UNDO_TRANSACTION',undoSelectedAccountTransaction:'UNDO_TRANSACTION',undoCashTransaction:'UNDO_TRANSACTION',undoLastCashTransaction:'UNDO_TRANSACTION',undoSelectedCashTransaction:'UNDO_TRANSACTION',saveBiz:'MANAGE_SETTINGS',resetAll:'RESET_DATA',importDB:'IMPORT_DATA',importExcelWorkbook:'IMPORT_DATA',restoreFromLocal:'IMPORT_DATA',restoreCloudBackupAt:'IMPORT_DATA',m4SaveConfiguration:'MANAGE_SYNC',m4CreateCloudAccount:'MANAGE_SYNC',m4SignIn:'MANAGE_SYNC',m4SignOut:'MANAGE_SYNC',m4BootstrapThisDevice:'MANAGE_SYNC',m4DownloadCloudMaster:'MANAGE_SYNC'};
 const REAUTH=new Set(['MANAGE_STAFF','MANAGE_SETTINGS','MANAGE_SYNC','IMPORT_DATA','RESET_DATA']);
 let wrapped=false,recoveryClient=null,recoverySession=null,recoveryFactors=[];
@@ -4958,7 +4966,7 @@ function editUser(id){const u=model().users.find(x=>x.id===id);if(!u)return;cons
 async function saveUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can manage staff.');if(!await reauth('Confirm staff-account change'))return;const u=model().users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(role()==='ADMIN'&&u.role==='OWNER')throw new Error('An Admin cannot modify the Owner account.');await upsert({name:String((document.getElementById('sharedEditName')||{}).value||''),tel:String((document.getElementById('sharedEditTel')||{}).value||''),role:String((document.getElementById('sharedEditRole')||{}).value||u.role),password:String((document.getElementById('sharedEditPassword')||{}).value||''),active:String((document.getElementById('sharedEditActive')||{}).value||'1')==='1'},id);closeModal();audit('STAFF_ACCOUNT_UPDATED',{userId:id});render();refreshUsers();toast('Staff account updated.');}catch(e){toast(e.message||String(e),'err');}}
 async function deleteUser(id){try{if(!can('MANAGE_STAFF'))throw new Error('Only Owner or Admin can delete staff.');const m=model(),u=m.users.find(x=>x.id===id);if(!u)throw new Error('Staff account not found.');if(u.role==='OWNER')throw new Error('The Owner account cannot be deleted.');if(u.id===session.sharedUserId)throw new Error('You cannot delete the account that is currently signed in.');if(!window.confirm(`Permanently delete ${u.name}? This cannot be undone.`))return;if(!await reauth('Confirm permanent staff deletion'))return;const index=m.users.findIndex(x=>x.id===id);if(index<0)throw new Error('Staff account not found.');m.users.splice(index,1);audit('STAFF_ACCOUNT_DELETED',{userId:id,name:u.name,role:u.role});writeDirectoryRoot();saveDB();closeModal();render();refreshUsers();const published=await autoPublishDirectory();toast(published?'Staff account deleted and published to authorised devices.':'Staff account deleted locally. Publish staff access when Cloud Sync is available.',published?'ok':'warn');}catch(e){toast(e.message||String(e),'err');}}
 function cloud(){const s=ZEZMS.cloudSync;return s&&typeof s.getState==='function'?s.getState():{};}
-function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.16.0'};}
+function deviceArgs(){const s=cloud();return{p_device_id:String(s.deviceId||''),p_device_name:String(s.deviceName||'ZEZMS Device'),p_platform:String(navigator.userAgent||'').slice(0,240),p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.16.1'};}
 function recovery(){const s=cloud();if(!s.supabaseUrl||!s.publishableKey||!window.supabase)throw new Error('Supabase configuration is unavailable on this device.');if(!recoveryClient)recoveryClient=window.supabase.createClient(String(s.supabaseUrl).replace(/\/$/,''),String(s.publishableKey),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:RECOVERY_KEY}});return recoveryClient;}
 
 function sharedModal(html){
@@ -5121,12 +5129,12 @@ setTimeout(function(){
 
 <script>
 /* Embedded Secure Device Enrollment controller. */
-/* ZEZMS v3.16.0 — Supplier & Procurement Intelligence */
+/* ZEZMS v3.16.1 — Cross-Device Data Integrity */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  const BUILD = '20260822-supplier-procurement-intelligence-r51';
+  const BUILD = '20260823-sync-integrity-r52';
   let branches = [];
   let lastPairing = null;
   let enrolledDevices = [];
@@ -5418,7 +5426,7 @@ setTimeout(function(){
       if(!branchId)throw new Error('Select the branch for the new device.');
       const result=await pair.client.rpc('zezms_m5a3_create_device_pairing',{
         p_business_id:businessId,p_device_name:deviceName,p_branch_id:branchId,
-        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.16.0'
+        p_expires_minutes:minutes,p_platform:'',p_app_version:typeof APP_VERSION!=='undefined'?String(APP_VERSION):'3.16.1'
       });
       if(result.error)throw result.error;
       lastPairing=normalizeRow(result.data);
@@ -5482,6 +5490,7 @@ setTimeout(function(){
 <script src="js/stock-corrections-v3150.js?v=20260822-supplier-procurement-intelligence-r51"></script>
 <script src="js/warranty-management-v3150.js?v=20260822-supplier-procurement-intelligence-r51"></script>
 <script src="js/supplier-procurement-v3160.js?v=20260822-supplier-procurement-intelligence-r51"></script>
+<script src="js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52"></script>
 <script src="js/print-readiness-v3120.js?v=20260817-loopback-network-r47"></script>
 <script src="js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47"></script>
 <script src="js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51"></script>

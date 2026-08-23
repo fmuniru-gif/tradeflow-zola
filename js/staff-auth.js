@@ -21,6 +21,7 @@
     accounts: 'VIEW_ACCOUNTS',
     reports: 'VIEW_REPORTS',
     sync: 'MANAGE_SYNC',
+    integrity: 'MANAGE_SYNC',
     settings: 'MANAGE_SETTINGS'
   };
 

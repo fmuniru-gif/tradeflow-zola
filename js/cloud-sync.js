@@ -3,11 +3,15 @@
 
   window.ZEZMS = window.ZEZMS || {};
 
-  const BUILD = '20260821-stage6a-ui-integration-fix-r50';
+  const BUILD = '20260823-sync-integrity-r52';
+  const PROTOCOL_VERSION = 'M4/2';
   const STATE_KEY = 'zezms_cloud_sync_m4_state';
   const LEGACY_STATE_KEY = 'zezms_cloud_sync_m3_state';
   const QUEUE_KEY = 'zezms_cloud_sync_m4_queue';
   const REJECTED_KEY = 'zezms_cloud_sync_m4_rejected';
+  const APPLIED_KEY = 'zezms_cloud_sync_m4_applied_v2';
+  const FAILED_KEY = 'zezms_cloud_sync_m4_failed_v2';
+  const APPLY_JOURNAL_KEY = 'zezms_cloud_sync_m4_apply_journal_v2';
   const SNAPSHOT_TABLE = 'zezms_sync_state';
   const OPERATIONS_TABLE = 'zezms_sync_operations';
   const PUSH_DEBOUNCE_MS = 900;
@@ -29,12 +33,15 @@
   };
 
   const LOCAL_ONLY_ROOTS = new Set([
-    'backupHistory', 'backupSettings', 'syncSettings', 'syncMeta', 'syncRejectedTransactions'
+    'backupHistory', 'backupSettings', 'syncSettings', 'syncMeta', 'syncRejectedTransactions',
+    'syncReconciliationLog'
   ]);
 
   let state = loadState();
   let queue = loadJSON(QUEUE_KEY, []);
   let rejected = loadJSON(REJECTED_KEY, []);
+  let appliedOperations = loadJSON(APPLIED_KEY, {});
+  let failedOperations = loadJSON(FAILED_KEY, []);
   let observedSnapshot = null;
   let client = null;
   let session = null;
@@ -47,10 +54,61 @@
   let applyingRemote = false;
   let initPromise = null;
   let initSettled = false;
+  let syncSerial = Promise.resolve();
 
   function makeUUID() {
     if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
-    return 'M4-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
+    if (window.crypto && typeof crypto.getRandomValues === 'function') {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      bytes[6] = (bytes[6] & 15) | 64;
+      bytes[8] = (bytes[8] & 63) | 128;
+      const hex = Array.from(bytes).map(function (value) { return value.toString(16).padStart(2, '0'); }).join('');
+      return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-'
+        + hex.slice(16, 20) + '-' + hex.slice(20);
+    }
+    throw new Error('ZEZMS_SECURE_RANDOM_UNAVAILABLE: this browser cannot safely create globally unique sync identifiers. Upgrade the browser before recording synchronized transactions.');
+  }
+
+  function canonicalize(value) {
+    if (value === undefined) return null;
+    if (value === null || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(canonicalize);
+    const result = {};
+    Object.keys(value).sort().forEach(function (key) {
+      if (['payloadHash', 'outboxState', 'attempts', 'lastAttempt', 'lastError', '_legacyPayload'].indexOf(key) < 0) {
+        result[key] = canonicalize(value[key]);
+      }
+    });
+    return result;
+  }
+
+  function deterministicHash(value) {
+    const textValue = JSON.stringify(canonicalize(value));
+    let high = 0xcbf29ce4;
+    let low = 0x84222325;
+    for (let index = 0; index < textValue.length; index += 1) {
+      low ^= textValue.charCodeAt(index);
+      const nextLow = Math.imul(low, 0x1b3);
+      const carry = ((low >>> 0) * 0x100 + (nextLow >>> 0)) / 0x100000000;
+      high = (Math.imul(high, 0x1b3) + Math.floor(carry)) >>> 0;
+      low = nextLow >>> 0;
+    }
+    return high.toString(16).padStart(8, '0') + low.toString(16).padStart(8, '0');
+  }
+
+  function sealOperation(operation) {
+    if (!operation) return operation;
+    operation.protocolVersion = PROTOCOL_VERSION;
+    operation.originDeviceId = operation.originDeviceId || operation.deviceId || state.deviceId;
+    operation.payloadHash = deterministicHash(operation);
+    return operation;
+  }
+
+  function wireOperation(operation) {
+    const copy = clone(operation || {});
+    ['outboxState', 'attempts', 'lastAttempt', 'lastError', '_legacyPayload'].forEach(function (key) { delete copy[key]; });
+    return copy;
   }
 
   function defaults() {
@@ -81,7 +139,13 @@
       lastError: '',
       lastRejected: null,
       mergeWarnings: [],
-      announcedRollovers: []
+      announcedRollovers: [],
+      protocolVersion: PROTOCOL_VERSION,
+      lastIntegrityCheckAt: '',
+      integrityWarning: false,
+      cloudHeadSeq: 0,
+      protocolActivatedCursor: null,
+      oldClientDetected: false
     };
   }
 
@@ -127,6 +191,106 @@
   function persistRejected() {
     rejected = rejected.slice(-50);
     try { localStorage.setItem(REJECTED_KEY, JSON.stringify(rejected)); } catch (_) {}
+  }
+
+  function persistAppliedOperations() {
+    const entries = Object.keys(appliedOperations || {}).map(function (opId) {
+      return [opId, Number(appliedOperations[opId]) || 0];
+    }).sort(function (left, right) { return left[1] - right[1]; }).slice(-50000);
+    appliedOperations = {};
+    entries.forEach(function (entry) { appliedOperations[entry[0]] = entry[1]; });
+    try { localStorage.setItem(APPLIED_KEY, JSON.stringify(appliedOperations)); } catch (error) {
+      console.warn('M4 applied-operation register could not be saved', error);
+    }
+  }
+
+  function persistFailedOperations() {
+    failedOperations = (Array.isArray(failedOperations) ? failedOperations : []).slice(-100);
+    try { localStorage.setItem(FAILED_KEY, JSON.stringify(failedOperations)); } catch (_) {}
+  }
+
+  function readApplyJournal() {
+    const journal = loadJSON(APPLY_JOURNAL_KEY, null);
+    return journal && typeof journal === 'object' ? journal : null;
+  }
+
+  function writeApplyJournal(row, operation) {
+    const database = getDatabase();
+    if (!database) throw new Error('The local database is unavailable for durable operation application.');
+    const journal = {
+      protocolVersion: PROTOCOL_VERSION,
+      opId: String(row && row.op_id || operation && operation.opId || ''),
+      seq: Number(row && row.seq) || 0,
+      beforeHash: deterministicHash(cleanSnapshot(database)),
+      startedAt: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem(APPLY_JOURNAL_KEY, JSON.stringify(journal));
+      const confirmed = readApplyJournal();
+      if (!confirmed || confirmed.opId !== journal.opId || confirmed.beforeHash !== journal.beforeHash) {
+        throw new Error('Operation journal readback did not match.');
+      }
+    } catch (error) {
+      throw new Error('ZEZMS_APPLY_JOURNAL_UNAVAILABLE: ' + (error && error.message || error));
+    }
+    return journal;
+  }
+
+  function clearApplyJournal() {
+    try { localStorage.removeItem(APPLY_JOURNAL_KEY); } catch (_) {}
+  }
+
+  function recoverInterruptedApply(database) {
+    const journal = readApplyJournal();
+    if (!journal || !journal.opId) return false;
+    const currentHash = deterministicHash(cleanSnapshot(database));
+    if (currentHash !== journal.beforeHash) {
+      // The database save completed but the applied-op/cursor bookkeeping did not.
+      // Treat the durable database as committed and finish that bookkeeping.
+      appliedOperations[String(journal.opId)] = Number(journal.seq) || 0;
+      persistAppliedOperations();
+      state.cursor = Math.max(Number(state.cursor) || 0, Number(journal.seq) || 0);
+      state.cloudHeadSeq = Math.max(Number(state.cloudHeadSeq) || 0, Number(journal.seq) || 0);
+      state.lastInterruptedApplyRecoveredAt = new Date().toISOString();
+      persistState();
+    }
+    // An unchanged hash means the local save never committed and the operation
+    // remains eligible for normal ordered re-application from the same cursor.
+    clearApplyJournal();
+    return currentHash !== journal.beforeHash;
+  }
+
+  function recordFailedOperation(operation, stage, error) {
+    const message = String((error && (error.message || error.details || error.hint)) || error || 'Unknown sync failure');
+    const patches = operation && Array.isArray(operation.patches) ? operation.patches : [];
+    const first = patches[0] || {};
+    const opId = String(operation && operation.opId || '');
+    const existing = failedOperations.find(function (item) { return item.opId === opId && item.stage === stage; });
+    if (existing) {
+      existing.attempts = (Number(existing.attempts) || 0) + 1;
+      existing.lastAttempt = new Date().toISOString();
+      existing.message = message;
+    } else {
+      failedOperations.push({
+        opId: opId, entityType: first.collection || first.root || operation && operation.kind || 'Unknown',
+        entityId: first.key || '', stage: stage, category: message.split(':')[0], message: message,
+        attempts: 1, lastAttempt: new Date().toISOString()
+      });
+    }
+    persistFailedOperations();
+    setState({ integrityWarning: true, lastError: message }, false);
+  }
+
+  function clearFailedOperation(opId) {
+    const before = failedOperations.length;
+    failedOperations = failedOperations.filter(function (item) { return item.opId !== String(opId || ''); });
+    if (failedOperations.length !== before) persistFailedOperations();
+  }
+
+  function serializeSync(work) {
+    const result = syncSerial.then(work, work);
+    syncSerial = result.catch(function () {});
+    return result;
   }
 
   function setState(patch, shouldRender) {
@@ -304,7 +468,7 @@
 
     state.deviceSeq = (Number(state.deviceSeq) || 0) + 1;
     persistState();
-    return {
+    return sealOperation({
       opId: 'AUTO-' + String(marker.id),
       deviceId: state.deviceId,
       deviceSeq: state.deviceSeq,
@@ -314,7 +478,7 @@
       appVersion: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
       repairRolloverId: String(marker.id),
       patches: patches
-    };
+    });
   }
 
   function additiveField(collection, field) {
@@ -440,7 +604,7 @@
     const operationId = rolloverPatch && rolloverPatch.key
       ? 'AUTO-' + String(rolloverPatch.key)
       : makeUUID();
-    return {
+    return sealOperation({
       opId: operationId,
       deviceId: state.deviceId,
       deviceSeq: state.deviceSeq,
@@ -449,7 +613,7 @@
       kind: inferKind(patches),
       appVersion: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
       patches: patches
-    };
+    });
   }
 
   function findEntity(collection, key) {
@@ -539,7 +703,10 @@
           return;
         }
         if (!equal(found.item, patch.value)) {
-          addMergeWarning('Duplicate record key ignored in ' + patch.collection + ': ' + patch.key, operation);
+          const conflict = new Error('ZEZMS_ENTITY_ID_CONFLICT: different payloads use the same key in '
+            + patch.collection + ': ' + patch.key);
+          conflict.code = 'ZEZMS_ENTITY_ID_CONFLICT';
+          throw conflict;
         }
         return;
       }
@@ -711,6 +878,156 @@
     return true;
   }
 
+  function prepareMissingOperation(operation) {
+    const database = getDatabase();
+    const prepared = clone(operation);
+    const safePatches = [];
+    const conflicts = [];
+    let missingEvidence = 0;
+    let appliedEvidence = 0;
+    let conflictingEvidence = 0;
+    (prepared.patches || []).forEach(function (patch) {
+      if (patch.action === 'insert') {
+        const found = findEntity(patch.collection, patch.key);
+        if (!found.item) missingEvidence += 1;
+        else if (equal(found.item, patch.value)) appliedEvidence += 1;
+        else conflictingEvidence += 1;
+        return;
+      }
+      if (patch.action === 'delete') {
+        const found = findEntity(patch.collection, patch.key);
+        if (!found.item) appliedEvidence += 1;
+        else if (!patch.before || equal(found.item, patch.before)) missingEvidence += 1;
+        else conflictingEvidence += 1;
+        return;
+      }
+      if (patch.action === 'update') {
+        const found = findEntity(patch.collection, patch.key);
+        if (!found.item) {
+          if (patch.fallback) missingEvidence += 1;
+          else conflictingEvidence += 1;
+          return;
+        }
+        (patch.changes || []).filter(function (change) { return change.mode !== 'delta'; }).forEach(function (change) {
+          if (equal(found.item[change.field], change.before)) missingEvidence += 1;
+          else if (equal(found.item[change.field], change.value)) appliedEvidence += 1;
+          else conflictingEvidence += 1;
+        });
+        return;
+      }
+      if (patch.action === 'root-set') {
+        const current = database ? database[patch.root] : undefined;
+        if (equal(current, patch.before)) missingEvidence += 1;
+        else if (equal(current, patch.value)) appliedEvidence += 1;
+        else conflictingEvidence += 1;
+      }
+    });
+    // If every non-additive piece of evidence says the operation is absent,
+    // numeric stock/account/cash deltas can be replayed once even when later
+    // operations have moved the current balance away from the recorded before.
+    // Addition is commutative and the durable opId register prevents repetition.
+    const wholeOperationMissing = missingEvidence > 0 && appliedEvidence === 0 && conflictingEvidence === 0;
+    (prepared.patches || []).forEach(function (patch) {
+      if (patch.action === 'insert') {
+        const found = findEntity(patch.collection, patch.key);
+        if (!found.item) safePatches.push(patch);
+        else if (!equal(found.item, patch.value)) conflicts.push(patch.collection + '/' + patch.key + ' already has a different payload');
+        return;
+      }
+      if (patch.action === 'delete') {
+        const found = findEntity(patch.collection, patch.key);
+        if (!found.item) return;
+        if (patch.before && !equal(found.item, patch.before)) conflicts.push(patch.collection + '/' + patch.key + ' changed after the Cloud operation');
+        else safePatches.push(patch);
+        return;
+      }
+      if (patch.action === 'update') {
+        const found = findEntity(patch.collection, patch.key);
+        if (!found.item) {
+          if (patch.fallback) safePatches.push(patch);
+          else conflicts.push(patch.collection + '/' + patch.key + ' is missing and has no recovery payload');
+          return;
+        }
+        const changes = [];
+        (patch.changes || []).forEach(function (change) {
+          const current = found.item[change.field];
+          const after = change.mode === 'delta'
+            ? (Number(change.before) || 0) + (Number(change.value) || 0)
+            : change.value;
+          if (equal(current, after)) return;
+          if (equal(current, change.before) || (change.mode === 'delta' && wholeOperationMissing)) changes.push(change);
+          else conflicts.push(patch.collection + '/' + patch.key + '.' + change.field + ' does not match before or after evidence');
+        });
+        if (changes.length) safePatches.push(Object.assign({}, patch, { changes: changes }));
+        return;
+      }
+      if (patch.action === 'root-object') {
+        const current = database && database[patch.root] ? database[patch.root][patch.key] : undefined;
+        const after = patch.mode === 'delta'
+          ? (Number(patch.before) || 0) + (Number(patch.value) || 0)
+          : patch.value;
+        if (equal(current, after)) return;
+        if (equal(current, patch.before) || (patch.mode === 'delta' && wholeOperationMissing)) safePatches.push(patch);
+        else conflicts.push(patch.root + '.' + patch.key + ' does not match before or after evidence');
+        return;
+      }
+      if (patch.action === 'root-set') {
+        const current = database ? database[patch.root] : undefined;
+        if (equal(current, patch.value)) return;
+        if (equal(current, patch.before)) safePatches.push(patch);
+        else conflicts.push(patch.root + ' does not match before or after evidence');
+      }
+    });
+    prepared.patches = safePatches;
+    return { safe: conflicts.length === 0, operation: prepared, conflicts: conflicts, changes: safePatches.length };
+  }
+
+  async function recoverCloudOperations(operationIds) {
+    return serializeSync(async function () {
+      requireClient();
+      const requested = new Set((operationIds || []).map(String));
+      if (!requested.size) return { applied: [], alreadyPresent: [], blocked: [] };
+      const bundle = await (async function () {
+        const master = await fetchMaster();
+        if (!master || !master.payload || master.sync_mode !== 'operations') throw new Error('M4 cloud master is unavailable.');
+        const baselineCursor = Number(master.operation_cursor) || 0;
+        return { operations: await fetchAllOperationsAfter(baselineCursor) };
+      }());
+      const result = { applied: [], alreadyPresent: [], blocked: [] };
+      bundle.operations.filter(function (row) { return requested.has(String(row.op_id)); })
+        .sort(function (left, right) { return Number(left.seq) - Number(right.seq); })
+        .forEach(function (row) {
+          const opId = String(row.op_id || '');
+          if (appliedOperations[opId]) { result.alreadyPresent.push(opId); return; }
+          const operation = clone(row.payload || {});
+          operation.opId = operation.opId || opId;
+          operation.deviceId = operation.deviceId || row.device_id;
+          operation.kind = operation.kind || row.kind;
+          const preview = prepareMissingOperation(operation);
+          if (!preview.safe) {
+            result.blocked.push({ opId: opId, reasons: preview.conflicts });
+            return;
+          }
+          if (preview.changes) applyOperation(preview.operation, { silent: true });
+          appliedOperations[opId] = Number(row.seq) || 0;
+          persistAppliedOperations();
+          const database = getDatabase();
+          if (!Array.isArray(database.syncReconciliationLog)) database.syncReconciliationLog = [];
+          database.syncReconciliationLog.push({
+            at: new Date().toISOString(), opId: opId, action: preview.changes ? 'APPLY_MISSING_CLOUD_EFFECTS' : 'CONFIRM_ALREADY_PRESENT',
+            source: 'M4 server sequence ' + row.seq, result: 'SUCCESS'
+          });
+          database.syncReconciliationLog = database.syncReconciliationLog.slice(-500);
+          rawSaveDatabase();
+          observedSnapshot = cleanSnapshot(database);
+          result.applied.push(opId);
+        });
+      if (result.blocked.length) setState({ integrityWarning: true }, false);
+      try { if (typeof render === 'function') render(); } catch (_) {}
+      return result;
+    });
+  }
+
   function rollbackRejectedOperation(operation, message) {
     const inverse = clone(operation);
     inverse.opId = 'ROLLBACK-' + operation.opId;
@@ -861,6 +1178,9 @@
 
   async function bootstrapFromThisDevice() {
     requireClient();
+    if (state.initialized) {
+      throw new Error('ZEZMS_MASTER_REPLACEMENT_BLOCKED: M4 is already active. Use Data Integrity & Sync; v3.16.1 does not replace an active Cloud baseline.');
+    }
     if (state.deviceAccessMode === 'PAIRED') {
       throw new Error('Only the primary OWNER cloud session may activate or replace the M4 cloud master.');
     }
@@ -879,6 +1199,8 @@
     const record = recordFromResult(response.data) || {};
     queue = [];
     persistQueue();
+    appliedOperations = {};
+    persistAppliedOperations();
     observedSnapshot = cleanSnapshot(getDatabase());
     setState({
       initialized: true,
@@ -919,6 +1241,19 @@
 
   async function downloadCloudMaster() {
     requireClient();
+    if (state.initialized) {
+      throw new Error('ZEZMS_LOCAL_REPLACEMENT_BLOCKED: This device is already initialized. Use Full Sync Audit / Catch Up so legitimate local records are not overwritten.');
+    }
+    if (queue.length) {
+      throw new Error('ZEZMS_LOCAL_REPLACEMENT_BLOCKED: This device has unsent operations. Upload or preserve them before any Cloud-master download.');
+    }
+    const localDatabase = getDatabase();
+    const localOperationalRecords = COLLECTIONS.reduce(function (count, collection) {
+      return count + (localDatabase && Array.isArray(localDatabase[collection]) ? localDatabase[collection].length : 0);
+    }, 0);
+    if (localOperationalRecords) {
+      throw new Error('ZEZMS_LOCAL_REPLACEMENT_BLOCKED: Existing operational records were found. Export an Integrity Snapshot and use reconciliation; this emergency release will not overwrite them.');
+    }
     const confirmed = confirm(
       'Replace this device’s business data with the M4 cloud master and then apply all later transactions?\n\n'
       + 'Use this on every additional device before recording transactions.'
@@ -930,6 +1265,8 @@
 
     queue = [];
     persistQueue();
+    appliedOperations = {};
+    persistAppliedOperations();
     persistMasterDatabase(master.payload);
     setState({
       initialized: true,
@@ -952,10 +1289,34 @@
   }
 
   async function pushOne(operation) {
-    const response = await client.rpc('zezms_ops_push', { p_operations: [operation] });
+    const outgoing = wireOperation(operation);
+    if (!operation._legacyPayload) sealOperation(outgoing);
+    const response = await client.rpc('zezms_ops_push', { p_operations: [outgoing] });
     if (response.error) throw response.error;
     const rows = Array.isArray(response.data) ? response.data : [response.data];
-    return rows[0] || null;
+    const acknowledged = rows[0] || null;
+    if (!acknowledged || !acknowledged.server_seq) {
+      throw new Error('ZEZMS_ACK_INVALID: Cloud did not return a durable server sequence.');
+    }
+    const verification = await client.from(OPERATIONS_TABLE)
+      .select('seq,op_id,payload,created_at')
+      .eq('owner_id', currentSyncOwnerId())
+      .eq('op_id', operation.opId)
+      .maybeSingle();
+    if (verification.error) throw verification.error;
+    if (!verification.data || Number(verification.data.seq) !== Number(acknowledged.server_seq)) {
+      throw new Error('ZEZMS_ACK_NOT_DURABLE: acknowledged operation could not be read back from Cloud.');
+    }
+    const cloudOperation = verification.data.payload || {};
+    const localHash = outgoing.payloadHash || deterministicHash(outgoing);
+    const cloudHash = cloudOperation.payloadHash || deterministicHash(cloudOperation);
+    if (localHash !== cloudHash) {
+      throw new Error('ZEZMS_OPERATION_PAYLOAD_CONFLICT: Cloud contains a different payload for opId ' + outgoing.opId);
+    }
+    return Object.assign({}, acknowledged, {
+      server_seq: Number(verification.data.seq), created_at: verification.data.created_at,
+      payloadHash: cloudHash
+    });
   }
 
   async function publishRoot(root, value, kind) {
@@ -971,7 +1332,7 @@
     persistState();
 
     const database = getDatabase();
-    const operation = {
+    const operation = sealOperation({
       opId: makeUUID(),
       deviceId: state.deviceId,
       deviceSeq: state.deviceSeq,
@@ -985,7 +1346,7 @@
         value: clone(value),
         before: clone(database ? database[rootName] : undefined)
       }]
-    };
+    });
 
     queueOperation(operation);
     if (navigator.onLine && session && configured()) {
@@ -1027,7 +1388,7 @@
     return !!(response.data && response.data.device_id && response.data.device_id !== state.deviceId);
   }
 
-  async function flushQueue(showNotice) {
+  async function flushQueueCore(showNotice) {
     if (pushInFlight) return false;
     requireClient();
     if (!state.initialized) throw new Error('Activate or download the M4 cloud master first.');
@@ -1047,6 +1408,11 @@
       while (queue.length) {
         const operation = queue[0];
         try {
+          operation.outboxState = 'Sending';
+          operation.attempts = (Number(operation.attempts) || 0) + 1;
+          operation.lastAttempt = new Date().toISOString();
+          operation.lastError = '';
+          persistQueue();
           const result = await pushOne(operation);
           const pushedRolloverId = rolloverIdFromOperation(operation) || operation.repairRolloverId;
           if (pushedRolloverId) markRolloverAnnounced(pushedRolloverId);
@@ -1058,7 +1424,7 @@
             applyInverseOperation(operation);
             queue.shift();
             persistQueue();
-            await pullNow(true);
+            await pullNowCore(true);
             setState({
               lastPushAt: (result && result.created_at) || new Date().toISOString(),
               status: state.liveSyncEnabled ? 'live' : 'ready',
@@ -1066,7 +1432,8 @@
             }, false);
             continue;
           }
-          if (result && result.server_seq) state.cursor = Math.max(Number(state.cursor) || 0, Number(result.server_seq) || 0);
+          operation.outboxState = 'Acknowledged';
+          clearFailedOperation(operation.opId);
           queue.shift();
           persistQueue();
           setState({
@@ -1083,18 +1450,24 @@
             persistQueue();
             setState({ status: 'rejected', lastError: message }, false);
             notify('Transaction rolled back: cloud stock or cash was already used by another device.', 'err');
-            await pullNow(true).catch(function () {});
+            recordFailedOperation(operation, 'upload-conflict', error);
+            await pullNowCore(true).catch(function () {});
             continue;
           }
+          operation.outboxState = 'Failed';
+          operation.lastError = String((error && (error.message || error.details)) || error || 'Upload failed');
+          persistQueue();
+          recordFailedOperation(operation, 'upload', error);
           throw error;
         }
       }
+      await pullNowCore(true);
       setState({ status: state.liveSyncEnabled ? 'live' : 'ready', lastError: '' });
       if (showNotice) notify('All queued transactions uploaded.');
       return true;
     } catch (error) {
       handleError(error);
-      return false;
+      throw error;
     } finally {
       pushInFlight = false;
     }
@@ -1112,6 +1485,38 @@
     return response.data || [];
   }
 
+  async function fetchAllOperationsAfter(cursor) {
+    const rows = [];
+    let nextCursor = Number(cursor) || 0;
+    while (true) {
+      const page = await fetchOperationsAfter(nextCursor);
+      if (!page.length) break;
+      rows.push.apply(rows, page);
+      nextCursor = Math.max(nextCursor, Number(page[page.length - 1].seq) || nextCursor);
+      if (page.length < PULL_PAGE_SIZE) break;
+    }
+    return rows;
+  }
+
+  async function fetchCloudAuditBundle() {
+    return serializeSync(async function () {
+      requireClient();
+      const master = await fetchMaster();
+      if (!master || !master.payload || master.sync_mode !== 'operations') {
+        throw new Error('The M4 cloud master is unavailable for integrity comparison.');
+      }
+      const baselineCursor = Number(master.operation_cursor) || 0;
+      const operations = await fetchAllOperationsAfter(baselineCursor);
+      const headSeq = operations.length ? Number(operations[operations.length - 1].seq) || baselineCursor : baselineCursor;
+      setState({ cloudHeadSeq: headSeq }, false);
+      return {
+        ownerId: currentSyncOwnerId(), baseline: clone(master.payload), baselineCursor: baselineCursor,
+        operations: clone(operations), headSeq: headSeq, fetchedAt: new Date().toISOString(),
+        protocolVersion: PROTOCOL_VERSION
+      };
+    });
+  }
+
   function applyInverseOperation(operation) {
     const inverse = clone(operation);
     inverse.opId = 'REBASE-' + operation.opId;
@@ -1120,7 +1525,7 @@
     applyOperation(inverse, { silent: true });
   }
 
-  async function pullNow(silent) {
+  async function pullNowCore(silent) {
     if (pullInFlight) return false;
     requireClient();
     if (!state.initialized) throw new Error('Download or activate the M4 cloud master first.');
@@ -1153,33 +1558,80 @@
         // This preserves last-writer order for non-numeric fields while numeric
         // stock/account/cash deltas continue to merge additively.
         originalQueue.slice().reverse().forEach(applyInverseOperation);
-        queue = originalQueue.filter(function (op) { return !acceptedOwnIds.has(op.opId); });
-        persistQueue();
-
-        rowsToApply.forEach(function (row) {
-          const operation = row.payload || {};
-          operation.opId = operation.opId || row.op_id;
-          operation.deviceId = operation.deviceId || row.device_id;
-          operation.kind = operation.kind || row.kind;
-          const ownAcceptedFromQueue = acceptedOwnIds.has(row.op_id);
-          if (row.device_id !== state.deviceId || ownAcceptedFromQueue) {
-            applyOperation(operation, { silent: true });
-            if (row.device_id !== state.deviceId) {
-              applied += 1;
-              remoteTransactions.push({
-                seq: Number(row.seq) || 0, opId: row.op_id || operation.opId || '',
-                deviceId: row.device_id || operation.deviceId || '', kind: row.kind || operation.kind || 'TRANSACTION',
-                createdAt: row.created_at || row.client_created_at || new Date().toISOString()
-              });
+        try {
+          rowsToApply.forEach(function (row) {
+            const operation = row.payload || {};
+            if (operation.opId && String(operation.opId) !== String(row.op_id || '')) {
+              const identityError = new Error('ZEZMS_OPERATION_ID_MISMATCH: row and payload operation IDs differ at server sequence ' + row.seq);
+              recordFailedOperation(operation, 'download-validate', identityError);
+              throw identityError;
             }
-          }
-          state.cursor = Math.max(Number(state.cursor) || 0, Number(row.seq) || 0);
-          state.lastRemoteAt = row.created_at || state.lastRemoteAt;
-        });
+            if (operation.payloadHash && operation.payloadHash !== deterministicHash(operation)) {
+              const hashError = new Error('ZEZMS_OPERATION_HASH_MISMATCH: payload integrity check failed for ' + row.op_id);
+              recordFailedOperation(operation, 'download-validate', hashError);
+              throw hashError;
+            }
+            if (operation.protocolVersion !== PROTOCOL_VERSION) {
+              state.oldClientDetected = true;
+              state.integrityWarning = true;
+              state.oldClientOperation = String(row.op_id || '');
+            }
+            operation.opId = operation.opId || row.op_id;
+            operation.deviceId = operation.deviceId || row.device_id;
+            operation.kind = operation.kind || row.kind;
+            const opId = String(row.op_id || operation.opId || '');
+            const alreadyApplied = !!appliedOperations[opId];
+            const ownAcceptedFromQueue = acceptedOwnIds.has(opId);
+            const databaseBeforeApply = clone(getDatabase());
+            let applyJournalWritten = false;
+            try {
+              if (!alreadyApplied && (row.device_id !== state.deviceId || ownAcceptedFromQueue)) {
+                writeApplyJournal(row, operation);
+                applyJournalWritten = true;
+                applyOperation(operation, { silent: true });
+                if (row.device_id !== state.deviceId) {
+                  applied += 1;
+                  remoteTransactions.push({
+                    seq: Number(row.seq) || 0, opId: opId,
+                    deviceId: row.device_id || operation.deviceId || '', kind: row.kind || operation.kind || 'TRANSACTION',
+                    createdAt: row.created_at || row.client_created_at || new Date().toISOString()
+                  });
+                }
+              }
+            } catch (applyError) {
+              if (databaseBeforeApply) {
+                try {
+                  DB = databaseBeforeApply;
+                  rawSaveDatabase();
+                  observedSnapshot = cleanSnapshot(getDatabase());
+                  clearApplyJournal();
+                } catch (rollbackError) {
+                  applyError.message += ' Local rollback also failed: ' + (rollbackError && rollbackError.message || rollbackError);
+                }
+              }
+              recordFailedOperation(operation, 'download-apply', applyError);
+              throw applyError;
+            }
+            appliedOperations[opId] = Number(row.seq) || 0;
+            persistAppliedOperations();
+            clearFailedOperation(opId);
+            state.cursor = Math.max(Number(state.cursor) || 0, Number(row.seq) || 0);
+            state.cloudHeadSeq = Math.max(Number(state.cloudHeadSeq) || 0, Number(row.seq) || 0);
+            state.lastRemoteAt = row.created_at || state.lastRemoteAt;
+            persistState();
+            if (applyJournalWritten) clearApplyJournal();
+          });
 
-        queue.forEach(function (operation) { applyOperation(operation, { silent: true }); });
-        persistQueue();
-        persistState();
+          queue = originalQueue.filter(function (op) { return !acceptedOwnIds.has(op.opId); });
+          queue.forEach(function (operation) { applyOperation(operation, { silent: true }); });
+          persistQueue();
+          persistState();
+        } catch (error) {
+          queue = originalQueue;
+          queue.forEach(function (operation) { applyOperation(operation, { silent: true }); });
+          persistQueue();
+          throw error;
+        }
       }
 
       setState({
@@ -1200,14 +1652,26 @@
       return true;
     } catch (error) {
       handleError(error);
-      return false;
+      throw error;
     } finally {
       pullInFlight = false;
     }
   }
 
+  function pullNow(silent) {
+    return serializeSync(function () { return pullNowCore(silent); });
+  }
+
+  function flushQueue(showNotice) {
+    return serializeSync(function () { return flushQueueCore(showNotice); });
+  }
+
   function queueOperation(operation) {
     if (!operation) return;
+    sealOperation(operation);
+    operation.outboxState = 'Pending';
+    operation.attempts = Number(operation.attempts) || 0;
+    operation.lastAttempt = operation.lastAttempt || '';
     queue.push(operation);
     persistQueue();
     setState({ status: navigator.onLine ? 'queued' : 'pending-offline' }, false);
@@ -1629,8 +2093,21 @@
     state = loadState();
     queue = loadJSON(QUEUE_KEY, []);
     rejected = loadJSON(REJECTED_KEY, []);
+    appliedOperations = loadJSON(APPLIED_KEY, {});
+    failedOperations = loadJSON(FAILED_KEY, []);
+    queue.forEach(function (operation) {
+      operation.outboxState = operation.outboxState || 'Pending';
+      operation.attempts = Number(operation.attempts) || 0;
+      if (!operation.payloadHash) operation._legacyPayload = true;
+    });
+    persistQueue();
+    setState({
+      protocolVersion: PROTOCOL_VERSION,
+      protocolActivatedCursor: state.protocolActivatedCursor == null ? Number(state.cursor) || 0 : state.protocolActivatedCursor
+    }, false);
     const database = getDatabase();
     if (database) {
+      recoverInterruptedApply(database);
       if (ensureSyncIds(database)) rawSaveDatabase();
       observedSnapshot = cleanSnapshot(database);
     }
@@ -1709,13 +2186,15 @@
 
   function syncCardHtml() {
     return '<div class="card">'
-      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Transaction-Level Cloud Sync</h3><span class="badge ok">M4 ACTIVE</span></div>'
+      + '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Transaction-Level Cloud Sync</h3><span class="badge ok">' + esc(PROTOCOL_VERSION) + ' ACTIVE</span></div>'
       + '<p class="muted" style="font-size:13px">Each saved transaction is uploaded as an idempotent operation. Transactions from different devices are merged instead of replacing the complete database.</p>'
       + '<div class="statline"><span>Status</span><b>' + esc(statusLabel()) + '</b></div>'
       + '<div class="statline"><span>Cloud account</span><b>' + esc(state.signedInEmail || (state.deviceAccessMode === 'PAIRED' ? 'Paired device' : 'Not signed in')) + '</b></div>'
       + '<div class="statline"><span>Device</span><b>' + esc(state.deviceName) + '</b></div>'
       + '<div class="statline"><span>Last cloud operation</span><b class="mono">' + esc(state.cursor || 0) + '</b></div>'
       + '<div class="statline"><span>Queued transactions</span><b>' + esc(queue.length) + '</b></div>'
+      + '<div class="statline"><span>Failed operations</span><b>' + esc(failedOperations.length) + '</b></div>'
+      + '<div class="statline"><span>Integrity state</span><b>' + (state.integrityWarning ? 'Review required' : 'No detected warning') + '</b></div>'
       + '<div class="statline"><span>Last upload</span><b>' + esc(whenText(state.lastPushAt)) + '</b></div>'
       + '<div class="statline"><span>Last download</span><b>' + esc(whenText(state.lastPullAt)) + '</b></div>'
       + (state.lastError ? '<p style="font-size:12px;color:#fca5a5">' + esc(state.lastError) + '</p>' : '')
@@ -1725,6 +2204,7 @@
         : '<button class="btn" onclick="m4StartLiveSync()">Enable live sync</button>')
       + '<button class="btn ghost" onclick="m4PushNow()">Upload queued transactions</button>'
       + '<button class="btn ghost" onclick="m4PullNow()">Receive transactions now</button>'
+      + '<button class="btn ghost" onclick="nav(\'integrity\')">Data Integrity &amp; Sync</button>'
       + '<button class="btn ghost" onclick="nav(\'settings\')">Cloud settings</button>'
       + '</div>' + warningHtml()
       + '<hr class="hr"><h3>Local operation queue</h3>' + recentQueueHtml()
@@ -1768,10 +2248,12 @@
       + '<button class="btn ghost" onclick="m4SignIn()">Sign in</button>'
       + '<button class="btn ghost" onclick="m4SignOut()">Sign out</button></div>'
       + '<hr class="hr"><h3>M4 initialization</h3>'
-      + '<p class="muted" style="font-size:11px"><b>Main device:</b> activate from the device containing the complete correct records. <b>Other devices:</b> download the M4 cloud master before entering any transaction.</p>'
-      + '<div class="row" style="gap:8px;flex-wrap:wrap">'
-      + '<button class="btn warn" onclick="m4BootstrapThisDevice()">Activate M4 from this device</button>'
-      + '<button class="btn ghost" onclick="m4DownloadCloudMaster()">Download M4 cloud master</button></div>'
+      + (state.initialized
+        ? '<p class="muted" style="font-size:11px"><b>Master replacement is locked in v3.16.1.</b> Use Data Integrity &amp; Sync for catch-up and evidence-based reconciliation.</p>'
+        : '<p class="muted" style="font-size:11px"><b>Main device:</b> activate only once from the complete starting records. <b>New empty devices:</b> download the Cloud master before entering any transaction.</p>'
+          + '<div class="row" style="gap:8px;flex-wrap:wrap">'
+          + '<button class="btn warn" onclick="m4BootstrapThisDevice()">Activate M4 from this device</button>'
+          + '<button class="btn ghost" onclick="m4DownloadCloudMaster()">Download M4 cloud master to empty device</button></div>')
       + '<hr class="hr">'
       + '<div class="statline"><span>Status</span><b>' + esc(statusLabel()) + '</b></div>'
       + '<div class="statline"><span>Live sync</span><b>' + (state.liveSyncEnabled ? 'Enabled' : 'Disabled') + '</b></div>'
@@ -1802,6 +2284,7 @@
 
   ZEZMS.cloudSync = {
     version: 4,
+    protocolVersion: PROTOCOL_VERSION,
     build: BUILD,
     init: init,
     waitUntilReady: waitUntilReady,
@@ -1810,7 +2293,19 @@
     publishRoot: publishRoot,
     onLocalSave: onLocalSave,
     isApplyingRemote: function () { return applyingRemote; },
-    getState: function () { return Object.assign({}, state, { queueLength: queue.length }); },
+    getState: function () { return Object.assign({}, state, {
+      queueLength: queue.length, failedCount: failedOperations.length,
+      appliedOperationCount: Object.keys(appliedOperations || {}).length
+    }); },
+    getOutbox: function () { return clone(queue); },
+    getFailedOperations: function () { return clone(failedOperations); },
+    getAppliedOperations: function () { return clone(appliedOperations); },
+    markIntegrityCheck: function (at, warning) {
+      setState({ lastIntegrityCheckAt: at || new Date().toISOString(), integrityWarning: !!warning }, false);
+    },
+    fetchCloudAuditBundle: fetchCloudAuditBundle,
+    recoverCloudOperations: recoverCloudOperations,
+    previewMissingOperation: prepareMissingOperation,
     getClient: function () { return client; },
     getSession: function () { return session; },
     ensureMfa: ensureCloudMfa,
@@ -1831,7 +2326,10 @@
       ensureSyncIds: ensureSyncIds,
       cleanSnapshot: cleanSnapshot,
       buildRolloverRepairOperation: buildRolloverRepairOperation,
-      rolloverIdFromOperation: rolloverIdFromOperation
+      rolloverIdFromOperation: rolloverIdFromOperation,
+      deterministicHash: deterministicHash,
+      canonicalize: canonicalize,
+      sealOperation: sealOperation
     }
   };
 }());

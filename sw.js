@@ -1,5 +1,5 @@
-/* ZEZMS Owner Edition v3.16.0 - Supplier & Procurement Intelligence */
-const CACHE = 'zezms-supplier-procurement-intelligence-20260822-r51';
+/* ZEZMS Owner Edition v3.16.1 - Cross-Device Data Integrity */
+const CACHE = 'zezms-sync-integrity-20260823-r52';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   './assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39',
   './js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/cloud-sync.js?v=20260822-supplier-procurement-intelligence-r51',
+  './js/cloud-sync.js?v=20260823-sync-integrity-r52',
   './js/input-defaults-v3130.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/bootpatch.js?v=20260812-portfolio-signals-r39',
   './js/config.js?v=20260812-portfolio-signals-r39',
@@ -56,6 +56,7 @@ const ASSETS = [
   './js/stock-corrections-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/warranty-management-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/supplier-procurement-v3160.js?v=20260822-supplier-procurement-intelligence-r51',
+  './js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52',
   './js/print-readiness-v3120.js?v=20260817-loopback-network-r47',
   './js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47',
   './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51',
