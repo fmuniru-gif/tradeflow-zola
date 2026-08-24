@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.16.2 - Historical Receipt Compatibility Replay r53G */
-const CACHE = 'zezms-legacy-receipt-replay-20260824-r53g';
-const PATCHED_INDEX_CACHE = 'zezms-r53g-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.16.2 - Historical Receipt Compatibility Replay r53G1 */
+const CACHE = 'zezms-legacy-receipt-replay-20260824-r53g1';
+const PATCHED_INDEX_CACHE = 'zezms-r53g1-baseline-cache-v1';
 const ASSETS = [
   './',
   './index.html',
