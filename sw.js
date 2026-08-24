@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.16.2 - Emergency Receipt Rollback r53D */
-const CACHE = 'zezms-receipt-emergency-rollback-20260824-r53d';
-const PATCHED_INDEX_CACHE = 'zezms-r53d-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.16.2 - Cloud Receipt Operation Forensics r53E */
+const CACHE = 'zezms-receipt-operation-forensics-20260824-r53e';
+const PATCHED_INDEX_CACHE = 'zezms-r53e-baseline-cache-v1';
 const ASSETS = [
   './',
   './index.html',
