@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.16.2 - Cloud Receipt Operation Forensics r53E */
-const CACHE = 'zezms-receipt-operation-forensics-20260824-r53e';
-const PATCHED_INDEX_CACHE = 'zezms-r53e-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.16.2 - M4 Receipt Identity Hardening r53F */
+const CACHE = 'zezms-m4-receipt-identity-20260824-r53f';
+const PATCHED_INDEX_CACHE = 'zezms-r53f-baseline-cache-v1';
 const ASSETS = [
   './',
   './index.html',
