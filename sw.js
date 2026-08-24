@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.16.2 - Receipt Integrity Stabilization r53B */
-const CACHE = 'zezms-receipt-integrity-20260824-r53b';
-const PATCHED_INDEX_CACHE = 'zezms-r53b-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.16.2 - Emergency Receipt Rollback r53D */
+const CACHE = 'zezms-receipt-emergency-rollback-20260824-r53d';
+const PATCHED_INDEX_CACHE = 'zezms-r53d-baseline-cache-v1';
 const ASSETS = [
   './',
   './index.html',
