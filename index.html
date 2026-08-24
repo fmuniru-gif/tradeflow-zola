@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0f766e" />
-<meta name="description" content="ZEZMS TradeFlow v3.16.2 r53F M4 receipt identity hardening" />
-<meta name="zezms-build" content="20260824-m4-receipt-identity-r53f" />
-<title>ZEZMS TradeFlow v3.16.2 — M4 Receipt Identity Hardening r53F</title>
+<meta name="description" content="ZEZMS TradeFlow v3.16.2 r53F1 M4 receipt identity hardening" />
+<meta name="zezms-build" content="20260824-m4-receipt-identity-r53f1" />
+<title>ZEZMS TradeFlow v3.16.2 — M4 Receipt Identity Hardening r53F1</title>
 <style>
 html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #r53Foot{max-width:760px;margin:14vh auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:16px;box-sizing:border-box}
@@ -14,11 +14,11 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
 </style>
 </head>
 <body>
-<div id="r53Foot"><h1>ZEZMS TradeFlow v3.16.2</h1><p id="r53FootStatus">Loading the verified baseline and applying r53F receiptNo-first M4 hardening…</p></div>
+<div id="r53Foot"><h1>ZEZMS TradeFlow v3.16.2</h1><p id="r53FootStatus">Loading the verified baseline and applying r53F1 receiptNo-first M4 hardening…</p></div>
 <script>
 (function(){
   'use strict';
-  const RELEASE='20260824-m4-receipt-identity-r53f';
+  const RELEASE='20260824-m4-receipt-identity-r53f1';
   const R53E_RELEASE='20260824-receipt-operation-forensics-r53e';
   const R53D_RELEASE='20260824-receipt-emergency-rollback-r53d';
   const R53C_RELEASE='20260824-receipt-cloud-convergence-r53c';
@@ -27,8 +27,8 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
   const BASELINE_BLOB='5cbcd3d67e424452a34a3fbf122e0eed095e473e';
   const RAW_URL='https://raw.githubusercontent.com/fmuniru-gif/tradeflow-zola/'+BASELINE_COMMIT+'/index.html';
   const API_URL='https://api.github.com/repos/fmuniru-gif/tradeflow-zola/contents/index.html?ref='+BASELINE_COMMIT;
-  const PATCH_CACHE='zezms-r53f-baseline-cache-v1';
-  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r53f_patched='+RELEASE);
+  const PATCH_CACHE='zezms-r53f1-baseline-cache-v1';
+  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r53f1_patched='+RELEASE);
   const R53A_B64=
       "KGZ1bmN0aW9uICgpIHsKICAndXNlIHN0cmljdCc7CgogIHdpbmRvdy5aRVpNUyA9IHdpbmRvdy5aRVpNUyB8fCB7fTsKCiAgdmFyIFZFUlNJT04g"
       + "PSAnMy4xNi4yJzsKICB2YXIgQlVJTEQgPSAnMjAyNjA4MjMtbGVkZ2VyLWludGVncml0eS1yNTNhJzsKICB2YXIgVEFSR0VUX1NBTEUgPSAnU1It"
@@ -1446,12 +1446,12 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     const marker='<script src="js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52"></'+'script>';
     if(source.indexOf(marker)<0) throw new Error('Could not find the r52 integrity insertion point.');
     let output=source;
-    const cloudLoader="<script data-zezms-cloud-sync-r53f>\n(function(){\n'use strict';\nvar PATH='js/cloud-sync.js?v=20260823-sync-integrity-r52';\nvar x=new XMLHttpRequest();x.open('GET',PATH,false);x.send(null);\nif(x.status && (x.status<200||x.status>=300))throw new Error('R53F_M4_SOURCE_LOAD_FAILED: HTTP '+x.status);\nvar s=String(x.responseText||'');\nvar oldKey=\"|| item.warrantyId || item.claimId || item.customerId || item.receiptNo || item._syncId || '');\";\nvar newKey=\"|| item.warrantyId || item.claimId || item.receiptNo || item.customerId || item._syncId || '');\";\nvar count=s.split(oldKey).length-1;\nif(count!==1)throw new Error('R53F_M4_PATCH_REFUSED: expected exactly one legacy receipt/customer key marker; found '+count+'.');\ns=s.replace(oldKey,newKey);\nvar oldBuild=\"const BUILD = '20260823-sync-integrity-r52';\";\nif(s.indexOf(oldBuild)<0)throw new Error('R53F_M4_PATCH_REFUSED: verified r52 build marker is missing.');\ns=s.replace(oldBuild,\"const BUILD = '20260824-m4-receipt-key-hardening-r53f';\");\n(0,eval)(s+\"\\n//# sourceURL=js/cloud-sync-r53f.js\");\nif(!(window.ZEZMS&&ZEZMS.cloudSync&&ZEZMS.cloudSync.build==='20260824-m4-receipt-key-hardening-r53f'))throw new Error('R53F_M4_PATCH_FAILED: hardened Cloud Sync did not initialize.');\ndocument.documentElement.setAttribute('data-zezms-m4-receipt-key','receiptNo-first-r53f');\n}());\n<\\/script>";
-    const integrityLoader="<script data-zezms-sync-integrity-r53f>\n(function(){\n'use strict';\nvar PATH='js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52';\nvar x=new XMLHttpRequest();x.open('GET',PATH,false);x.send(null);\nif(x.status && (x.status<200||x.status>=300))throw new Error('R53F_INTEGRITY_SOURCE_LOAD_FAILED: HTTP '+x.status);\nvar s=String(x.responseText||'');\nvar oldKey=\"|| item.warrantyId || item.claimId || item.customerId || item.receiptNo || item._syncId || '');\";\nvar newKey=\"|| item.warrantyId || item.claimId || item.receiptNo || item.customerId || item._syncId || '');\";\nvar count=s.split(oldKey).length-1;\nif(count!==1)throw new Error('R53F_INTEGRITY_PATCH_REFUSED: expected exactly one legacy receipt/customer key marker; found '+count+'.');\ns=s.replace(oldKey,newKey);\nvar oldInsert=\"indexes[patch.collection].set(String(patch.key), inserted);\";\nvar newInsert=\"indexes[patch.collection].set(patch.collection === 'receipts' ? (entityKey(inserted) || String(patch.key)) : String(patch.key), inserted);\";\nvar oldFallback=\"indexes[patch.collection].set(String(patch.key), target); return;\";\nvar newFallback=\"indexes[patch.collection].set(patch.collection === 'receipts' ? (entityKey(target) || String(patch.key)) : String(patch.key), target); return;\";\nif((s.split(oldInsert).length-1)!==1)throw new Error('R53F_INTEGRITY_PATCH_REFUSED: insert index marker mismatch.');\nif((s.split(oldFallback).length-1)!==1)throw new Error('R53F_INTEGRITY_PATCH_REFUSED: fallback index marker mismatch.');\ns=s.replace(oldInsert,newInsert).replace(oldFallback,newFallback);\ns=s.replace(\"var VERSION = '3.16.1';\",\"var VERSION = '3.16.2';\");\ns=s.replace(\"var BUILD = '20260823-sync-integrity-r52';\",\"var BUILD = '20260824-receipt-key-projection-r53f';\");\n(0,eval)(s+\"\\n//# sourceURL=js/sync-integrity-r53f.js\");\nif(!(window.ZEZMS&&ZEZMS.syncIntegrity))throw new Error('R53F_INTEGRITY_PATCH_FAILED: receiptNo-first integrity engine did not initialize.');\ndocument.documentElement.setAttribute('data-zezms-integrity-receipt-key','receiptNo-first-r53f');\n}());\n<\\/script>";
+    const cloudLoader="<script data-zezms-cloud-sync-r53f>\n(function(){\n'use strict';\nvar PATH='js/cloud-sync.js?v=20260823-sync-integrity-r52';\nvar x=new XMLHttpRequest();x.open('GET',PATH,false);x.send(null);\nif(x.status && (x.status<200||x.status>=300))throw new Error('R53F_M4_SOURCE_LOAD_FAILED: HTTP '+x.status);\nvar s=String(x.responseText||'');\nvar oldKey=\"|| item.warrantyId || item.claimId || item.customerId || item.receiptNo || item._syncId || '');\";\nvar newKey=\"|| item.warrantyId || item.claimId || item.receiptNo || item.customerId || item._syncId || '');\";\nvar count=s.split(oldKey).length-1;\nif(count!==1)throw new Error('R53F_M4_PATCH_REFUSED: expected exactly one legacy receipt/customer key marker; found '+count+'.');\ns=s.replace(oldKey,newKey);\nvar oldBuild=\"const BUILD = '20260823-sync-integrity-r52';\";\nif(s.indexOf(oldBuild)<0)throw new Error('R53F_M4_PATCH_REFUSED: verified r52 build marker is missing.');\ns=s.replace(oldBuild,\"const BUILD = '20260824-m4-receipt-key-hardening-r53f';\");\n(0,eval)(s+\"\\n//# sourceURL=js/cloud-sync-r53f.js\");\nif(!(window.ZEZMS&&ZEZMS.cloudSync&&ZEZMS.cloudSync.build==='20260824-m4-receipt-key-hardening-r53f'))throw new Error('R53F_M4_PATCH_FAILED: hardened Cloud Sync did not initialize.');\ndocument.documentElement.setAttribute('data-zezms-m4-receipt-key','receiptNo-first-r53f');\n}());\n<\/script>";
+    const integrityLoader="<script data-zezms-sync-integrity-r53f>\n(function(){\n'use strict';\nvar PATH='js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52';\nvar x=new XMLHttpRequest();x.open('GET',PATH,false);x.send(null);\nif(x.status && (x.status<200||x.status>=300))throw new Error('R53F_INTEGRITY_SOURCE_LOAD_FAILED: HTTP '+x.status);\nvar s=String(x.responseText||'');\nvar oldKey=\"|| item.warrantyId || item.claimId || item.customerId || item.receiptNo || item._syncId || '');\";\nvar newKey=\"|| item.warrantyId || item.claimId || item.receiptNo || item.customerId || item._syncId || '');\";\nvar count=s.split(oldKey).length-1;\nif(count!==1)throw new Error('R53F_INTEGRITY_PATCH_REFUSED: expected exactly one legacy receipt/customer key marker; found '+count+'.');\ns=s.replace(oldKey,newKey);\nvar oldInsert=\"indexes[patch.collection].set(String(patch.key), inserted);\";\nvar newInsert=\"indexes[patch.collection].set(patch.collection === 'receipts' ? (entityKey(inserted) || String(patch.key)) : String(patch.key), inserted);\";\nvar oldFallback=\"indexes[patch.collection].set(String(patch.key), target); return;\";\nvar newFallback=\"indexes[patch.collection].set(patch.collection === 'receipts' ? (entityKey(target) || String(patch.key)) : String(patch.key), target); return;\";\nif((s.split(oldInsert).length-1)!==1)throw new Error('R53F_INTEGRITY_PATCH_REFUSED: insert index marker mismatch.');\nif((s.split(oldFallback).length-1)!==1)throw new Error('R53F_INTEGRITY_PATCH_REFUSED: fallback index marker mismatch.');\ns=s.replace(oldInsert,newInsert).replace(oldFallback,newFallback);\ns=s.replace(\"var VERSION = '3.16.1';\",\"var VERSION = '3.16.2';\");\ns=s.replace(\"var BUILD = '20260823-sync-integrity-r52';\",\"var BUILD = '20260824-receipt-key-projection-r53f';\");\n(0,eval)(s+\"\\n//# sourceURL=js/sync-integrity-r53f.js\");\nif(!(window.ZEZMS&&ZEZMS.syncIntegrity))throw new Error('R53F_INTEGRITY_PATCH_FAILED: receiptNo-first integrity engine did not initialize.');\ndocument.documentElement.setAttribute('data-zezms-integrity-receipt-key','receiptNo-first-r53f');\n}());\n<\/script>";
     const cloudPattern=/<script src="js\/cloud-sync\.js\?[^\"]+"><\/script>/;
     if(!cloudPattern.test(output)) throw new Error('Could not find the verified Cloud Sync script marker.');
     output=output.replace(cloudPattern,cloudLoader);
-    output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="20260824-m4-receipt-identity-r53f" />');
+    output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="20260824-m4-receipt-identity-r53f1" />');
     output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.16.2 - M4 Receipt Identity Hardening</title>');
     output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.16.2';");
     output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.16.2 · M4 Receipt Identity Hardening');
@@ -1485,17 +1485,17 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     try{
       const cached=await cachedPatched();
       if(cached && cached.indexOf('data-zezms-receipt-identity="'+RELEASE+'"')>=0){
-        status('Opening cached r53F application…'); renderSource(cached); return;
+        status('Opening cached r53F1 application…'); renderSource(cached); return;
       }
       status('Verifying the immutable r52 baseline…');
       const baseline=await fetchBaseline();
-      status('Applying r53F receiptNo-first M4 hardening and read-only recovery guards…');
+      status('Applying r53F1 receiptNo-first M4 hardening and read-only recovery guards…');
       const patched=patchBaseline(baseline);
       await cachePatched(patched);
       renderSource(patched);
     }catch(error){
-      console.error('ZEZMS r53F bootstrap failed',error);
-      status('r53F could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
+      console.error('ZEZMS r53F1 bootstrap failed',error);
+      status('r53F1 could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
     }
   }
   boot();
