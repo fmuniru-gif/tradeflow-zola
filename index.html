@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0f766e" />
-<meta name="description" content="ZEZMS TradeFlow v3.17.3 r55C resolved integrity status cleanup" />
-<meta name="zezms-build" content="20260825-integrity-status-cleanup-r55c" />
-<title>ZEZMS TradeFlow v3.17.3 — Cash Flow & Working Capital r55C</title>
+<meta name="description" content="ZEZMS TradeFlow v3.17.4 r55D integrity diagnostic scope correction" />
+<meta name="zezms-build" content="20260825-integrity-diagnostic-scope-r55d" />
+<title>ZEZMS TradeFlow v3.17.4 — Cash Flow & Working Capital r55D</title>
 <style>
 html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #r55Boot{max-width:760px;margin:14vh auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:16px;box-sizing:border-box}
@@ -14,17 +14,17 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
 </style>
 </head>
 <body>
-<div id="r55Boot"><h1>ZEZMS TradeFlow v3.17.3</h1><p id="r55BootStatus">Loading the verified operational baseline and applying Stage 6C liquidity intelligence + Others overdraft safeguards…</p></div>
+<div id="r55Boot"><h1>ZEZMS TradeFlow v3.17.4</h1><p id="r55BootStatus">Loading the verified operational baseline and applying Stage 6C liquidity intelligence + Others overdraft safeguards…</p></div>
 <script>
 (function(){
   'use strict';
-  const RELEASE="20260825-integrity-status-cleanup-r55c";
+  const RELEASE="20260825-integrity-diagnostic-scope-r55d";
   const BASELINE_COMMIT="212b4e4b5297cb6733695860df409dc695097aa8";
   const BASELINE_BLOB="5cbcd3d67e424452a34a3fbf122e0eed095e473e";
   const RAW_URL='https://raw.githubusercontent.com/fmuniru-gif/tradeflow-zola/'+BASELINE_COMMIT+'/index.html';
   const API_URL='https://api.github.com/repos/fmuniru-gif/tradeflow-zola/contents/index.html?ref='+BASELINE_COMMIT;
-  const PATCH_CACHE="zezms-r55c-baseline-cache-v1";
-  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r55c_patched='+RELEASE);
+  const PATCH_CACHE="zezms-r55d-baseline-cache-v1";
+  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r55d_patched='+RELEASE);
   const CLOUD_B64=
 "KGZ1bmN0aW9uKCl7Cid1c2Ugc3RyaWN0JzsKdmFyIFBBVEg9J2pzL2Nsb3VkLXN5bmMuanM/dj0yMDI2MDgyMy1zeW5jLWludGVn"
       + "cml0eS1yNTInOwp2YXIgeD1uZXcgWE1MSHR0cFJlcXVlc3QoKTt4Lm9wZW4oJ0dFVCcsUEFUSCxmYWxzZSk7eC5zZW5kKG51bGwp"
@@ -88,21 +88,79 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
       + "ZWQgd2hpbGUgaGlzdG9yaWNhbCByZWNlaXB0IHJlY29yZHMgcmVtYWluIHF1YXJhbnRpbmVkLicsJ3dhcm4nKTsKICByZXR1cm4g"
       + "ZmFsc2U7Cn07Cn0oKSk7";
   const INTEGRITY_B64=
-      "KGZ1bmN0aW9uKCl7Cid1c2Ugc3RyaWN0JzsKdmFyIFBBVEg9J2pzL3N5bmMtaW50ZWdyaXR5LXYzMTYxLmpzP3Y9MjAyNjA4MjMt"
+"KGZ1bmN0aW9uKCl7Cid1c2Ugc3RyaWN0JzsKdmFyIFBBVEg9J2pzL3N5bmMtaW50ZWdyaXR5LXYzMTYxLmpzP3Y9MjAyNjA4MjMt"
       + "c3luYy1pbnRlZ3JpdHktcjUyJzsKdmFyIHg9bmV3IFhNTEh0dHBSZXF1ZXN0KCk7eC5vcGVuKCdHRVQnLFBBVEgsZmFsc2UpO3gu"
       + "c2VuZChudWxsKTsKaWYoeC5zdGF0dXMgJiYgKHguc3RhdHVzPDIwMHx8eC5zdGF0dXM+PTMwMCkpdGhyb3cgbmV3IEVycm9yKCdS"
-      + "NTRfSU5URUdSSVRZX1NPVVJDRV9MT0FEX0ZBSUxFRDogSFRUUCAnK3guc3RhdHVzKTsKdmFyIHM9U3RyaW5nKHgucmVzcG9uc2VU"
-      + "ZXh0fHwnJyk7CnZhciBvbGRLZXk9Inx8IGl0ZW0ud2FycmFudHlJZCB8fCBpdGVtLmNsYWltSWQgfHwgaXRlbS5jdXN0b21lcklk"
-      + "IHx8IGl0ZW0ucmVjZWlwdE5vIHx8IGl0ZW0uX3N5bmNJZCB8fCAnJyk7IjsKdmFyIG5ld0tleT0ifHwgaXRlbS53YXJyYW50eUlk"
-      + "IHx8IGl0ZW0uY2xhaW1JZCB8fCBpdGVtLnJlY2VpcHRObyB8fCBpdGVtLmN1c3RvbWVySWQgfHwgaXRlbS5fc3luY0lkIHx8ICcn"
-      + "KTsiOwp2YXIgY291bnQ9cy5zcGxpdChvbGRLZXkpLmxlbmd0aC0xOwppZihjb3VudCE9PTEpdGhyb3cgbmV3IEVycm9yKCdSNTRf"
-      + "SU5URUdSSVRZX1BBVENIX1JFRlVTRUQ6IGV4cGVjdGVkIGV4YWN0bHkgb25lIHZlcmlmaWVkIGlkZW50aXR5IG1hcmtlcjsgZm91"
-      + "bmQgJytjb3VudCsnLicpOwpzPXMucmVwbGFjZShvbGRLZXksbmV3S2V5KTsKcz1zLnJlcGxhY2UoInZhciBWRVJTSU9OID0gJzMu"
-      + "MTYuMSc7IiwidmFyIFZFUlNJT04gPSAnMy4xNi4zJzsiKTsKcz1zLnJlcGxhY2UoInZhciBCVUlMRCA9ICcyMDI2MDgyMy1zeW5j"
-      + "LWludGVncml0eS1yNTInOyIsInZhciBCVUlMRCA9ICcyMDI2MDgyNC1vcGVyYXRpb25hbC1zdGFiaWxpdHktcjU0JzsiKTsKKDAs"
-      + "ZXZhbCkocysiXG4vLyMgc291cmNlVVJMPWpzL3N5bmMtaW50ZWdyaXR5LXI1NC5qcyIpOwppZighKHdpbmRvdy5aRVpNUyYmWkVa"
-      + "TVMuc3luY0ludGVncml0eSkpdGhyb3cgbmV3IEVycm9yKCdSNTRfSU5URUdSSVRZX1BBVENIX0ZBSUxFRDogaW50ZWdyaXR5IG1v"
-      + "ZHVsZSBkaWQgbm90IGluaXRpYWxpemUuJyk7Cn0oKSk7";
+      + "NTVEX0lOVEVHUklUWV9TT1VSQ0VfTE9BRF9GQUlMRUQ6IEhUVFAgJyt4LnN0YXR1cyk7CnZhciBzPVN0cmluZyh4LnJlc3BvbnNl"
+      + "VGV4dHx8JycpOwp2YXIgb2xkS2V5PSJ8fCBpdGVtLndhcnJhbnR5SWQgfHwgaXRlbS5jbGFpbUlkIHx8IGl0ZW0uY3VzdG9tZXJJ"
+      + "ZCB8fCBpdGVtLnJlY2VpcHRObyB8fCBpdGVtLl9zeW5jSWQgfHwgJycpOyI7CnZhciBuZXdLZXk9Inx8IGl0ZW0ud2FycmFudHlJ"
+      + "ZCB8fCBpdGVtLmNsYWltSWQgfHwgaXRlbS5yZWNlaXB0Tm8gfHwgaXRlbS5jdXN0b21lcklkIHx8IGl0ZW0uX3N5bmNJZCB8fCAn"
+      + "Jyk7IjsKdmFyIGNvdW50PXMuc3BsaXQob2xkS2V5KS5sZW5ndGgtMTsKaWYoY291bnQhPT0xKXRocm93IG5ldyBFcnJvcignUjU1"
+      + "RF9JTlRFR1JJVFlfUEFUQ0hfUkVGVVNFRDogZXhwZWN0ZWQgZXhhY3RseSBvbmUgdmVyaWZpZWQgaWRlbnRpdHkgbWFya2VyOyBm"
+      + "b3VuZCAnK2NvdW50KycuJyk7CnM9cy5yZXBsYWNlKG9sZEtleSxuZXdLZXkpOwoKdmFyIHNhbGVJbnZhcmlhbnRPbGQ9InsgbmFt"
+      + "ZTonU2FsZXMgdG90YWxzIHJlY29uY2lsZSB3aXRoIEZJRk8gcm93cycsIHN0YXR1czpNYXRoLmFicyhzYWxlRGlmZikgPD0gMC4w"
+      + "MSA/ICdQQVNTJyA6ICdGQUlMJywgZXhwbGFuYXRpb246J0ZJRk8gcm93IHNhbGVzIGxlc3MgY2Fub25pY2FsIFNhbGUgT3V0ICsg"
+      + "UXVpY2sgU2FsZSA9ICcgKyBtb25leShzYWxlRGlmZikgfSI7CnZhciBzYWxlSW52YXJpYW50TmV3PSJ7IG5hbWU6J0hpc3Rvcmlj"
+      + "YWwgRklGTyBzYWxlcyBhZ2dyZWdhdGUgcmVmZXJlbmNlJywgc3RhdHVzOidJTkZPJywgZXhwbGFuYXRpb246J1JlZmVyZW5jZSBv"
+      + "bmx5IOKAlCBsaWZldGltZSBGSUZPLXJvdyBzYWxlcyBhbmQgdGhlIGN1cnJlbnQgYWN0aXZlIFNhbGUgT3V0ICsgUXVpY2sgU2Fs"
+      + "ZSBsZWRnZXIgYXJlIGRpZmZlcmVudCBzY29wZXMuIERpZmZlcmVuY2UgPSAnICsgbW9uZXkoc2FsZURpZmYpIH0iOwp2YXIgc2Fs"
+      + "ZUludmFyaWFudENvdW50PXMuc3BsaXQoc2FsZUludmFyaWFudE9sZCkubGVuZ3RoLTE7CmlmKHNhbGVJbnZhcmlhbnRDb3VudCE9"
+      + "PTEpdGhyb3cgbmV3IEVycm9yKCdSNTVEX0lOVEVHUklUWV9QQVRDSF9SRUZVU0VEOiBzYWxlcyBpbnZhcmlhbnQgbWFya2VyIGNv"
+      + "dW50ICcrc2FsZUludmFyaWFudENvdW50KycuJyk7CnM9cy5yZXBsYWNlKHNhbGVJbnZhcmlhbnRPbGQsc2FsZUludmFyaWFudE5l"
+      + "dyk7Cgp2YXIgcHJvZml0SW52YXJpYW50T2xkPSJ7IG5hbWU6J0dyb3NzIHByb2ZpdCByZWNvbmNpbGVzIHdpdGggRklGTyByb3dz"
+      + "Jywgc3RhdHVzOk1hdGguYWJzKHByb2ZpdERpZmYpIDw9IDAuMDEgPyAnUEFTUycgOiAnRkFJTCcsIGV4cGxhbmF0aW9uOidGSUZP"
+      + "IHJvdyBwcm9maXQgbGVzcyB0cmFuc2FjdGlvbi1kZXJpdmVkIHByb2ZpdCA9ICcgKyBtb25leShwcm9maXREaWZmKSB9IjsKdmFy"
+      + "IHByb2ZpdEludmFyaWFudE5ldz0ieyBuYW1lOidIaXN0b3JpY2FsIEZJRk8gcHJvZml0IGFnZ3JlZ2F0ZSByZWZlcmVuY2UnLCBz"
+      + "dGF0dXM6J0lORk8nLCBleHBsYW5hdGlvbjonUmVmZXJlbmNlIG9ubHkg4oCUIGxpZmV0aW1lIEZJRk8tcm93IHByb2ZpdCBhbmQg"
+      + "Y3VycmVudCB0cmFuc2FjdGlvbi1kZXJpdmVkIHByb2ZpdCBhcmUgZGlmZmVyZW50IHNjb3Blcy4gRGlmZmVyZW5jZSA9ICcgKyBt"
+      + "b25leShwcm9maXREaWZmKSB9IjsKdmFyIHByb2ZpdEludmFyaWFudENvdW50PXMuc3BsaXQocHJvZml0SW52YXJpYW50T2xkKS5s"
+      + "ZW5ndGgtMTsKaWYocHJvZml0SW52YXJpYW50Q291bnQhPT0xKXRocm93IG5ldyBFcnJvcignUjU1RF9JTlRFR1JJVFlfUEFUQ0hf"
+      + "UkVGVVNFRDogcHJvZml0IGludmFyaWFudCBtYXJrZXIgY291bnQgJytwcm9maXRJbnZhcmlhbnRDb3VudCsnLicpOwpzPXMucmVw"
+      + "bGFjZShwcm9maXRJbnZhcmlhbnRPbGQscHJvZml0SW52YXJpYW50TmV3KTsKCnZhciB3YXJuaW5nUHJlZGljYXRlT2xkPSJ2YXIg"
+      + "bG9jYWxXYXJuaW5nID0gc3RhdGUubG9jYWxBdWRpdC5pbnZhcmlhbnRzLnNvbWUoZnVuY3Rpb24gKGl0ZW0pIHsgcmV0dXJuIGl0"
+      + "ZW0uc3RhdHVzICE9PSAnUEFTUyc7IH0pOyI7CnZhciB3YXJuaW5nUHJlZGljYXRlTmV3PSJ2YXIgbG9jYWxXYXJuaW5nID0gc3Rh"
+      + "dGUubG9jYWxBdWRpdC5pbnZhcmlhbnRzLnNvbWUoZnVuY3Rpb24gKGl0ZW0pIHsgcmV0dXJuIGl0ZW0uc3RhdHVzID09PSAnRkFJ"
+      + "TCcgfHwgaXRlbS5zdGF0dXMgPT09ICdXQVJOSU5HJzsgfSk7IjsKdmFyIHdhcm5pbmdQcmVkaWNhdGVDb3VudD1zLnNwbGl0KHdh"
+      + "cm5pbmdQcmVkaWNhdGVPbGQpLmxlbmd0aC0xOwppZih3YXJuaW5nUHJlZGljYXRlQ291bnQhPT0xKXRocm93IG5ldyBFcnJvcign"
+      + "UjU1RF9JTlRFR1JJVFlfUEFUQ0hfUkVGVVNFRDogbG9jYWwtd2FybmluZyBwcmVkaWNhdGUgbWFya2VyIGNvdW50ICcrd2Fybmlu"
+      + "Z1ByZWRpY2F0ZUNvdW50KycuJyk7CnM9cy5yZXBsYWNlKHdhcm5pbmdQcmVkaWNhdGVPbGQsd2FybmluZ1ByZWRpY2F0ZU5ldyk7"
+      + "Cgp2YXIgc3RpY2t5T2xkPSJ2YXIgZXhpc3RpbmdXYXJuaW5nID0gc3luYyAmJiBzeW5jLmdldFN0YXRlID8gISFzeW5jLmdldFN0"
+      + "YXRlKCkuaW50ZWdyaXR5V2FybmluZyA6IGZhbHNlO1xuICAgICAgaWYgKHN5bmMgJiYgc3luYy5tYXJrSW50ZWdyaXR5Q2hlY2sp"
+      + "IHN5bmMubWFya0ludGVncml0eUNoZWNrKHN0YXRlLmxvY2FsQXVkaXQuZ2VuZXJhdGVkQXQsIGxvY2FsV2FybmluZyB8fCBleGlz"
+      + "dGluZ1dhcm5pbmcpOyI7CnZhciBzdGlja3lOZXc9InZhciBzeW5jU3RhdGUgPSBzeW5jICYmIHN5bmMuZ2V0U3RhdGUgPyBzeW5j"
+      + "LmdldFN0YXRlKCkgOiB7fTtcbiAgICAgIHZhciBhY3RpdmVPcGVyYXRpb25hbFdhcm5pbmcgPSAhIShzeW5jU3RhdGUgJiYgKFxu"
+      + "ICAgICAgICBOdW1iZXIoc3luY1N0YXRlLmZhaWxlZE9wZXJhdGlvbkNvdW50IHx8IDApID4gMFxuICAgICAgICB8fCBOdW1iZXIo"
+      + "c3luY1N0YXRlLnBlbmRpbmdPdXRib3ggfHwgMCkgPiAwXG4gICAgICAgIHx8IChBcnJheS5pc0FycmF5KHN5bmNTdGF0ZS5tZXJn"
+      + "ZVdhcm5pbmdzKSAmJiBzeW5jU3RhdGUubWVyZ2VXYXJuaW5ncy5sZW5ndGggPiAwKVxuICAgICAgICB8fCBzeW5jU3RhdGUub2xk"
+      + "Q2xpZW50RGV0ZWN0ZWRcbiAgICAgICAgfHwgU3RyaW5nKHN5bmNTdGF0ZS5sYXN0RXJyb3IgfHwgJycpLnRyaW0oKVxuICAgICAg"
+      + "ICB8fCBzeW5jU3RhdGUubGFzdFJlamVjdGVkXG4gICAgICApKTtcbiAgICAgIGlmIChzeW5jICYmIHN5bmMubWFya0ludGVncml0"
+      + "eUNoZWNrKSBzeW5jLm1hcmtJbnRlZ3JpdHlDaGVjayhzdGF0ZS5sb2NhbEF1ZGl0LmdlbmVyYXRlZEF0LCBsb2NhbFdhcm5pbmcg"
+      + "fHwgYWN0aXZlT3BlcmF0aW9uYWxXYXJuaW5nKTsiOwp2YXIgc3RpY2t5Q291bnQ9cy5zcGxpdChzdGlja3lPbGQpLmxlbmd0aC0x"
+      + "OwppZihzdGlja3lDb3VudCE9PTEpdGhyb3cgbmV3IEVycm9yKCdSNTVEX0lOVEVHUklUWV9QQVRDSF9SRUZVU0VEOiBzdGlja3kt"
+      + "d2FybmluZyBtYXJrZXIgY291bnQgJytzdGlja3lDb3VudCsnLicpOwpzPXMucmVwbGFjZShzdGlja3lPbGQsc3RpY2t5TmV3KTsK"
+      + "CnZhciBiYWRnZU9sZD0iZnVuY3Rpb24gYmFkZ2UodmFsdWUpIHsgcmV0dXJuICc8c3BhbiBjbGFzcz1cImJhZGdlICcgKyAodmFs"
+      + "dWUgPT09ICdQQVNTJyA/ICdvaycgOiB2YWx1ZSA9PT0gJ0ZBSUwnID8gJ2RhbmdlcicgOiAnd2FybicpICsgJ1wiPicgKyBlc2Mo"
+      + "dmFsdWUpICsgJzwvc3Bhbj4nOyB9IjsKdmFyIGJhZGdlTmV3PSJmdW5jdGlvbiBiYWRnZSh2YWx1ZSkgeyByZXR1cm4gJzxzcGFu"
+      + "IGNsYXNzPVwiYmFkZ2UgJyArICh2YWx1ZSA9PT0gJ1BBU1MnID8gJ29rJyA6IHZhbHVlID09PSAnRkFJTCcgPyAnZGFuZ2VyJyA6"
+      + "IHZhbHVlID09PSAnV0FSTklORycgPyAnd2FybicgOiAnJykgKyAnXCI+JyArIGVzYyh2YWx1ZSkgKyAnPC9zcGFuPic7IH0iOwp2"
+      + "YXIgYmFkZ2VDb3VudD1zLnNwbGl0KGJhZGdlT2xkKS5sZW5ndGgtMTsKaWYoYmFkZ2VDb3VudCE9PTEpdGhyb3cgbmV3IEVycm9y"
+      + "KCdSNTVEX0lOVEVHUklUWV9QQVRDSF9SRUZVU0VEOiBiYWRnZSBtYXJrZXIgY291bnQgJytiYWRnZUNvdW50KycuJyk7CnM9cy5y"
+      + "ZXBsYWNlKGJhZGdlT2xkLGJhZGdlTmV3KTsKcz1zLnJlcGxhY2UoInZhciBWRVJTSU9OID0gJzMuMTYuMSc7IiwidmFyIFZFUlNJ"
+      + "T04gPSAnMy4xNy40JzsiKTsKcz1zLnJlcGxhY2UoInZhciBCVUlMRCA9ICcyMDI2MDgyMy1zeW5jLWludGVncml0eS1yNTInOyIs"
+      + "InZhciBCVUlMRCA9ICcyMDI2MDgyNS1pbnRlZ3JpdHktZGlhZ25vc3RpYy1zY29wZS1yNTVkJzsiKTsKKDAsZXZhbCkocysiXG4v"
+      + "LyMgc291cmNlVVJMPWpzL3N5bmMtaW50ZWdyaXR5LXI1NWQuanMiKTsKaWYoISh3aW5kb3cuWkVaTVMmJlpFWk1TLnN5bmNJbnRl"
+      + "Z3JpdHkpKXRocm93IG5ldyBFcnJvcignUjU1RF9JTlRFR1JJVFlfUEFUQ0hfRkFJTEVEOiBpbnRlZ3JpdHkgbW9kdWxlIGRpZCBu"
+      + "b3QgaW5pdGlhbGl6ZS4nKTsKdmFyIGJhc2VWaWV3SFRNTD1aRVpNUy5zeW5jSW50ZWdyaXR5LnZpZXdIVE1MOwpaRVpNUy5zeW5j"
+      + "SW50ZWdyaXR5LnZpZXdIVE1MPWZ1bmN0aW9uKCl7CiAgdmFyIGh0bWw9YmFzZVZpZXdIVE1MLmFwcGx5KHRoaXMsYXJndW1lbnRz"
+      + "KTsKICB2YXIgaGVhZGluZz0nPGRpdiBjbGFzcz0iY2FyZCI+PGgzPkNsb3VkLXZzLUxvY2FsIGF1ZGl0PC9oMz4nOwogIHZhciBu"
+      + "b3RlPSc8ZGl2IGNsYXNzPSJjYXJkIiBzdHlsZT0iYm9yZGVyLWNvbG9yOiM2NDc0OGIiPjxoMz5DbG91ZCByZXBsYXkgaW50ZXJw"
+      + "cmV0YXRpb248L2gzPjxwIGNsYXNzPSJtdXRlZCI+TGFyZ2UgbWlzbWF0Y2ggdG90YWxzIGFyZSBub3QgZGVjaXNpb24tZ3JhZGUg"
+      + "d2hlbiB0aGUgcmVwbGF5IHdpbmRvdyBjb250YWlucyBsZWdhY3kgcHJvdG9jb2wgb3BlcmF0aW9ucy4gVGhleSBhcmUgZm9yZW5z"
+      + "aWMgcmVwbGF5IHJlZmVyZW5jZXMsIG5vdCBhdXRvbWF0aWMgZXZpZGVuY2UgdGhhdCB0aGUgY3VycmVudCBvcGVyYXRpb25hbCBk"
+      + "YXRhYmFzZSBpcyBjb3JydXB0ZWQuIEN1cnJlbnQgcXVldWUvZmFpbHVyZSBzdGF0ZSwgcmVwbGF5IGNvbmZsaWN0cywgbmVnYXRp"
+      + "dmUgc3RvY2sgYW5kIGFjY291bnQtcG9zdGluZyBjaGVja3MgcmVtYWluIHRoZSBhY3Rpb25hYmxlIHNpZ25hbHMuPC9wPjwvZGl2"
+      + "Pic7CiAgaWYoaHRtbC5pbmRleE9mKGhlYWRpbmcpPj0wKWh0bWw9aHRtbC5yZXBsYWNlKGhlYWRpbmcsbm90ZStoZWFkaW5nKTsK"
+      + "ICByZXR1cm4gaHRtbDsKfTsKfSgpKTs=";
   const NOTICE_B64=
       "KGZ1bmN0aW9uKCl7Cid1c2Ugc3RyaWN0JzsKd2luZG93LlpFWk1TPXdpbmRvdy5aRVpNU3x8e307CmZ1bmN0aW9uIGVzYyh2KXty"
       + "ZXR1cm4gU3RyaW5nKHY9PW51bGw/Jyc6dikucmVwbGFjZSgvWyY8PiInXS9nLGZ1bmN0aW9uKGMpe3JldHVybih7JyYnOicmYW1w"
@@ -643,9 +701,9 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     let output=source;
     output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="'+RELEASE+'" />');
     output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.17.0 - Cash Flow & Working Capital</title>');
-    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.17.3';");
-    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.17.3 · Cash Flow & Working Capital');
-    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.17.3 · Cash Flow & Working Capital');
+    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.17.4';");
+    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.17.4 · Cash Flow & Working Capital');
+    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.17.4 · Cash Flow & Working Capital');
 
     const cloud=safeInline(decodeBase64(CLOUD_B64));
     const integrity=safeInline(decodeBase64(INTEGRITY_B64));
@@ -661,7 +719,7 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     output=output.replace(integrityMarker,'<script data-zezms-sync-integrity-r54>\n'+integrity+'\n</'+'script>\n<script data-zezms-receipt-quarantine-r54>\n'+notice+'\n</'+'script>');
     output=output.replace(operationsMarker,'<script data-zezms-operations-r55>\n'+operations+'\n</'+'script>');
     output=output.replace(navigationMarker,navigationMarker+'\n<script data-zezms-working-capital-r55>\n'+workingCapital+'\n</'+'script>');
-    if(output.indexOf("const APP_VERSION = '3.17.3';")<0||output.indexOf('data-zezms-cloud-sync-r54')<0||output.indexOf('data-zezms-sync-integrity-r54')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf("type!=='Others'")<0)throw new Error('r55C patch verification failed.');
+    if(output.indexOf("const APP_VERSION = '3.17.4';")<0||output.indexOf('data-zezms-cloud-sync-r54')<0||output.indexOf('data-zezms-sync-integrity-r54')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf("type!=='Others'")<0)throw new Error('r55D patch verification failed.');
     return output;
   }
   function renderSource(source){document.open();document.write(source);document.close();}
@@ -680,17 +738,17 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     try{
       const cached=await cachedPatched();
       if(cached&&cached.indexOf('data-zezms-working-capital-r55')>=0){
-        status('Opening cached r55C application…');renderSource(cached);return;
+        status('Opening cached r55D application…');renderSource(cached);return;
       }
       status('Verifying the protected r52 operational baseline…');
       const baseline=await fetchBaseline();
-      status('Applying Stage 6C, Others merge and resolved integrity-status safeguards…');
+      status('Applying Stage 6C, Others merge and integrity diagnostic-scope safeguards…');
       const patched=patchBaseline(baseline);
       await cachePatched(patched);
       renderSource(patched);
     }catch(error){
-      console.error('ZEZMS r55C bootstrap failed',error);
-      status('r55C could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
+      console.error('ZEZMS r55D bootstrap failed',error);
+      status('r55D could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
     }
   }
   boot();
