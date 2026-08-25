@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.18.2 - Version Label Consistency r56B */
-const CACHE = 'zezms-version-label-consistency-20260825-r56b';
-const PATCHED_INDEX_CACHE = 'zezms-r56b-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.19.0 - Clean M4/3 Checkpoint r57 */
+const CACHE = 'zezms-m43-checkpoint-20260825-r57';
+const PATCHED_INDEX_CACHE = 'zezms-r57-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
