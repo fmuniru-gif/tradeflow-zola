@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.17.0 - Cash Flow, Working Capital & Liquidity Intelligence r55 */
-const CACHE = 'zezms-working-capital-liquidity-20260825-r55';
-const PATCHED_INDEX_CACHE = 'zezms-r55-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.17.2 - Others Cross-Device Merge Compatibility r55B */
+const CACHE = 'zezms-others-merge-client-20260825-r55b';
+const PATCHED_INDEX_CACHE = 'zezms-r55b-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
