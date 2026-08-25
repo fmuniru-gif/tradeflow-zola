@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0f766e" />
-<meta name="description" content="ZEZMS TradeFlow v3.18.1 r56A M4/3 activation-boundary correction" />
-<meta name="zezms-build" content="20260825-m43-activation-boundary-r56a" />
-<title>ZEZMS TradeFlow v3.18.1 — M4/3 Sync Safety Core r56A</title>
+<meta name="description" content="ZEZMS TradeFlow v3.18.2 r56B version-label consistency" />
+<meta name="zezms-build" content="20260825-version-label-consistency-r56b" />
+<title>ZEZMS TradeFlow v3.18.2 — M4/3 Sync Safety Core r56B</title>
 <style>
 html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #r55Boot{max-width:760px;margin:14vh auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:16px;box-sizing:border-box}
@@ -14,17 +14,17 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
 </style>
 </head>
 <body>
-<div id="r55Boot"><h1>ZEZMS TradeFlow v3.18.1</h1><p id="r55BootStatus">Loading the verified operational baseline and applying Stage 6C liquidity intelligence + Others overdraft safeguards…</p></div>
+<div id="r55Boot"><h1>ZEZMS TradeFlow v3.18.2</h1><p id="r55BootStatus">Loading the verified operational baseline and applying Stage 6C liquidity intelligence + Others overdraft safeguards…</p></div>
 <script>
 (function(){
   'use strict';
-  const RELEASE="20260825-m43-activation-boundary-r56a";
+  const RELEASE="20260825-version-label-consistency-r56b";
   const BASELINE_COMMIT="212b4e4b5297cb6733695860df409dc695097aa8";
   const BASELINE_BLOB="5cbcd3d67e424452a34a3fbf122e0eed095e473e";
   const RAW_URL='https://raw.githubusercontent.com/fmuniru-gif/tradeflow-zola/'+BASELINE_COMMIT+'/index.html';
   const API_URL='https://api.github.com/repos/fmuniru-gif/tradeflow-zola/contents/index.html?ref='+BASELINE_COMMIT;
-  const PATCH_CACHE="zezms-r56a-baseline-cache-v1";
-  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r56a_patched='+RELEASE);
+  const PATCH_CACHE="zezms-r56b-baseline-cache-v1";
+  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r56b_patched='+RELEASE);
   const CLOUD_B64=
 "KGZ1bmN0aW9uKCl7Cid1c2Ugc3RyaWN0JzsKdmFyIFBBVEg9J2pzL2Nsb3VkLXN5bmMuanM/dj0yMDI2MDgyMy1zeW5jLWludGVn"
       + "cml0eS1yNTInOwp2YXIgeD1uZXcgWE1MSHR0cFJlcXVlc3QoKTt4Lm9wZW4oJ0dFVCcsUEFUSCxmYWxzZSk7eC5zZW5kKG51bGwp"
@@ -1084,10 +1084,10 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     if(source.indexOf(cloudMarker)<0||source.indexOf(integrityMarker)<0||source.indexOf(operationsMarker)<0||source.indexOf(navigationMarker)<0)throw new Error('Could not find the verified r52/r51 script insertion points.');
     let output=source;
     output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="'+RELEASE+'" />');
-    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.17.0 - Cash Flow & Working Capital</title>');
-    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.18.1';");
-    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.18.1 · M4/3 Sync Safety Core');
-    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.18.0 · M4/3 Sync Safety Core');
+    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.18.2 - M4/3 Sync Safety Core</title>');
+    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.18.2';");
+    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.18.2 · M4/3 Sync Safety Core');
+    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.18.2 · M4/3 Sync Safety Core');
 
     const cloud=safeInline(decodeBase64(CLOUD_B64));
     const integrity=safeInline(decodeBase64(INTEGRITY_B64));
@@ -1103,7 +1103,7 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     output=output.replace(integrityMarker,'<script data-zezms-sync-integrity-r54>\n'+integrity+'\n</'+'script>\n<script data-zezms-receipt-quarantine-r54>\n'+notice+'\n</'+'script>');
     output=output.replace(operationsMarker,'<script data-zezms-operations-r55>\n'+operations+'\n</'+'script>');
     output=output.replace(navigationMarker,navigationMarker+'\n<script data-zezms-working-capital-r55>\n'+workingCapital+'\n</'+'script>');
-    if(output.indexOf("const APP_VERSION = '3.18.1';")<0||output.indexOf('data-zezms-cloud-sync-r54')<0||output.indexOf('data-zezms-sync-integrity-r54')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf("type!=='Others'")<0)throw new Error('r56A patch verification failed.');
+    if(output.indexOf("const APP_VERSION = '3.18.2';")<0||output.indexOf('data-zezms-cloud-sync-r54')<0||output.indexOf('data-zezms-sync-integrity-r54')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf("type!=='Others'")<0)throw new Error('r56B patch verification failed.');
     return output;
   }
   function renderSource(source){document.open();document.write(source);document.close();}
@@ -1122,17 +1122,17 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     try{
       const cached=await cachedPatched();
       if(cached&&cached.indexOf('data-zezms-working-capital-r55')>=0){
-        status('Opening cached r56A application…');renderSource(cached);return;
+        status('Opening cached r56B application…');renderSource(cached);return;
       }
       status('Verifying the protected r52 operational baseline…');
       const baseline=await fetchBaseline();
-      status('Applying M4/3 safety core and activation-boundary correction…');
+      status('Applying M4/3 safety core and version-label consistency…');
       const patched=patchBaseline(baseline);
       await cachePatched(patched);
       renderSource(patched);
     }catch(error){
-      console.error('ZEZMS r56A bootstrap failed',error);
-      status('r56A could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
+      console.error('ZEZMS r56B bootstrap failed',error);
+      status('r56B could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
     }
   }
   boot();
