@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0f766e" />
-<meta name="description" content="ZEZMS TradeFlow v3.17.2 r55B Others cross-device merge compatibility" />
-<meta name="zezms-build" content="20260825-others-merge-client-r55b" />
-<title>ZEZMS TradeFlow v3.17.2 — Cash Flow & Working Capital r55B</title>
+<meta name="description" content="ZEZMS TradeFlow v3.17.3 r55C resolved integrity status cleanup" />
+<meta name="zezms-build" content="20260825-integrity-status-cleanup-r55c" />
+<title>ZEZMS TradeFlow v3.17.3 — Cash Flow & Working Capital r55C</title>
 <style>
 html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #r55Boot{max-width:760px;margin:14vh auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:16px;box-sizing:border-box}
@@ -14,51 +14,79 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
 </style>
 </head>
 <body>
-<div id="r55Boot"><h1>ZEZMS TradeFlow v3.17.2</h1><p id="r55BootStatus">Loading the verified operational baseline and applying Stage 6C liquidity intelligence + Others overdraft safeguards…</p></div>
+<div id="r55Boot"><h1>ZEZMS TradeFlow v3.17.3</h1><p id="r55BootStatus">Loading the verified operational baseline and applying Stage 6C liquidity intelligence + Others overdraft safeguards…</p></div>
 <script>
 (function(){
   'use strict';
-  const RELEASE="20260825-others-merge-client-r55b";
+  const RELEASE="20260825-integrity-status-cleanup-r55c";
   const BASELINE_COMMIT="212b4e4b5297cb6733695860df409dc695097aa8";
   const BASELINE_BLOB="5cbcd3d67e424452a34a3fbf122e0eed095e473e";
   const RAW_URL='https://raw.githubusercontent.com/fmuniru-gif/tradeflow-zola/'+BASELINE_COMMIT+'/index.html';
   const API_URL='https://api.github.com/repos/fmuniru-gif/tradeflow-zola/contents/index.html?ref='+BASELINE_COMMIT;
-  const PATCH_CACHE="zezms-r55b-baseline-cache-v1";
-  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r55b_patched='+RELEASE);
+  const PATCH_CACHE="zezms-r55c-baseline-cache-v1";
+  const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r55c_patched='+RELEASE);
   const CLOUD_B64=
 "KGZ1bmN0aW9uKCl7Cid1c2Ugc3RyaWN0JzsKdmFyIFBBVEg9J2pzL2Nsb3VkLXN5bmMuanM/dj0yMDI2MDgyMy1zeW5jLWludGVn"
       + "cml0eS1yNTInOwp2YXIgeD1uZXcgWE1MSHR0cFJlcXVlc3QoKTt4Lm9wZW4oJ0dFVCcsUEFUSCxmYWxzZSk7eC5zZW5kKG51bGwp"
-      + "OwppZih4LnN0YXR1cyAmJiAoeC5zdGF0dXM8MjAwfHx4LnN0YXR1cz49MzAwKSl0aHJvdyBuZXcgRXJyb3IoJ1I1NUJfTTRfU09V"
+      + "OwppZih4LnN0YXR1cyAmJiAoeC5zdGF0dXM8MjAwfHx4LnN0YXR1cz49MzAwKSl0aHJvdyBuZXcgRXJyb3IoJ1I1NUNfTTRfU09V"
       + "UkNFX0xPQURfRkFJTEVEOiBIVFRQICcreC5zdGF0dXMpOwp2YXIgcz1TdHJpbmcoeC5yZXNwb25zZVRleHR8fCcnKTsKdmFyIG9s"
       + "ZEtleT0ifHwgaXRlbS53YXJyYW50eUlkIHx8IGl0ZW0uY2xhaW1JZCB8fCBpdGVtLmN1c3RvbWVySWQgfHwgaXRlbS5yZWNlaXB0"
       + "Tm8gfHwgaXRlbS5fc3luY0lkIHx8ICcnKTsiOwp2YXIgbmV3S2V5PSJ8fCBpdGVtLndhcnJhbnR5SWQgfHwgaXRlbS5jbGFpbUlk"
       + "IHx8IGl0ZW0ucmVjZWlwdE5vIHx8IGl0ZW0uY3VzdG9tZXJJZCB8fCBpdGVtLl9zeW5jSWQgfHwgJycpOyI7CnZhciBjb3VudD1z"
-      + "LnNwbGl0KG9sZEtleSkubGVuZ3RoLTE7CmlmKGNvdW50IT09MSl0aHJvdyBuZXcgRXJyb3IoJ1I1NUJfTTRfUEFUQ0hfUkVGVVNF"
+      + "LnNwbGl0KG9sZEtleSkubGVuZ3RoLTE7CmlmKGNvdW50IT09MSl0aHJvdyBuZXcgRXJyb3IoJ1I1NUNfTTRfUEFUQ0hfUkVGVVNF"
       + "RDogZXhwZWN0ZWQgZXhhY3RseSBvbmUgdmVyaWZpZWQgaWRlbnRpdHkgbWFya2VyOyBmb3VuZCAnK2NvdW50KycuJyk7CnM9cy5y"
       + "ZXBsYWNlKG9sZEtleSxuZXdLZXkpOwp2YXIgb2xkQ2FzaEd1YXJkPSJpZiAocGF0Y2gucm9vdCA9PT0gJ2Nhc2hCYWxhbmNlcycg"
       + "JiYgbmV4dCA8IC0xZS02KSB7IjsKdmFyIG5ld0Nhc2hHdWFyZD0iaWYgKHBhdGNoLnJvb3QgPT09ICdjYXNoQmFsYW5jZXMnICYm"
       + "IHBhdGNoLmtleSAhPT0gJ090aGVycycgJiYgbmV4dCA8IC0xZS02KSB7IjsKdmFyIGNhc2hHdWFyZENvdW50PXMuc3BsaXQob2xk"
-      + "Q2FzaEd1YXJkKS5sZW5ndGgtMTsKaWYoY2FzaEd1YXJkQ291bnQhPT0xKXRocm93IG5ldyBFcnJvcignUjU1Ql9NNF9QQVRDSF9S"
+      + "Q2FzaEd1YXJkKS5sZW5ndGgtMTsKaWYoY2FzaEd1YXJkQ291bnQhPT0xKXRocm93IG5ldyBFcnJvcignUjU1Q19NNF9QQVRDSF9S"
       + "RUZVU0VEOiBleHBlY3RlZCBleGFjdGx5IG9uZSB2ZXJpZmllZCBjYXNoLW1lcmdlIGd1YXJkOyBmb3VuZCAnK2Nhc2hHdWFyZENv"
-      + "dW50KycuJyk7CnM9cy5yZXBsYWNlKG9sZENhc2hHdWFyZCxuZXdDYXNoR3VhcmQpOwp2YXIgb2xkQnVpbGQ9ImNvbnN0IEJVSUxE"
-      + "ID0gJzIwMjYwODIzLXN5bmMtaW50ZWdyaXR5LXI1Mic7IjsKaWYocy5pbmRleE9mKG9sZEJ1aWxkKTwwKXRocm93IG5ldyBFcnJv"
-      + "cignUjU1Ql9NNF9QQVRDSF9SRUZVU0VEOiB2ZXJpZmllZCByNTIgYnVpbGQgbWFya2VyIG1pc3NpbmcuJyk7CnM9cy5yZXBsYWNl"
-      + "KG9sZEJ1aWxkLCJjb25zdCBCVUlMRCA9ICcyMDI2MDgyNS1vdGhlcnMtbWVyZ2UtY2xpZW50LXI1NWInOyIpOwooMCxldmFsKShz"
-      + "KyJcbi8vIyBzb3VyY2VVUkw9anMvY2xvdWQtc3luYy1yNTViLmpzIik7CmlmKCEod2luZG93LlpFWk1TJiZaRVpNUy5jbG91ZFN5"
-      + "bmMmJlpFWk1TLmNsb3VkU3luYy5idWlsZD09PScyMDI2MDgyNS1vdGhlcnMtbWVyZ2UtY2xpZW50LXI1NWInKSl0aHJvdyBuZXcg"
-      + "RXJyb3IoJ1I1NUJfTTRfUEFUQ0hfRkFJTEVEOiBoYXJkZW5lZCBDbG91ZCBTeW5jIGRpZCBub3QgaW5pdGlhbGl6ZS4nKTsKZG9j"
-      + "dW1lbnQuZG9jdW1lbnRFbGVtZW50LnNldEF0dHJpYnV0ZSgnZGF0YS16ZXptcy1yZWNlaXB0LWtleScsJ3JlY2VpcHROby1maXJz"
-      + "dC1yNTViJyk7CgovKiBIaXN0b3JpY2FsIHJlY2VpcHQgb3BlcmF0aW9ucyByZW1haW4gcXVhcmFudGluZWQuIEV4aXN0aW5nIGVu"
-      + "cm9sbGVkIGRldmljZXMgbWF5IHN5bmMgbm9ybWFsbHkuCiAgIE5ldy1kZXZpY2UgYm9vdHN0cmFwIGlzIGRlbGliZXJhdGVseSBi"
-      + "bG9ja2VkIHVudGlsIHRoZSBoaXN0b3JpY2FsIHJlY2VpcHQgYXJjaGl2ZSBpcyByZWNvbmNpbGVkLiAqLwp2YXIgYmxvY2tlZE5l"
-      + "d0RldmljZT1mdW5jdGlvbigpewogIHJldHVybiBQcm9taXNlLnJlamVjdChuZXcgRXJyb3IoJ1I1NF9ORVdfREVWSUNFX1RFTVBP"
-      + "UkFSSUxZX0JMT0NLRUQ6IEhpc3RvcmljYWwgcmVjZWlwdC1vcGVyYXRpb24gY29tcGF0aWJpbGl0eSBpcyBxdWFyYW50aW5lZC4g"
-      + "Q29udGludWUgdXNpbmcgdGhlIGZvdXIgdmVyaWZpZWQgZGV2aWNlczsgZG8gbm90IGRvd25sb2FkIHRoZSBDbG91ZCBtYXN0ZXIg"
-      + "dG8gYSBuZXcgZGV2aWNlIHlldC4nKSk7Cn07CmlmKFpFWk1TLmNsb3VkU3luYy5lbnJvbGxQYWlyZWREZXZpY2UpWkVaTVMuY2xv"
-      + "dWRTeW5jLmVucm9sbFBhaXJlZERldmljZT1ibG9ja2VkTmV3RGV2aWNlOwp3aW5kb3cubTREb3dubG9hZENsb3VkTWFzdGVyPWZ1"
-      + "bmN0aW9uKCl7CiAgaWYodHlwZW9mIHRvYXN0PT09J2Z1bmN0aW9uJyl0b2FzdCgnTmV3LWRldmljZSBDbG91ZC1tYXN0ZXIgZG93"
-      + "bmxvYWQgaXMgdGVtcG9yYXJpbHkgYmxvY2tlZCB3aGlsZSBoaXN0b3JpY2FsIHJlY2VpcHQgcmVjb3JkcyByZW1haW4gcXVhcmFu"
-      + "dGluZWQuJywnd2FybicpOwogIHJldHVybiBmYWxzZTsKfTsKfSgpKTs=";
+      + "dW50KycuJyk7CnM9cy5yZXBsYWNlKG9sZENhc2hHdWFyZCxuZXdDYXNoR3VhcmQpOwoKdmFyIG9sZENsZWFyRmFpbGVkPSJmdW5j"
+      + "dGlvbiBjbGVhckZhaWxlZE9wZXJhdGlvbihvcElkKSB7XG4gICAgY29uc3QgYmVmb3JlID0gZmFpbGVkT3BlcmF0aW9ucy5sZW5n"
+      + "dGg7XG4gICAgZmFpbGVkT3BlcmF0aW9ucyA9IGZhaWxlZE9wZXJhdGlvbnMuZmlsdGVyKGZ1bmN0aW9uIChpdGVtKSB7IHJldHVy"
+      + "biBpdGVtLm9wSWQgIT09IFN0cmluZyhvcElkIHx8ICcnKTsgfSk7XG4gICAgaWYgKGZhaWxlZE9wZXJhdGlvbnMubGVuZ3RoICE9"
+      + "PSBiZWZvcmUpIHBlcnNpc3RGYWlsZWRPcGVyYXRpb25zKCk7XG4gIH0iOwp2YXIgbmV3Q2xlYXJGYWlsZWQ9ImZ1bmN0aW9uIHJl"
+      + "c29sdmVkSW50ZWdyaXR5V2FybmluZ0NhbkNsZWFyKCkge1xuICAgIHJldHVybiAhIXN0YXRlLmludGVncml0eVdhcm5pbmdcbiAg"
+      + "ICAgICYmIGZhaWxlZE9wZXJhdGlvbnMubGVuZ3RoID09PSAwXG4gICAgICAmJiBxdWV1ZS5sZW5ndGggPT09IDBcbiAgICAgICYm"
+      + "ICghQXJyYXkuaXNBcnJheShzdGF0ZS5tZXJnZVdhcm5pbmdzKSB8fCBzdGF0ZS5tZXJnZVdhcm5pbmdzLmxlbmd0aCA9PT0gMClc"
+      + "biAgICAgICYmICFzdGF0ZS5vbGRDbGllbnREZXRlY3RlZFxuICAgICAgJiYgIVN0cmluZyhzdGF0ZS5sYXN0RXJyb3IgfHwgJycp"
+      + "LnRyaW0oKVxuICAgICAgJiYgIXN0YXRlLmxhc3RSZWplY3RlZDtcbiAgfVxuXG4gIGZ1bmN0aW9uIGNsZWFyUmVzb2x2ZWRJbnRl"
+      + "Z3JpdHlXYXJuaW5nKHJlYXNvbikge1xuICAgIGlmICghcmVzb2x2ZWRJbnRlZ3JpdHlXYXJuaW5nQ2FuQ2xlYXIoKSkgcmV0dXJu"
+      + "IGZhbHNlO1xuICAgIHN0YXRlLmludGVncml0eVdhcm5pbmcgPSBmYWxzZTtcbiAgICBzdGF0ZS5sYXN0SW50ZWdyaXR5UmVzb2x2"
+      + "ZWRBdCA9IG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKTtcbiAgICBzdGF0ZS5sYXN0SW50ZWdyaXR5UmVzb2x1dGlvblJlYXNvbiA9"
+      + "IFN0cmluZyhyZWFzb24gfHwgJ2NsZWFuLXN5bmMtc3RhdGUnKTtcbiAgICBwZXJzaXN0U3RhdGUoKTtcbiAgICByZXR1cm4gdHJ1"
+      + "ZTtcbiAgfVxuXG4gIGZ1bmN0aW9uIGNsZWFyRmFpbGVkT3BlcmF0aW9uKG9wSWQpIHtcbiAgICBjb25zdCBiZWZvcmUgPSBmYWls"
+      + "ZWRPcGVyYXRpb25zLmxlbmd0aDtcbiAgICBmYWlsZWRPcGVyYXRpb25zID0gZmFpbGVkT3BlcmF0aW9ucy5maWx0ZXIoZnVuY3Rp"
+      + "b24gKGl0ZW0pIHsgcmV0dXJuIGl0ZW0ub3BJZCAhPT0gU3RyaW5nKG9wSWQgfHwgJycpOyB9KTtcbiAgICBpZiAoZmFpbGVkT3Bl"
+      + "cmF0aW9ucy5sZW5ndGggIT09IGJlZm9yZSkgcGVyc2lzdEZhaWxlZE9wZXJhdGlvbnMoKTtcbiAgICBjbGVhclJlc29sdmVkSW50"
+      + "ZWdyaXR5V2FybmluZygnZmFpbGVkLW9wZXJhdGlvbi1jbGVhcmVkJyk7XG4gIH0iOwp2YXIgY2xlYXJGYWlsZWRDb3VudD1zLnNw"
+      + "bGl0KG9sZENsZWFyRmFpbGVkKS5sZW5ndGgtMTsKaWYoY2xlYXJGYWlsZWRDb3VudCE9PTEpdGhyb3cgbmV3IEVycm9yKCdSNTVD"
+      + "X000X1BBVENIX1JFRlVTRUQ6IGNsZWFyRmFpbGVkT3BlcmF0aW9uIG1hcmtlciBjb3VudCAnK2NsZWFyRmFpbGVkQ291bnQrJy4n"
+      + "KTsKcz1zLnJlcGxhY2Uob2xkQ2xlYXJGYWlsZWQsbmV3Q2xlYXJGYWlsZWQpOwoKdmFyIG9sZEluaXRGYWlsZWQ9ImZhaWxlZE9w"
+      + "ZXJhdGlvbnMgPSBsb2FkSlNPTihGQUlMRURfS0VZLCBbXSk7XG4gICAgcXVldWUuZm9yRWFjaChmdW5jdGlvbiAob3BlcmF0aW9u"
+      + "KSB7IjsKdmFyIG5ld0luaXRGYWlsZWQ9ImZhaWxlZE9wZXJhdGlvbnMgPSBsb2FkSlNPTihGQUlMRURfS0VZLCBbXSk7XG4gICAg"
+      + "Y2xlYXJSZXNvbHZlZEludGVncml0eVdhcm5pbmcoJ3I1NWMtY2xlYW4tc3RhcnR1cCcpO1xuICAgIHF1ZXVlLmZvckVhY2goZnVu"
+      + "Y3Rpb24gKG9wZXJhdGlvbikgeyI7CnZhciBpbml0RmFpbGVkQ291bnQ9cy5zcGxpdChvbGRJbml0RmFpbGVkKS5sZW5ndGgtMTsK"
+      + "aWYoaW5pdEZhaWxlZENvdW50IT09MSl0aHJvdyBuZXcgRXJyb3IoJ1I1NUNfTTRfUEFUQ0hfUkVGVVNFRDogaW5pdCBmYWlsZWQt"
+      + "b3BlcmF0aW9uIG1hcmtlciBjb3VudCAnK2luaXRGYWlsZWRDb3VudCsnLicpOwpzPXMucmVwbGFjZShvbGRJbml0RmFpbGVkLG5l"
+      + "d0luaXRGYWlsZWQpOwp2YXIgb2xkQnVpbGQ9ImNvbnN0IEJVSUxEID0gJzIwMjYwODIzLXN5bmMtaW50ZWdyaXR5LXI1Mic7IjsK"
+      + "aWYocy5pbmRleE9mKG9sZEJ1aWxkKTwwKXRocm93IG5ldyBFcnJvcignUjU1Q19NNF9QQVRDSF9SRUZVU0VEOiB2ZXJpZmllZCBy"
+      + "NTIgYnVpbGQgbWFya2VyIG1pc3NpbmcuJyk7CnM9cy5yZXBsYWNlKG9sZEJ1aWxkLCJjb25zdCBCVUlMRCA9ICcyMDI2MDgyNS1p"
+      + "bnRlZ3JpdHktc3RhdHVzLWNsZWFudXAtcjU1Yyc7Iik7CigwLGV2YWwpKHMrIlxuLy8jIHNvdXJjZVVSTD1qcy9jbG91ZC1zeW5j"
+      + "LXI1NWMuanMiKTsKaWYoISh3aW5kb3cuWkVaTVMmJlpFWk1TLmNsb3VkU3luYyYmWkVaTVMuY2xvdWRTeW5jLmJ1aWxkPT09JzIw"
+      + "MjYwODI1LWludGVncml0eS1zdGF0dXMtY2xlYW51cC1yNTVjJykpdGhyb3cgbmV3IEVycm9yKCdSNTVDX000X1BBVENIX0ZBSUxF"
+      + "RDogaGFyZGVuZWQgQ2xvdWQgU3luYyBkaWQgbm90IGluaXRpYWxpemUuJyk7CmRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5zZXRB"
+      + "dHRyaWJ1dGUoJ2RhdGEtemV6bXMtcmVjZWlwdC1rZXknLCdyZWNlaXB0Tm8tZmlyc3QtcjU1YicpOwoKLyogSGlzdG9yaWNhbCBy"
+      + "ZWNlaXB0IG9wZXJhdGlvbnMgcmVtYWluIHF1YXJhbnRpbmVkLiBFeGlzdGluZyBlbnJvbGxlZCBkZXZpY2VzIG1heSBzeW5jIG5v"
+      + "cm1hbGx5LgogICBOZXctZGV2aWNlIGJvb3RzdHJhcCBpcyBkZWxpYmVyYXRlbHkgYmxvY2tlZCB1bnRpbCB0aGUgaGlzdG9yaWNh"
+      + "bCByZWNlaXB0IGFyY2hpdmUgaXMgcmVjb25jaWxlZC4gKi8KdmFyIGJsb2NrZWROZXdEZXZpY2U9ZnVuY3Rpb24oKXsKICByZXR1"
+      + "cm4gUHJvbWlzZS5yZWplY3QobmV3IEVycm9yKCdSNTRfTkVXX0RFVklDRV9URU1QT1JBUklMWV9CTE9DS0VEOiBIaXN0b3JpY2Fs"
+      + "IHJlY2VpcHQtb3BlcmF0aW9uIGNvbXBhdGliaWxpdHkgaXMgcXVhcmFudGluZWQuIENvbnRpbnVlIHVzaW5nIHRoZSBmb3VyIHZl"
+      + "cmlmaWVkIGRldmljZXM7IGRvIG5vdCBkb3dubG9hZCB0aGUgQ2xvdWQgbWFzdGVyIHRvIGEgbmV3IGRldmljZSB5ZXQuJykpOwp9"
+      + "OwppZihaRVpNUy5jbG91ZFN5bmMuZW5yb2xsUGFpcmVkRGV2aWNlKVpFWk1TLmNsb3VkU3luYy5lbnJvbGxQYWlyZWREZXZpY2U9"
+      + "YmxvY2tlZE5ld0RldmljZTsKd2luZG93Lm00RG93bmxvYWRDbG91ZE1hc3Rlcj1mdW5jdGlvbigpewogIGlmKHR5cGVvZiB0b2Fz"
+      + "dD09PSdmdW5jdGlvbicpdG9hc3QoJ05ldy1kZXZpY2UgQ2xvdWQtbWFzdGVyIGRvd25sb2FkIGlzIHRlbXBvcmFyaWx5IGJsb2Nr"
+      + "ZWQgd2hpbGUgaGlzdG9yaWNhbCByZWNlaXB0IHJlY29yZHMgcmVtYWluIHF1YXJhbnRpbmVkLicsJ3dhcm4nKTsKICByZXR1cm4g"
+      + "ZmFsc2U7Cn07Cn0oKSk7";
   const INTEGRITY_B64=
       "KGZ1bmN0aW9uKCl7Cid1c2Ugc3RyaWN0JzsKdmFyIFBBVEg9J2pzL3N5bmMtaW50ZWdyaXR5LXYzMTYxLmpzP3Y9MjAyNjA4MjMt"
       + "c3luYy1pbnRlZ3JpdHktcjUyJzsKdmFyIHg9bmV3IFhNTEh0dHBSZXF1ZXN0KCk7eC5vcGVuKCdHRVQnLFBBVEgsZmFsc2UpO3gu"
@@ -615,9 +643,9 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     let output=source;
     output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="'+RELEASE+'" />');
     output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.17.0 - Cash Flow & Working Capital</title>');
-    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.17.2';");
-    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.17.2 · Cash Flow & Working Capital');
-    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.17.2 · Cash Flow & Working Capital');
+    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.17.3';");
+    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.17.3 · Cash Flow & Working Capital');
+    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.17.3 · Cash Flow & Working Capital');
 
     const cloud=safeInline(decodeBase64(CLOUD_B64));
     const integrity=safeInline(decodeBase64(INTEGRITY_B64));
@@ -633,7 +661,7 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     output=output.replace(integrityMarker,'<script data-zezms-sync-integrity-r54>\n'+integrity+'\n</'+'script>\n<script data-zezms-receipt-quarantine-r54>\n'+notice+'\n</'+'script>');
     output=output.replace(operationsMarker,'<script data-zezms-operations-r55>\n'+operations+'\n</'+'script>');
     output=output.replace(navigationMarker,navigationMarker+'\n<script data-zezms-working-capital-r55>\n'+workingCapital+'\n</'+'script>');
-    if(output.indexOf("const APP_VERSION = '3.17.2';")<0||output.indexOf('data-zezms-cloud-sync-r54')<0||output.indexOf('data-zezms-sync-integrity-r54')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf("type!=='Others'")<0)throw new Error('r55B patch verification failed.');
+    if(output.indexOf("const APP_VERSION = '3.17.3';")<0||output.indexOf('data-zezms-cloud-sync-r54')<0||output.indexOf('data-zezms-sync-integrity-r54')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf("type!=='Others'")<0)throw new Error('r55C patch verification failed.');
     return output;
   }
   function renderSource(source){document.open();document.write(source);document.close();}
@@ -652,17 +680,17 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
     try{
       const cached=await cachedPatched();
       if(cached&&cached.indexOf('data-zezms-working-capital-r55')>=0){
-        status('Opening cached r55B application…');renderSource(cached);return;
+        status('Opening cached r55C application…');renderSource(cached);return;
       }
       status('Verifying the protected r52 operational baseline…');
       const baseline=await fetchBaseline();
-      status('Applying Stage 6C responsiveness and Others cross-device merge safeguards…');
+      status('Applying Stage 6C, Others merge and resolved integrity-status safeguards…');
       const patched=patchBaseline(baseline);
       await cachePatched(patched);
       renderSource(patched);
     }catch(error){
-      console.error('ZEZMS r55B bootstrap failed',error);
-      status('r55B could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
+      console.error('ZEZMS r55C bootstrap failed',error);
+      status('r55C could not start: '+(error&&error.message||error)+'. Connect this device to the Internet and reload. No business data was changed.',true);
     }
   }
   boot();
