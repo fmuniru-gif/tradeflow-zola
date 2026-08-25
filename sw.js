@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.17.4 - Integrity Diagnostic Scope Correction r55D */
-const CACHE = 'zezms-integrity-diagnostic-scope-20260825-r55d';
-const PATCHED_INDEX_CACHE = 'zezms-r55d-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.17.5 - Integrity Warning Normalization r55E */
+const CACHE = 'zezms-integrity-warning-normalization-20260825-r55e';
+const PATCHED_INDEX_CACHE = 'zezms-r55e-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
