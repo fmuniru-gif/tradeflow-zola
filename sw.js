@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.17.5 - Integrity Warning Normalization r55E */
-const CACHE = 'zezms-integrity-warning-normalization-20260825-r55e';
-const PATCHED_INDEX_CACHE = 'zezms-r55e-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.18.0 - M4/3 Sync Safety Core r56 */
+const CACHE = 'zezms-m43-safety-core-20260825-r56';
+const PATCHED_INDEX_CACHE = 'zezms-r56-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
