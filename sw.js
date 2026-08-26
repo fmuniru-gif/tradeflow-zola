@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.19.3 - Integrity Module Recovery r57D */
-const CACHE = 'zezms-integrity-module-recovery-20260826-r57d';
-const PATCHED_INDEX_CACHE = 'zezms-r57d-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.19.4 - Integrity Stability Rollback r57E */
+const CACHE = 'zezms-integrity-stability-rollback-20260826-r57e';
+const PATCHED_INDEX_CACHE = 'zezms-r57e-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
