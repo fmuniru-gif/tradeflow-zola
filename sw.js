@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.21.0 - Automatic Fleet Convergence r59 */
-const CACHE = 'zezms-fleet-convergence-20260826-r59';
-const PATCHED_INDEX_CACHE = 'zezms-r59-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.21.1 - Fleet Publish Reliability r59A */
+const CACHE = 'zezms-fleet-publish-reliability-20260826-r59a';
+const PATCHED_INDEX_CACHE = 'zezms-r59a-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
