@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.22.0 - Canonical Restore Safety r60 */
-const CACHE = 'zezms-canonical-restore-20260826-r60';
-const PATCHED_INDEX_CACHE = 'zezms-r60-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.22.1 - Canonical Restore Safety r60A */
+const CACHE = 'zezms-canonical-restore-20260826-r60a';
+const PATCHED_INDEX_CACHE = 'zezms-r60a-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
