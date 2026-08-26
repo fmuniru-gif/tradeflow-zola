@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.19.1 - Protocol-Aware Integrity Diagnostic r57B */
-const CACHE = 'zezms-protocol-diagnostic-20260825-r57b';
-const PATCHED_INDEX_CACHE = 'zezms-r57b-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.19.2 - Archival Reference Integrity Classification r57C */
+const CACHE = 'zezms-archival-reference-20260826-r57c';
+const PATCHED_INDEX_CACHE = 'zezms-r57c-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
