@@ -579,7 +579,7 @@
     }
     const refundable = editingOrder && editingOrder.paymentWallet === purchaseOrderDraft.wallet
       ? Number(editingOrder.amountPaid) || 0 : 0;
-    if (paid > (Number(DB.cashBalances[purchaseOrderDraft.wallet]) || 0) + refundable + 1e-9) {
+    if (purchaseOrderDraft.wallet !== 'Others' && paid > (Number(DB.cashBalances[purchaseOrderDraft.wallet]) || 0) + refundable + 1e-9) {
       toast('The selected wallet has insufficient balance after recalculating the saved payment.', 'err'); return;
     }
 

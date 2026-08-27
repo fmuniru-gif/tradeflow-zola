@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.16.1 with cross-device data-integrity forensics, safe reconciliation and authenticated local-bridge printing.",
-  "start_url": "./index.html?build=20260823-sync-integrity-r52",
+  "description": "ZEZMS Owner Edition v3.22.2 with Others-wallet local consistency and the preserved r60A recovery and sync safeguards.",
+  "start_url": "./index.html?build=20260827-others-wallet-consistency-r60b",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

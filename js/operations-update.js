@@ -1271,10 +1271,10 @@
       if (kind === 'debtors' && direction === 'REDUCE') {
         cashEntry = adjustCash(wallet, 'Add', amount, 'Debtor settle ' + account.name);
       } else if (kind === 'creditors' && direction === 'REDUCE') {
-        if (amount > (Number(DB.cashBalances[wallet]) || 0) + 1e-9) { toast('Insufficient wallet', 'err'); return; }
+        if (wallet !== 'Others' && amount > (Number(DB.cashBalances[wallet]) || 0) + 1e-9) { toast('Insufficient wallet', 'err'); return; }
         cashEntry = adjustCash(wallet, 'Deduct', amount, 'Creditor pay ' + account.name);
       } else if (kind === 'depositors' && direction === 'REDUCE') {
-        if (amount > (Number(DB.cashBalances[wallet]) || 0) + 1e-9) { toast('Insufficient wallet', 'err'); return; }
+        if (wallet !== 'Others' && amount > (Number(DB.cashBalances[wallet]) || 0) + 1e-9) { toast('Insufficient wallet', 'err'); return; }
         cashEntry = adjustCash(wallet, 'Deduct', amount, 'Deposit return ' + account.name);
       } else if (kind === 'depositors' && direction === 'INCREASE') {
         cashEntry = adjustCash(wallet, 'Add', amount, 'Deposit in ' + account.name);
