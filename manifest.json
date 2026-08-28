@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.22.2 with Others-wallet local consistency and the preserved r60A recovery and sync safeguards.",
-  "start_url": "./index.html?build=20260827-others-wallet-consistency-r60b",
+  "description": "ZEZMS Owner Edition v3.22.3 with restored M4/3 runtime loading and preserved r60B Others-wallet safeguards.",
+  "start_url": "./index.html?build=20260828-m4-runtime-recovery-r60c",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

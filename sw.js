@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.22.2 - Others Wallet Local Consistency r60B */
-const CACHE = 'zezms-others-wallet-consistency-20260827-r60b';
-const PATCHED_INDEX_CACHE = 'zezms-r60b-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.22.3 - M4 Runtime Recovery r60C */
+const CACHE = 'zezms-m4-runtime-recovery-20260828-r60c';
+const PATCHED_INDEX_CACHE = 'zezms-r60c-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
