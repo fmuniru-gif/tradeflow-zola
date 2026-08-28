@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.22.4 - Owner Trusted Recovery r60D */
-const CACHE = 'zezms-owner-trusted-recovery-20260828-r60d';
-const PATCHED_INDEX_CACHE = 'zezms-r60d-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.22.5 - Trusted Recovery Legacy Duplicate Tolerance r60E */
+const CACHE = 'zezms-trusted-recovery-legacy-duplicate-20260828-r60e';
+const PATCHED_INDEX_CACHE = 'zezms-r60e-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
