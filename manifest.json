@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.22.6 with Owner Trusted Recovery reviewed-patch promotion, M4/3 runtime recovery, Canonical Restore and preserved Others-wallet safeguards.",
-  "start_url": "./index.html?build=20260828-trusted-recovery-reviewed-patch-r60f",
+  "description": "ZEZMS Owner Edition v3.22.7 with JSON-safe Owner Trusted Recovery preview aligned to the exact reviewed M4/3 operation, legacy-duplicate tolerance, M4/3 runtime recovery, Canonical Restore and preserved Others-wallet safeguards.",
+  "start_url": "./index.html?build=20260829-trusted-recovery-json-safe-operation-r60g",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
