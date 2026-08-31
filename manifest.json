@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.22.10 with Sale Out cash-bucket selection, M4/3 live sync, Canonical Restore and preserved Others-wallet safeguards.",
-  "start_url": "./index.html?build=20260831-sale-cash-buckets-r60j",
+  "description": "ZEZMS Owner Edition v3.22.11 with cash-bucket routing for Print Receipt and Quick Sale Out, M4/3 live sync, Canonical Restore and preserved Others-wallet safeguards.",
+  "start_url": "./index.html?build=20260831-quick-sale-cash-buckets-r60k",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
