@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.22.9 - Trusted Recovery Canonical Operation r60I */
-const CACHE = 'zezms-trusted-recovery-canonical-operation-20260829-r60i';
-const PATCHED_INDEX_CACHE = 'zezms-r60i-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.22.10 - Sale Out Cash Buckets r60J */
+const CACHE = 'zezms-sale-cash-buckets-20260831-r60j';
+const PATCHED_INDEX_CACHE = 'zezms-r60j-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
