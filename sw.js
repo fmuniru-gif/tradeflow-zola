@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.22.11 - Quick Sale Cash Buckets r60K */
-const CACHE = 'zezms-quick-sale-cash-buckets-20260831-r60k';
-const PATCHED_INDEX_CACHE = 'zezms-r60k-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.22.12 - Manager Scope & Staff Last Login r60L */
+const CACHE = 'zezms-manager-scope-staff-login-20260902-r60l';
+const PATCHED_INDEX_CACHE = 'zezms-r60l-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
