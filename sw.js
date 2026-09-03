@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.22.13 - Sync Save Recovery r60M */
-const CACHE = 'zezms-sync-save-recovery-20260903-r60m';
-const PATCHED_INDEX_CACHE = 'zezms-r60m-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.22.14 - Verified Failure Archive r60N */
+const CACHE = 'zezms-verified-failure-archive-20260903-r60n';
+const PATCHED_INDEX_CACHE = 'zezms-r60n-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',

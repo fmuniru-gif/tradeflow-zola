@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.22.13 r60M sync-save recovery. Preserves M4/3, checkpoints, Canonical Restore, fleet safeguards and the Others negative-wallet rule.",
-  "start_url": "./index.html?build=20260903-sync-save-recovery-r60m",
+  "description": "ZEZMS Owner Edition v3.22.14 r60N verified archive for exact durably-applied download failures. Preserves M4/3, checkpoints, Canonical Restore, fleet safeguards and the Others negative-wallet rule.",
+  "start_url": "./index.html?build=20260903-verified-failure-archive-r60n",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
