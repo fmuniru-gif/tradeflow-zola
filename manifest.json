@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.22.12 with strict Manager access scope, synchronised Staff Last Login, M4/3 live sync, Canonical Restore and preserved Others-wallet safeguards.",
-  "start_url": "./index.html?build=20260902-manager-scope-staff-login-r60l",
+  "description": "ZEZMS Owner Edition v3.22.13 r60M sync-save recovery. Preserves M4/3, checkpoints, Canonical Restore, fleet safeguards and the Others negative-wallet rule.",
+  "start_url": "./index.html?build=20260903-sync-save-recovery-r60m",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
