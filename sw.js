@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.23.1 - Managed Device Lifecycle & Safe Bootstrap r61O */
-const CACHE = 'zezms-managed-device-lifecycle-20260903-r61o';
-const PATCHED_INDEX_CACHE = 'zezms-r61o-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.23.2 - Self-Service Device Recovery r62 */
+const CACHE = 'zezms-self-service-recovery-20260904-r62';
+const PATCHED_INDEX_CACHE = 'zezms-r62-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',

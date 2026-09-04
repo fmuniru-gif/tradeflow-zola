@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.23.1 r61O with M4/3 live sync, safe self-service device replacement/bootstrap, Canonical Restore and preserved Others-wallet safeguards.",
-  "start_url": "./index.html?build=20260903-managed-device-lifecycle-r61o",
+  "description": "ZEZMS Owner Edition v3.23.2 r62 with M4/3 live sync, managed-device lifecycle, verified self-service device recovery, Canonical Restore and preserved Others-wallet safeguards.",
+  "start_url": "./index.html?build=20260904-self-service-recovery-r62",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
