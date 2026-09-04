@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.23.3 - Self-Service Recovery Verification r62S */
-const CACHE = 'zezms-recovery-verification-20260904-r62s';
-const PATCHED_INDEX_CACHE = 'zezms-r62s-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.23.4 - Cloud-Certified Recovery r62T */
+const CACHE = 'zezms-cloud-certified-recovery-20260904-r62t';
+const PATCHED_INDEX_CACHE = 'zezms-r62t-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
