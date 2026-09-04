@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.23.5 - Recovery UI Deduplication r62U */
-const CACHE = 'zezms-recovery-ui-dedup-20260904-r62u';
-const PATCHED_INDEX_CACHE = 'zezms-r62u-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.23.6 - Recovery File Selection Retention r62V */
+const CACHE = 'zezms-recovery-file-selection-20260904-r62v';
+const PATCHED_INDEX_CACHE = 'zezms-r62v-baseline-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
