@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.23.7 - Recovery Picker Stability r62W */
-const CACHE = 'zezms-recovery-picker-stability-20260904-r62w';
-const PATCHED_INDEX_CACHE = 'zezms-r62w-baseline-cache-v1';
+/* ZEZMS Owner Edition v3.24.0 - Executive Performance & Trend Intelligence r63 */
+const CACHE = 'zezms-executive-performance-20260904-r63';
+const PATCHED_INDEX_CACHE = 'zezms-r63-executive-performance-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',

@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.23.7 r62W with M4/3 live sync, managed-device lifecycle, Cloud-certified recovery verification and a stable recovery file picker.",
-  "start_url": "./index.html?build=20260904-recovery-picker-stability-r62w",
+  "description": "ZEZMS Owner Edition v3.24.0 r63 with read-only Owner/Admin Executive Performance & Trend Intelligence, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260904-executive-performance-r63",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
