@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.0 r67 with Owner/Admin Controlled Decision Workflows, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260906-stage8b-controlled-decision-workflows-r67",
+  "description": "ZEZMS Owner Edition v3.28.1 r67A with lifecycle-safe Owner/Admin post-6C Management navigation, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260906-r67a-post6-management-navigation-hotfix",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
