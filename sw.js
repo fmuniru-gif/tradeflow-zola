@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.26.0 - Management Alerts & Action Prioritisation r65 */
-const CACHE = 'zezms-management-alerts-20260906-r65';
-const PATCHED_INDEX_CACHE = 'zezms-r65-management-alerts-cache-v1';
+/* ZEZMS Owner Edition v3.27.0 - Management Action Plans & Tasks r66 */
+const CACHE = 'zezms-management-actions-20260906-r66';
+const PATCHED_INDEX_CACHE = 'zezms-r66-management-actions-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
