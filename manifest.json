@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.25.0 r64 with Owner/Admin Targets, Forecasting & Scenario Planning, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260905-targets-forecasting-r64",
+  "description": "ZEZMS Owner Edition v3.26.0 r65 with Owner/Admin Management Alerts & Action Prioritisation, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260906-management-alerts-r65",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
