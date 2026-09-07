@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.3 - Dashboard Reporting & Title-State Correction r67C */
-const CACHE = 'zezms-r67c-dashboard-reporting-title-state-20260907';
-const PATCHED_INDEX_CACHE = 'zezms-r67c-dashboard-reporting-title-state-cache-v1';
+/* ZEZMS Owner Edition v3.28.4 - Dashboard Restoration & PDF Repair r67D */
+const CACHE = 'zezms-r67d-dashboard-restoration-20260907';
+const PATCHED_INDEX_CACHE = 'zezms-r67d-dashboard-restoration-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
