@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.1 - Post-6C Management Navigation Hotfix r67A */
-const CACHE = 'zezms-post6-management-navigation-20260906-r67a';
-const PATCHED_INDEX_CACHE = 'zezms-r67a-post6-management-navigation-hotfix-cache-v1';
+/* ZEZMS Owner Edition v3.28.2 - Management Navigation & Workflow Access Hotfix r67B */
+const CACHE = 'zezms-post6-management-navigation-20260906-r67b';
+const PATCHED_INDEX_CACHE = 'zezms-r67b-post6-management-navigation-hotfix-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
