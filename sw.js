@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.6 - Chart & Management PDF Hotfix r67F */
-const CACHE = 'zezms-r67f-chart-management-pdf-hotfix-20260909';
-const PATCHED_INDEX_CACHE = 'zezms-r67f-chart-management-pdf-hotfix-cache-v1';
+/* ZEZMS Owner Edition v3.28.7 - Compact KPI Chart Layout Hotfix r67G */
+const CACHE = 'zezms-r67g-compact-kpi-layout-20260909';
+const PATCHED_INDEX_CACHE = 'zezms-r67g-compact-kpi-layout-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
