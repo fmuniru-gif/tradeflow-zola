@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.7 r67G with compact KPI month-chart layout matching the established chart spacing while preserving visible bars, management reports, Dashboard KPIs and recovery safeguards, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260909-r67g-compact-kpi-layout",
+  "description": "ZEZMS Owner Edition v3.28.8 r67H with persistent user-enabled Live Sync with controlled reconnection, catch-up, character-safe Management PDFs, Dashboard KPIs and recovery safeguards, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260910-r67h-persistent-live-sync-and-text-cleanup",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
