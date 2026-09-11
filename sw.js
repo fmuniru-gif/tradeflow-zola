@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.8 - Persistent Live Sync & Text Quality Hotfix r67H */
-const CACHE = 'zezms-r67h-persistent-live-sync-text-20260910';
-const PATCHED_INDEX_CACHE = 'zezms-r67h-persistent-live-sync-text-cache-v1';
+/* ZEZMS Owner Edition v3.28.9 - Fast Startup & Offline Cache Hotfix r67I */
+const CACHE = 'zezms-r67i-fast-startup-offline-cache-20260910';
+const PATCHED_INDEX_CACHE = 'zezms-r67i-verified-patched-shell-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -32,11 +32,81 @@ const ASSETS = [
   './js/print-readiness-v3120.js?v=20260817-loopback-network-r47','./js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47',
   './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51',
 ];
-self.addEventListener('install',(event)=>{event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));});
-self.addEventListener('activate',(event)=>{event.waitUntil(caches.keys().then((keys)=>Promise.all(keys.filter((key)=>key!==CACHE&&key!==PATCHED_INDEX_CACHE&&!key.startsWith('zezms-commercial-pilot-')).map((key)=>caches.delete(key)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',(event)=>{
-  const request=event.request;if(request.method!=='GET')return;const url=new URL(request.url);if(url.origin!==self.location.origin)return;
-  const isNavigation=request.mode==='navigate';const isAppCode=isNavigation||url.pathname.endsWith('.js')||url.pathname.endsWith('/index.html')||url.pathname.endsWith('/manifest.json');
-  if(isAppCode){event.respondWith(fetch(request,{cache:'no-store'}).then((response)=>{if(response&&response.ok){const clone=response.clone();caches.open(CACHE).then((cache)=>cache.put(request,clone));}return response;}).catch(()=>caches.match(request).then((cached)=>{if(cached)return cached;return caches.match(request,{ignoreSearch:true}).then((ignored)=>ignored||caches.match('./index.html'));})));return;}
-  event.respondWith(caches.match(request).then((cached)=>cached||fetch(request).then((response)=>{if(response&&response.ok){const clone=response.clone();caches.open(CACHE).then((cache)=>cache.put(request,clone));}return response;})));
+const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
+let postShellCachePromise = null;
+
+async function cacheSuccessful(request, response) {
+  if (!response || !response.ok) return response;
+  const url = new URL(request.url || request, self.location.origin);
+  if (url.origin !== self.location.origin) return response;
+  const cache = await caches.open(CACHE);
+  await cache.put(request, response.clone());
+  return response;
+}
+function cacheStaticAssetsAfterShell() {
+  if (postShellCachePromise) return postShellCachePromise;
+  postShellCachePromise = (async () => {
+    const cache = await caches.open(CACHE);
+    for (const asset of ASSETS) {
+      try {
+        const request = new Request(new URL(asset, self.registration.scope).href, { cache: 'no-store' });
+        if (await cache.match(request.url, { ignoreVary: true })) continue;
+        await cacheSuccessful(request, await fetch(request));
+      } catch (_) { /* This optional cache entry can be retried on a later version. */ }
+    }
+  })();
+  return postShellCachePromise;
+}
+async function cached(request) {
+  const cache = await caches.open(CACHE);
+  const key = typeof request === 'string' ? request : request.url;
+  return (await cache.match(key, { ignoreVary: true })) || cache.match(key, { ignoreSearch: true, ignoreVary: true });
+}
+async function revalidate(request) {
+  const response = await fetch(request, { cache: 'no-store' });
+  return cacheSuccessful(request, response);
+}
+function revalidateAfterStartup(request) {
+  return new Promise((resolve) => setTimeout(resolve, 5000)).then(() => revalidate(request));
+}
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CRITICAL_ASSETS)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE && key !== PATCHED_INDEX_CACHE && !key.startsWith('zezms-commercial-pilot-')).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
+});
+self.addEventListener('message', (event) => {
+  const data = event && event.data;
+  if (data && data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache') {
+    /* One sequential cache pass after the shell is usable; never a startup stampede. */
+    event.waitUntil(cacheStaticAssetsAfterShell());
+  }
+});
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+  const isNavigation = request.mode === 'navigate';
+  const isVersionedAsset = /\.(?:js|css|json)$/i.test(url.pathname) && !!url.search;
+  if (isVersionedAsset) {
+    event.respondWith(cached(request).then((hit) => hit || revalidate(request)));
+    return;
+  }
+  if (!isNavigation) {
+    event.respondWith(cached(request).then((hit) => hit || revalidate(request)));
+    return;
+  }
+  event.respondWith((async () => {
+    const hit = await cached(request);
+    const refresh = revalidateAfterStartup(request).catch(() => null);
+    if (hit) {
+      event.waitUntil(refresh);
+      return hit;
+    }
+    const network = await refresh;
+    if (network) return network;
+    if (isNavigation) return (await caches.match('./index.html')) || Response.error();
+    return Response.error();
+  })());
 });
