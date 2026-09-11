@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.9 r67I with fast verified local startup, cache-first application assets, embedded provenance-checked baseline and asynchronous persistent Live Sync, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260910-r67i-fast-startup-and-offline-cache",
+  "description": "ZEZMS Owner Edition v3.28.10 r67J with M4/3 Live Sync Capability Guard Recovery with persistent sync, queue preservation and cache-first startup, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260911-r67j-m43-capability-guard-live-sync-repair",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

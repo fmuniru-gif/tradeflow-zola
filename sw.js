@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.9 - Fast Startup & Offline Cache Hotfix r67I */
-const CACHE = 'zezms-r67i-fast-startup-offline-cache-20260910';
-const PATCHED_INDEX_CACHE = 'zezms-r67i-verified-patched-shell-cache-v1';
+/* ZEZMS Owner Edition v3.28.10 - M4/3 Live Sync Capability Guard Recovery r67J */
+const CACHE = 'zezms-r67j-m43-capability-guard-live-sync-repair-20260911';
+const PATCHED_INDEX_CACHE = 'zezms-r67j-m43-capability-guard-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache') {
+  if (data && data.type === 'ZEZMS_R67J_SHELL_READY' && data.release === '20260911-r67j-m43-capability-guard-live-sync-repair') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
