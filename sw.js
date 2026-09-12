@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.10 - M4/3 Live Sync Capability Guard Recovery r67J */
-const CACHE = 'zezms-r67j-m43-capability-guard-live-sync-repair-20260911';
-const PATCHED_INDEX_CACHE = 'zezms-r67j-m43-capability-guard-cache-v1';
+/* ZEZMS Owner Edition v3.28.11 - Internal Cash Wallet Transfer r67K */
+const CACHE = 'zezms-r67k-wallet-transfer-20260912';
+const PATCHED_INDEX_CACHE = 'zezms-r67k-wallet-transfer-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R67J_SHELL_READY' && data.release === '20260911-r67j-m43-capability-guard-live-sync-repair') {
+  if (data && data.type === 'ZEZMS_R67K_SHELL_READY' && data.release === '20260912-r67k-wallet-transfer') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }

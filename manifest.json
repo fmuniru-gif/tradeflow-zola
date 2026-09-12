@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.10 r67J with M4/3 Live Sync Capability Guard Recovery with persistent sync, queue preservation and cache-first startup, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260911-r67j-m43-capability-guard-live-sync-repair",
+  "description": "ZEZMS Owner Edition v3.28.11 r67K with Internal Cash Wallet Transfer with atomic paired cash evidence, protected-wallet safety and M4/3-safe persistence, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260912-r67k-wallet-transfer",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
