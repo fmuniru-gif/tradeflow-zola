@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.13 r67M with Receipt Display Price Hotfix with Owner-only per-line presentation metadata and authoritative financial receipt totals, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260916-r67m-receipt-display-price-hotfix",
+  "description": "ZEZMS Owner Edition v3.28.14 r67N with Receipt Adjustment Feature Removal with normal financial Sale Out and receipt presentation restored, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260916-r67n-remove-receipt-display-adjustment",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
