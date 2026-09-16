@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0f766e" />
-<meta name="description" content="ZEZMS TradeFlow v3.28.14 r67N Receipt Adjustment Feature Removal" />
-<meta name="zezms-build" content="20260916-r67n-remove-receipt-display-adjustment" />
-<title>ZEZMS TradeFlow v3.28.14 — Receipt Adjustment Feature Removal r67N</title>
+<meta name="description" content="ZEZMS TradeFlow v3.28.15 r67O Dynamic Wallet Account Settlement Integration" />
+<meta name="zezms-build" content="20260916-r67o-live-wallet-settlement-selector" />
+<title>ZEZMS TradeFlow v3.28.15 — Dynamic Wallet Account Settlement Integration r67O</title>
 <style>
 html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #r55Boot{max-width:760px;margin:14vh auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:16px;box-sizing:border-box}
@@ -14,12 +14,12 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
 </style>
 </head>
 <body>
-<div id="r55Boot"><h1>ZEZMS TradeFlow v3.28.14</h1><p id="r55BootStatus">Loading the Receipt Adjustment Feature Removal with all verified recovery safeguards…</p></div>
+<div id="r55Boot"><h1>ZEZMS TradeFlow v3.28.15</h1><p id="r55BootStatus">Loading the Dynamic Wallet Account Settlement Integration with all verified recovery safeguards…</p></div>
 <script>
 (function(){
   'use strict';
-  const RELEASE="20260916-r67n-remove-receipt-display-adjustment";
-  const R67I_PATCH_PROOF="r67n:20260916-r67n-remove-receipt-display-adjustment:5cbcd3d67e424452a34a3fbf122e0eed095e473e";
+  const RELEASE="20260916-r67o-live-wallet-settlement-selector";
+  const R67I_PATCH_PROOF="r67o:20260916-r67o-live-wallet-settlement-selector:5cbcd3d67e424452a34a3fbf122e0eed095e473e";
   const R67I_PERF_KEY='__zezmsStartupPerformance';
   function r67iLoaderMark(name){
     const store=window[R67I_PERF_KEY]||(window[R67I_PERF_KEY]={release:'r67i',source:'pending',marks:{},measures:{}});
@@ -33,7 +33,7 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
   const BASELINE_COMMIT="212b4e4b5297cb6733695860df409dc695097aa8";
   const BASELINE_BLOB="5cbcd3d67e424452a34a3fbf122e0eed095e473e";
   const BASELINE_SOURCE='embedded verified baseline';
-  const PATCH_CACHE="zezms-r67n-remove-receipt-display-adjustment-cache-v1";
+  const PATCH_CACHE="zezms-r67o-live-wallet-settlement-selector-cache-v1";
   const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r67i_patched='+RELEASE);
   const VERIFIED_BASELINE_B64=
       "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuLUdIIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04IiAvPgo8bWV0YSBuYW1lPSJ2aWV3"
@@ -3979,6 +3979,93 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
       + "c3RhbGxUcmFuc2FjdGlvbkd1YXJkcygpOwogIGluc3RhbGxSZWNlaXB0V2FsbGV0RXZpZGVuY2UoKTsKICBxdWV1ZVNlZWRTYXZlKCk7CiAgZG9j"
       + "dW1lbnQuZG9jdW1lbnRFbGVtZW50LnNldEF0dHJpYnV0ZSgnZGF0YS16ZXptcy1keW5hbWljLWNhc2gtd2FsbGV0cycsICdyNjdsJyk7Cn0oKSk7"
       + "Cg==";
+
+  const ACCOUNT_SETTLEMENT_WALLETS_R67O_B64=
+      "LyogWkVaTVMgVHJhZGVGbG93IHI2N08g4oCUIER5bmFtaWMgV2FsbGV0IEFjY291bnQgU2V0dGxlbWVudCBJbnRlZ3JhdGlvbi4KICAgQWNjb3Vu"
+      + "dHMgY29uc3VtZXMgdGhlIGVzdGFibGlzaGVkIHI2N0wgcmVnaXN0cnkgYXQgbW9kYWwtb3BlbiB0aW1lLiAgSXQgZG9lcwogICBub3QgYWx0ZXIg"
+      + "dGhlIHJlZ2lzdHJ5LCB3YWxsZXQgdHJhbnNmZXIsIG9yIE00LzMgc2F2ZSBhcmNoaXRlY3R1cmUuICovCihmdW5jdGlvbiAoKSB7CiAgJ3VzZSBz"
+      + "dHJpY3QnOwoKICBjb25zdCBCVUlMRCA9ICcyMDI2MDkxNi1yNjdvLWxpdmUtd2FsbGV0LXNldHRsZW1lbnQtc2VsZWN0b3InOwogIGNvbnN0IEVQ"
+      + "U0lMT04gPSAxZS05OwoKICBmdW5jdGlvbiBkYXRhYmFzZSgpIHsgcmV0dXJuIHdpbmRvdy5EQiB8fCAodHlwZW9mIERCICE9PSAndW5kZWZpbmVk"
+      + "JyA/IERCIDoge30pOyB9CiAgZnVuY3Rpb24gd2FsbGV0QXBpKCkgewogICAgY29uc3QgYXBpID0gd2luZG93LlpFWk1TICYmIHdpbmRvdy5aRVpN"
+      + "Uy5jYXNoV2FsbGV0czsKICAgIHJldHVybiBhcGkgJiYgdHlwZW9mIGFwaS5zZWxlY3Rvck9wdGlvbnMgPT09ICdmdW5jdGlvbicKICAgICAgJiYg"
+      + "dHlwZW9mIGFwaS5rZXlGcm9tU2VsZWN0aW9uID09PSAnZnVuY3Rpb24nCiAgICAgICYmIHR5cGVvZiBhcGkubGFiZWwgPT09ICdmdW5jdGlvbicK"
+      + "ICAgICAgJiYgdHlwZW9mIGFwaS5jYW5Hb05lZ2F0aXZlID09PSAnZnVuY3Rpb24nID8gYXBpIDogbnVsbDsKICB9CiAgZnVuY3Rpb24gdGV4dCh2"
+      + "YWx1ZSkgewogICAgaWYgKHR5cGVvZiB3aW5kb3cuZXNjID09PSAnZnVuY3Rpb24nKSByZXR1cm4gd2luZG93LmVzYyh2YWx1ZSk7CiAgICByZXR1"
+      + "cm4gU3RyaW5nKHZhbHVlID09IG51bGwgPyAnJyA6IHZhbHVlKS5yZXBsYWNlKC9bJjw+IiddL2csIGZ1bmN0aW9uIChjaGFyYWN0ZXIpIHsKICAg"
+      + "ICAgcmV0dXJuICh7ICcmJzogJyZhbXA7JywgJzwnOiAnJmx0OycsICc+JzogJyZndDsnLCAnIic6ICcmcXVvdDsnLCAiJyI6ICcmIzM5OycgfSlb"
+      + "Y2hhcmFjdGVyXTsKICAgIH0pOwogIH0KICBmdW5jdGlvbiBtb25leSh2YWx1ZSkgeyByZXR1cm4gdHlwZW9mIHdpbmRvdy5mbXQgPT09ICdmdW5j"
+      + "dGlvbicgPyB3aW5kb3cuZm10KHZhbHVlKSA6IFN0cmluZyh2YWx1ZSk7IH0KICBmdW5jdGlvbiBub3RpZnkobWVzc2FnZSwgdG9uZSkgeyBpZiAo"
+      + "dHlwZW9mIHdpbmRvdy50b2FzdCA9PT0gJ2Z1bmN0aW9uJykgd2luZG93LnRvYXN0KG1lc3NhZ2UsIHRvbmUpOyB9CiAgZnVuY3Rpb24gY3VycmVu"
+      + "dFRpbWUoKSB7IHJldHVybiB0eXBlb2Ygd2luZG93Lm5vd0lTTyA9PT0gJ2Z1bmN0aW9uJyA/IHdpbmRvdy5ub3dJU08oKSA6IG5ldyBEYXRlKCku"
+      + "dG9JU09TdHJpbmcoKTsgfQogIGZ1bmN0aW9uIHNldHRsZW1lbnRPcHRpb25zKHNlbGVjdGVkKSB7CiAgICBjb25zdCBhcGkgPSB3YWxsZXRBcGko"
+      + "KTsKICAgIGlmIChhcGkpIHJldHVybiBhcGkuc2VsZWN0b3JPcHRpb25zKHsgcGxhY2Vob2xkZXI6ICfigJQgbm8gY2FzaCBtb3ZlbWVudCDigJQn"
+      + "LCBzZWxlY3RlZDogc2VsZWN0ZWQgfHwgJycgfSk7CiAgICAvKiBTYWZlIGRlZ3JhZGVkIG1vZGU6IG5ldmVyIHJlY3JlYXRlIGEgc2Vjb25kIHdh"
+      + "bGxldCByZWdpc3RyeSBvciBzaG93IHJhdwogICAgICAgYWNjb3VudGluZyBrZXlzIHdoZW4gdGhlIGF1dGhvcml0YXRpdmUgcmVnaXN0cnkgZmFp"
+      + "bGVkIHRvIGxvYWQuICovCiAgICByZXR1cm4gJzxvcHRpb24gdmFsdWU9IiI+4oCUIG5vIGNhc2ggbW92ZW1lbnQg4oCUPC9vcHRpb24+JzsKICB9"
+      + "CiAgZnVuY3Rpb24gcmVzb2x2ZUFjdGl2ZVdhbGxldChzZWxlY3RlZCkgewogICAgY29uc3QgdmFsdWUgPSBTdHJpbmcoc2VsZWN0ZWQgfHwgJycp"
+      + "LnRyaW0oKTsKICAgIGlmICghdmFsdWUpIHJldHVybiAnJzsKICAgIGNvbnN0IGFwaSA9IHdhbGxldEFwaSgpOwogICAgcmV0dXJuIGFwaSA/IFN0"
+      + "cmluZyhhcGkua2V5RnJvbVNlbGVjdGlvbih2YWx1ZSwgdHJ1ZSkgfHwgJycpIDogJyc7CiAgfQogIGZ1bmN0aW9uIHdhbGxldExhYmVsKGtleSkg"
+      + "ewogICAgY29uc3QgYXBpID0gd2FsbGV0QXBpKCk7CiAgICByZXR1cm4gYXBpID8gU3RyaW5nKGFwaS5sYWJlbChrZXkpIHx8IGtleSkgOiBTdHJp"
+      + "bmcoa2V5IHx8ICcnKTsKICB9CiAgZnVuY3Rpb24gYWN0aXZlV2FsbGV0Q2FuR29OZWdhdGl2ZShrZXkpIHsKICAgIGNvbnN0IGFwaSA9IHdhbGxl"
+      + "dEFwaSgpOwogICAgcmV0dXJuICEhKGFwaSAmJiBhcGkuY2FuR29OZWdhdGl2ZShrZXkpKTsKICB9CiAgZnVuY3Rpb24gbW9kYWxWYWx1ZShpZCkg"
+      + "ewogICAgY29uc3QgZWxlbWVudCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKTsKICAgIHJldHVybiBlbGVtZW50ID8gZWxlbWVudC52YWx1"
+      + "ZSA6ICcnOwogIH0KICBmdW5jdGlvbiByZWNvcmRDYXNoTW92ZW1lbnQod2FsbGV0S2V5LCBhY3Rpb24sIGFtb3VudCwgbm90ZSkgewogICAgY29u"
+      + "c3QgZGIgPSBkYXRhYmFzZSgpOwogICAgY29uc3QgYmVmb3JlTGVuZ3RoID0gQXJyYXkuaXNBcnJheShkYi5jYXNoTG9nKSA/IGRiLmNhc2hMb2cu"
+      + "bGVuZ3RoIDogMDsKICAgIGNvbnN0IGxhYmVsID0gd2FsbGV0TGFiZWwod2FsbGV0S2V5KTsKICAgIGNvbnN0IG1ldGEgPSB7IHdhbGxldEtleTog"
+      + "d2FsbGV0S2V5LCB3YWxsZXRMYWJlbFNuYXBzaG90OiBsYWJlbCB9OwogICAgY29uc3QgcmVzdWx0ID0gd2luZG93LmFkanVzdENhc2god2FsbGV0"
+      + "S2V5LCBhY3Rpb24sIGFtb3VudCwgbm90ZSwgbWV0YSk7CiAgICBjb25zdCBlbnRyeSA9IHJlc3VsdCB8fCAoKGRiLmNhc2hMb2cgfHwgW10pW2Jl"
+      + "Zm9yZUxlbmd0aF0gfHwgKGRiLmNhc2hMb2cgfHwgW10pLnNsaWNlKC0xKVswXSk7CiAgICBpZiAoZW50cnkpIHsKICAgICAgZW50cnkud2FsbGV0"
+      + "S2V5ID0gd2FsbGV0S2V5OwogICAgICBlbnRyeS53YWxsZXRMYWJlbFNuYXBzaG90ID0gbGFiZWw7CiAgICAgIGVudHJ5Lm1ldGEgPSBPYmplY3Qu"
+      + "YXNzaWduKHt9LCBlbnRyeS5tZXRhIHx8IHt9LCBtZXRhKTsKICAgIH0KICAgIHJldHVybiBlbnRyeTsKICB9CgogIHdpbmRvdy5vcGVuU2V0dGxl"
+      + "ID0gZnVuY3Rpb24gKGtpbmQsIGlkKSB7CiAgICBjb25zdCBkYiA9IGRhdGFiYXNlKCk7CiAgICBjb25zdCBhY2NvdW50ID0gKGRiW2tpbmRdIHx8"
+      + "IFtdKS5maW5kKGZ1bmN0aW9uIChpdGVtKSB7IHJldHVybiBpdGVtICYmIGl0ZW0uaWQgPT09IGlkOyB9KTsKICAgIGlmICghYWNjb3VudCB8fCB0"
+      + "eXBlb2Ygd2luZG93Lm9wZW5Nb2RhbCAhPT0gJ2Z1bmN0aW9uJykgcmV0dXJuIGZhbHNlOwogICAgLyogc2VsZWN0b3JPcHRpb25zKCkgcnVucyBz"
+      + "eW5jaHJvbm91c2x5IGhlcmUuIFRoZXJlIGlzIG5vIGRlY29yYXRvciBvciB0aW1lcgogICAgICAgYmV0d2VlbiB0aGUgbmV3IG1vZGFsIGJlaW5n"
+      + "IGJ1aWx0IGFuZCBpdHMgZmlyc3QgYnJvd3NlciBwYWludC4gKi8KICAgIHdpbmRvdy5vcGVuTW9kYWwoJzxoMz5TZXR0bGUgwrcgJyArIHRleHQo"
+      + "YWNjb3VudC5uYW1lKSArICc8L2gzPicKICAgICAgKyAnPHAgY2xhc3M9Im11dGVkIj5DdXJyZW50IGJhbGFuY2U6IDxiIGNsYXNzPSJtb25vIj4n"
+      + "ICsgbW9uZXkoYWNjb3VudC5iYWxhbmNlKSArICc8L2I+PC9wPicKICAgICAgKyAnPGRpdiBjbGFzcz0iZmllbGQiPjxsYWJlbD5BbW91bnQgKEdI"
+      + "4oK1KTwvbGFiZWw+PGlucHV0IGlkPSJzdEFtdCIgdHlwZT0ibnVtYmVyIiBtaW49IjAiIHN0ZXA9IjAuMDEiIHZhbHVlPSInICsgTWF0aC5tYXgo"
+      + "MCwgTnVtYmVyKGFjY291bnQuYmFsYW5jZSkgfHwgMCkgKyAnIiAvPjwvZGl2PicKICAgICAgKyAnPGRpdiBjbGFzcz0iZmllbGQiPjxsYWJlbD5E"
+      + "aXJlY3Rpb248L2xhYmVsPjxzZWxlY3QgaWQ9InN0RGlyIj4nCiAgICAgICsgJzxvcHRpb24gdmFsdWU9IlJFRFVDRSI+UmVkdWNlIGJhbGFuY2Ug"
+      + "KGNvbGxlY3QgLyBwYXkpPC9vcHRpb24+JwogICAgICArICc8b3B0aW9uIHZhbHVlPSJJTkNSRUFTRSI+SW5jcmVhc2UgYmFsYW5jZTwvb3B0aW9u"
+      + "PicKICAgICAgKyAnPC9zZWxlY3Q+PC9kaXY+JwogICAgICArICc8ZGl2IGNsYXNzPSJmaWVsZCI+PGxhYmVsPkNhc2ggd2FsbGV0IGltcGFjdDwv"
+      + "bGFiZWw+PHNlbGVjdCBpZD0ic3RXYWxsZXQiPicKICAgICAgKyBzZXR0bGVtZW50T3B0aW9ucygnJykgKyAnPC9zZWxlY3Q+PC9kaXY+JwogICAg"
+      + "ICArICc8ZGl2IGNsYXNzPSJmaWVsZCI+PGxhYmVsPk5vdGU8L2xhYmVsPjxpbnB1dCBpZD0ic3ROb3RlIiAvPjwvZGl2PicKICAgICAgKyAnPGRp"
+      + "diBjbGFzcz0icm93Ij48YnV0dG9uIGNsYXNzPSJidG4iIG9uY2xpY2s9ImFwcGx5U2V0dGxlKFwnJyArIFN0cmluZyhraW5kKS5yZXBsYWNlKC8n"
+      + "L2csICcmIzM5OycpICsgJ1wnLFwnJyArIFN0cmluZyhpZCkucmVwbGFjZSgvJy9nLCAnJiMzOTsnKSArICdcJykiPkFwcGx5PC9idXR0b24+Jwog"
+      + "ICAgICArICc8YnV0dG9uIGNsYXNzPSJidG4gZ2hvc3QiIG9uY2xpY2s9ImNsb3NlTW9kYWwoKSI+Q2FuY2VsPC9idXR0b24+PC9kaXY+Jyk7CiAg"
+      + "ICByZXR1cm4gdHJ1ZTsKICB9OwoKICB3aW5kb3cuYXBwbHlTZXR0bGUgPSBmdW5jdGlvbiAoa2luZCwgaWQpIHsKICAgIGNvbnN0IGRiID0gZGF0"
+      + "YWJhc2UoKTsKICAgIGNvbnN0IGFjY291bnQgPSAoZGJba2luZF0gfHwgW10pLmZpbmQoZnVuY3Rpb24gKGl0ZW0pIHsgcmV0dXJuIGl0ZW0gJiYg"
+      + "aXRlbS5pZCA9PT0gaWQ7IH0pOwogICAgaWYgKCFhY2NvdW50KSByZXR1cm4gZmFsc2U7CgogICAgY29uc3QgYW1vdW50ID0gTnVtYmVyKG1vZGFs"
+      + "VmFsdWUoJ3N0QW10JykpIHx8IDA7CiAgICBjb25zdCBkaXJlY3Rpb24gPSBTdHJpbmcobW9kYWxWYWx1ZSgnc3REaXInKSB8fCAnJyk7CiAgICBj"
+      + "b25zdCBzZWxlY3RlZCA9IG1vZGFsVmFsdWUoJ3N0V2FsbGV0Jyk7CiAgICBjb25zdCBub3RlID0gbW9kYWxWYWx1ZSgnc3ROb3RlJykgfHwgJyc7"
+      + "CiAgICBpZiAoYW1vdW50IDw9IDApIHsgbm90aWZ5KCdBbW91bnQgcmVxdWlyZWQnLCAnZXJyJyk7IHJldHVybiBmYWxzZTsgfQoKICAgIGNvbnN0"
+      + "IHdhbGxldEtleSA9IHJlc29sdmVBY3RpdmVXYWxsZXQoc2VsZWN0ZWQpOwogICAgaWYgKFN0cmluZyhzZWxlY3RlZCB8fCAnJykudHJpbSgpICYm"
+      + "ICF3YWxsZXRLZXkpIHsKICAgICAgbm90aWZ5KCdDaG9vc2UgYW4gYWN0aXZlIGNhc2ggd2FsbGV0LicsICdlcnInKTsKICAgICAgcmV0dXJuIGZh"
+      + "bHNlOwogICAgfQoKICAgIGxldCBjYXNoQWN0aW9uID0gJyc7CiAgICBsZXQgY2FzaE5vdGUgPSAnJzsKICAgIGlmICh3YWxsZXRLZXkpIHsKICAg"
+      + "ICAgaWYgKGtpbmQgPT09ICdkZWJ0b3JzJyAmJiBkaXJlY3Rpb24gPT09ICdSRURVQ0UnKSB7CiAgICAgICAgY2FzaEFjdGlvbiA9ICdBZGQnOwog"
+      + "ICAgICAgIGNhc2hOb3RlID0gJ0RlYnRvciBzZXR0bGUgJyArIGFjY291bnQubmFtZTsKICAgICAgfSBlbHNlIGlmIChraW5kID09PSAnY3JlZGl0"
+      + "b3JzJyAmJiBkaXJlY3Rpb24gPT09ICdSRURVQ0UnKSB7CiAgICAgICAgY2FzaEFjdGlvbiA9ICdEZWR1Y3QnOwogICAgICAgIGNhc2hOb3RlID0g"
+      + "J0NyZWRpdG9yIHBheSAnICsgYWNjb3VudC5uYW1lOwogICAgICB9IGVsc2UgaWYgKGtpbmQgPT09ICdkZXBvc2l0b3JzJyAmJiBkaXJlY3Rpb24g"
+      + "PT09ICdSRURVQ0UnKSB7CiAgICAgICAgY2FzaEFjdGlvbiA9ICdEZWR1Y3QnOwogICAgICAgIGNhc2hOb3RlID0gJ0RlcG9zaXQgcmV0dXJuICcg"
+      + "KyBhY2NvdW50Lm5hbWU7CiAgICAgIH0gZWxzZSBpZiAoa2luZCA9PT0gJ2RlcG9zaXRvcnMnICYmIGRpcmVjdGlvbiA9PT0gJ0lOQ1JFQVNFJykg"
+      + "ewogICAgICAgIGNhc2hBY3Rpb24gPSAnQWRkJzsKICAgICAgICBjYXNoTm90ZSA9ICdEZXBvc2l0IGluICcgKyBhY2NvdW50Lm5hbWU7CiAgICAg"
+      + "IH0KICAgIH0KCiAgICAvKiBBbGwgZmFpbHVyZSBjaGVja3MgcHJlY2VkZSBhY2NvdW50LCBjYXNoIGxvZywgc2F2ZURCIGFuZCBNNC8zIHNpZGUg"
+      + "ZWZmZWN0cy4gKi8KICAgIGlmIChjYXNoQWN0aW9uID09PSAnRGVkdWN0JyAmJiAhYWN0aXZlV2FsbGV0Q2FuR29OZWdhdGl2ZSh3YWxsZXRLZXkp"
+      + "KSB7CiAgICAgIGNvbnN0IGF2YWlsYWJsZSA9IE51bWJlcigoZGIuY2FzaEJhbGFuY2VzIHx8IHt9KVt3YWxsZXRLZXldKSB8fCAwOwogICAgICBp"
+      + "ZiAoYW1vdW50ID4gYXZhaWxhYmxlICsgRVBTSUxPTikgewogICAgICAgIG5vdGlmeSgnSW5zdWZmaWNpZW50ICcgKyB3YWxsZXRMYWJlbCh3YWxs"
+      + "ZXRLZXkpICsgJyBiYWxhbmNlLicsICdlcnInKTsKICAgICAgICByZXR1cm4gZmFsc2U7CiAgICAgIH0KICAgIH0KCiAgICBjb25zdCBzaWduZWQg"
+      + "PSBkaXJlY3Rpb24gPT09ICdSRURVQ0UnID8gLWFtb3VudCA6IGFtb3VudDsKICAgIGNvbnN0IGJlZm9yZSA9IE51bWJlcihhY2NvdW50LmJhbGFu"
+      + "Y2UpIHx8IDA7CiAgICBhY2NvdW50LmJhbGFuY2UgPSBiZWZvcmUgKyBzaWduZWQ7CiAgICBhY2NvdW50LmRhdGUgPSBjdXJyZW50VGltZSgpOwoK"
+      + "ICAgIGlmIChjYXNoQWN0aW9uKSByZWNvcmRDYXNoTW92ZW1lbnQod2FsbGV0S2V5LCBjYXNoQWN0aW9uLCBhbW91bnQsIGNhc2hOb3RlKTsKICAg"
+      + "IHdpbmRvdy5sb2dBY2NvdW50VHhuKGlkLCBTdHJpbmcoa2luZCkuc2xpY2UoMCwgLTEpLnRvVXBwZXJDYXNlKCksIGFjY291bnQubmFtZSwKICAg"
+      + "ICAgZGlyZWN0aW9uID09PSAnUkVEVUNFJyA/ICdTRVRUTEUnIDogJ0lOQ1JFQVNFJywgc2lnbmVkLCBhY2NvdW50LmJhbGFuY2UsIG5vdGUpOwog"
+      + "ICAgd2luZG93LnNhdmVEQigpOwogICAgaWYgKHR5cGVvZiB3aW5kb3cuY2xvc2VNb2RhbCA9PT0gJ2Z1bmN0aW9uJykgd2luZG93LmNsb3NlTW9k"
+      + "YWwoKTsKICAgIG5vdGlmeSgnU2V0dGxlbWVudCBwb3N0ZWQnKTsKICAgIGlmICh0eXBlb2Ygd2luZG93LnJlbmRlciA9PT0gJ2Z1bmN0aW9uJykg"
+      + "d2luZG93LnJlbmRlcigpOwogICAgcmV0dXJuIHRydWU7CiAgfTsKCiAgd2luZG93LlpFWk1TID0gd2luZG93LlpFWk1TIHx8IHt9OwogIHdpbmRv"
+      + "dy5aRVpNUy5hY2NvdW50U2V0dGxlbWVudFdhbGxldHNSNjdPID0gewogICAgYnVpbGQ6IEJVSUxELAogICAgc2V0dGxlbWVudE9wdGlvbnM6IHNl"
+      + "dHRsZW1lbnRPcHRpb25zLAogICAgcmVzb2x2ZUFjdGl2ZVdhbGxldDogcmVzb2x2ZUFjdGl2ZVdhbGxldAogIH07CiAgZG9jdW1lbnQuZG9jdW1l"
+      + "bnRFbGVtZW50LnNldEF0dHJpYnV0ZSgnZGF0YS16ZXptcy1hY2NvdW50LXNldHRsZW1lbnQtd2FsbGV0cy1yNjdvJywgQlVJTEQpOwp9KCkpOwo=";
 
 
   const CLOUD_B64=
@@ -14319,15 +14406,15 @@ function directoryPayload(){`;
     if((output.split(directoryImportLastLoginNeedle).length-1)!==1)throw new Error('r60L staff directory import marker mismatch.');
     output=output.replace(directoryImportLastLoginNeedle,directoryImportLastLoginReplacement);
     output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="'+RELEASE+'" />');
-    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.28.14 - Receipt Adjustment Feature Removal</title>');
-    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.28.14';");
-    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.28.14 · Receipt Adjustment Feature Removal');
-    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.28.14 · Receipt Adjustment Feature Removal');
-    output=output.replace('<html lang="en-GH">','<html lang="en-GH" data-zezms-release="v3.28.14-r67n">');
+    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.28.15 - Dynamic Wallet Account Settlement Integration</title>');
+    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.28.15';");
+    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.28.15 · Dynamic Wallet Account Settlement Integration');
+    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.28.15 · Dynamic Wallet Account Settlement Integration');
+    output=output.replace('<html lang="en-GH">','<html lang="en-GH" data-zezms-release="v3.28.15-r67o">');
     const legacyBuildCleanup=/<script>\n\(function\(\)\{\n  'use strict';\n  const BUILD = '20260823-sync-integrity-r52';[\s\S]*?\n\}\(\)\);\n<\/script>/;
     if((output.match(legacyBuildCleanup)||[]).length!==1)throw new Error('r67I legacy cache-reset marker mismatch.');
     output=output.replace(legacyBuildCleanup,'<script data-zezms-r67i-build-state>\n(function(){\n  try{localStorage.setItem("zezms-active-build","'+RELEASE+'");}catch(_){}\n}());\n</'+'script>');
-    output=output.replace("navigator.serviceWorker.register('./sw.js?v=20260823-sync-integrity-r52')","navigator.serviceWorker.register('./sw.js?v=20260916-r67n-remove-receipt-display-adjustment')");
+    output=output.replace("navigator.serviceWorker.register('./sw.js?v=20260823-sync-integrity-r52')","navigator.serviceWorker.register('./sw.js?v=20260916-r67o-live-wallet-settlement-selector')");
 
     const cloud=safeInline(decodeBase64(CLOUD_B64));
     const canonicalRestore=safeInline(decodeBase64(CANONICAL_RESTORE_B64));
@@ -14357,6 +14444,7 @@ function directoryPayload(){`;
     const startupPerformanceR67I=safeInline(decodeBase64(STARTUP_PERFORMANCE_R67I_B64));
     const walletTransferR67K=safeInline(decodeBase64(WALLET_TRANSFER_R67K_B64));
     const dynamicCashWalletsR67L=safeInline(decodeBase64(DYNAMIC_CASH_WALLETS_R67L_B64));
+    const accountSettlementWalletsR67O=safeInline(decodeBase64(ACCOUNT_SETTLEMENT_WALLETS_R67O_B64));
 
     const directCashGuard="if(action==='Deduct' && amount > (Number(DB.cashBalances[type])||0)+1e-9){";
     if((output.split(directCashGuard).length-1)!==1) throw new Error('r55 direct-cash Others guard marker mismatch.');
@@ -14366,8 +14454,8 @@ function directoryPayload(){`;
     output=output.replace(backupMarker,backupMarker+'\n<script data-zezms-canonical-restore-r60a>\n'+canonicalRestore+'\n</'+'script>');
     output=output.replace(integrityMarker,'<script data-zezms-sync-integrity-r60o>\n'+integrity+'\n</'+'script>\n<script data-zezms-fleet-convergence-r59>\n'+convergence+'\n</'+'script>\n<script data-zezms-receipt-quarantine-r54>\n'+notice+'\n</'+'script>\n<script data-zezms-owner-trusted-recovery-r60i>\n'+trustedRecovery+'\n</'+'script>');
     output=output.replace(operationsMarker,'<script data-zezms-operations-r55>\n'+operations+'\n</'+'script>');
-    output=output.replace(navigationMarker,navigationMarker+'\n<script data-zezms-startup-performance-r67i>\n'+startupPerformanceR67I+'\n</'+'script>\n<script data-zezms-working-capital-r55>\n'+workingCapital+'\n</'+'script>\n<script data-zezms-sale-cash-buckets-r60j>\n'+saleCashBuckets+'\n</'+'script>\n<script data-zezms-quick-sale-cash-buckets-r60k>\n'+quickSaleCashBuckets+'\n</'+'script>\n<script data-zezms-manager-scope-staff-login-r60l>\n'+managerScopeStaffLogin+'\n</'+'script>\n<script data-zezms-managed-device-lifecycle-r61>\n'+managedDeviceLifecycle+'\n</'+'script>\n<script data-zezms-self-service-recovery-r62w>\n'+selfServiceRecovery+'\n</'+'script>\n<script data-zezms-executive-performance-r63>\n'+executivePerformance+'\n</'+'script>\n<script data-zezms-targets-forecasting-r64>\n'+targetsForecasting+'\n</'+'script>\n<script data-zezms-management-alerts-r65>\n'+managementAlerts+'\n</'+'script>\n<script data-zezms-management-actions-r66>\n'+managementActions+'\n</'+'script>\n<script data-zezms-controlled-decision-workflows-r67>\n'+controlledDecisionWorkflows+'\n</'+'script>\n<script data-zezms-management-workflow-entry-r67d>\n'+managementWorkflowEntry+'\n</'+'script>\n<script data-zezms-post6-management-navigation-r67d>\n'+post6ManagementNavigation+'\n</'+'script>\n<script data-zezms-active-view-title-state-r67d>\n'+activeViewTitleState+'\n</'+'script>\n<script data-zezms-dashboard-restoration-r67d>\n'+dashboardRestoration+'\n</'+'script>\n<script data-zezms-dashboard-reporting-r67d>\n'+dashboardReporting+'\n</'+'script>\n<script data-zezms-management-reporting-r67f>\n'+managementReportingR67F+'\n</'+'script>\n<script data-zezms-kpi-charts-r67g>\n'+kpiChartsR67G+'\n</'+'script>\n<script data-zezms-live-sync-persistence-r67h>document.documentElement.setAttribute("data-zezms-live-sync-persistence-r67h","M4/3");</'+'script>\n<script data-zezms-wallet-transfer-r67k>\n'+walletTransferR67K+'\n</'+'script>\n<script data-zezms-dynamic-cash-wallets-r67l>\n'+dynamicCashWalletsR67L+'\n</'+'script>');
-    if(output.indexOf("const APP_VERSION = '3.28.14';")<0||output.indexOf('data-zezms-release="v3.28.14-r67n"')<0||output.indexOf('data-zezms-executive-performance-r63')<0||output.indexOf('data-zezms-targets-forecasting-r64')<0||output.indexOf('data-zezms-management-alerts-r65')<0||output.indexOf('data-zezms-management-actions-r66')<0||output.indexOf('data-zezms-controlled-decision-workflows-r67')<0||output.indexOf('data-zezms-management-workflow-entry-r67d')<0||output.indexOf('data-zezms-post6-management-navigation-r67d')<0||output.indexOf('data-zezms-cloud-sync-r61o')<0||output.indexOf('data-zezms-dashboard-restoration-r67d')<0||output.indexOf('data-zezms-dashboard-reporting-r67d')<0||output.indexOf('data-zezms-management-reporting-r67f')<0||output.indexOf('data-zezms-kpi-charts-r67g')<0||output.indexOf('data-zezms-live-sync-persistence-r67h')<0||output.indexOf('data-zezms-wallet-transfer-r67k')<0||output.indexOf('data-zezms-dynamic-cash-wallets-r67l')<0||output.indexOf('data-zezms-managed-device-lifecycle-r61')<0||output.indexOf('data-zezms-self-service-recovery-r62w')<0||output.indexOf('data-zezms-canonical-restore-r60a')<0||output.indexOf('20260904-canonical-security-root-r62s')<0||output.indexOf('data-zezms-sync-integrity-r60o')<0||output.indexOf('data-zezms-fleet-convergence-r59')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf('data-zezms-owner-trusted-recovery-r60i')<0||output.indexOf('data-zezms-sale-cash-buckets-r60j')<0||output.indexOf('data-zezms-quick-sale-cash-buckets-r60k')<0||output.indexOf('data-zezms-manager-scope-staff-login-r60l')<0||output.indexOf("type!=='Others'")<0||output.indexOf('R60M_SYNC_SAVE_FALLBACK')<0||output.indexOf('archiveVerifiedDownloadApplyFailures')<0||output.indexOf('Historical Derived Metadata')<0||output.indexOf('Cloud-Certified Reference')<0||output.indexOf('__zezmsRecoveryPickerGateR62W')<0)throw new Error('r67N patch verification failed.');
+    output=output.replace(navigationMarker,navigationMarker+'\n<script data-zezms-startup-performance-r67i>\n'+startupPerformanceR67I+'\n</'+'script>\n<script data-zezms-working-capital-r55>\n'+workingCapital+'\n</'+'script>\n<script data-zezms-sale-cash-buckets-r60j>\n'+saleCashBuckets+'\n</'+'script>\n<script data-zezms-quick-sale-cash-buckets-r60k>\n'+quickSaleCashBuckets+'\n</'+'script>\n<script data-zezms-manager-scope-staff-login-r60l>\n'+managerScopeStaffLogin+'\n</'+'script>\n<script data-zezms-managed-device-lifecycle-r61>\n'+managedDeviceLifecycle+'\n</'+'script>\n<script data-zezms-self-service-recovery-r62w>\n'+selfServiceRecovery+'\n</'+'script>\n<script data-zezms-executive-performance-r63>\n'+executivePerformance+'\n</'+'script>\n<script data-zezms-targets-forecasting-r64>\n'+targetsForecasting+'\n</'+'script>\n<script data-zezms-management-alerts-r65>\n'+managementAlerts+'\n</'+'script>\n<script data-zezms-management-actions-r66>\n'+managementActions+'\n</'+'script>\n<script data-zezms-controlled-decision-workflows-r67>\n'+controlledDecisionWorkflows+'\n</'+'script>\n<script data-zezms-management-workflow-entry-r67d>\n'+managementWorkflowEntry+'\n</'+'script>\n<script data-zezms-post6-management-navigation-r67d>\n'+post6ManagementNavigation+'\n</'+'script>\n<script data-zezms-active-view-title-state-r67d>\n'+activeViewTitleState+'\n</'+'script>\n<script data-zezms-dashboard-restoration-r67d>\n'+dashboardRestoration+'\n</'+'script>\n<script data-zezms-dashboard-reporting-r67d>\n'+dashboardReporting+'\n</'+'script>\n<script data-zezms-management-reporting-r67f>\n'+managementReportingR67F+'\n</'+'script>\n<script data-zezms-kpi-charts-r67g>\n'+kpiChartsR67G+'\n</'+'script>\n<script data-zezms-live-sync-persistence-r67h>document.documentElement.setAttribute("data-zezms-live-sync-persistence-r67h","M4/3");</'+'script>\n<script data-zezms-wallet-transfer-r67k>\n'+walletTransferR67K+'\n</'+'script>\n<script data-zezms-dynamic-cash-wallets-r67l>\n'+dynamicCashWalletsR67L+'\n</'+'script>\n<script data-zezms-account-settlement-wallets-r67o>\n'+accountSettlementWalletsR67O+'\n</'+'script>');
+    if(output.indexOf("const APP_VERSION = '3.28.15';")<0||output.indexOf('data-zezms-release="v3.28.15-r67o"')<0||output.indexOf('data-zezms-executive-performance-r63')<0||output.indexOf('data-zezms-targets-forecasting-r64')<0||output.indexOf('data-zezms-management-alerts-r65')<0||output.indexOf('data-zezms-management-actions-r66')<0||output.indexOf('data-zezms-controlled-decision-workflows-r67')<0||output.indexOf('data-zezms-management-workflow-entry-r67d')<0||output.indexOf('data-zezms-post6-management-navigation-r67d')<0||output.indexOf('data-zezms-cloud-sync-r61o')<0||output.indexOf('data-zezms-dashboard-restoration-r67d')<0||output.indexOf('data-zezms-dashboard-reporting-r67d')<0||output.indexOf('data-zezms-management-reporting-r67f')<0||output.indexOf('data-zezms-kpi-charts-r67g')<0||output.indexOf('data-zezms-live-sync-persistence-r67h')<0||output.indexOf('data-zezms-wallet-transfer-r67k')<0||output.indexOf('data-zezms-dynamic-cash-wallets-r67l')<0||output.indexOf('data-zezms-account-settlement-wallets-r67o')<0||output.indexOf('data-zezms-managed-device-lifecycle-r61')<0||output.indexOf('data-zezms-self-service-recovery-r62w')<0||output.indexOf('data-zezms-canonical-restore-r60a')<0||output.indexOf('20260904-canonical-security-root-r62s')<0||output.indexOf('data-zezms-sync-integrity-r60o')<0||output.indexOf('data-zezms-fleet-convergence-r59')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf('data-zezms-owner-trusted-recovery-r60i')<0||output.indexOf('data-zezms-sale-cash-buckets-r60j')<0||output.indexOf('data-zezms-quick-sale-cash-buckets-r60k')<0||output.indexOf('data-zezms-manager-scope-staff-login-r60l')<0||output.indexOf("type!=='Others'")<0||output.indexOf('R60M_SYNC_SAVE_FALLBACK')<0||output.indexOf('archiveVerifiedDownloadApplyFailures')<0||output.indexOf('Historical Derived Metadata')<0||output.indexOf('Cloud-Certified Reference')<0||output.indexOf('__zezmsRecoveryPickerGateR62W')<0)throw new Error('r67O patch verification failed.');
     return output;
   }
   function renderSource(source){
@@ -14402,8 +14490,8 @@ function directoryPayload(){`;
       await cachePatched(patched);
       renderSource(patched);
     }catch(error){
-      console.error('ZEZMS r67N bootstrap failed',error);
-      status('r67N could not start: '+(error&&error.message||error)+'. Check the local release or connect to install it. No business data was changed.',true);
+      console.error('ZEZMS r67O bootstrap failed',error);
+      status('r67O could not start: '+(error&&error.message||error)+'. Check the local release or connect to install it. No business data was changed.',true);
     }
   }
   boot();
