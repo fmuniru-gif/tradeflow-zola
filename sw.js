@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.12 - Dynamic Cash Wallets & Receipt Reference Adjustment r67L */
-const CACHE = 'zezms-r67l-dynamic-wallets-receipt-reference-20260916';
-const PATCHED_INDEX_CACHE = 'zezms-r67l-dynamic-wallets-receipt-reference-cache-v1';
+/* ZEZMS Owner Edition v3.28.13 - Receipt Display Price Hotfix r67M */
+const CACHE = 'zezms-r67m-receipt-display-price-20260916';
+const PATCHED_INDEX_CACHE = 'zezms-r67m-receipt-display-price-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R67L_SHELL_READY' && data.release === '20260916-r67l-dynamic-wallets-and-receipt-reference-adjustment') {
+  if (data && data.type === 'ZEZMS_R67M_SHELL_READY' && data.release === '20260916-r67m-receipt-display-price-hotfix') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }

@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.12 r67L with Dynamic Cash Wallets & Receipt Reference Adjustment with stable wallet identities, Owner-only lifecycle controls and transparent non-accounting receipt references, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260916-r67l-dynamic-wallets-and-receipt-reference-adjustment",
+  "description": "ZEZMS Owner Edition v3.28.13 r67M with Receipt Display Price Hotfix with Owner-only per-line presentation metadata and authoritative financial receipt totals, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260916-r67m-receipt-display-price-hotfix",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
