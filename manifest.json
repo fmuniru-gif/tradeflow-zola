@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.15 r67O with Dynamic Wallet Account Settlement Integration with live registry settlement selectors and protected-wallet safety, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260916-r67o-live-wallet-settlement-selector",
+  "description": "ZEZMS Owner Edition v3.28.16 r67P with Margin KPIs and source-aware financial entry editing with live-wallet atomicity, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260919-r67p-margin-kpis-financial-entry-editing",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

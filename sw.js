@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.15 - Dynamic Wallet Account Settlement Integration r67O */
-const CACHE = 'zezms-r67o-live-wallet-settlement-selector-20260916';
-const PATCHED_INDEX_CACHE = 'zezms-r67o-live-wallet-settlement-selector-cache-v1';
+/* ZEZMS Owner Edition v3.28.16 - Margin KPIs & Financial Entry Editing r67P */
+const CACHE = 'zezms-r67p-margin-kpis-financial-entry-editing-20260919';
+const PATCHED_INDEX_CACHE = 'zezms-r67p-margin-kpis-financial-entry-editing-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R67O_SHELL_READY' && data.release === '20260916-r67o-live-wallet-settlement-selector') {
+  if (data && data.type === 'ZEZMS_R67P_SHELL_READY' && data.release === '20260919-r67p-margin-kpis-financial-entry-editing') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
