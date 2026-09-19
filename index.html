@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0f766e" />
-<meta name="description" content="ZEZMS TradeFlow v3.28.16 r67P Margin KPIs & Financial Entry Editing" />
-<meta name="zezms-build" content="20260919-r67p-margin-kpis-financial-entry-editing" />
-<title>ZEZMS TradeFlow v3.28.16 — Margin KPIs & Financial Entry Editing r67P</title>
+<meta name="description" content="ZEZMS TradeFlow v3.28.17 r67Q Device-Local Dashboard KPI Layout" />
+<meta name="zezms-build" content="20260919-r67q-device-local-kpi-layout" />
+<title>ZEZMS TradeFlow v3.28.17 — Device-Local Dashboard KPI Layout r67Q</title>
 <style>
 html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #r55Boot{max-width:760px;margin:14vh auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:16px;box-sizing:border-box}
@@ -14,12 +14,12 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
 </style>
 </head>
 <body>
-<div id="r55Boot"><h1>ZEZMS TradeFlow v3.28.16</h1><p id="r55BootStatus">Loading the Margin KPIs & Financial Entry Editing with all verified recovery safeguards…</p></div>
+<div id="r55Boot"><h1>ZEZMS TradeFlow v3.28.17</h1><p id="r55BootStatus">Loading the Device-Local Dashboard KPI Layout with all verified recovery safeguards…</p></div>
 <script>
 (function(){
   'use strict';
-  const RELEASE="20260919-r67p-margin-kpis-financial-entry-editing";
-  const R67I_PATCH_PROOF="r67p:20260919-r67p-margin-kpis-financial-entry-editing:5cbcd3d67e424452a34a3fbf122e0eed095e473e";
+  const RELEASE="20260919-r67q-device-local-kpi-layout";
+  const R67I_PATCH_PROOF="r67q:20260919-r67q-device-local-kpi-layout:5cbcd3d67e424452a34a3fbf122e0eed095e473e";
   const R67I_PERF_KEY='__zezmsStartupPerformance';
   function r67iLoaderMark(name){
     const store=window[R67I_PERF_KEY]||(window[R67I_PERF_KEY]={release:'r67i',source:'pending',marks:{},measures:{}});
@@ -33,7 +33,7 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
   const BASELINE_COMMIT="212b4e4b5297cb6733695860df409dc695097aa8";
   const BASELINE_BLOB="5cbcd3d67e424452a34a3fbf122e0eed095e473e";
   const BASELINE_SOURCE='embedded verified baseline';
-  const PATCH_CACHE="zezms-r67p-margin-kpis-financial-entry-editing-cache-v1";
+  const PATCH_CACHE="zezms-r67q-device-local-kpi-layout-cache-v1";
   const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r67i_patched='+RELEASE);
   const VERIFIED_BASELINE_B64=
       "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuLUdIIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04IiAvPgo8bWV0YSBuYW1lPSJ2aWV3"
@@ -4559,6 +4559,204 @@ html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:
       + "Y2FzaEtpbmQsIF90ZXN0OiBPYmplY3QuZnJlZXplKHsgbWFyZ2luOiBtYXJnaW4sIHJlY29tcHV0ZUFjY291bnRCYWxhbmNlczogcmVjb21wdXRl"
       + "QWNjb3VudEJhbGFuY2VzLCBhY2NvdW50RWRpdFN0YXRlOiBhY2NvdW50RWRpdFN0YXRlIH0pIH0pOwogIGRvY3VtZW50LmRvY3VtZW50RWxlbWVu"
       + "dC5zZXRBdHRyaWJ1dGUoJ2RhdGEtemV6bXMtZmluYW5jaWFsLWVudHJ5LWVkaXRpbmctcjY3cCcsIEJVSUxEKTsKfSgpKTsK";
+
+  const DASHBOARD_KPI_LAYOUT_R67Q_B64=
+      "LyogWkVaTVMgVHJhZGVGbG93IHI2N1Eg4oCUIGRldmljZS1sb2NhbCBEYXNoYm9hcmQgS1BJIGFycmFuZ2VtZW50LgogICBUaGUgb25seSBwZXJz"
+      + "aXN0ZWQgdmFsdWUgaW4gdGhpcyBvdmVybGF5IGlzIGEgbG9jYWxTdG9yYWdlIGFycmF5IG9mIHN0YWJsZQogICBwcmVzZW50YXRpb24gSURzLiAg"
+      + "SXQgZGVsaWJlcmF0ZWx5IG5ldmVyIHJlYWRzIG9yIHdyaXRlcyBidXNpbmVzcyBzdGF0ZS4gKi8KKGZ1bmN0aW9uICgpIHsKICAndXNlIHN0cmlj"
+      + "dCc7CgogIGNvbnN0IEJVSUxEID0gJzIwMjYwOTE5LXI2N3EtZGV2aWNlLWxvY2FsLWtwaS1sYXlvdXQnOwogIGNvbnN0IFNUT1JBR0VfS0VZID0g"
+      + "J1pFWk1TX0RBU0hCT0FSRF9LUElfT1JERVJfUjY3USc7CiAgY29uc3QgREVGQVVMVF9PUkRFUiA9IE9iamVjdC5mcmVlemUoWwogICAgJ2dyb3Nz"
+      + "LXByb2ZpdCcsICdleHBlbnNlcycsICduZXQtcHJvZml0JywKICAgICd0b3RhbC1zYWxlcycsICdkYWlseS1zYWxlcy12YWx1ZScsICdjci1zdG9j"
+      + "aycsCiAgICAncXR5LXN0b2NrJywgJ291dHN0YW5kaW5nLWRlYnQnLCAnY3JlZGl0b3JzJywKICAgICdkZXBvc2l0cycsICdjYXNoLWJ1Y2tldHMn"
+      + "LCAnbGlxdWlkLWNhc2gnLAogICAgJ2dyb3NzLXByb2ZpdC1tYXJnaW4nLCAnbmV0LXByb2ZpdC1tYXJnaW4nLCAnemFrYWF0JwogIF0pOwogIGNv"
+      + "bnN0IFRJVExFX0lEUyA9IE9iamVjdC5mcmVlemUoewogICAgJ2dyb3NzIHByb2ZpdCc6ICdncm9zcy1wcm9maXQnLAogICAgJ2V4cGVuc2VzJzog"
+      + "J2V4cGVuc2VzJywKICAgICduZXQgcHJvZml0JzogJ25ldC1wcm9maXQnLAogICAgJ3RvdGFsIHNhbGVzJzogJ3RvdGFsLXNhbGVzJywKICAgICdk"
+      + "YWlseSBzYWxlcyB2YWx1ZSc6ICdkYWlseS1zYWxlcy12YWx1ZScsCiAgICAnY3Igc3RvY2sgKHZhbHVlKSc6ICdjci1zdG9jaycsCiAgICAncXR5"
+      + "IGluIC8gb3V0IC8gcmVtJzogJ3F0eS1zdG9jaycsCiAgICAnb3V0c3RhbmRpbmcgZGVidCc6ICdvdXRzdGFuZGluZy1kZWJ0JywKICAgICdjcmVk"
+      + "aXRvcnMnOiAnY3JlZGl0b3JzJywKICAgICdkZXBvc2l0cyc6ICdkZXBvc2l0cycsCiAgICAnY2FzaCBidWNrZXRzJzogJ2Nhc2gtYnVja2V0cycs"
+      + "CiAgICAnbGlxdWlkIGNhc2gnOiAnbGlxdWlkLWNhc2gnLAogICAgJ2dyb3NzIHByb2ZpdCBtYXJnaW4nOiAnZ3Jvc3MtcHJvZml0LW1hcmdpbics"
+      + "CiAgICAnbmV0IHByb2ZpdCBtYXJnaW4nOiAnbmV0LXByb2ZpdC1tYXJnaW4nLAogICAgJ3pha2FhdCAoMi41JSknOiAnemFrYWF0JwogIH0pOwog"
+      + "IGxldCBkcmFnID0gbnVsbDsKICBsZXQgZXZlbnRzSW5zdGFsbGVkID0gZmFsc2U7CgogIGZ1bmN0aW9uIG5vdGljZShtZXNzYWdlLCB0b25lKSB7"
+      + "IGlmICh0eXBlb2Ygd2luZG93LnRvYXN0ID09PSAnZnVuY3Rpb24nKSB3aW5kb3cudG9hc3QobWVzc2FnZSwgdG9uZSk7IH0KICBmdW5jdGlvbiBk"
+      + "ZWZhdWx0T3JkZXIoKSB7IHJldHVybiBERUZBVUxUX09SREVSLnNsaWNlKCk7IH0KICBmdW5jdGlvbiBub3JtYWxpemVkKHZhbHVlKSB7IHJldHVy"
+      + "biBTdHJpbmcodmFsdWUgPT0gbnVsbCA/ICcnIDogdmFsdWUpLnJlcGxhY2UoL1xzKy9nLCAnICcpLnRyaW0oKS50b0xvd2VyQ2FzZSgpOyB9CiAg"
+      + "ZnVuY3Rpb24gY2FyZElkKGNhcmQpIHsKICAgIGlmICghY2FyZCkgcmV0dXJuICcnOwogICAgY29uc3Qgc2F2ZWQgPSBTdHJpbmcoY2FyZC5nZXRB"
+      + "dHRyaWJ1dGUoJ2RhdGEtemV6bXMta3BpLWlkJykgfHwgJycpLnRyaW0oKTsKICAgIGlmIChzYXZlZCkgcmV0dXJuIHNhdmVkOwogICAgY29uc3Qg"
+      + "dGl0bGUgPSBjYXJkLnF1ZXJ5U2VsZWN0b3IgJiYgY2FyZC5xdWVyeVNlbGVjdG9yKCdoMycpOwogICAgY29uc3QgaWQgPSBUSVRMRV9JRFNbbm9y"
+      + "bWFsaXplZCh0aXRsZSAmJiB0aXRsZS50ZXh0Q29udGVudCldOwogICAgaWYgKGlkKSBjYXJkLnNldEF0dHJpYnV0ZSgnZGF0YS16ZXptcy1rcGkt"
+      + "aWQnLCBpZCk7CiAgICByZXR1cm4gaWQgfHwgJyc7CiAgfQogIGZ1bmN0aW9uIGRpcmVjdENhcmRzKGdyaWQpIHsKICAgIHJldHVybiBncmlkID8g"
+      + "QXJyYXkucHJvdG90eXBlLmZpbHRlci5jYWxsKGdyaWQuY2hpbGRyZW4gfHwgW10sIGZ1bmN0aW9uIChub2RlKSB7IHJldHVybiBub2RlICYmIG5v"
+      + "ZGUuY2xhc3NMaXN0ICYmIG5vZGUuY2xhc3NMaXN0LmNvbnRhaW5zKCdjYXJkJykgJiYgbm9kZS5jbGFzc0xpc3QuY29udGFpbnMoJ2twaScpOyB9"
+      + "KSA6IFtdOwogIH0KICBmdW5jdGlvbiBhdmFpbGFibGVJZHMoZ3JpZCkgewogICAgcmV0dXJuIGRpcmVjdENhcmRzKGdyaWQpLm1hcChjYXJkSWQp"
+      + "LmZpbHRlcihCb29sZWFuKTsKICB9CiAgZnVuY3Rpb24gdW5pcXVlKHZhbHVlcykgewogICAgY29uc3Qgc2VlbiA9IE9iamVjdC5jcmVhdGUobnVs"
+      + "bCk7CiAgICByZXR1cm4gdmFsdWVzLmZpbHRlcihmdW5jdGlvbiAodmFsdWUpIHsgaWYgKHNlZW5bdmFsdWVdKSByZXR1cm4gZmFsc2U7IHNlZW5b"
+      + "dmFsdWVdID0gdHJ1ZTsgcmV0dXJuIHRydWU7IH0pOwogIH0KICBmdW5jdGlvbiBzdG9yYWdlKCkgewogICAgdHJ5IHsgcmV0dXJuIHdpbmRvdy5s"
+      + "b2NhbFN0b3JhZ2UgfHwgbnVsbDsgfSBjYXRjaCAoXykgeyByZXR1cm4gbnVsbDsgfQogIH0KICBmdW5jdGlvbiByZWFkTG9jYWxPcmRlcigpIHsK"
+      + "ICAgIGNvbnN0IHN0b3JlID0gc3RvcmFnZSgpOwogICAgaWYgKCFzdG9yZSkgcmV0dXJuIHsgb3JkZXI6IG51bGwsIHZhbGlkOiBmYWxzZSwgcHJl"
+      + "c2VudDogZmFsc2UgfTsKICAgIGxldCByYXc7CiAgICB0cnkgeyByYXcgPSBzdG9yZS5nZXRJdGVtKFNUT1JBR0VfS0VZKTsgfSBjYXRjaCAoXykg"
+      + "eyByZXR1cm4geyBvcmRlcjogbnVsbCwgdmFsaWQ6IGZhbHNlLCBwcmVzZW50OiBmYWxzZSB9OyB9CiAgICBpZiAocmF3ID09IG51bGwgfHwgcmF3"
+      + "ID09PSAnJykgcmV0dXJuIHsgb3JkZXI6IG51bGwsIHZhbGlkOiBmYWxzZSwgcHJlc2VudDogZmFsc2UgfTsKICAgIHRyeSB7CiAgICAgIGNvbnN0"
+      + "IG9yZGVyID0gSlNPTi5wYXJzZShyYXcpOwogICAgICBpZiAoIUFycmF5LmlzQXJyYXkob3JkZXIpIHx8ICFvcmRlci5sZW5ndGggfHwgb3JkZXIu"
+      + "c29tZShmdW5jdGlvbiAoaWQpIHsgcmV0dXJuIHR5cGVvZiBpZCAhPT0gJ3N0cmluZycgfHwgIWlkLnRyaW0oKTsgfSkpIHJldHVybiB7IG9yZGVy"
+      + "OiBudWxsLCB2YWxpZDogZmFsc2UsIHByZXNlbnQ6IHRydWUgfTsKICAgICAgcmV0dXJuIHsgb3JkZXI6IG9yZGVyLm1hcChmdW5jdGlvbiAoaWQp"
+      + "IHsgcmV0dXJuIGlkLnRyaW0oKTsgfSksIHZhbGlkOiB0cnVlLCBwcmVzZW50OiB0cnVlIH07CiAgICB9IGNhdGNoIChfKSB7IHJldHVybiB7IG9y"
+      + "ZGVyOiBudWxsLCB2YWxpZDogZmFsc2UsIHByZXNlbnQ6IHRydWUgfTsgfQogIH0KICBmdW5jdGlvbiByZWNvbmNpbGVPcmRlcihzYXZlZE9yZGVy"
+      + "LCBhY3R1YWxJZHMpIHsKICAgIGNvbnN0IGFjdHVhbCA9IHVuaXF1ZSgoYWN0dWFsSWRzIHx8IFtdKS5maWx0ZXIoQm9vbGVhbikpOwogICAgaWYg"
+      + "KCFhY3R1YWwubGVuZ3RoKSByZXR1cm4gW107CiAgICBjb25zdCBhY3R1YWxTZXQgPSBPYmplY3QuY3JlYXRlKG51bGwpOyBhY3R1YWwuZm9yRWFj"
+      + "aChmdW5jdGlvbiAoaWQpIHsgYWN0dWFsU2V0W2lkXSA9IHRydWU7IH0pOwogICAgY29uc3QgcHJlZmVycmVkID0gQXJyYXkuaXNBcnJheShzYXZl"
+      + "ZE9yZGVyKSA/IHVuaXF1ZShzYXZlZE9yZGVyLmZpbHRlcihmdW5jdGlvbiAoaWQpIHsgcmV0dXJuIGFjdHVhbFNldFtpZF07IH0pKSA6IFtdOwog"
+      + "ICAgLyogQSBtYWxmb3JtZWQvZW1wdHkvdW5rbm93bi1vbmx5IHByZWZlcmVuY2UgY2Fubm90IHNhZmVseSBkZXNjcmliZSB0aGUKICAgICAgIERh"
+      + "c2hib2FyZC4gIFJlY292ZXIgZGlyZWN0bHkgdG8gdGhlIG9mZmljaWFsIGZhY3Rvcnkgb3JkZXJpbmcuICovCiAgICBjb25zdCBiYXNlID0gcHJl"
+      + "ZmVycmVkLmxlbmd0aCA/IHByZWZlcnJlZCA6IFtdOwogICAgREVGQVVMVF9PUkRFUi5mb3JFYWNoKGZ1bmN0aW9uIChpZCkgeyBpZiAoYWN0dWFs"
+      + "U2V0W2lkXSAmJiBiYXNlLmluZGV4T2YoaWQpIDwgMCkgYmFzZS5wdXNoKGlkKTsgfSk7CiAgICBhY3R1YWwuZm9yRWFjaChmdW5jdGlvbiAoaWQp"
+      + "IHsgaWYgKGJhc2UuaW5kZXhPZihpZCkgPCAwKSBiYXNlLnB1c2goaWQpOyB9KTsKICAgIHJldHVybiBiYXNlOwogIH0KICBmdW5jdGlvbiBzYW1l"
+      + "T3JkZXIobGVmdCwgcmlnaHQpIHsgcmV0dXJuIEFycmF5LmlzQXJyYXkobGVmdCkgJiYgQXJyYXkuaXNBcnJheShyaWdodCkgJiYgbGVmdC5sZW5n"
+      + "dGggPT09IHJpZ2h0Lmxlbmd0aCAmJiBsZWZ0LmV2ZXJ5KGZ1bmN0aW9uIChpZCwgaW5kZXgpIHsgcmV0dXJuIGlkID09PSByaWdodFtpbmRleF07"
+      + "IH0pOyB9CiAgZnVuY3Rpb24gc2F2ZUxvY2FsT3JkZXIob3JkZXIpIHsKICAgIGNvbnN0IHN0b3JlID0gc3RvcmFnZSgpOwogICAgaWYgKCFzdG9y"
+      + "ZSB8fCAhQXJyYXkuaXNBcnJheShvcmRlcikgfHwgIW9yZGVyLmxlbmd0aCkgcmV0dXJuIGZhbHNlOwogICAgdHJ5IHsgc3RvcmUuc2V0SXRlbShT"
+      + "VE9SQUdFX0tFWSwgSlNPTi5zdHJpbmdpZnkob3JkZXIpKTsgcmV0dXJuIHRydWU7IH0gY2F0Y2ggKF8pIHsgcmV0dXJuIGZhbHNlOyB9CiAgfQog"
+      + "IGZ1bmN0aW9uIGNsZWFyTG9jYWxPcmRlcigpIHsKICAgIGNvbnN0IHN0b3JlID0gc3RvcmFnZSgpOwogICAgaWYgKCFzdG9yZSkgcmV0dXJuIGZh"
+      + "bHNlOwogICAgdHJ5IHsgc3RvcmUucmVtb3ZlSXRlbShTVE9SQUdFX0tFWSk7IHJldHVybiB0cnVlOyB9IGNhdGNoIChfKSB7IHJldHVybiBmYWxz"
+      + "ZTsgfQogIH0KICBmdW5jdGlvbiBsYWJlbChjYXJkKSB7CiAgICBjb25zdCBoZWFkaW5nID0gY2FyZCAmJiBjYXJkLnF1ZXJ5U2VsZWN0b3IgJiYg"
+      + "Y2FyZC5xdWVyeVNlbGVjdG9yKCdoMycpOwogICAgcmV0dXJuIG5vcm1hbGl6ZWQoaGVhZGluZyAmJiBoZWFkaW5nLnRleHRDb250ZW50KSB8fCAn"
+      + "RGFzaGJvYXJkIEtQSSc7CiAgfQogIGZ1bmN0aW9uIGVuc3VyZUhhbmRsZShjYXJkKSB7CiAgICBpZiAoIWNhcmQgfHwgIWNhcmQucXVlcnlTZWxl"
+      + "Y3RvciB8fCBjYXJkLnF1ZXJ5U2VsZWN0b3IoJ1tkYXRhLXI2N3Eta3BpLWhhbmRsZV0nKSkgcmV0dXJuOwogICAgY29uc3QgaGFuZGxlID0gZG9j"
+      + "dW1lbnQuY3JlYXRlRWxlbWVudCgnYnV0dG9uJyk7CiAgICBoYW5kbGUudHlwZSA9ICdidXR0b24nOyBoYW5kbGUuY2xhc3NOYW1lID0gJ3I2N3Et"
+      + "a3BpLWhhbmRsZSc7CiAgICBoYW5kbGUuc2V0QXR0cmlidXRlKCdkYXRhLXI2N3Eta3BpLWhhbmRsZScsICd0cnVlJyk7CiAgICBoYW5kbGUuc2V0"
+      + "QXR0cmlidXRlKCdhcmlhLWxhYmVsJywgJ1Jlb3JkZXIgJyArIGxhYmVsKGNhcmQpKTsKICAgIGhhbmRsZS5zZXRBdHRyaWJ1dGUoJ3RpdGxlJywg"
+      + "J0RyYWcgdG8gcmVvcmRlci4gS2V5Ym9hcmQ6IGFycm93IGtleXMsIEhvbWUsIEVuZC4nKTsKICAgIGhhbmRsZS5zZXRBdHRyaWJ1dGUoJ2FyaWEt"
+      + "ZGVzY3JpYmVkYnknLCAncjY3cS1kYXNoYm9hcmQtbGF5b3V0LXN0YXR1cycpOwogICAgaGFuZGxlLmlubmVySFRNTCA9ICc8c3BhbiBhcmlhLWhp"
+      + "ZGRlbj0idHJ1ZSI+4ouu4ouuPC9zcGFuPic7CiAgICBjYXJkLmluc2VydEJlZm9yZShoYW5kbGUsIGNhcmQuZmlyc3RDaGlsZCk7CiAgfQogIGZ1"
+      + "bmN0aW9uIGVuc3VyZUhhbmRsZXMoZ3JpZCkgeyBkaXJlY3RDYXJkcyhncmlkKS5mb3JFYWNoKGVuc3VyZUhhbmRsZSk7IH0KICBmdW5jdGlvbiBh"
+      + "cHBseU9yZGVyKGdyaWQsIHBlcnNpc3RSZWNvbmNpbGVkKSB7CiAgICBjb25zdCBjYXJkcyA9IGRpcmVjdENhcmRzKGdyaWQpOwogICAgY29uc3Qg"
+      + "aWRzID0gY2FyZHMubWFwKGNhcmRJZCkuZmlsdGVyKEJvb2xlYW4pOwogICAgaWYgKCFncmlkIHx8ICFpZHMubGVuZ3RoKSByZXR1cm4gW107CiAg"
+      + "ICBjb25zdCBsb2NhbCA9IHJlYWRMb2NhbE9yZGVyKCk7CiAgICBjb25zdCBvcmRlciA9IHJlY29uY2lsZU9yZGVyKGxvY2FsLnZhbGlkID8gbG9j"
+      + "YWwub3JkZXIgOiBudWxsLCBpZHMpOwogICAgY29uc3QgYnlJZCA9IE9iamVjdC5jcmVhdGUobnVsbCk7CiAgICBjYXJkcy5mb3JFYWNoKGZ1bmN0"
+      + "aW9uIChjYXJkKSB7IGNvbnN0IGlkID0gY2FyZElkKGNhcmQpOyBpZiAoaWQgJiYgIWJ5SWRbaWRdKSBieUlkW2lkXSA9IGNhcmQ7IH0pOwogICAg"
+      + "b3JkZXIuZm9yRWFjaChmdW5jdGlvbiAoaWQpIHsgaWYgKGJ5SWRbaWRdKSBncmlkLmFwcGVuZENoaWxkKGJ5SWRbaWRdKTsgfSk7CiAgICBlbnN1"
+      + "cmVIYW5kbGVzKGdyaWQpOwogICAgaWYgKHBlcnNpc3RSZWNvbmNpbGVkICYmIGxvY2FsLnZhbGlkICYmICFzYW1lT3JkZXIobG9jYWwub3JkZXIs"
+      + "IG9yZGVyKSkgc2F2ZUxvY2FsT3JkZXIob3JkZXIpOwogICAgcmV0dXJuIG9yZGVyOwogIH0KICBmdW5jdGlvbiBhbm5vdW5jZShtZXNzYWdlKSB7"
+      + "CiAgICBjb25zdCBzdGF0dXMgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCAmJiBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncjY3cS1kYXNoYm9h"
+      + "cmQtbGF5b3V0LXN0YXR1cycpOwogICAgaWYgKHN0YXR1cykgc3RhdHVzLnRleHRDb250ZW50ID0gbWVzc2FnZTsKICB9CiAgZnVuY3Rpb24gcGVy"
+      + "c2lzdGVkT3JkZXJGb3IoZ3JpZCkgewogICAgY29uc3Qgb3JkZXIgPSBhdmFpbGFibGVJZHMoZ3JpZCk7CiAgICBpZiAob3JkZXIubGVuZ3RoKSBz"
+      + "YXZlTG9jYWxPcmRlcihvcmRlcik7CiAgICByZXR1cm4gb3JkZXI7CiAgfQogIGZ1bmN0aW9uIG1vdmVDYXJkKGNhcmQsIGRlc3RpbmF0aW9uKSB7"
+      + "CiAgICBjb25zdCBncmlkID0gY2FyZCAmJiBjYXJkLnBhcmVudEVsZW1lbnQ7CiAgICBpZiAoIWdyaWQpIHJldHVybiBmYWxzZTsKICAgIGNvbnN0"
+      + "IGNhcmRzID0gZGlyZWN0Q2FyZHMoZ3JpZCk7IGNvbnN0IGN1cnJlbnQgPSBjYXJkcy5pbmRleE9mKGNhcmQpOwogICAgaWYgKGN1cnJlbnQgPCAw"
+      + "KSByZXR1cm4gZmFsc2U7CiAgICBsZXQgbmV4dCA9IGN1cnJlbnQ7CiAgICBpZiAoZGVzdGluYXRpb24gPT09ICdlYXJsaWVyJykgbmV4dCA9IE1h"
+      + "dGgubWF4KDAsIGN1cnJlbnQgLSAxKTsKICAgIGlmIChkZXN0aW5hdGlvbiA9PT0gJ2xhdGVyJykgbmV4dCA9IE1hdGgubWluKGNhcmRzLmxlbmd0"
+      + "aCAtIDEsIGN1cnJlbnQgKyAxKTsKICAgIGlmIChkZXN0aW5hdGlvbiA9PT0gJ3N0YXJ0JykgbmV4dCA9IDA7CiAgICBpZiAoZGVzdGluYXRpb24g"
+      + "PT09ICdlbmQnKSBuZXh0ID0gY2FyZHMubGVuZ3RoIC0gMTsKICAgIGlmIChuZXh0ID09PSBjdXJyZW50KSByZXR1cm4gZmFsc2U7CiAgICBjb25z"
+      + "dCByZWZlcmVuY2UgPSBjYXJkc1tuZXh0XTsKICAgIGlmIChuZXh0ID4gY3VycmVudCkgZ3JpZC5pbnNlcnRCZWZvcmUoY2FyZCwgcmVmZXJlbmNl"
+      + "Lm5leHRTaWJsaW5nKTsgZWxzZSBncmlkLmluc2VydEJlZm9yZShjYXJkLCByZWZlcmVuY2UpOwogICAgcGVyc2lzdGVkT3JkZXJGb3IoZ3JpZCk7"
+      + "IGFubm91bmNlKGxhYmVsKGNhcmQpICsgJyBtb3ZlZCB0byBwb3NpdGlvbiAnICsgKG5leHQgKyAxKSArICcuJyk7CiAgICByZXR1cm4gdHJ1ZTsK"
+      + "ICB9CiAgZnVuY3Rpb24gY2xlYXJEcm9wQ2xhc3NlcygpIHsKICAgIGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJ1tkYXRhLXI2N3Eta3BpLWRy"
+      + "b3BdJykuZm9yRWFjaChmdW5jdGlvbiAoY2FyZCkgeyBjYXJkLnJlbW92ZUF0dHJpYnV0ZSgnZGF0YS1yNjdxLWtwaS1kcm9wJyk7IH0pOwogIH0K"
+      + "ICBmdW5jdGlvbiBlbmREcmFnKGV2ZW50KSB7CiAgICBpZiAoIWRyYWcgfHwgKGV2ZW50ICYmIGV2ZW50LnBvaW50ZXJJZCAhPSBudWxsICYmIGV2"
+      + "ZW50LnBvaW50ZXJJZCAhPT0gZHJhZy5wb2ludGVySWQpKSByZXR1cm47CiAgICBjb25zdCBjb21wbGV0ZWQgPSBkcmFnLmNoYW5nZWQ7IGNvbnN0"
+      + "IGNhcmQgPSBkcmFnLmNhcmQsIGdyaWQgPSBkcmFnLmdyaWQ7CiAgICBpZiAoY2FyZCkgeyBjYXJkLmNsYXNzTGlzdC5yZW1vdmUoJ3I2N3Eta3Bp"
+      + "LWRyYWdnaW5nJyk7IGNhcmQuc2V0QXR0cmlidXRlKCdhcmlhLWdyYWJiZWQnLCAnZmFsc2UnKTsgfQogICAgY2xlYXJEcm9wQ2xhc3NlcygpOyBk"
+      + "cmFnID0gbnVsbDsKICAgIGlmIChjb21wbGV0ZWQgJiYgZ3JpZCkgeyBwZXJzaXN0ZWRPcmRlckZvcihncmlkKTsgYW5ub3VuY2UobGFiZWwoY2Fy"
+      + "ZCkgKyAnIHJlb3JkZXJlZCBvbiB0aGlzIGRldmljZSBvbmx5LicpOyB9CiAgfQogIGZ1bmN0aW9uIGJlZ2luRHJhZyhldmVudCwgaGFuZGxlKSB7"
+      + "CiAgICBjb25zdCBjYXJkID0gaGFuZGxlLmNsb3Nlc3QgJiYgaGFuZGxlLmNsb3Nlc3QoJ1tkYXRhLXplem1zLWtwaS1pZF0nKTsKICAgIGNvbnN0"
+      + "IGdyaWQgPSBjYXJkICYmIGNhcmQucGFyZW50RWxlbWVudDsKICAgIGlmICghY2FyZCB8fCAhZ3JpZCB8fCAhZ3JpZC5jbGFzc0xpc3QuY29udGFp"
+      + "bnMoJ2Rhc2hib2FyZC1rcGktZ3JpZCcpKSByZXR1cm47CiAgICBkcmFnID0geyBwb2ludGVySWQ6IGV2ZW50LnBvaW50ZXJJZCwgY2FyZDogY2Fy"
+      + "ZCwgZ3JpZDogZ3JpZCwgY2hhbmdlZDogZmFsc2UgfTsKICAgIGNhcmQuY2xhc3NMaXN0LmFkZCgncjY3cS1rcGktZHJhZ2dpbmcnKTsgY2FyZC5z"
+      + "ZXRBdHRyaWJ1dGUoJ2FyaWEtZ3JhYmJlZCcsICd0cnVlJyk7CiAgICBpZiAoaGFuZGxlLnNldFBvaW50ZXJDYXB0dXJlKSB7IHRyeSB7IGhhbmRs"
+      + "ZS5zZXRQb2ludGVyQ2FwdHVyZShldmVudC5wb2ludGVySWQpOyB9IGNhdGNoIChfKSB7fSB9CiAgICBldmVudC5wcmV2ZW50RGVmYXVsdCgpOwog"
+      + "IH0KICBmdW5jdGlvbiBkcmFnT3ZlcihldmVudCkgewogICAgaWYgKCFkcmFnIHx8IGV2ZW50LnBvaW50ZXJJZCAhPT0gZHJhZy5wb2ludGVySWQp"
+      + "IHJldHVybjsKICAgIGNvbnN0IHRhcmdldCA9IGRvY3VtZW50LmVsZW1lbnRGcm9tUG9pbnQgJiYgZG9jdW1lbnQuZWxlbWVudEZyb21Qb2ludChl"
+      + "dmVudC5jbGllbnRYLCBldmVudC5jbGllbnRZKTsKICAgIGNvbnN0IGNhbmRpZGF0ZSA9IHRhcmdldCAmJiB0YXJnZXQuY2xvc2VzdCAmJiB0YXJn"
+      + "ZXQuY2xvc2VzdCgnW2RhdGEtemV6bXMta3BpLWlkXScpOwogICAgaWYgKCFjYW5kaWRhdGUgfHwgY2FuZGlkYXRlID09PSBkcmFnLmNhcmQgfHwg"
+      + "Y2FuZGlkYXRlLnBhcmVudEVsZW1lbnQgIT09IGRyYWcuZ3JpZCkgcmV0dXJuOwogICAgY29uc3QgcmVjdCA9IGNhbmRpZGF0ZS5nZXRCb3VuZGlu"
+      + "Z0NsaWVudFJlY3QoKTsKICAgIGNvbnN0IGFmdGVyID0gZXZlbnQuY2xpZW50WSA+IHJlY3QudG9wICsgKHJlY3QuaGVpZ2h0IC8gMikgfHwgKGV2"
+      + "ZW50LmNsaWVudFkgPj0gcmVjdC50b3AgJiYgZXZlbnQuY2xpZW50WSA8PSByZWN0LmJvdHRvbSAmJiBldmVudC5jbGllbnRYID4gcmVjdC5sZWZ0"
+      + "ICsgKHJlY3Qud2lkdGggLyAyKSk7CiAgICBjbGVhckRyb3BDbGFzc2VzKCk7IGNhbmRpZGF0ZS5zZXRBdHRyaWJ1dGUoJ2RhdGEtcjY3cS1rcGkt"
+      + "ZHJvcCcsIGFmdGVyID8gJ2FmdGVyJyA6ICdiZWZvcmUnKTsKICAgIGNvbnN0IGJlZm9yZSA9IGF2YWlsYWJsZUlkcyhkcmFnLmdyaWQpLmpvaW4o"
+      + "J3wnKTsKICAgIGRyYWcuZ3JpZC5pbnNlcnRCZWZvcmUoZHJhZy5jYXJkLCBhZnRlciA/IGNhbmRpZGF0ZS5uZXh0U2libGluZyA6IGNhbmRpZGF0"
+      + "ZSk7CiAgICBpZiAoYXZhaWxhYmxlSWRzKGRyYWcuZ3JpZCkuam9pbignfCcpICE9PSBiZWZvcmUpIGRyYWcuY2hhbmdlZCA9IHRydWU7CiAgICBl"
+      + "dmVudC5wcmV2ZW50RGVmYXVsdCgpOwogIH0KICBmdW5jdGlvbiB0YXJnZXRIYW5kbGUoZXZlbnQpIHsKICAgIGNvbnN0IHRhcmdldCA9IGV2ZW50"
+      + "LnRhcmdldDsKICAgIHJldHVybiB0YXJnZXQgJiYgdGFyZ2V0LmNsb3Nlc3QgPyB0YXJnZXQuY2xvc2VzdCgnW2RhdGEtcjY3cS1rcGktaGFuZGxl"
+      + "XScpIDogbnVsbDsKICB9CiAgZnVuY3Rpb24gaW5zdGFsbEV2ZW50cygpIHsKICAgIGlmIChldmVudHNJbnN0YWxsZWQgfHwgIWRvY3VtZW50LmFk"
+      + "ZEV2ZW50TGlzdGVuZXIpIHJldHVybjsKICAgIGV2ZW50c0luc3RhbGxlZCA9IHRydWU7CiAgICBkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdw"
+      + "b2ludGVyZG93bicsIGZ1bmN0aW9uIChldmVudCkgewogICAgICBjb25zdCBoYW5kbGUgPSB0YXJnZXRIYW5kbGUoZXZlbnQpOwogICAgICBpZiAo"
+      + "IWhhbmRsZSB8fCAoZXZlbnQuYnV0dG9uICE9IG51bGwgJiYgZXZlbnQuYnV0dG9uICE9PSAwKSkgcmV0dXJuOwogICAgICBiZWdpbkRyYWcoZXZl"
+      + "bnQsIGhhbmRsZSk7CiAgICB9LCB0cnVlKTsKICAgIGRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ3BvaW50ZXJtb3ZlJywgZHJhZ092ZXIsIHRy"
+      + "dWUpOwogICAgZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcigncG9pbnRlcnVwJywgZW5kRHJhZywgdHJ1ZSk7CiAgICBkb2N1bWVudC5hZGRFdmVu"
+      + "dExpc3RlbmVyKCdwb2ludGVyY2FuY2VsJywgZW5kRHJhZywgdHJ1ZSk7CiAgICBkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdrZXlkb3duJywg"
+      + "ZnVuY3Rpb24gKGV2ZW50KSB7CiAgICAgIGNvbnN0IGhhbmRsZSA9IHRhcmdldEhhbmRsZShldmVudCk7IGlmICghaGFuZGxlKSByZXR1cm47CiAg"
+      + "ICAgIGNvbnN0IGNhcmQgPSBoYW5kbGUuY2xvc2VzdCAmJiBoYW5kbGUuY2xvc2VzdCgnW2RhdGEtemV6bXMta3BpLWlkXScpOwogICAgICBsZXQg"
+      + "ZGlyZWN0aW9uID0gJyc7CiAgICAgIGlmIChldmVudC5rZXkgPT09ICdBcnJvd1VwJyB8fCBldmVudC5rZXkgPT09ICdBcnJvd0xlZnQnKSBkaXJl"
+      + "Y3Rpb24gPSAnZWFybGllcic7CiAgICAgIGlmIChldmVudC5rZXkgPT09ICdBcnJvd0Rvd24nIHx8IGV2ZW50LmtleSA9PT0gJ0Fycm93UmlnaHQn"
+      + "KSBkaXJlY3Rpb24gPSAnbGF0ZXInOwogICAgICBpZiAoZXZlbnQua2V5ID09PSAnSG9tZScpIGRpcmVjdGlvbiA9ICdzdGFydCc7CiAgICAgIGlm"
+      + "IChldmVudC5rZXkgPT09ICdFbmQnKSBkaXJlY3Rpb24gPSAnZW5kJzsKICAgICAgaWYgKGRpcmVjdGlvbiAmJiBtb3ZlQ2FyZChjYXJkLCBkaXJl"
+      + "Y3Rpb24pKSBldmVudC5wcmV2ZW50RGVmYXVsdCgpOwogICAgfSk7CiAgfQogIGZ1bmN0aW9uIHN0eWxlKCkgewogICAgaWYgKCFkb2N1bWVudC5o"
+      + "ZWFkIHx8IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdyNjdxLWRhc2hib2FyZC1rcGktbGF5b3V0LXN0eWxlJykpIHJldHVybjsKICAgIGNvbnN0"
+      + "IG5vZGUgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzdHlsZScpOyBub2RlLmlkID0gJ3I2N3EtZGFzaGJvYXJkLWtwaS1sYXlvdXQtc3R5bGUn"
+      + "OwogICAgbm9kZS50ZXh0Q29udGVudCA9ICcuZGFzaGJvYXJkLWtwaS1ncmlkPi5jYXJkLmtwaVtkYXRhLXplem1zLWtwaS1pZF17cG9zaXRpb246"
+      + "cmVsYXRpdmU7cGFkZGluZy1yaWdodDo1MnB4fS5yNjdxLWtwaS1oYW5kbGV7cG9zaXRpb246YWJzb2x1dGU7dG9wOjhweDtyaWdodDo4cHg7ei1p"
+      + "bmRleDoyO3dpZHRoOjM2cHg7aGVpZ2h0OjM2cHg7Ym9yZGVyOjFweCBzb2xpZCByZ2JhKDE0NSwxNzAsMjA1LC41KTtib3JkZXItcmFkaXVzOjdw"
+      + "eDtiYWNrZ3JvdW5kOnJnYmEoMjAsMzUsNTgsLjcyKTtjb2xvcjojYWViZWQ0O2ZvbnQtd2VpZ2h0OjgwMDtsZXR0ZXItc3BhY2luZzotMnB4O2xp"
+      + "bmUtaGVpZ2h0OjE7Y3Vyc29yOmdyYWI7dG91Y2gtYWN0aW9uOm5vbmV9LnI2N3Eta3BpLWhhbmRsZTpmb2N1cy12aXNpYmxle291dGxpbmU6MnB4"
+      + "IHNvbGlkICMyMGM3YjE7b3V0bGluZS1vZmZzZXQ6MnB4fS5yNjdxLWtwaS1oYW5kbGU6YWN0aXZle2N1cnNvcjpncmFiYmluZ30ucjY3cS1rcGkt"
+      + "ZHJhZ2dpbmd7b3BhY2l0eTouNTY7b3V0bGluZToycHggZGFzaGVkICMyMGM3YjE7b3V0bGluZS1vZmZzZXQ6M3B4fS5kYXNoYm9hcmQta3BpLWdy"
+      + "aWQ+W2RhdGEtcjY3cS1rcGktZHJvcD0iYmVmb3JlIl17Ym94LXNoYWRvdzppbnNldCA0cHggMCAwICMyMGM3YjF9LmRhc2hib2FyZC1rcGktZ3Jp"
+      + "ZD5bZGF0YS1yNjdxLWtwaS1kcm9wPSJhZnRlciJde2JveC1zaGFkb3c6aW5zZXQgLTRweCAwIDAgIzIwYzdiMX0ucjY3cS1sYXlvdXQtY29udHJv"
+      + "bHN7ZGlzcGxheTpmbGV4O2FsaWduLWl0ZW1zOmNlbnRlcjtnYXA6MTBweDttYXJnaW46LTRweCAwIDEycHh9LnI2N3EtbGF5b3V0LWNvbnRyb2xz"
+      + "IC5tdXRlZHtmb250LXNpemU6MTJweH1AbWVkaWEobWF4LXdpZHRoOjcyMHB4KXsuZGFzaGJvYXJkLWtwaS1ncmlkPi5jYXJkLmtwaVtkYXRhLXpl"
+      + "em1zLWtwaS1pZF17cGFkZGluZy1yaWdodDo1MnB4fS5yNjdxLWtwaS1oYW5kbGV7dG9wOjhweDtyaWdodDo4cHg7Zm9udC1zaXplOjE2cHh9LmRh"
+      + "c2hib2FyZC1rcGktZ3JpZD4uY2FyZC5rcGlbZGF0YS16ZXptcy1rcGktaWRdOmxhc3QtY2hpbGR7Z3JpZC1jb2x1bW46MS8tMX0ucjY3cS1sYXlv"
+      + "dXQtY29udHJvbHN7bWFyZ2luLXRvcDowO2ZsZXgtd3JhcDp3cmFwfX0nOwogICAgZG9jdW1lbnQuaGVhZC5hcHBlbmRDaGlsZChub2RlKTsKICB9"
+      + "CiAgZnVuY3Rpb24gbWVyZ2VLcGlHcmlkcyhob2xkZXIpIHsKICAgIGNvbnN0IHByaW1hcnkgPSBob2xkZXIucXVlcnlTZWxlY3RvcignLmRhc2hi"
+      + "b2FyZC1rcGktZ3JpZDpub3QoLmRhc2hib2FyZC1tYXJnaW4ta3BpLWdyaWQpJyk7CiAgICBjb25zdCBtYXJnaW4gPSBob2xkZXIucXVlcnlTZWxl"
+      + "Y3RvcignLmRhc2hib2FyZC1tYXJnaW4ta3BpLWdyaWQnKTsKICAgIGlmICghcHJpbWFyeSkgcmV0dXJuIG51bGw7CiAgICBkaXJlY3RDYXJkcyhw"
+      + "cmltYXJ5KS5mb3JFYWNoKGNhcmRJZCk7CiAgICBpZiAobWFyZ2luKSB7CiAgICAgIGNvbnN0IHpha2FhdCA9IGRpcmVjdENhcmRzKHByaW1hcnkp"
+      + "LmZpbHRlcihmdW5jdGlvbiAoY2FyZCkgeyByZXR1cm4gY2FyZElkKGNhcmQpID09PSAnemFrYWF0JzsgfSlbMF0gfHwgbnVsbDsKICAgICAgZGly"
+      + "ZWN0Q2FyZHMobWFyZ2luKS5mb3JFYWNoKGZ1bmN0aW9uIChjYXJkKSB7IGNhcmRJZChjYXJkKTsgcHJpbWFyeS5pbnNlcnRCZWZvcmUoY2FyZCwg"
+      + "emFrYWF0KTsgfSk7CiAgICAgIG1hcmdpbi5yZW1vdmUoKTsKICAgIH0KICAgIC8qIFJldGFpbiB0aGUgZXN0YWJsaXNoZWQgcjY3UCBmZWF0dXJl"
+      + "IG1hcmtlciBldmVuIHRob3VnaCBpdHMgdHdvIGNhcmRzIGFyZQogICAgICAgbm93IGRlbGliZXJhdGVseSBwYXJ0IG9mIHRoZSBzaW5nbGUgdXNl"
+      + "ci1vcmRlcmFibGUgMTUtY2FyZCBncmlkLiAqLwogICAgcHJpbWFyeS5zZXRBdHRyaWJ1dGUoJ2RhdGEtcjY3cC1tYXJnaW4ta3BpcycsICdtZXJn"
+      + "ZWQtcjY3cScpOwogICAgcmV0dXJuIHByaW1hcnk7CiAgfQogIGZ1bmN0aW9uIGVuc3VyZUNvbnRyb2xzKGhvbGRlciwgcHJpbWFyeSkgewogICAg"
+      + "aWYgKGhvbGRlci5xdWVyeVNlbGVjdG9yKCdbZGF0YS1yNjdxLWxheW91dC1jb250cm9sc10nKSkgcmV0dXJuOwogICAgY29uc3QgY29udHJvbHMg"
+      + "PSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTsgY29udHJvbHMuY2xhc3NOYW1lID0gJ3I2N3EtbGF5b3V0LWNvbnRyb2xzJzsgY29udHJv"
+      + "bHMuc2V0QXR0cmlidXRlKCdkYXRhLXI2N3EtbGF5b3V0LWNvbnRyb2xzJywgJ3RydWUnKTsKICAgIGNvbnRyb2xzLmlubmVySFRNTCA9ICc8YnV0"
+      + "dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBzbSBnaG9zdCIgb25jbGljaz0icjY3cVJlc2V0RGFzaGJvYXJkS3BpTGF5b3V0KCkiPlJlc2V0"
+      + "IEtQSSBMYXlvdXQ8L2J1dHRvbj48c3BhbiBpZD0icjY3cS1kYXNoYm9hcmQtbGF5b3V0LXN0YXR1cyIgY2xhc3M9Im11dGVkIiBhcmlhLWxpdmU9"
+      + "InBvbGl0ZSI+S1BJIGFycmFuZ2VtZW50IGlzIHN0b3JlZCBvbiB0aGlzIGRldmljZSBvbmx5Ljwvc3Bhbj4nOwogICAgcHJpbWFyeS5wYXJlbnRO"
+      + "b2RlLmluc2VydEJlZm9yZShjb250cm9scywgcHJpbWFyeSk7CiAgfQogIGZ1bmN0aW9uIGRlY29yYXRlTWFya3VwKGh0bWwpIHsKICAgIGlmICgh"
+      + "ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCkgcmV0dXJuIGh0bWw7CiAgICB0cnkgewogICAgICBjb25zdCBob2xkZXIgPSBkb2N1bWVudC5jcmVhdGVF"
+      + "bGVtZW50KCdkaXYnKTsgaG9sZGVyLmlubmVySFRNTCA9IFN0cmluZyhodG1sIHx8ICcnKTsKICAgICAgY29uc3QgcHJpbWFyeSA9IG1lcmdlS3Bp"
+      + "R3JpZHMoaG9sZGVyKTsgaWYgKCFwcmltYXJ5KSByZXR1cm4gaHRtbDsKICAgICAgYXBwbHlPcmRlcihwcmltYXJ5LCB0cnVlKTsgZW5zdXJlQ29u"
+      + "dHJvbHMoaG9sZGVyLCBwcmltYXJ5KTsKICAgICAgcmV0dXJuIGhvbGRlci5pbm5lckhUTUw7CiAgICB9IGNhdGNoIChfKSB7IHJldHVybiBodG1s"
+      + "OyB9CiAgfQogIGZ1bmN0aW9uIGRlY29yYXRlTW91bnRlZERhc2hib2FyZCgpIHsKICAgIGNvbnN0IHByaW1hcnkgPSBkb2N1bWVudC5xdWVyeVNl"
+      + "bGVjdG9yICYmIGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoJyN2aWV3Um9vdCAuZGFzaGJvYXJkLWtwaS1ncmlkOm5vdCguZGFzaGJvYXJkLW1hcmdp"
+      + "bi1rcGktZ3JpZCknKTsKICAgIGlmICghcHJpbWFyeSkgcmV0dXJuOwogICAgbWVyZ2VLcGlHcmlkcyhwcmltYXJ5LnBhcmVudE5vZGUgfHwgZG9j"
+      + "dW1lbnQpOyBhcHBseU9yZGVyKHByaW1hcnksIHRydWUpOyBlbnN1cmVIYW5kbGVzKHByaW1hcnkpOwogIH0KICBmdW5jdGlvbiBpbnN0YWxsRGFz"
+      + "aGJvYXJkKCkgewogICAgY29uc3QgYmFzZSA9IHdpbmRvdy52aWV3RGFzaGJvYXJkOwogICAgaWYgKHR5cGVvZiBiYXNlICE9PSAnZnVuY3Rpb24n"
+      + "IHx8IGJhc2UuX196ZXptc0Rhc2hib2FyZExheW91dFI2N1EpIHJldHVybjsKICAgIHdpbmRvdy52aWV3RGFzaGJvYXJkID0gZnVuY3Rpb24gKCkg"
+      + "eyByZXR1cm4gZGVjb3JhdGVNYXJrdXAoYmFzZS5hcHBseSh0aGlzLCBhcmd1bWVudHMpKTsgfTsKICAgIHdpbmRvdy52aWV3RGFzaGJvYXJkLl9f"
+      + "emV6bXNEYXNoYm9hcmRMYXlvdXRSNjdRID0gdHJ1ZTsKICAgIHdpbmRvdy52aWV3RGFzaGJvYXJkLl9femV6bXNEYXNoYm9hcmRMYXlvdXRPcmln"
+      + "aW5hbCA9IGJhc2U7CiAgfQogIGZ1bmN0aW9uIGluc3RhbGxSZW5kZXIoKSB7CiAgICBjb25zdCBiYXNlID0gd2luZG93LnJlbmRlcjsKICAgIGlm"
+      + "ICh0eXBlb2YgYmFzZSAhPT0gJ2Z1bmN0aW9uJyB8fCBiYXNlLl9femV6bXNEYXNoYm9hcmRMYXlvdXRSNjdRKSByZXR1cm47CiAgICB3aW5kb3cu"
+      + "cmVuZGVyID0gZnVuY3Rpb24gKCkgeyBjb25zdCByZXN1bHQgPSBiYXNlLmFwcGx5KHRoaXMsIGFyZ3VtZW50cyk7IGRlY29yYXRlTW91bnRlZERh"
+      + "c2hib2FyZCgpOyByZXR1cm4gcmVzdWx0OyB9OwogICAgd2luZG93LnJlbmRlci5fX3plem1zRGFzaGJvYXJkTGF5b3V0UjY3USA9IHRydWU7CiAg"
+      + "fQogIGZ1bmN0aW9uIHJlc2V0TGF5b3V0KCkgewogICAgY29uc3QgYWNjZXB0ZWQgPSB0eXBlb2Ygd2luZG93LmNvbmZpcm0gIT09ICdmdW5jdGlv"
+      + "bicgfHwgd2luZG93LmNvbmZpcm0oJ1Jlc3RvcmUgdGhlIGRlZmF1bHQgS1BJIGFycmFuZ2VtZW50IG9uIHRoaXMgZGV2aWNlPycpOwogICAgaWYg"
+      + "KCFhY2NlcHRlZCkgcmV0dXJuIGZhbHNlOwogICAgY2xlYXJMb2NhbE9yZGVyKCk7CiAgICBjb25zdCBncmlkID0gZG9jdW1lbnQucXVlcnlTZWxl"
+      + "Y3RvciAmJiBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKCcjdmlld1Jvb3QgLmRhc2hib2FyZC1rcGktZ3JpZDpub3QoLmRhc2hib2FyZC1tYXJnaW4t"
+      + "a3BpLWdyaWQpJyk7CiAgICBpZiAoZ3JpZCkgeyBjb25zdCBjYXJkcyA9IGRpcmVjdENhcmRzKGdyaWQpOyBjb25zdCBieUlkID0gT2JqZWN0LmNy"
+      + "ZWF0ZShudWxsKTsgY2FyZHMuZm9yRWFjaChmdW5jdGlvbiAoY2FyZCkgeyBjb25zdCBpZCA9IGNhcmRJZChjYXJkKTsgaWYgKGlkKSBieUlkW2lk"
+      + "XSA9IGNhcmQ7IH0pOyByZWNvbmNpbGVPcmRlcihudWxsLCBhdmFpbGFibGVJZHMoZ3JpZCkpLmZvckVhY2goZnVuY3Rpb24gKGlkKSB7IGlmIChi"
+      + "eUlkW2lkXSkgZ3JpZC5hcHBlbmRDaGlsZChieUlkW2lkXSk7IH0pOyBlbnN1cmVIYW5kbGVzKGdyaWQpOyB9CiAgICBhbm5vdW5jZSgnRGVmYXVs"
+      + "dCBLUEkgbGF5b3V0IHJlc3RvcmVkIGZvciB0aGlzIGRldmljZS4nKTsgbm90aWNlKCdEZWZhdWx0IEtQSSBsYXlvdXQgcmVzdG9yZWQgZm9yIHRo"
+      + "aXMgZGV2aWNlLicsICdvaycpOyByZXR1cm4gdHJ1ZTsKICB9CgogIHdpbmRvdy5aRVpNUyA9IHdpbmRvdy5aRVpNUyB8fCB7fTsKICBpbnN0YWxs"
+      + "RGFzaGJvYXJkKCk7IGluc3RhbGxSZW5kZXIoKTsgaW5zdGFsbEV2ZW50cygpOyBzdHlsZSgpOwogIHdpbmRvdy5yNjdxUmVzZXREYXNoYm9hcmRL"
+      + "cGlMYXlvdXQgPSByZXNldExheW91dDsKICB3aW5kb3cuWkVaTVMuZGFzaGJvYXJkTGF5b3V0ID0gT2JqZWN0LmZyZWV6ZSh7IGJ1aWxkOiBCVUlM"
+      + "RCwgc3RvcmFnZUtleTogU1RPUkFHRV9LRVksIGdldERlZmF1bHRPcmRlcjogZGVmYXVsdE9yZGVyLCByZWFkTG9jYWxPcmRlcjogcmVhZExvY2Fs"
+      + "T3JkZXIsIHJlY29uY2lsZU9yZGVyOiByZWNvbmNpbGVPcmRlciwgYXBwbHlPcmRlcjogYXBwbHlPcmRlciwgcmVzZXRMb2NhbE9yZGVyOiByZXNl"
+      + "dExheW91dCwgX3Rlc3Q6IE9iamVjdC5mcmVlemUoeyBhdmFpbGFibGVJZHM6IGF2YWlsYWJsZUlkcywgc2F2ZUxvY2FsT3JkZXI6IHNhdmVMb2Nh"
+      + "bE9yZGVyLCBjbGVhckxvY2FsT3JkZXI6IGNsZWFyTG9jYWxPcmRlciwgbW92ZUNhcmQ6IG1vdmVDYXJkIH0pIH0pOwogIGRvY3VtZW50LmRvY3Vt"
+      + "ZW50RWxlbWVudC5zZXRBdHRyaWJ1dGUoJ2RhdGEtemV6bXMtZGFzaGJvYXJkLWtwaS1sYXlvdXQtcjY3cScsIEJVSUxEKTsKICBzZXRUaW1lb3V0"
+      + "KGRlY29yYXRlTW91bnRlZERhc2hib2FyZCwgMCk7Cn0oKSk7Cg==";
 
 
   const CLOUD_B64=
@@ -14899,15 +15097,15 @@ function directoryPayload(){`;
     if((output.split(directoryImportLastLoginNeedle).length-1)!==1)throw new Error('r60L staff directory import marker mismatch.');
     output=output.replace(directoryImportLastLoginNeedle,directoryImportLastLoginReplacement);
     output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="'+RELEASE+'" />');
-    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.28.16 - Margin KPIs & Financial Entry Editing</title>');
-    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.28.16';");
-    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.28.16 · Margin KPIs & Financial Entry Editing');
-    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.28.16 · Margin KPIs & Financial Entry Editing');
-    output=output.replace('<html lang="en-GH">','<html lang="en-GH" data-zezms-release="v3.28.16-r67p">');
+    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>Zola Electronics Zone - TradeFlow v3.28.17 - Device-Local Dashboard KPI Layout</title>');
+    output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.28.17';");
+    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.28.17 · Device-Local Dashboard KPI Layout');
+    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.28.17 · Device-Local Dashboard KPI Layout');
+    output=output.replace('<html lang="en-GH">','<html lang="en-GH" data-zezms-release="v3.28.17-r67q">');
     const legacyBuildCleanup=/<script>\n\(function\(\)\{\n  'use strict';\n  const BUILD = '20260823-sync-integrity-r52';[\s\S]*?\n\}\(\)\);\n<\/script>/;
     if((output.match(legacyBuildCleanup)||[]).length!==1)throw new Error('r67I legacy cache-reset marker mismatch.');
     output=output.replace(legacyBuildCleanup,'<script data-zezms-r67i-build-state>\n(function(){\n  try{localStorage.setItem("zezms-active-build","'+RELEASE+'");}catch(_){}\n}());\n</'+'script>');
-    output=output.replace("navigator.serviceWorker.register('./sw.js?v=20260823-sync-integrity-r52')","navigator.serviceWorker.register('./sw.js?v=20260919-r67p-margin-kpis-financial-entry-editing')");
+    output=output.replace("navigator.serviceWorker.register('./sw.js?v=20260823-sync-integrity-r52')","navigator.serviceWorker.register('./sw.js?v=20260919-r67q-device-local-kpi-layout')");
 
     const cloud=safeInline(decodeBase64(CLOUD_B64));
     const canonicalRestore=safeInline(decodeBase64(CANONICAL_RESTORE_B64));
@@ -14939,6 +15137,7 @@ function directoryPayload(){`;
     const dynamicCashWalletsR67L=safeInline(decodeBase64(DYNAMIC_CASH_WALLETS_R67L_B64));
     const accountSettlementWalletsR67O=safeInline(decodeBase64(ACCOUNT_SETTLEMENT_WALLETS_R67O_B64));
     const financialEntryEditingR67P=safeInline(decodeBase64(FINANCIAL_ENTRY_EDITING_R67P_B64));
+    const dashboardKpiLayoutR67Q=safeInline(decodeBase64(DASHBOARD_KPI_LAYOUT_R67Q_B64));
 
     const directCashGuard="if(action==='Deduct' && amount > (Number(DB.cashBalances[type])||0)+1e-9){";
     if((output.split(directCashGuard).length-1)!==1) throw new Error('r55 direct-cash Others guard marker mismatch.');
@@ -14948,8 +15147,8 @@ function directoryPayload(){`;
     output=output.replace(backupMarker,backupMarker+'\n<script data-zezms-canonical-restore-r60a>\n'+canonicalRestore+'\n</'+'script>');
     output=output.replace(integrityMarker,'<script data-zezms-sync-integrity-r60o>\n'+integrity+'\n</'+'script>\n<script data-zezms-fleet-convergence-r59>\n'+convergence+'\n</'+'script>\n<script data-zezms-receipt-quarantine-r54>\n'+notice+'\n</'+'script>\n<script data-zezms-owner-trusted-recovery-r60i>\n'+trustedRecovery+'\n</'+'script>');
     output=output.replace(operationsMarker,'<script data-zezms-operations-r55>\n'+operations+'\n</'+'script>');
-    output=output.replace(navigationMarker,navigationMarker+'\n<script data-zezms-startup-performance-r67i>\n'+startupPerformanceR67I+'\n</'+'script>\n<script data-zezms-working-capital-r55>\n'+workingCapital+'\n</'+'script>\n<script data-zezms-sale-cash-buckets-r60j>\n'+saleCashBuckets+'\n</'+'script>\n<script data-zezms-quick-sale-cash-buckets-r60k>\n'+quickSaleCashBuckets+'\n</'+'script>\n<script data-zezms-manager-scope-staff-login-r60l>\n'+managerScopeStaffLogin+'\n</'+'script>\n<script data-zezms-managed-device-lifecycle-r61>\n'+managedDeviceLifecycle+'\n</'+'script>\n<script data-zezms-self-service-recovery-r62w>\n'+selfServiceRecovery+'\n</'+'script>\n<script data-zezms-executive-performance-r63>\n'+executivePerformance+'\n</'+'script>\n<script data-zezms-targets-forecasting-r64>\n'+targetsForecasting+'\n</'+'script>\n<script data-zezms-management-alerts-r65>\n'+managementAlerts+'\n</'+'script>\n<script data-zezms-management-actions-r66>\n'+managementActions+'\n</'+'script>\n<script data-zezms-controlled-decision-workflows-r67>\n'+controlledDecisionWorkflows+'\n</'+'script>\n<script data-zezms-management-workflow-entry-r67d>\n'+managementWorkflowEntry+'\n</'+'script>\n<script data-zezms-post6-management-navigation-r67d>\n'+post6ManagementNavigation+'\n</'+'script>\n<script data-zezms-active-view-title-state-r67d>\n'+activeViewTitleState+'\n</'+'script>\n<script data-zezms-dashboard-restoration-r67d>\n'+dashboardRestoration+'\n</'+'script>\n<script data-zezms-dashboard-reporting-r67d>\n'+dashboardReporting+'\n</'+'script>\n<script data-zezms-management-reporting-r67f>\n'+managementReportingR67F+'\n</'+'script>\n<script data-zezms-kpi-charts-r67g>\n'+kpiChartsR67G+'\n</'+'script>\n<script data-zezms-live-sync-persistence-r67h>document.documentElement.setAttribute("data-zezms-live-sync-persistence-r67h","M4/3");</'+'script>\n<script data-zezms-wallet-transfer-r67k>\n'+walletTransferR67K+'\n</'+'script>\n<script data-zezms-dynamic-cash-wallets-r67l>\n'+dynamicCashWalletsR67L+'\n</'+'script>\n<script data-zezms-account-settlement-wallets-r67o>\n'+accountSettlementWalletsR67O+'\n</'+'script>\n<script data-zezms-financial-entry-editing-r67p>\n'+financialEntryEditingR67P+'\n</'+'script>');
-    if(output.indexOf("const APP_VERSION = '3.28.16';")<0||output.indexOf('data-zezms-release="v3.28.16-r67p"')<0||output.indexOf('data-zezms-executive-performance-r63')<0||output.indexOf('data-zezms-targets-forecasting-r64')<0||output.indexOf('data-zezms-management-alerts-r65')<0||output.indexOf('data-zezms-management-actions-r66')<0||output.indexOf('data-zezms-controlled-decision-workflows-r67')<0||output.indexOf('data-zezms-management-workflow-entry-r67d')<0||output.indexOf('data-zezms-post6-management-navigation-r67d')<0||output.indexOf('data-zezms-cloud-sync-r61o')<0||output.indexOf('data-zezms-dashboard-restoration-r67d')<0||output.indexOf('data-zezms-dashboard-reporting-r67d')<0||output.indexOf('data-zezms-management-reporting-r67f')<0||output.indexOf('data-zezms-kpi-charts-r67g')<0||output.indexOf('data-zezms-live-sync-persistence-r67h')<0||output.indexOf('data-zezms-wallet-transfer-r67k')<0||output.indexOf('data-zezms-dynamic-cash-wallets-r67l')<0||output.indexOf('data-zezms-account-settlement-wallets-r67o')<0||output.indexOf('data-zezms-financial-entry-editing-r67p')<0||output.indexOf('data-zezms-managed-device-lifecycle-r61')<0||output.indexOf('data-zezms-self-service-recovery-r62w')<0||output.indexOf('data-zezms-canonical-restore-r60a')<0||output.indexOf('20260904-canonical-security-root-r62s')<0||output.indexOf('data-zezms-sync-integrity-r60o')<0||output.indexOf('data-zezms-fleet-convergence-r59')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf('data-zezms-owner-trusted-recovery-r60i')<0||output.indexOf('data-zezms-sale-cash-buckets-r60j')<0||output.indexOf('data-zezms-quick-sale-cash-buckets-r60k')<0||output.indexOf('data-zezms-manager-scope-staff-login-r60l')<0||output.indexOf("type!=='Others'")<0||output.indexOf('R60M_SYNC_SAVE_FALLBACK')<0||output.indexOf('archiveVerifiedDownloadApplyFailures')<0||output.indexOf('Historical Derived Metadata')<0||output.indexOf('Cloud-Certified Reference')<0||output.indexOf('__zezmsRecoveryPickerGateR62W')<0)throw new Error('r67P patch verification failed.');
+    output=output.replace(navigationMarker,navigationMarker+'\n<script data-zezms-startup-performance-r67i>\n'+startupPerformanceR67I+'\n</'+'script>\n<script data-zezms-working-capital-r55>\n'+workingCapital+'\n</'+'script>\n<script data-zezms-sale-cash-buckets-r60j>\n'+saleCashBuckets+'\n</'+'script>\n<script data-zezms-quick-sale-cash-buckets-r60k>\n'+quickSaleCashBuckets+'\n</'+'script>\n<script data-zezms-manager-scope-staff-login-r60l>\n'+managerScopeStaffLogin+'\n</'+'script>\n<script data-zezms-managed-device-lifecycle-r61>\n'+managedDeviceLifecycle+'\n</'+'script>\n<script data-zezms-self-service-recovery-r62w>\n'+selfServiceRecovery+'\n</'+'script>\n<script data-zezms-executive-performance-r63>\n'+executivePerformance+'\n</'+'script>\n<script data-zezms-targets-forecasting-r64>\n'+targetsForecasting+'\n</'+'script>\n<script data-zezms-management-alerts-r65>\n'+managementAlerts+'\n</'+'script>\n<script data-zezms-management-actions-r66>\n'+managementActions+'\n</'+'script>\n<script data-zezms-controlled-decision-workflows-r67>\n'+controlledDecisionWorkflows+'\n</'+'script>\n<script data-zezms-management-workflow-entry-r67d>\n'+managementWorkflowEntry+'\n</'+'script>\n<script data-zezms-post6-management-navigation-r67d>\n'+post6ManagementNavigation+'\n</'+'script>\n<script data-zezms-active-view-title-state-r67d>\n'+activeViewTitleState+'\n</'+'script>\n<script data-zezms-dashboard-restoration-r67d>\n'+dashboardRestoration+'\n</'+'script>\n<script data-zezms-dashboard-reporting-r67d>\n'+dashboardReporting+'\n</'+'script>\n<script data-zezms-management-reporting-r67f>\n'+managementReportingR67F+'\n</'+'script>\n<script data-zezms-kpi-charts-r67g>\n'+kpiChartsR67G+'\n</'+'script>\n<script data-zezms-live-sync-persistence-r67h>document.documentElement.setAttribute("data-zezms-live-sync-persistence-r67h","M4/3");</'+'script>\n<script data-zezms-wallet-transfer-r67k>\n'+walletTransferR67K+'\n</'+'script>\n<script data-zezms-dynamic-cash-wallets-r67l>\n'+dynamicCashWalletsR67L+'\n</'+'script>\n<script data-zezms-account-settlement-wallets-r67o>\n'+accountSettlementWalletsR67O+'\n</'+'script>\n<script data-zezms-financial-entry-editing-r67p>\n'+financialEntryEditingR67P+'\n</'+'script>\n<script data-zezms-dashboard-kpi-layout-r67q>\n'+dashboardKpiLayoutR67Q+'\n</'+'script>');
+    if(output.indexOf("const APP_VERSION = '3.28.17';")<0||output.indexOf('data-zezms-release="v3.28.17-r67q"')<0||output.indexOf('data-zezms-executive-performance-r63')<0||output.indexOf('data-zezms-targets-forecasting-r64')<0||output.indexOf('data-zezms-management-alerts-r65')<0||output.indexOf('data-zezms-management-actions-r66')<0||output.indexOf('data-zezms-controlled-decision-workflows-r67')<0||output.indexOf('data-zezms-management-workflow-entry-r67d')<0||output.indexOf('data-zezms-post6-management-navigation-r67d')<0||output.indexOf('data-zezms-cloud-sync-r61o')<0||output.indexOf('data-zezms-dashboard-restoration-r67d')<0||output.indexOf('data-zezms-dashboard-reporting-r67d')<0||output.indexOf('data-zezms-management-reporting-r67f')<0||output.indexOf('data-zezms-kpi-charts-r67g')<0||output.indexOf('data-zezms-live-sync-persistence-r67h')<0||output.indexOf('data-zezms-wallet-transfer-r67k')<0||output.indexOf('data-zezms-dynamic-cash-wallets-r67l')<0||output.indexOf('data-zezms-account-settlement-wallets-r67o')<0||output.indexOf('data-zezms-financial-entry-editing-r67p')<0||output.indexOf('data-zezms-dashboard-kpi-layout-r67q')<0||output.indexOf('data-zezms-managed-device-lifecycle-r61')<0||output.indexOf('data-zezms-self-service-recovery-r62w')<0||output.indexOf('data-zezms-canonical-restore-r60a')<0||output.indexOf('20260904-canonical-security-root-r62s')<0||output.indexOf('data-zezms-sync-integrity-r60o')<0||output.indexOf('data-zezms-fleet-convergence-r59')<0||output.indexOf('data-zezms-operations-r55')<0||output.indexOf('data-zezms-working-capital-r55')<0||output.indexOf('data-zezms-owner-trusted-recovery-r60i')<0||output.indexOf('data-zezms-sale-cash-buckets-r60j')<0||output.indexOf('data-zezms-quick-sale-cash-buckets-r60k')<0||output.indexOf('data-zezms-manager-scope-staff-login-r60l')<0||output.indexOf("type!=='Others'")<0||output.indexOf('R60M_SYNC_SAVE_FALLBACK')<0||output.indexOf('archiveVerifiedDownloadApplyFailures')<0||output.indexOf('Historical Derived Metadata')<0||output.indexOf('Cloud-Certified Reference')<0||output.indexOf('__zezmsRecoveryPickerGateR62W')<0)throw new Error('r67Q patch verification failed.');
     return output;
   }
   function renderSource(source){
@@ -14984,8 +15183,8 @@ function directoryPayload(){`;
       await cachePatched(patched);
       renderSource(patched);
     }catch(error){
-      console.error('ZEZMS r67P bootstrap failed',error);
-      status('r67P could not start: '+(error&&error.message||error)+'. Check the local release or connect to install it. No business data was changed.',true);
+      console.error('ZEZMS r67Q bootstrap failed',error);
+      status('r67Q could not start: '+(error&&error.message||error)+'. Check the local release or connect to install it. No business data was changed.',true);
     }
   }
   boot();
