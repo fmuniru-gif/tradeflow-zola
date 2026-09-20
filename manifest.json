@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.19 r67S with final downloaded Price List Product Name A-Z ordering with invariant verification and no business-state or sync changes, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260920-r67s-price-list-alphabetical-order-hotfix",
+  "description": "ZEZMS Owner Edition v3.28.20 r67T with customer-facing three-column current Price List content-fit layout, preserving final Product Name A-Z ordering and no business-state or sync changes, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260920-r67t-price-list-content-fit-columns",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

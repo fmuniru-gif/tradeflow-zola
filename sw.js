@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.19 - Final Product Price List Alphabetical Order r67S */
-const CACHE = 'zezms-r67s-price-list-alphabetical-order-hotfix-20260920';
-const PATCHED_INDEX_CACHE = 'zezms-r67s-price-list-alphabetical-order-hotfix-cache-v1';
+/* ZEZMS Owner Edition v3.28.20 - Product Price List Content-Fit Columns r67T */
+const CACHE = 'zezms-r67t-price-list-content-fit-columns-20260920';
+const PATCHED_INDEX_CACHE = 'zezms-r67t-price-list-content-fit-columns-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R67S_SHELL_READY' && data.release === '20260920-r67s-price-list-alphabetical-order-hotfix') {
+  if (data && data.type === 'ZEZMS_R67T_SHELL_READY' && data.release === '20260920-r67t-price-list-content-fit-columns') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
