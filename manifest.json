@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.17 r67Q with device-local Dashboard KPI arrangement with no business-state or sync changes, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260919-r67q-device-local-kpi-layout",
+  "description": "ZEZMS Owner Edition v3.28.18 r67R with device-local Cash Bucket arrangement and offline current-product Price List PDF with no business-state or sync changes, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260920-r67r-cash-bucket-layout-price-list",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
