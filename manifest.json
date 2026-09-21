@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.22 r67V with centrally registered, locally scoped Proforma Invoice route with a pure quotation filter, protected price/VAT adjustments and no business or sync state change, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260921-r67v-proforma-stability-overhaul",
+  "description": "ZEZMS Owner Edition v3.28.23 r67W with stable M4/3 Proforma history sharing with strict quotation identities, Approved signatures and the established logo watermark; no sale, stock, cash or account posting, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260921-r67w-proforma-fleet-print",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
