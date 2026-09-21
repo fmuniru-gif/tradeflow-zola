@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.21 r67U with non-posting quotation-backed Proforma Invoice creation, edit, PDF/reprint and ordinary sync with no Sale Out, stock, cash or account change, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260921-r67u-proforma-invoice",
+  "description": "ZEZMS Owner Edition v3.28.20 r67T with customer-facing three-column current Price List content-fit layout, preserving final Product Name A-Z ordering and no business-state or sync changes, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260920-r67t-price-list-content-fit-columns",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
