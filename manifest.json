@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.23 r67W with stable M4/3 Proforma history sharing with strict quotation identities, Approved signatures and the established logo watermark; no sale, stock, cash or account posting, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260921-r67w-proforma-fleet-print",
+  "description": "ZEZMS Owner Edition v3.28.24 r67X with canonical r67L wallet resolution for all live postings, Daily Qty Sold, and separate customer receipt references while retaining internal receipt identities, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260923-r67x-wallet-resolution-daily-qty-receipt-reference",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

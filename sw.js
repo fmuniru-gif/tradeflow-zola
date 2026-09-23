@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.23 - Proforma Fleet Sync & Document Finish r67W */
-const CACHE = 'zezms-r67w-proforma-fleet-print-20260921';
-const PATCHED_INDEX_CACHE = 'zezms-r67w-proforma-fleet-print-cache-v1';
+/* ZEZMS Owner Edition v3.28.24 - Wallet Resolution, Daily Qty & Receipt Reference r67X */
+const CACHE = 'zezms-r67x-wallet-resolution-daily-qty-receipt-reference-20260923';
+const PATCHED_INDEX_CACHE = 'zezms-r67x-wallet-resolution-daily-qty-receipt-reference-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R67W_SHELL_READY' && data.release === '20260921-r67w-proforma-fleet-print') {
+  if (data && data.type === 'ZEZMS_R67X_SHELL_READY' && data.release === '20260923-r67x-wallet-resolution-daily-qty-receipt-reference') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
