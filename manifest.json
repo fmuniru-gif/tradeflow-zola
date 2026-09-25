@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.24 r67X with canonical r67L wallet resolution for all live postings, Daily Qty Sold, and separate customer receipt references while retaining internal receipt identities, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260923-r67x-wallet-resolution-daily-qty-receipt-reference",
+  "description": "ZEZMS Owner Edition v3.28.25 r67Y with deterministic rendered-route title ownership and restored Owner/Admin Warranty Management using the existing synchronized warranty structures, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260925-r67y-management-title-warranty-restoration",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
