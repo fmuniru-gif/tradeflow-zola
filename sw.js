@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.29.0 - Promotion Candidate Intelligence r68 */
-const CACHE = 'zezms-r68-promotion-candidate-intelligence-20260926';
-const PATCHED_INDEX_CACHE = 'zezms-r68-promotion-candidate-intelligence-cache-v1';
+/* ZEZMS Owner Edition v3.29.1 - Promotion Product Universe Hotfix r68A */
+const CACHE = 'zezms-r68a-promotion-product-universe-hotfix-20260926';
+const PATCHED_INDEX_CACHE = 'zezms-r68a-promotion-product-universe-hotfix-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R68_SHELL_READY' && data.release === '20260926-r68-promotion-candidate-intelligence') {
+  if (data && data.type === 'ZEZMS_R68A_SHELL_READY' && data.release === '20260926-r68a-promotion-product-universe-hotfix') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
