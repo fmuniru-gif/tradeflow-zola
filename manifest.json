@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.28.26 r67Z with readable dark Warranty Settings controls, immediate local effect previews and strict whole-month validation without changing historic warranty evidence, M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260926-r67z-warranty-settings-usability-hotfix",
+  "description": "ZEZMS Owner Edition v3.29.0 r68 with read-only Promotion Candidate Intelligence using published Management evidence without campaign, content, price, stock, sales or sync writes, M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260926-r68-promotion-candidate-intelligence",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

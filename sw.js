@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.28.26 - Warranty Settings Usability Hotfix r67Z */
-const CACHE = 'zezms-r67z-warranty-settings-usability-hotfix-20260926';
-const PATCHED_INDEX_CACHE = 'zezms-r67z-warranty-settings-usability-hotfix-cache-v1';
+/* ZEZMS Owner Edition v3.29.0 - Promotion Candidate Intelligence r68 */
+const CACHE = 'zezms-r68-promotion-candidate-intelligence-20260926';
+const PATCHED_INDEX_CACHE = 'zezms-r68-promotion-candidate-intelligence-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -77,7 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'ZEZMS_R67Z_SHELL_READY' && data.release === '20260926-r67z-warranty-settings-usability-hotfix') {
+  if (data && data.type === 'ZEZMS_R68_SHELL_READY' && data.release === '20260926-r68-promotion-candidate-intelligence') {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
