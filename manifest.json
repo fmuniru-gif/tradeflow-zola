@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.29.1 r68A with Canonical Product Master product-universe hotfix for read-only Promotion Intelligence; published evidence remains optional and no campaign, content, price, stock, sales or sync write is made., M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260926-r68a-promotion-product-universe-hotfix",
+  "description": "ZEZMS Owner Edition v3.29.2 r68B with Current operational-month product-scope correction for read-only Promotion Intelligence; stock-row membership establishes scope while published Management evidence attaches only for an aligned period. No business data is changed., M4/3 live sync and verified recovery safeguards.",
+  "start_url": "./index.html?build=20260927-r68b-promotion-current-month-scope",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
