@@ -46,6 +46,12 @@
     return Array.isArray(products) ? products : Object.freeze([]);
   }
 
+  function currentProductEvidence() {
+    return Object.freeze(stageThreeProducts().map(function(product) {
+      return Object.freeze(Object.assign({}, product));
+    }));
+  }
+
   function selectedProduct() {
     const select=document.getElementById('policyLabProduct');
     if (!select || select.value==='') return null;
@@ -302,6 +308,7 @@
   ZEZMS.pricingPolicyLab=Object.freeze({
     version:VERSION, build:BUILD, installed:installed, readOnly:true, advisoryOnly:true, runtimeOnly:true,
     recalculate:recalculate, reset:reset,
-    getCurrentProducts:function () { return currentProducts; }
+    getCurrentProducts:currentProductEvidence,
+    getCurrentProductEvidence:currentProductEvidence
   });
 }());

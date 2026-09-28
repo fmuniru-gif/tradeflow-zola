@@ -444,7 +444,9 @@
     };
   }
 
-  function buildBaseModel(windowDays){
+  function buildBaseModel(windowDays, options){
+    options = options || {};
+    var persistRuntime = options.persistRuntime !== false;
     var selectedWindow = validWindow(windowDays);
     var today = localDay(new Date());
     var startDay = new Date(today.getTime() - (selectedWindow - 1) * DAY_MS);
@@ -506,9 +508,7 @@
       return b.thirtyDayPace - a.thirtyDayPace || a.product.localeCompare(b.product);
     });
 
-    runtime.renderCount += 1;
-    runtime.planningSnapshot = null;
-    runtime.baseModel = {
+    var model = {
       windowDays: selectedWindow,
       startDay: startDay,
       endDay: today,
@@ -517,12 +517,17 @@
       history: history,
       incoming: incoming,
       diagnostics: {
-        renderCount: runtime.renderCount,
+        renderCount: persistRuntime ? runtime.renderCount + 1 : runtime.renderCount,
         currentProductCount: products.length,
         saleProductCount: history.salesMap.size
       }
     };
-    return runtime.baseModel;
+    if(persistRuntime){
+      runtime.renderCount += 1;
+      runtime.planningSnapshot = null;
+      runtime.baseModel = model;
+    }
+    return model;
   }
 
   function stockVelocitySort(a, b){
@@ -913,13 +918,7 @@
     return runtime.planningSnapshot;
   }
 
-  function ensureProductSnapshot(){
-    if(!runtime.baseModel) buildBaseModel(DEFAULT_WINDOW);
-    return productSnapshot();
-  }
-
-  function productSnapshot(){
-    var model = runtime.baseModel;
+  function productSnapshotFor(model){
     if(!model) return Object.freeze({ windowDays:null, startDay:null, endDay:null, products:Object.freeze([]), outOfStockProducts:Object.freeze([]), incoming:null, planning:null });
     function productValue(product){
       return {
@@ -938,6 +937,7 @@
         lastSaleDate: product.lastSaleDate,
         incomingOpenPOQty: product.incomingOpenPOQty,
         incomingKnown: product.incomingKnown,
+        currentlyOutOfStock: product.currentlyOutOfStock === true,
         inventoryPosition: safeAdd(product.remainingQty, product.incomingKnown ? product.incomingOpenPOQty : 0)
       };
     }
@@ -955,6 +955,22 @@
       },
       planning: currentPlanningSnapshot()
     });
+  }
+
+  function ensureProductSnapshot(){
+    if(!runtime.baseModel) buildBaseModel(DEFAULT_WINDOW);
+    return productSnapshot();
+  }
+
+  function productSnapshot(){
+    return productSnapshotFor(runtime.baseModel);
+  }
+
+  // This is intentionally not ensureProductSnapshot(): it calls the existing
+  // builder without storing a render/runtime cache, so consumers are order
+  // independent and do not affect the interactive Planning screen.
+  function currentProductEvidence(){
+    return productSnapshotFor(buildBaseModel(DEFAULT_WINDOW, { persistRuntime:false }));
   }
 
   function notifySnapshotChanged(){
@@ -1115,6 +1131,7 @@
     resetScenario: resetScenario,
     getProductSnapshot: productSnapshot,
     ensureProductSnapshot: ensureProductSnapshot,
+    getCurrentProductEvidence: currentProductEvidence,
     getRuntimeSnapshot: function(){
       var model = runtime.baseModel;
       return Object.freeze({

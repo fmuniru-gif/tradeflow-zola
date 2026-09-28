@@ -1053,8 +1053,10 @@
     search: search,
     selectCustomer: selectCustomer,
     deriveSnapshot: function(data, options){ return deriveModel(data || {}, options || {}); },
-    getCustomerSnapshot: function(){ return runtime.model || freezeDeep({ customers:[], kpis:{}, coverage:{}, window:{} }); },
-    getChannelSnapshot: function(){ return runtime.model && runtime.model.channelIntelligence || freezeDeep({ salesByChannel:[], digitalByChannel:[] }); },
+    // These public snapshots are derived from the existing pure model and do
+    // not require the Dashboard to have rendered first.
+    getCustomerSnapshot: function(){ return deriveModel(currentDB(), { windowValue:runtime.windowValue }); },
+    getChannelSnapshot: function(){ return deriveModel(currentDB(), { windowValue:runtime.windowValue }).channelIntelligence; },
     getRuntimeSnapshot: function(){
       return freezeDeep({
         windowValue: runtime.windowValue,

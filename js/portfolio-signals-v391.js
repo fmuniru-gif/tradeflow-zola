@@ -128,7 +128,9 @@
   function stage4Snapshot(){
     try{
       var api = window.ZEZMS && window.ZEZMS.stockVelocity;
-      return api && typeof api.getProductSnapshot === 'function'
+      return api && typeof api.getCurrentProductEvidence === 'function'
+        ? api.getCurrentProductEvidence()
+        : api && typeof api.getProductSnapshot === 'function'
         ? api.getProductSnapshot()
         : null;
     }catch(_error){ return null; }
@@ -220,7 +222,9 @@
     return found ? sum : 0;
   }
 
-  function buildModel(){
+  function buildModel(options){
+    options = options || {};
+    var persistRuntime = options.persistRuntime !== false;
     var velocity = stage4Snapshot();
     var pricing = stage3Snapshot();
     var matchPricing = pricingMatcher(pricing);
@@ -316,8 +320,7 @@
       return { signal:signal, capital:capital, percent:percent };
     });
 
-    runtime.renderCount += 1;
-    runtime.model = freezeDeep({
+    var model = freezeDeep({
       windowDays: finite(velocity && velocity.windowDays),
       startDay: clean(velocity && velocity.startDay),
       endDay: clean(velocity && velocity.endDay),
@@ -333,7 +336,7 @@
         noSalesCount: products.filter(function(product){ return product.remainingQty > 0 && product.unitsSold === 0; }).length
       },
       diagnostics: {
-        renderCount: runtime.renderCount,
+        renderCount: persistRuntime ? runtime.renderCount + 1 : runtime.renderCount,
         currentProductCount: products.length,
         velocityRankCount: products.filter(function(product){ return Number.isFinite(product.velocityRank); }).length,
         capitalRankCount: products.filter(function(product){ return Number.isFinite(product.capitalRank); }).length,
@@ -341,8 +344,16 @@
         productivityRankCount: productivityEligible.length
       }
     });
-    return runtime.model;
+    if(persistRuntime){
+      runtime.renderCount += 1;
+      runtime.model = model;
+    }
+    return model;
   }
+
+  // The Portfolio dashboard keeps runtime.model only for its own display.  The
+  // public evidence snapshot rebuilds via the same model without touching it.
+  function currentProductEvidence(){ return buildModel({ persistRuntime:false }); }
 
   function hasSignal(product, signal){ return product.signals.indexOf(signal) >= 0; }
   function signalBadges(product){
@@ -540,7 +551,8 @@
     release: RELEASE,
     install: install,
     refresh: refresh,
-    getPortfolioSnapshot: function(){ return runtime.model || freezeDeep({ products:[], exposures:[], kpis:{} }); },
+    getPortfolioSnapshot: currentProductEvidence,
+    getCurrentProductEvidence: currentProductEvidence,
     getRuntimeSnapshot: function(){
       return Object.freeze({
         renderCount: runtime.renderCount,

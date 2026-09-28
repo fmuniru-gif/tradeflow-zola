@@ -225,6 +225,32 @@
     }));
   }
 
+  // The existing Dashboard cache remains for the interactive calculator.  This
+  // snapshot uses the same current-open-period builder and returns fresh frozen
+  // rows so read-only consumers never depend on a prior Dashboard visit.
+  function currentStockProductEvidence() {
+    return Object.freeze(buildCurrentStockAggregate().map(function (product) {
+      return Object.freeze({
+        key: product.key,
+        productId: product.productId,
+        productName: product.productName,
+        category: product.category,
+        remainingQty: product.remainingQty,
+        totalRemainingCost: product.totalRemainingCost,
+        weightedCostPerUnit: product.weightedCostPerUnit,
+        costValuesValid: product.costValuesValid,
+        listedPriceState: product.listedPriceState,
+        listedPrice: product.listedPrice,
+        listedPriceSource: product.listedPriceSource,
+        referenceGrossProfitPerUnit: product.referenceGrossProfitPerUnit,
+        referenceGrossMargin: product.referenceGrossMargin,
+        headroomPerUnit: product.headroomPerUnit,
+        headroomPercent: product.headroomPercent,
+        status: product.status
+      });
+    }));
+  }
+
   function statusBadge(product) {
     const badgeClass = product.status === 'Below Remaining-Cost Reference' ? 'bad'
       : product.status === 'Above Cost Reference' ? 'ok' : 'warn';
@@ -449,6 +475,7 @@
     selectWhatIf:selectWhatIf,
     calculateWhatIf:calculateWhatIf,
     resetWhatIf:resetWhatIf,
-    getCurrentStockAggregate:function () { return lastCurrentStockAggregate; }
+    getCurrentStockAggregate:currentStockProductEvidence,
+    getCurrentStockProductEvidence:currentStockProductEvidence
   });
 }());

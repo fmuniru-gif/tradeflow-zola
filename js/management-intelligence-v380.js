@@ -136,6 +136,28 @@
     }));
   }
 
+  // The Dashboard renderer keeps its own display cache in lastAggregate.  This
+  // public snapshot deliberately rebuilds through the same established model so
+  // a read-only consumer is independent of whether Dashboard has rendered.
+  function selectedPeriodProductEvidence() {
+    return Object.freeze(buildAggregateModel().map(function (product) {
+      return Object.freeze({
+        key: product.key,
+        productId: product.productId,
+        productName: product.productName,
+        category: product.category,
+        qtyIn: product.qtyIn,
+        qtySold: product.qtySold,
+        remainingQty: product.remainingQty,
+        remainingStockCost: product.remainingStockCost,
+        totalSales: product.totalSales,
+        grossProfit: product.grossProfit,
+        sellThrough: product.sellThrough,
+        grossMargin: product.grossMargin
+      });
+    }));
+  }
+
   function productCells(product, columns) {
     return columns.map(function (column) {
       if (column === 'product') return '<td>' + escapeHTML(product.productName) + '</td>';
@@ -232,6 +254,7 @@
     build: BUILD,
     installed: installed,
     readOnly: true,
-    getSelectedPeriodAggregate: function () { return lastAggregate; }
+    getSelectedPeriodAggregate: selectedPeriodProductEvidence,
+    getSelectedPeriodProductEvidence: selectedPeriodProductEvidence
   });
 }());

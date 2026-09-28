@@ -107,6 +107,32 @@
     });
   }
 
+  // Reuse the established Margin analysis and its own gross-loss list.  This
+  // exposes a cloned immutable product projection without relying on Dashboard.
+  function selectedPeriodProductEvidence() {
+    const analysis = buildAnalysis(aggregateSnapshot());
+    return Object.freeze(analysis.products.map(function (product) {
+      return Object.freeze({
+        key: product.key,
+        productName: product.productName,
+        productId: product.productId,
+        qtySold: product.qtySold,
+        totalSales: product.totalSales,
+        grossProfit: product.grossProfit,
+        grossMargin: product.grossMargin,
+        sellThrough: product.sellThrough,
+        averageSellingPrice: product.averageSellingPrice,
+        impliedCogs: product.impliedCogs,
+        costValuesValid: product.costValuesValid,
+        averageCostPerUnit: product.averageCostPerUnit,
+        grossProfitPerUnit: product.grossProfitPerUnit,
+        salesContribution: product.salesContribution,
+        grossProfitContribution: product.grossProfitContribution,
+        grossLossSelling: analysis.losses.indexOf(product) >= 0
+      });
+    }));
+  }
+
   function costCell(product) {
     if (!product.costValuesValid) {
       return '<td class="right mono" data-cost-valid="false" title="Inconsistent recorded sales/profit values">\u2014</td>';
@@ -256,5 +282,11 @@
   }
 
   const installed = install();
-  ZEZMS.marginIntelligence = Object.freeze({ version: VERSION, build: BUILD, installed: installed, readOnly: true });
+  ZEZMS.marginIntelligence = Object.freeze({
+    version: VERSION,
+    build: BUILD,
+    installed: installed,
+    readOnly: true,
+    getSelectedPeriodProductEvidence: selectedPeriodProductEvidence
+  });
 }());
