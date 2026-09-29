@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.29.3 - Promotion Intelligence Authoritative Product Evidence Bridge r68C */
-const CACHE = 'zezms-r68c-promotion-authoritative-evidence-bridge-20260927';
-const PATCHED_INDEX_CACHE = 'zezms-r68c-promotion-authoritative-evidence-bridge-cache-v1';
+/* ZEZMS Owner Edition v3.29.4 - Quotation Navigation Restoration r68D */
+const CACHE = 'zezms-r68d-quotation-navigation-restoration-20260929';
+const PATCHED_INDEX_CACHE = 'zezms-r68d-quotation-navigation-restoration-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -20,17 +20,19 @@ const ASSETS = [
   './js/mobile-vertical-layout.js?v=20260817-loopback-network-r47','./js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39',
   './js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39','./js/commercial-foundation.js?v=20260812-portfolio-signals-r39',
   './js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20260927-r68c-promotion-authoritative-evidence-bridge',
-  './js/margin-intelligence-v381.js?v=20260927-r68c-promotion-authoritative-evidence-bridge','./js/pricing-guidance-v382.js?v=20260927-r68c-promotion-authoritative-evidence-bridge',
-  './js/pricing-policy-lab-v383.js?v=20260927-r68c-promotion-authoritative-evidence-bridge','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
-  './js/stock-velocity-v390.js?v=20260927-r68c-promotion-authoritative-evidence-bridge','./js/portfolio-signals-v391.js?v=20260927-r68c-promotion-authoritative-evidence-bridge',
-  './js/customer-intelligence-v3100.js?v=20260927-r68c-promotion-authoritative-evidence-bridge','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
+  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20260929-r68d-quotation-navigation-restoration',
+  './js/margin-intelligence-v381.js?v=20260929-r68d-quotation-navigation-restoration','./js/pricing-guidance-v382.js?v=20260929-r68d-quotation-navigation-restoration',
+  './js/pricing-policy-lab-v383.js?v=20260929-r68d-quotation-navigation-restoration','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
+  './js/stock-velocity-v390.js?v=20260929-r68d-quotation-navigation-restoration','./js/portfolio-signals-v391.js?v=20260929-r68d-quotation-navigation-restoration',
+  './js/customer-intelligence-v3100.js?v=20260929-r68d-quotation-navigation-restoration','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/customer-outreach-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/customer-followups-v3130.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/product-catalog-search-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/sales-pipeline-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/stock-corrections-v3150.js?v=20260822-supplier-procurement-intelligence-r51','./js/warranty-management-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/supplier-procurement-v3160.js?v=20260822-supplier-procurement-intelligence-r51','./js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52',
   './js/print-readiness-v3120.js?v=20260817-loopback-network-r47','./js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47',
-  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20260927-r68c-promotion-authoritative-evidence-bridge',
+  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20260929-r68d-quotation-navigation-restoration',
+  './js/navigation-v3101-r68.js?v=20260929-r68d-quotation-navigation-restoration','./js/route-title-ownership-r68.js?v=20260929-r68d-quotation-navigation-restoration',
+  './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
 let postShellCachePromise = null;
@@ -77,7 +79,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && ((data.type === 'ZEZMS_R68C_SHELL_READY' && data.release === '20260927-r68c-promotion-authoritative-evidence-bridge') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R68D_SHELL_READY' && data.release === '20260929-r68d-quotation-navigation-restoration') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
