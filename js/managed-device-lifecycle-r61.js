@@ -5,7 +5,7 @@
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20260930-mb2-device-branch-context-r69';
+  var BUILD = '20260930-r69a-device-branch-refresh';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];
   var fleet = [];
@@ -128,7 +128,7 @@
   function lifecycleCardHtml() {
     if (isPaired()) return '<div class="card" style="margin-top:12px"><h3>Managed Device Lifecycle</h3><p class="muted">This paired device is controlled by its Owner. It cannot issue codes, activate a device, retire a device, or revoke a device.</p></div>';
     return '<div class="card" style="margin-top:12px" data-zezms-managed-lifecycle="r69">'
-      +'<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Managed Device Lifecycle</h3><span class="badge ok">r69</span></div>'
+      +'<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Managed Device Lifecycle</h3><span class="badge ok">r69A</span></div>'
       +'<p class="muted" style="font-size:12px;line-height:1.45">New devices remain write-locked until they reconstruct a verified checkpoint, pass Integrity Core and Fleet evidence, and an Owner approves activation. Retired and revoked devices keep their transaction history but lose cloud access.</p>'
       +'<div class="table-wrap"><table><thead><tr><th>Device</th><th>Mode</th><th>Lifecycle</th><th>Assigned Branch</th><th>Last seen</th><th>Verified cursor</th><th>App</th><th>Action</th></tr></thead><tbody id="m5a4DeviceRows">'+deviceRows()+'</tbody></table></div>'
       +'<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ghost" onclick="ZEZMS.managedDevices.refresh()">Refresh managed fleet</button><button class="btn" onclick="ZEZMS.managedDevices.beginDialog(\'ADD\')">Add new device</button><button class="btn ghost" onclick="ZEZMS.managedDevices.beginDialog(\'REPLACEMENT\')">Repair / replace a device</button></div>'
@@ -325,7 +325,11 @@
     var result=await pair.client.rpc('zezms_m5a4_assign_device_branch', { p_lifecycle_id:lifecycleId, p_branch_id:branchId, p_expected_revision:Number(revision || 0) });
     if (result.error) throw result.error;
     if (typeof closeModal === 'function') closeModal();
-    await loadFleet(); notify('Device branch assignment updated.', 'ok'); return result.data;
+    await loadFleet();
+    if (window.ZEZMS && ZEZMS.branchManagement && typeof ZEZMS.branchManagement.refresh === 'function') {
+      try { await ZEZMS.branchManagement.refresh(); } catch (_) { /* The assignment succeeded; Branch Management shows its own scoped read error if open. */ }
+    }
+    notify('Device branch assignment updated.', 'ok'); return result.data;
   }
 
   function installSettingsCard() {
@@ -345,7 +349,7 @@
   function initialize() {
     installSettingsCard(); installLegacyGuards();
     if (managedParams().requested) setTimeout(function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); },750);
-    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r69');
+    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r69a');
   }
 
   ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet().catch(function(e){notify(rpcError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, stageRead:stageRead} };

@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.30.0 r69 MB2 Branch Registry & Authorization. It manages branch metadata and device assignments only; operational branch data switching is not enabled. M4/3 and verified recovery safeguards are retained.",
-  "start_url": "./index.html?build=20260930-r69-mb2-branch-registry-authorization",
+  "description": "ZEZMS Owner Edition v3.30.1 r69A fixes Branch Management automatic registry hydration without an MFA prompt for reads. Mutations remain AAL2-protected; MB3 and operational branch switching are not included.",
+  "start_url": "./index.html?build=20260930-r69a-branch-management-auto-load",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
