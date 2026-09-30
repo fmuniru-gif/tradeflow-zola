@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.29.4 r68D with authoritative grouped Sales navigation restoring the existing Quotations workflow. Quotations and Proforma Invoice remain separate non-posting commercial document paths. No business data is changed., M4/3 live sync and verified recovery safeguards.",
-  "start_url": "./index.html?build=20260929-r68d-quotation-navigation-restoration",
+  "description": "ZEZMS Owner Edition v3.29.5 r68E with reusable read-only Account Statement and Cash Balances PDFs plus compact responsive KPI chart presentation. No business data is changed; M4/3 live sync and verified recovery safeguards are retained.",
+  "start_url": "./index.html?build=20260930-r68e-account-cash-pdf-compact-kpi-charts",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

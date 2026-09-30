@@ -1,12 +1,12 @@
-/* ZEZMS TradeFlow Owner Edition v3.29.4 / r68D.
+/* ZEZMS TradeFlow Owner Edition v3.29.5 / r68E.
    A rendered route is the sole owner of the application title and grouped-nav
    selection.  This is event-bound: there is no observer, polling loop or
    background DOM reconciliation. */
 (function () {
   'use strict';
 
-  var VERSION = '3.29.4';
-  var BUILD = '20260929-r68d-quotation-navigation-restoration';
+  var VERSION = '3.29.5';
+  var BUILD = '20260930-r68e-account-cash-pdf-compact-kpi-charts';
   var TITLES_BY_ROUTE = Object.freeze({
     dashboard: 'Dashboard KPIs', pos: 'Sale Out', stockin: 'Stock In', products: 'Products',
     stock: 'Stock Balance', cash: 'Cash Balances', expenses: 'Expenses', accounts: 'Accounts',

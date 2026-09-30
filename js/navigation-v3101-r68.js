@@ -1,11 +1,11 @@
-/* ZEZMS TradeFlow Owner Edition v3.29.4 / r68D
+/* ZEZMS TradeFlow Owner Edition v3.29.5 / r68E
    Grouped business navigation and direct Management view host.
    Presentation/routing only: existing calculation and transaction engines are reused unchanged. */
 (function () {
   'use strict';
 
-  var VERSION = '3.29.4';
-  var BUILD = '20260929-r68d-quotation-navigation-restoration';
+  var VERSION = '3.29.5';
+  var BUILD = '20260930-r68e-account-cash-pdf-compact-kpi-charts';
   window.ZEZMS = window.ZEZMS || {};
 
   if (window.ZEZMS.navigationV3101 && window.ZEZMS.navigationV3101.build === BUILD) {
