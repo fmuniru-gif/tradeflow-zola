@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.29.5 - Account & Cash PDF + Compact KPI Charts r68E */
-const CACHE = 'zezms-r68e-account-cash-pdf-compact-kpi-charts-20260930';
-const PATCHED_INDEX_CACHE = 'zezms-r68e-account-cash-pdf-compact-kpi-charts-cache-v1';
+/* ZEZMS Owner Edition v3.30.0 - MB2 Branch Registry & Authorization */
+const CACHE = 'zezms-r69-mb2-branch-registry-authorization-20260930';
+const PATCHED_INDEX_CACHE = 'zezms-r69-mb2-branch-registry-authorization-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -20,20 +20,21 @@ const ASSETS = [
   './js/mobile-vertical-layout.js?v=20260817-loopback-network-r47','./js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39',
   './js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39','./js/commercial-foundation.js?v=20260812-portfolio-signals-r39',
   './js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts',
-  './js/margin-intelligence-v381.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts','./js/pricing-guidance-v382.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts',
-  './js/pricing-policy-lab-v383.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
-  './js/stock-velocity-v390.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts','./js/portfolio-signals-v391.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts',
-  './js/customer-intelligence-v3100.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
+  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20260930-r69-mb2-branch-registry-authorization',
+  './js/margin-intelligence-v381.js?v=20260930-r69-mb2-branch-registry-authorization','./js/pricing-guidance-v382.js?v=20260930-r69-mb2-branch-registry-authorization',
+  './js/pricing-policy-lab-v383.js?v=20260930-r69-mb2-branch-registry-authorization','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
+  './js/stock-velocity-v390.js?v=20260930-r69-mb2-branch-registry-authorization','./js/portfolio-signals-v391.js?v=20260930-r69-mb2-branch-registry-authorization',
+  './js/customer-intelligence-v3100.js?v=20260930-r69-mb2-branch-registry-authorization','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/customer-outreach-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/customer-followups-v3130.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/product-catalog-search-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/sales-pipeline-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/stock-corrections-v3150.js?v=20260822-supplier-procurement-intelligence-r51','./js/warranty-management-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/supplier-procurement-v3160.js?v=20260822-supplier-procurement-intelligence-r51','./js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52',
   './js/print-readiness-v3120.js?v=20260817-loopback-network-r47','./js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47',
-  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts',
-  './js/navigation-v3101-r68.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts','./js/route-title-ownership-r68.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts',
+  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20260930-r69-mb2-branch-registry-authorization',
+  './js/navigation-v3101-r68.js?v=20260930-r69-mb2-branch-registry-authorization','./js/route-title-ownership-r68.js?v=20260930-r69-mb2-branch-registry-authorization',
   './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/account-cash-pdf-r68e.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts','./js/kpi-charts-compact-r68e.js?v=20260930-r68e-account-cash-pdf-compact-kpi-charts',
+  './js/account-cash-pdf-r68e.js?v=20260930-r69-mb2-branch-registry-authorization','./js/kpi-charts-compact-r68e.js?v=20260930-r69-mb2-branch-registry-authorization',
+  './js/branch-management-r69.js?v=20260930-r69-mb2-branch-registry-authorization','./js/managed-device-lifecycle-r61.js?v=20260930-r69-mb2-branch-registry-authorization',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
 let postShellCachePromise = null;
@@ -80,7 +81,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && ((data.type === 'ZEZMS_R68E_SHELL_READY' && data.release === '20260930-r68e-account-cash-pdf-compact-kpi-charts') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R69_SHELL_READY' && data.release === '20260930-r69-mb2-branch-registry-authorization') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }

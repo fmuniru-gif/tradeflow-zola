@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.29.5 r68E with reusable read-only Account Statement and Cash Balances PDFs plus compact responsive KPI chart presentation. No business data is changed; M4/3 live sync and verified recovery safeguards are retained.",
-  "start_url": "./index.html?build=20260930-r68e-account-cash-pdf-compact-kpi-charts",
+  "description": "ZEZMS Owner Edition v3.30.0 r69 MB2 Branch Registry & Authorization. It manages branch metadata and device assignments only; operational branch data switching is not enabled. M4/3 and verified recovery safeguards are retained.",
+  "start_url": "./index.html?build=20260930-r69-mb2-branch-registry-authorization",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
