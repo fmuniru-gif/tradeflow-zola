@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.31.0 - MB3 M4/4 Branch-Aware Transition r70 */
-const CACHE = 'zezms-r70-mb3-branch-aware-m44-transition-20261001';
-const PATCHED_INDEX_CACHE = 'zezms-r70-mb3-branch-aware-m44-transition-cache-v1';
+/* ZEZMS Owner Edition v3.31.1 - Deterministic Rollover Conflict Recovery r70A */
+const CACHE = 'zezms-r70a-deterministic-rollover-conflict-recovery-20261001';
+const PATCHED_INDEX_CACHE = 'zezms-r70a-deterministic-rollover-conflict-recovery-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -20,21 +20,21 @@ const ASSETS = [
   './js/mobile-vertical-layout.js?v=20260817-loopback-network-r47','./js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39',
   './js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39','./js/commercial-foundation.js?v=20260812-portfolio-signals-r39',
   './js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20261001-r70-mb3-branch-aware-m44-transition',
-  './js/margin-intelligence-v381.js?v=20261001-r70-mb3-branch-aware-m44-transition','./js/pricing-guidance-v382.js?v=20261001-r70-mb3-branch-aware-m44-transition',
-  './js/pricing-policy-lab-v383.js?v=20261001-r70-mb3-branch-aware-m44-transition','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
-  './js/stock-velocity-v390.js?v=20261001-r70-mb3-branch-aware-m44-transition','./js/portfolio-signals-v391.js?v=20261001-r70-mb3-branch-aware-m44-transition',
-  './js/customer-intelligence-v3100.js?v=20261001-r70-mb3-branch-aware-m44-transition','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
+  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20261001-r70a-deterministic-rollover-conflict-recovery',
+  './js/margin-intelligence-v381.js?v=20261001-r70a-deterministic-rollover-conflict-recovery','./js/pricing-guidance-v382.js?v=20261001-r70a-deterministic-rollover-conflict-recovery',
+  './js/pricing-policy-lab-v383.js?v=20261001-r70a-deterministic-rollover-conflict-recovery','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
+  './js/stock-velocity-v390.js?v=20261001-r70a-deterministic-rollover-conflict-recovery','./js/portfolio-signals-v391.js?v=20261001-r70a-deterministic-rollover-conflict-recovery',
+  './js/customer-intelligence-v3100.js?v=20261001-r70a-deterministic-rollover-conflict-recovery','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/customer-outreach-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/customer-followups-v3130.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/product-catalog-search-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/sales-pipeline-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/stock-corrections-v3150.js?v=20260822-supplier-procurement-intelligence-r51','./js/warranty-management-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/supplier-procurement-v3160.js?v=20260822-supplier-procurement-intelligence-r51','./js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52',
   './js/print-readiness-v3120.js?v=20260817-loopback-network-r47','./js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47',
-  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20261001-r70-mb3-branch-aware-m44-transition',
-  './js/navigation-v3101-r68.js?v=20261001-r70-mb3-branch-aware-m44-transition','./js/route-title-ownership-r68.js?v=20261001-r70-mb3-branch-aware-m44-transition',
+  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20261001-r70a-deterministic-rollover-conflict-recovery',
+  './js/navigation-v3101-r68.js?v=20261001-r70a-deterministic-rollover-conflict-recovery','./js/route-title-ownership-r68.js?v=20261001-r70a-deterministic-rollover-conflict-recovery',
   './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/account-cash-pdf-r68e.js?v=20261001-r70-mb3-branch-aware-m44-transition','./js/kpi-charts-compact-r68e.js?v=20261001-r70-mb3-branch-aware-m44-transition',
-  './js/branch-management-r69.js?v=20261001-r70-mb3-branch-aware-m44-transition','./js/managed-device-lifecycle-r61.js?v=20261001-r70-mb3-branch-aware-m44-transition',
+  './js/account-cash-pdf-r68e.js?v=20261001-r70a-deterministic-rollover-conflict-recovery','./js/kpi-charts-compact-r68e.js?v=20261001-r70a-deterministic-rollover-conflict-recovery',
+  './js/branch-management-r69.js?v=20261001-r70a-deterministic-rollover-conflict-recovery','./js/managed-device-lifecycle-r61.js?v=20261001-r70a-deterministic-rollover-conflict-recovery',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
 let postShellCachePromise = null;
@@ -81,7 +81,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && ((data.type === 'ZEZMS_R70_SHELL_READY' && data.release === '20261001-r70-mb3-branch-aware-m44-transition') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70A_SHELL_READY' && data.release === '20261001-r70a-deterministic-rollover-conflict-recovery') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }

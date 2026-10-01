@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.0 r70 adds the MB3 M4/4 branch-provenance transition. M4/3 remains active until the separately guarded all-device activation gate passes; operational branch data isolation is not enabled.",
-  "start_url": "./index.html?build=20261001-r70-mb3-branch-aware-m44-transition",
+  "description": "ZEZMS Owner Edition v3.31.1 r70A safely recovers only validated cross-device deterministic month-rollover payload collisions. M4/3 remains active; M4/4 activation is still blocked.",
+  "start_url": "./index.html?build=20261001-r70a-deterministic-rollover-conflict-recovery",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
