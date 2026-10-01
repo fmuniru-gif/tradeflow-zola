@@ -1,16 +1,24 @@
-/* ZEZMS TradeFlow v3.23.0 r61 — Managed Device Lifecycle & Safe Bootstrap.
+/* ZEZMS TradeFlow v3.30.2 r69B — Managed Device Lifecycle & Safe Bootstrap.
    Control-plane only. This overlay deliberately does not alter normal M4/3
    business operations, checkpoints, Canonical Restore, or the local DB key. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20260930-r69a-device-branch-refresh';
+  var BUILD = '20261001-r69b-managed-fleet-auto-load';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];
   var fleet = [];
   var branches = [];
   var currentEnrollment = null;
+  /* The fleet is a scoped, read-only owner view.  Keep its lifecycle explicit
+     so Settings never presents a false empty state while the first read is in
+     flight.  This is deliberately a one-shot render hydration, not a poll. */
+  var fleetLoadStatus = 'IDLE';
+  var fleetLoadError = '';
+  var fleetLoadedBusinessId = '';
+  var fleetLoadPromise = null;
+  var fleetHydrationScheduled = false;
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   function attr(value) { return esc(value).replace(/[\r\n]/g, ''); }
@@ -28,18 +36,30 @@
   }
   function isPaired() { return String(state().deviceAccessMode || '').toUpperCase() === 'PAIRED'; }
   function rpcError(error, fallback) { return String(error && (error.message || error.details || error.hint) || fallback || 'The managed-device service did not complete the request.'); }
+  function fleetReadError(error) {
+    var detail=error && (error.message || error.details || error.hint || error.error_description);
+    var text=typeof detail === 'string' ? detail : '';
+    if (!text) { try { text=String(error || ''); } catch (_) { text=''; } }
+    text=text.replace(/[\r\n\t]+/g,' ').replace(/<[^>]*>/g,'').replace(/\s{2,}/g,' ').trim();
+    return text && text !== '[object Object]' ? text.slice(0,240) : 'The fleet read did not complete.';
+  }
   function notify(message, type) { try { if (typeof toast === 'function') toast(message, type); } catch (_) {} }
 
-  async function ownerClient() {
+  async function readClient() {
     var s=cloud();
     if (!s) throw new Error('Cloud Sync M4/3 is unavailable.');
     if (s.waitUntilReady) await s.waitUntilReady(9000);
     var snapshot=s.getState ? s.getState() || {} : {};
-    if (snapshot.deviceAccessMode === 'PAIRED') throw new Error('Create, retire, revoke, and approve devices from an Owner or Admin device.');
+    if (String(snapshot.deviceAccessMode || '').toUpperCase() === 'PAIRED') throw new Error('Managed fleet details are available only on an Owner or Admin device.');
     var client=s.getClient && s.getClient(), session=s.getSession && s.getSession();
     if (!client || !session || !session.user) throw new Error('Sign in to the Owner cloud account first.');
-    if (s.ensureMfa && !(await s.ensureMfa())) throw new Error('Owner authenticator verification was cancelled.');
     return { client:client, session:session, state:snapshot };
+  }
+
+  async function mutationClient() {
+    var pair=await readClient(), s=cloud();
+    if (s.ensureMfa && !(await s.ensureMfa())) throw new Error('Owner authenticator verification was cancelled.');
+    return pair;
   }
 
   async function pairedClient() {
@@ -101,7 +121,35 @@
     var kind=label === 'ACTIVE' ? 'ok' : label === 'REVOKED' ? 'bad' : label === 'RETIRED' ? 'warn' : 'info';
     return '<span class="badge '+kind+'">'+esc(label)+'</span>';
   }
+  function resetFleetCache(id) {
+    fleet=[];
+    fleetLoadStatus='IDLE';
+    fleetLoadError='';
+    fleetLoadedBusinessId=String(id || '');
+    fleetLoadPromise=null;
+  }
+  function syncFleetContext() {
+    var id=businessId();
+    if (!id) {
+      fleet=[];
+      fleetLoadStatus='ERROR';
+      fleetLoadError='The active business is unavailable.';
+      fleetLoadedBusinessId='';
+      fleetLoadPromise=null;
+      return '';
+    }
+    if (fleetLoadedBusinessId !== id) resetFleetCache(id);
+    return id;
+  }
+  function fleetStatusText() {
+    if (fleetLoadStatus === 'LOADING') return 'Loading managed fleet…';
+    if (fleetLoadStatus === 'ERROR') return 'Unable to load managed fleet. '+fleetLoadError+' Use Refresh managed fleet to retry.';
+    if (fleetLoadStatus === 'LOADED') return 'Managed fleet loaded.';
+    return 'Managed fleet has not been loaded yet.';
+  }
   function deviceRows() {
+    if (!fleet.length && fleetLoadStatus === 'LOADING') return '<tr><td colspan="8" class="empty">Loading managed fleet…</td></tr>';
+    if (!fleet.length && fleetLoadStatus === 'ERROR') return '<tr><td colspan="8" class="empty">Unable to load managed fleet. Use Refresh managed fleet to retry.</td></tr>';
     if (!fleet.length) return '<tr><td colspan="8" class="empty">No managed device records were returned.</td></tr>';
     var current=String(state().deviceId || '');
     return fleet.map(function (item) {
@@ -124,35 +172,88 @@
         +'<td>'+esc(item.app_version || '—')+'</td><td>'+action+'</td></tr>';
     }).join('');
   }
-  function refreshTable() { var body=document.getElementById('m5a4DeviceRows'); if (body) body.innerHTML=deviceRows(); }
+  function refreshFleetCard() {
+    var body=document.getElementById('m5a4DeviceRows');
+    if (body) body.innerHTML=deviceRows();
+    var status=document.getElementById('m5a4FleetStatus');
+    if (status) status.textContent=fleetStatusText();
+  }
+  function scheduleFleetHydration() {
+    if (isPaired() || fleetHydrationScheduled) return;
+    if (!syncFleetContext()) { refreshFleetCard(); return; }
+    fleetHydrationScheduled=true;
+    setTimeout(function () {
+      fleetHydrationScheduled=false;
+      ensureFleetLoaded(false).catch(function () { /* The card already contains the scoped read error. */ });
+    },0);
+  }
+  function primeFleetCard() {
+    if (!syncFleetContext()) return;
+    if (fleetLoadStatus === 'IDLE') fleetLoadStatus='LOADING';
+    scheduleFleetHydration();
+  }
   function lifecycleCardHtml() {
     if (isPaired()) return '<div class="card" style="margin-top:12px"><h3>Managed Device Lifecycle</h3><p class="muted">This paired device is controlled by its Owner. It cannot issue codes, activate a device, retire a device, or revoke a device.</p></div>';
-    return '<div class="card" style="margin-top:12px" data-zezms-managed-lifecycle="r69">'
-      +'<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Managed Device Lifecycle</h3><span class="badge ok">r69A</span></div>'
+    primeFleetCard();
+    return '<div class="card" style="margin-top:12px" data-zezms-managed-lifecycle="r69b">'
+      +'<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Managed Device Lifecycle</h3><span class="badge ok">r69B</span></div>'
       +'<p class="muted" style="font-size:12px;line-height:1.45">New devices remain write-locked until they reconstruct a verified checkpoint, pass Integrity Core and Fleet evidence, and an Owner approves activation. Retired and revoked devices keep their transaction history but lose cloud access.</p>'
       +'<div class="table-wrap"><table><thead><tr><th>Device</th><th>Mode</th><th>Lifecycle</th><th>Assigned Branch</th><th>Last seen</th><th>Verified cursor</th><th>App</th><th>Action</th></tr></thead><tbody id="m5a4DeviceRows">'+deviceRows()+'</tbody></table></div>'
+      +'<p id="m5a4FleetStatus" class="muted" style="margin:9px 0 0">'+esc(fleetStatusText())+'</p>'
       +'<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ghost" onclick="ZEZMS.managedDevices.refresh()">Refresh managed fleet</button><button class="btn" onclick="ZEZMS.managedDevices.beginDialog(\'ADD\')">Add new device</button><button class="btn ghost" onclick="ZEZMS.managedDevices.beginDialog(\'REPLACEMENT\')">Repair / replace a device</button></div>'
       +'</div>';
   }
 
   async function loadBranches() {
-    var pair=await ownerClient(), id=businessId();
+    var pair=await readClient(), id=businessId();
     if (!id) throw new Error('The active business is unavailable.');
     var result=await pair.client.from('zezms_branches').select('id,name,code,is_primary').eq('business_id',id).eq('status','ACTIVE').order('is_primary',{ascending:false}).order('name',{ascending:true});
     if (result.error) throw result.error;
     branches=Array.isArray(result.data) ? result.data : [];
     return branches;
   }
-  async function loadFleet() {
-    var pair=await ownerClient();
-    var result=await pair.client.rpc('zezms_m5a4_managed_fleet_with_branch', { p_business_id:businessId() });
-    if (result.error) throw result.error;
-    fleet=Array.isArray(result.data) ? result.data : [];
-    refreshTable(); return fleet;
+  async function ensureFleetLoaded(force) {
+    var id=syncFleetContext();
+    if (!id) { refreshFleetCard(); throw new Error(fleetLoadError); }
+    if (!force && fleetLoadStatus === 'LOADED') return fleet;
+    if (fleetLoadPromise) {
+      if (!force) return fleetLoadPromise;
+      return fleetLoadPromise.then(function () { return ensureFleetLoaded(true); });
+    }
+    fleetLoadStatus='LOADING';
+    fleetLoadError='';
+    refreshFleetCard();
+    var request=(async function () {
+      try {
+        var pair=await readClient();
+        var result=await pair.client.rpc('zezms_m5a4_managed_fleet_with_branch', { p_business_id:id });
+        if (result.error) throw result.error;
+        if (fleetLoadedBusinessId !== id) return fleet;
+        fleet=Array.isArray(result.data) ? result.data : [];
+        fleetLoadStatus='LOADED';
+        fleetLoadError='';
+        refreshFleetCard();
+        return fleet;
+      } catch (error) {
+        if (fleetLoadedBusinessId === id) {
+          fleetLoadStatus='ERROR';
+          fleetLoadError=fleetReadError(error);
+          refreshFleetCard();
+        }
+        throw error;
+      } finally {
+        if (fleetLoadPromise === request) fleetLoadPromise=null;
+      }
+    }());
+    fleetLoadPromise=request;
+    return request;
+  }
+  function loadFleet(force) {
+    return ensureFleetLoaded(!!force);
   }
   function beginDialog(mode) {
     if (typeof openModal !== 'function') { notify('Reload the app, then retry device setup.', 'err'); return; }
-    Promise.all([loadBranches(),loadFleet()]).then(function () {
+    Promise.all([loadBranches(),loadFleet(true)]).then(function () {
       var branchOptions=branches.map(function (b) { return '<option value="'+attr(b.id)+'">'+esc(b.name)+(b.code ? ' ('+esc(b.code)+')' : '')+'</option>'; }).join('');
       var active=fleet.filter(function (item) { return String(item.lifecycle_state).toUpperCase()==='ACTIVE'; });
       var replacementOptions=active.map(function (item) { return '<option value="'+attr(item.lifecycle_id)+'">'+esc(item.device_name || item.device_id)+' — '+esc(item.device_id || '')+'</option>'; }).join('');
@@ -171,7 +272,7 @@
     return location.origin + location.pathname + '?' + q.toString();
   }
   async function beginEnrollment(mode) {
-    var pair=await ownerClient(), id=businessId();
+    var pair=await mutationClient(), id=businessId();
     var name=String((document.getElementById('m5a4Name') || {}).value || '').trim();
     var branchId=String((document.getElementById('m5a4Branch') || {}).value || '').trim();
     var replacement=mode === 'REPLACEMENT' ? String((document.getElementById('m5a4Replaces') || {}).value || '').trim() : null;
@@ -185,7 +286,7 @@
     currentEnrollment.setup_link=setupLink(currentEnrollment);
     if (typeof closeModal === 'function') closeModal();
     if (typeof openModal === 'function') openModal('<h3>Safe bootstrap code</h3><p class="muted">Use this only on a fresh device. It does not give the new device authority to transact.</p><div class="mono" style="font-size:20px;font-weight:900;letter-spacing:1px;margin:12px 0">'+esc(currentEnrollment.pairing_code)+'</div><p class="muted">Expires '+esc(dateText(currentEnrollment.expires_at))+'.</p><div class="row"><button class="btn" onclick="ZEZMS.managedDevices.copyCode()">Copy code</button><button class="btn ghost" onclick="ZEZMS.managedDevices.copyLink()">Copy setup link</button><button class="btn ghost" onclick="closeModal()">Close</button></div>');
-    await loadFleet();
+    await loadFleet(true);
     return currentEnrollment;
   }
   async function copy(value, promptText) { try { await navigator.clipboard.writeText(String(value || '')); notify(promptText || 'Copied.'); } catch (_) { window.prompt('Copy this value:', String(value || '')); } }
@@ -290,27 +391,27 @@
   }
   async function activate(lifecycleId, revision) {
     if (!window.confirm('Approve this verified device? It will become ACTIVE. A replacement will retire its old device at the same time.')) return false;
-    var pair=await ownerClient();
+    var pair=await mutationClient();
     var result=await pair.client.rpc('zezms_m5a4_activate_device', { p_lifecycle_id:lifecycleId, p_expected_revision:Number(revision || 0) });
     if (result.error) throw result.error;
-    await loadFleet(); notify('Device activation approved.', 'ok'); return result.data;
+    await loadFleet(true); notify('Device activation approved.', 'ok'); return result.data;
   }
   async function retire(lifecycleId) {
     var reason=window.prompt('Reason for retirement (for example: replaced / no longer in use):',''); if (reason == null) return false; if (!String(reason).trim()) throw new Error('A retirement reason is required.');
-    var pair=await ownerClient(); var result=await pair.client.rpc('zezms_m5a4_retire_device',{p_lifecycle_id:lifecycleId,p_reason:String(reason).trim()}); if(result.error)throw result.error; await loadFleet(); notify('Device retired. It can no longer access cloud sync.','ok'); return result.data;
+    var pair=await mutationClient(); var result=await pair.client.rpc('zezms_m5a4_retire_device',{p_lifecycle_id:lifecycleId,p_reason:String(reason).trim()}); if(result.error)throw result.error; await loadFleet(true); notify('Device retired. It can no longer access cloud sync.','ok'); return result.data;
   }
   async function cancel(lifecycleId) {
     var reason=window.prompt('Reason for cancelling this incomplete enrollment:',''); if (reason == null) return false;
     if (!window.confirm('Cancel this enrollment? The unfinished device will not receive cloud access.')) return false;
-    var pair=await ownerClient(); var result=await pair.client.rpc('zezms_m5a4_cancel_enrollment',{p_lifecycle_id:lifecycleId,p_reason:String(reason).trim()}); if(result.error)throw result.error; await loadFleet(); notify('Incomplete enrollment cancelled.','ok'); return result.data;
+    var pair=await mutationClient(); var result=await pair.client.rpc('zezms_m5a4_cancel_enrollment',{p_lifecycle_id:lifecycleId,p_reason:String(reason).trim()}); if(result.error)throw result.error; await loadFleet(true); notify('Incomplete enrollment cancelled.','ok'); return result.data;
   }
   async function revoke(lifecycleId) {
     var reason=window.prompt('Reason for revocation (for example: lost / unauthorised):',''); if (reason == null) return false; if (!String(reason).trim()) throw new Error('A revocation reason is required.');
     if (!window.confirm('Revoke this device now? It will lose cloud access immediately.')) return false;
-    var pair=await ownerClient(); var result=await pair.client.rpc('zezms_m5a4_revoke_device',{p_lifecycle_id:lifecycleId,p_reason:String(reason).trim()}); if(result.error)throw result.error; await loadFleet(); notify('Device revoked. Its transaction history remains intact.','ok'); return result.data;
+    var pair=await mutationClient(); var result=await pair.client.rpc('zezms_m5a4_revoke_device',{p_lifecycle_id:lifecycleId,p_reason:String(reason).trim()}); if(result.error)throw result.error; await loadFleet(true); notify('Device revoked. Its transaction history remains intact.','ok'); return result.data;
   }
   async function changeBranch(lifecycleId, revision) {
-    var pair=await ownerClient();
+    await mutationClient();
     await loadBranches();
     var options=branches.map(function (branch) { return '<option value="'+attr(branch.id)+'">'+esc(branch.name)+(branch.code ? ' ('+esc(branch.code)+')' : '')+'</option>'; }).join('');
     if (!options) throw new Error('Create an active branch before assigning a device.');
@@ -321,11 +422,11 @@
     var branchId=String((document.getElementById('m5a4ChangeBranch') || {}).value || '').trim();
     if (!branchId) throw new Error('Select an active branch.');
     if (!window.confirm('Assign this active device to the selected branch? This does not change operational branch data.')) return false;
-    var pair=await ownerClient();
+    var pair=await mutationClient();
     var result=await pair.client.rpc('zezms_m5a4_assign_device_branch', { p_lifecycle_id:lifecycleId, p_branch_id:branchId, p_expected_revision:Number(revision || 0) });
     if (result.error) throw result.error;
     if (typeof closeModal === 'function') closeModal();
-    await loadFleet();
+    await loadFleet(true);
     if (window.ZEZMS && ZEZMS.branchManagement && typeof ZEZMS.branchManagement.refresh === 'function') {
       try { await ZEZMS.branchManagement.refresh(); } catch (_) { /* The assignment succeeded; Branch Management shows its own scoped read error if open. */ }
     }
@@ -349,9 +450,9 @@
   function initialize() {
     installSettingsCard(); installLegacyGuards();
     if (managedParams().requested) setTimeout(function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); },750);
-    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r69a');
+    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r69b');
   }
 
-  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet().catch(function(e){notify(rpcError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, stageRead:stageRead} };
+  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, stageRead:stageRead, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
   setTimeout(initialize,500);
 }());
