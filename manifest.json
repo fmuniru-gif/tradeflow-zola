@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.30.2 r69B automatically hydrates the Owner Managed Device Lifecycle fleet without MFA for read-only access. Device mutations remain AAL2-protected; MB3 and operational branch switching are not included.",
-  "start_url": "./index.html?build=20261001-r69b-managed-fleet-auto-load",
+  "description": "ZEZMS Owner Edition v3.31.0 r70 adds the MB3 M4/4 branch-provenance transition. M4/3 remains active until the separately guarded all-device activation gate passes; operational branch data isolation is not enabled.",
+  "start_url": "./index.html?build=20261001-r70-mb3-branch-aware-m44-transition",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
