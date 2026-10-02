@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.3 r70C preserves native recovery-file selection through delayed Windows/Chrome picker events. M4/3 remains active; M4/4 activation is still blocked.",
-  "start_url": "./index.html?build=20261002-r70c-native-recovery-picker-stability",
+  "description": "ZEZMS Owner Edition v3.31.4 r70D executes verified Canonical Restore through a fresh Cloud checkpoint and controlled Live Sync pause. M4/3 remains active; M4/4 activation is still blocked.",
+  "start_url": "./index.html?build=20261002-r70d-canonical-restore-execution-bridge",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
