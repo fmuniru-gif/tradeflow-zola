@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.1 r70A safely recovers only validated cross-device deterministic month-rollover payload collisions. M4/3 remains active; M4/4 activation is still blocked.",
-  "start_url": "./index.html?build=20261001-r70a-deterministic-rollover-conflict-recovery",
+  "description": "ZEZMS Owner Edition v3.31.2 r70B uses the canonical Cloud audit checkpoint for verified self-service recovery. M4/3 remains active; M4/4 activation is still blocked.",
+  "start_url": "./index.html?build=20261002-r70b-canonical-recovery-checkpoint-bridge",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
