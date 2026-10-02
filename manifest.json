@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.2 r70B uses the canonical Cloud audit checkpoint for verified self-service recovery. M4/3 remains active; M4/4 activation is still blocked.",
-  "start_url": "./index.html?build=20261002-r70b-canonical-recovery-checkpoint-bridge",
+  "description": "ZEZMS Owner Edition v3.31.3 r70C preserves native recovery-file selection through delayed Windows/Chrome picker events. M4/3 remains active; M4/4 activation is still blocked.",
+  "start_url": "./index.html?build=20261002-r70c-native-recovery-picker-stability",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
