@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.4 r70D executes verified Canonical Restore through a fresh Cloud checkpoint and controlled Live Sync pause. M4/3 remains active; M4/4 activation is still blocked.",
-  "start_url": "./index.html?build=20261002-r70d-canonical-restore-execution-bridge",
+  "description": "ZEZMS Owner Edition v3.31.5 r70E hardens safe managed-device bootstrap claims, including retry-safe anonymous identities and visible claim errors. M4/3 remains active; M4/4 activation is still blocked.",
+  "start_url": "./index.html?build=20261003-r70e-safe-bootstrap-claim-reliability",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

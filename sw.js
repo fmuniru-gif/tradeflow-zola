@@ -1,6 +1,6 @@
-/* ZEZMS Owner Edition v3.31.4 - Canonical Restore Execution Bridge r70D */
-const CACHE = 'zezms-r70d-canonical-restore-execution-bridge-20261002';
-const PATCHED_INDEX_CACHE = 'zezms-r70d-canonical-restore-execution-bridge-cache-v1';
+/* ZEZMS Owner Edition v3.31.5 - Safe Bootstrap Claim Reliability r70E */
+const CACHE = 'zezms-r70e-safe-bootstrap-claim-reliability-20261003';
+const PATCHED_INDEX_CACHE = 'zezms-r70e-safe-bootstrap-claim-reliability-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -20,21 +20,21 @@ const ASSETS = [
   './js/mobile-vertical-layout.js?v=20260817-loopback-network-r47','./js/kpi-freeze-pane.js?v=20260812-portfolio-signals-r39',
   './js/confirmed-july-snapshot.js?v=20260812-portfolio-signals-r39','./js/commercial-foundation.js?v=20260812-portfolio-signals-r39',
   './js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20261002-r70d-canonical-restore-execution-bridge',
-  './js/margin-intelligence-v381.js?v=20261002-r70d-canonical-restore-execution-bridge','./js/pricing-guidance-v382.js?v=20261002-r70d-canonical-restore-execution-bridge',
-  './js/pricing-policy-lab-v383.js?v=20261002-r70d-canonical-restore-execution-bridge','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
-  './js/stock-velocity-v390.js?v=20261002-r70d-canonical-restore-execution-bridge','./js/portfolio-signals-v391.js?v=20261002-r70d-canonical-restore-execution-bridge',
-  './js/customer-intelligence-v3100.js?v=20261002-r70d-canonical-restore-execution-bridge','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
+  './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39','./js/management-intelligence-v380.js?v=20261003-r70e-safe-bootstrap-claim-reliability',
+  './js/margin-intelligence-v381.js?v=20261003-r70e-safe-bootstrap-claim-reliability','./js/pricing-guidance-v382.js?v=20261003-r70e-safe-bootstrap-claim-reliability',
+  './js/pricing-policy-lab-v383.js?v=20261003-r70e-safe-bootstrap-claim-reliability','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
+  './js/stock-velocity-v390.js?v=20261003-r70e-safe-bootstrap-claim-reliability','./js/portfolio-signals-v391.js?v=20261003-r70e-safe-bootstrap-claim-reliability',
+  './js/customer-intelligence-v3100.js?v=20261003-r70e-safe-bootstrap-claim-reliability','./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/customer-outreach-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/customer-followups-v3130.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/product-catalog-search-v3140.js?v=20260822-supplier-procurement-intelligence-r51','./js/sales-pipeline-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/stock-corrections-v3150.js?v=20260822-supplier-procurement-intelligence-r51','./js/warranty-management-v3150.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/supplier-procurement-v3160.js?v=20260822-supplier-procurement-intelligence-r51','./js/sync-integrity-v3161.js?v=20260823-sync-integrity-r52',
   './js/print-readiness-v3120.js?v=20260817-loopback-network-r47','./js/direct-print-bridge-v3121.js?v=20260817-loopback-network-r47',
-  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20261002-r70d-canonical-restore-execution-bridge',
-  './js/navigation-v3101-r68.js?v=20261002-r70d-canonical-restore-execution-bridge','./js/route-title-ownership-r68.js?v=20261002-r70d-canonical-restore-execution-bridge',
+  './js/navigation-v3101.js?v=20260822-supplier-procurement-intelligence-r51','./js/promotion-intelligence-r68.js?v=20261003-r70e-safe-bootstrap-claim-reliability',
+  './js/navigation-v3101-r68.js?v=20261003-r70e-safe-bootstrap-claim-reliability','./js/route-title-ownership-r68.js?v=20261003-r70e-safe-bootstrap-claim-reliability',
   './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/account-cash-pdf-r68e.js?v=20261002-r70d-canonical-restore-execution-bridge','./js/kpi-charts-compact-r68e.js?v=20261002-r70d-canonical-restore-execution-bridge',
-  './js/branch-management-r69.js?v=20261002-r70d-canonical-restore-execution-bridge','./js/managed-device-lifecycle-r61.js?v=20261002-r70d-canonical-restore-execution-bridge',
+  './js/account-cash-pdf-r68e.js?v=20261003-r70e-safe-bootstrap-claim-reliability','./js/kpi-charts-compact-r68e.js?v=20261003-r70e-safe-bootstrap-claim-reliability',
+  './js/branch-management-r69.js?v=20261003-r70e-safe-bootstrap-claim-reliability','./js/managed-device-lifecycle-r61.js?v=20261003-r70e-safe-bootstrap-claim-reliability',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
 let postShellCachePromise = null;
@@ -81,7 +81,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && ((data.type === 'ZEZMS_R70D_SHELL_READY' && data.release === '20261002-r70d-canonical-restore-execution-bridge') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70E_SHELL_READY' && data.release === '20261003-r70e-safe-bootstrap-claim-reliability') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
