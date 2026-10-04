@@ -5,8 +5,9 @@
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20261003-r70e-safe-bootstrap-claim-reliability';
+  var BUILD = '20261004-r70f-recovery-stabilization';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
+  var JOURNAL_KEY = 'zezms_m5a4_safe_bootstrap_journal_v2';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];
   var fleet = [];
   var branches = [];
@@ -55,14 +56,18 @@
       ZEZMS_PAIRING_USED:'This bootstrap code was already used by another device or enrollment.',
       ZEZMS_PAIRING_LIFECYCLE_MISMATCH:'The pairing code does not match its pending lifecycle record. No data was changed.',
       ZEZMS_BOOTSTRAP_ACCESS_BINDING_CONFLICT:'A safe device-access binding could not be created. No bootstrap changes were committed.',
-      ZEZMS_BOOTSTRAP_BUSINESS_DEVICE_BINDING_CONFLICT:'A safe business-device binding could not be created. No bootstrap changes were committed.'
+      ZEZMS_BOOTSTRAP_BUSINESS_DEVICE_BINDING_CONFLICT:'A safe business-device binding could not be created. No bootstrap changes were committed.',
+      ZEZMS_BOOTSTRAP_LOCAL_BUSINESS_DATA_PRESENT:'This browser contains ordinary business records and is not safe to use as a replacement bootstrap profile.',
+      ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING:'The local device identity is incomplete and cannot be safely matched to its Cloud lifecycle.',
+      ZEZMS_BOOTSTRAP_UNKNOWN_UNSAFE_STATE:'The device binding could not be verified safely. Retry when online; do not clear site data.',
+      ZEZMS_BOOTSTRAP_MANIFEST_REVISION_INVALID:'The server did not return a valid lifecycle revision for safe bootstrap attestation.'
     };
     return messages[code] || 'The bootstrap claim was rejected before this device received any business data.';
   }
   function setClaimBusy(value) {
     claimInFlight=!!value;
     var button=document.getElementById('m5a4EnrollClaim');
-    if (button) { button.disabled=!!value; button.textContent=value ? 'Claiming bootstrap…' : 'Claim and verify bootstrap'; }
+    if (button) { button.disabled=!!value; button.textContent=value ? 'Working on bootstrap…' : String(button.getAttribute('data-idle-text') || 'Claim and verify bootstrap'); }
   }
   function clearBootstrapIssue() {
     var box=document.getElementById('m5a4EnrollIssue');
@@ -122,6 +127,21 @@
   function stageRead() { try { var value=JSON.parse(localStorage.getItem(STAGE_KEY) || 'null'); return value && value.version === 1 ? value : null; } catch (_) { return null; } }
   function stageWrite(value) { localStorage.setItem(STAGE_KEY, JSON.stringify(value)); }
   function stageClear() { try { localStorage.removeItem(STAGE_KEY); } catch (_) {} }
+  function journalRead() {
+    try {
+      var value=JSON.parse(localStorage.getItem(JOURNAL_KEY) || 'null');
+      if (value && value.version === 2) return value;
+    } catch (_) {}
+    var staged=stageRead();
+    return staged && staged.lifecycleId && staged.deviceId ? { version:2, lifecycleId:String(staged.lifecycleId), deviceId:String(staged.deviceId), stage:'VERIFYING', checkpointCursor:Number(staged.cursor || 0), lastVerifiedStage:'VERIFYING', updatedAt:String(staged.attestedAt || '') } : null;
+  }
+  function journalWrite(patch) {
+    var current=journalRead() || { version:2, build:BUILD, createdAt:new Date().toISOString() };
+    var next=Object.assign({},current,patch || {},{ version:2, build:BUILD, updatedAt:new Date().toISOString() });
+    try { localStorage.setItem(JOURNAL_KEY,JSON.stringify(next)); } catch (_) {}
+    return next;
+  }
+  function journalClear() { try { localStorage.removeItem(JOURNAL_KEY); } catch (_) {} }
   function candidateCashIsSafe(database) {
     var cash=database && database.cashBalances || {};
     Object.keys(cash).forEach(function (key) {
@@ -235,8 +255,8 @@
   function lifecycleCardHtml() {
     if (isPaired()) return '<div class="card" style="margin-top:12px"><h3>Managed Device Lifecycle</h3><p class="muted">This paired device is controlled by its Owner. It cannot issue codes, activate a device, retire a device, or revoke a device.</p></div>';
     primeFleetCard();
-    return '<div class="card" style="margin-top:12px" data-zezms-managed-lifecycle="r70e">'
-      +'<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Managed Device Lifecycle</h3><span class="badge ok">r70E</span></div>'
+    return '<div class="card" style="margin-top:12px" data-zezms-managed-lifecycle="r70f">'
+      +'<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Managed Device Lifecycle</h3><span class="badge ok">r70F</span></div>'
       +'<p class="muted" style="font-size:12px;line-height:1.45">New devices remain write-locked until they reconstruct a verified checkpoint, pass Integrity Core and Fleet evidence, and an Owner approves activation. Retired and revoked devices keep their transaction history but lose cloud access.</p>'
       +'<div class="table-wrap"><table><thead><tr><th>Device</th><th>Mode</th><th>Lifecycle</th><th>Assigned Branch</th><th>Last seen</th><th>Verified cursor</th><th>App</th><th>Action</th></tr></thead><tbody id="m5a4DeviceRows">'+deviceRows()+'</tbody></table></div>'
       +'<p id="m5a4FleetStatus" class="muted" style="margin:9px 0 0">'+esc(fleetStatusText())+'</p>'
@@ -336,21 +356,56 @@
     return { requested:p.get('managedDeviceEnroll') === '1', code:p.get('pairCode') || '', url:decode(p.get('pairUrl')), key:decode(p.get('pairKey')), name:p.get('deviceName') || '' };
   }
   function clearManagedParams() { try { var u=new URL(location.href); ['managedDeviceEnroll','pairCode','pairUrl','pairKey','deviceName'].forEach(function (key) { u.searchParams.delete(key); }); history.replaceState({},document.title,u.pathname+(u.search?'?'+u.searchParams.toString():'')+u.hash); } catch (_) {} }
-  function freshDeviceCheck() {
-    var s=state(), db;
-    try { db=DB; } catch (_) { db=null; }
-    if (s.initialized || s.deviceAccessMode === 'PAIRED') throw new Error('This browser already has a paired or initialized device profile. Use a fresh browser/PWA profile.');
-    if (db && ((db.sales || []).length || (db.receipts || []).length || (db.stockRows || []).length || (db.purchaseOrders || []).length)) throw new Error('This device already contains business records. Safe bootstrap requires a fresh profile.');
+  function lifecycleState(context) { return String(context && (context.lifecycle_state || context.device_status) || '').toUpperCase(); }
+  function localBusinessState() {
+    var db; try { db=DB; } catch (_) { db=null; }
+    var roots=['sales','receipts','stockRows','purchaseOrders','inventoryTxns','cashLog','expenses','accountTxns','quotations','invoices','waybills'];
+    var count=roots.reduce(function(total,key){ return total+(db && Array.isArray(db[key]) ? db[key].length : 0); },0);
+    return { state:count ? 'MATERIALLY_POPULATED' : 'EMPTY', records:count };
+  }
+  function sameJournal(journal, context, deviceId) {
+    return !!(journal && context && journal.lifecycleId && String(journal.lifecycleId)===String(context.lifecycle_id || '') && journal.deviceId && String(journal.deviceId)===String(deviceId || ''));
+  }
+  function eligibilityError(eligibility) {
+    var error=new Error(String(eligibility.reasonCode || 'ZEZMS_BOOTSTRAP_UNKNOWN_UNSAFE_STATE')+': '+String(eligibility.message || 'Safe bootstrap eligibility could not be established.'));
+    error.code=eligibility.reasonCode;
+    return error;
+  }
+  async function readBoundLifecycle(pair, deviceId) {
+    if (!pair || !pair.client || !deviceId) return { context:null, unavailable:false };
+    var result=await pair.client.rpc('zezms_m5a4_device_context', { p_device_id:deviceId, p_allowed_states:['BOOTSTRAPPING','VERIFYING','ACTIVE'] });
+    if (!result || !result.error) return { context:row(result && result.data), unavailable:false };
+    var detail=rpcError(result.error,'');
+    if (/DEVICE_ACCESS|DEVICE_NOT|LIFECYCLE_NOT|NO.*(?:DEVICE|LIFECYCLE)|not found|PGRST116/i.test(detail)) return { context:null, unavailable:false };
+    return { context:null, unavailable:true, error:result.error };
+  }
+  async function inspectBootstrapEligibility() {
+    var snapshot=state(), deviceId=String(snapshot.deviceId || ''), journal=journalRead(), business=localBusinessState();
+    var localState={ initialized:!!snapshot.initialized, deviceAccessMode:String(snapshot.deviceAccessMode || '').toUpperCase(), deviceId:deviceId, businessDb:business.state, businessRecords:business.records };
+    if (business.state !== 'EMPTY' && !(journal && String(journal.deviceId || '')===deviceId)) return { eligible:false, reasonCode:'ZEZMS_BOOTSTRAP_LOCAL_BUSINESS_DATA_PRESENT', localState:localState, cloudBinding:null, resumable:false, message:'Ordinary business records are present in this local profile.' };
+    var pair=null, binding={ context:null, unavailable:false };
+    try { pair=await pairedClient(); binding=await readBoundLifecycle(pair,deviceId); } catch (_) { pair=null; }
+    if (binding.unavailable && localState.deviceAccessMode === 'PAIRED') return { eligible:false, reasonCode:'ZEZMS_BOOTSTRAP_UNKNOWN_UNSAFE_STATE', localState:localState, cloudBinding:null, resumable:false, message:'The existing paired lifecycle could not be verified. Retry while online; do not clear site data.' };
+    if (binding.context) {
+      var existingState=lifecycleState(binding.context);
+      if (sameJournal(journal,binding.context,deviceId) && (existingState === 'BOOTSTRAPPING' || existingState === 'VERIFYING')) return { eligible:true, reasonCode:'SAME_BOOTSTRAP_RESUMABLE', localState:localState, cloudBinding:binding.context, resumable:true, message:'The existing bootstrap journal matches this device and lifecycle.' };
+      return { eligible:false, reasonCode:'ZEZMS_DEVICE_IDENTITY_ALREADY_BOUND', localState:localState, cloudBinding:binding.context, resumable:false, message:existingState === 'ACTIVE' ? 'This browser identity is already an ACTIVE managed device.' : 'This browser identity is bound to another live managed-device lifecycle.' };
+    }
+    if (localState.deviceAccessMode === 'PAIRED') return { eligible:false, reasonCode:deviceId ? 'ZEZMS_BOOTSTRAP_UNKNOWN_UNSAFE_STATE' : 'ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING', localState:localState, cloudBinding:null, resumable:false, message:'This browser reports a paired device state without a matching resumable lifecycle.' };
+    var session=pair && pair.session;
+    var anonymous=!!(session && session.user && (session.user.is_anonymous || (session.user.app_metadata && session.user.app_metadata.provider === 'anonymous')));
+    return { eligible:true, reasonCode:anonymous ? 'UNBOUND_ANONYMOUS_SESSION' : 'FRESH_UNBOUND', localState:localState, cloudBinding:null, resumable:false, message:'No authoritative live managed-device binding was found. M4 initialization is not treated as device ownership.' };
   }
   function bootstrapForm(params) {
-    var p=params || managedParams();
+    var p=params || managedParams(), journal=journalRead(), resuming=!!(journal && journal.lifecycleId && journal.deviceId);
     return '<h3>Safe bootstrap a new device</h3><p class="muted">This device will be write-locked until the Owner sees and approves its verification evidence.</p>'
       +'<div class="field"><label>Device name</label><input id="m5a4EnrollName" value="'+attr(p.name || 'New ZEZMS Device')+'"></div>'
       +'<div class="field"><label>One-time code</label><input id="m5a4EnrollCode" class="mono" value="'+attr(p.code || '')+'" autocomplete="one-time-code"></div>'
       +'<details '+((p.url && p.key) ? '' : 'open')+'><summary>Supabase connection details</summary><div class="field"><label>Project URL</label><input id="m5a4EnrollUrl" value="'+attr(p.url || state().supabaseUrl || '')+'"></div><div class="field"><label>Publishable key</label><input id="m5a4EnrollKey" type="password" value="'+attr(p.key || state().publishableKey || '')+'"></div></details>'
       +'<div id="m5a4EnrollStatus" class="muted" aria-live="polite" style="margin:10px 0">Ready to verify the code and construct a staged candidate.</div>'
       +'<div id="m5a4EnrollIssue" role="alert" hidden style="margin:10px 0;padding:10px;border:1px solid #fb7185;border-radius:8px;background:rgba(190,24,93,.12);color:#fecdd3"></div>'
-      +'<div class="row"><button id="m5a4EnrollClaim" class="btn" onclick="ZEZMS.managedDevices.claim()">Claim and verify bootstrap</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>';
+      +(resuming ? '<p class="muted" style="font-size:12px">An interrupted bootstrap journal was found for this device. Resume uses the existing lifecycle and never needs a new code or site-data clearing.</p>' : '')
+      +'<div class="row"><button id="m5a4EnrollClaim" data-idle-text="'+(resuming ? 'Resume bootstrap' : 'Claim and verify bootstrap')+'" class="btn" onclick="ZEZMS.managedDevices.claim()">'+(resuming ? 'Resume bootstrap' : 'Claim and verify bootstrap')+'</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>';
   }
   function bootStatus(message, bad) { var box=document.getElementById('m5a4EnrollStatus'); if (box) { box.textContent=message; box.style.color=bad ? '#fda4af' : '#bfdbfe'; } }
   async function loadBootstrapOperations(client, lifecycleId, cursor) {
@@ -365,53 +420,87 @@
     }
     return all;
   }
+  async function contextForDevice(pair, deviceId) {
+    var result=await pair.client.rpc('zezms_m5a4_device_context', { p_device_id:deviceId, p_allowed_states:['BOOTSTRAPPING','VERIFYING','ACTIVE'] });
+    if (result.error) throw result.error;
+    var context=row(result.data);
+    if (!context || !context.lifecycle_id) throw new Error('ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING: The claimed device is not available at the bootstrap lifecycle gate.');
+    return context;
+  }
+  async function reconstructAndAttest(context, pair, deviceId, resumed) {
+    var s=cloud(), currentState=lifecycleState(context);
+    if (currentState === 'VERIFYING') {
+      journalWrite({ lifecycleId:String(context.lifecycle_id), deviceId:deviceId, stage:'VERIFYING', lastVerifiedStage:'VERIFYING', resumed:!!resumed });
+      bootStatus('This device is already VERIFYING and remains write-locked. Ask the Owner to approve activation.');
+      notify('Bootstrap verification is already awaiting Owner approval.', 'ok');
+      return context;
+    }
+    if (currentState !== 'BOOTSTRAPPING') throw new Error('ZEZMS_BOOTSTRAP_UNKNOWN_UNSAFE_STATE: The lifecycle is not in a resumable bootstrap state.');
+    journalWrite({ lifecycleId:String(context.lifecycle_id), pairingId:String(context.pairing_id || ''), deviceId:deviceId, stage:'CONTEXT_CONFIRMED', resumed:!!resumed });
+    bootStatus(resumed ? 'Resuming the existing bootstrap. Downloading its fixed checkpoint and ordered operations…' : 'Claim accepted. Downloading the fixed checkpoint and ordered post-checkpoint operations…');
+    var manifestResult=await pair.client.rpc('zezms_m5a4_bootstrap_manifest', { p_lifecycle_id:context.lifecycle_id });
+    if (manifestResult.error) throw manifestResult.error;
+    var manifest=row(manifestResult.data);
+    if (!manifest || !manifest.checkpoint_payload || !manifest.checkpoint_hash) throw new Error('The server has no verified checkpoint suitable for safe bootstrap.');
+    var manifestRevision=Number(manifest.lifecycle_revision);
+    if (!Number.isFinite(manifestRevision) || manifestRevision <= 0) throw new Error('ZEZMS_BOOTSTRAP_MANIFEST_REVISION_INVALID: The server did not return a valid lifecycle revision.');
+    journalWrite({ stage:'MANIFEST_READY', checkpointCursor:Number(manifest.checkpoint_cursor || 0), checkpointHash:String(manifest.checkpoint_hash), manifestLifecycleRevision:manifestRevision });
+    if (cleanHash(manifest.checkpoint_payload) !== String(manifest.checkpoint_hash)) throw new Error('Checkpoint payload hash mismatch. Local data was not changed.');
+    bootStatus('Reconstructing the verified checkpoint and replaying ordered post-checkpoint operations…');
+    var operations=await loadBootstrapOperations(pair.client, context.lifecycle_id, manifest.checkpoint_cursor);
+    journalWrite({ stage:'OPERATIONS_REPLAYED', replayCursor:operations.reduce(function(last,item){ return Math.max(last,Number(item.server_seq || item.seq || 0)); },Number(manifest.checkpoint_cursor || 0)) });
+    var prepared=s && s.prepareM5a4BootstrapCandidate;
+    if (typeof prepared !== 'function') throw new Error('The r61 cloud bootstrap bridge is unavailable. Reload the updated application.');
+    var candidate=prepared(manifest.checkpoint_payload, operations.map(function (item) { return item.payload || item.operation || item; }));
+    bootStatus('Running Integrity Core and Fleet fingerprint verification…');
+    candidateIntegrity(candidate);
+    var snapshot=fingerprintCandidate(candidate);
+    var cursor=operations.reduce(function (last, item) { return Math.max(last,Number(item.server_seq || item.seq || 0)); },Number(manifest.checkpoint_cursor || 0));
+    if (cursor !== Number(manifest.cloud_head_cursor || cursor)) throw new Error('Cloud advanced while bootstrap was staging. Retry before any local commit.');
+    journalWrite({ stage:'ATTESTING', replayCursor:cursor, lastVerifiedStage:'INTEGRITY_PASSED' });
+    bootStatus('Submitting Integrity Core and Fleet verification evidence for Owner approval…');
+    var attest=await pair.client.rpc('zezms_m5a4_submit_attestation', { p_lifecycle_id:context.lifecycle_id, p_expected_revision:manifestRevision, p_cursor:cursor, p_operational_hash:String(snapshot.operationalHash || ''), p_extended_hash:String(snapshot.extendedHash || ''), p_collection_fingerprints:snapshot.collections || {}, p_integrity_ok:true, p_queue_count:0, p_failed_count:0 });
+    if (attest.error) throw attest.error;
+    stageWrite({ version:1, build:BUILD, lifecycleId:context.lifecycle_id, deviceId:deviceId, cursor:cursor, candidate:candidate, attestedAt:new Date().toISOString(), fingerprint:snapshot });
+    journalWrite({ stage:'VERIFYING', lastVerifiedStage:'VERIFYING', replayCursor:cursor, manifestLifecycleRevision:manifestRevision });
+    clearManagedParams();
+    bootStatus('Verification is complete. Ask the Owner to approve this device from Managed Device Lifecycle. This device remains write-locked.');
+    notify('Bootstrap verified. Waiting for Owner approval.', 'ok');
+    return context;
+  }
   async function claimAndStage() {
     if (claimInFlight) return false;
     clearBootstrapIssue();
     setClaimBusy(true);
     try {
-      freshDeviceCheck();
+      bootStatus('Inspecting local device state and the recovery journal…');
+      var eligibility=await inspectBootstrapEligibility();
+      if (!eligibility.eligible) throw eligibilityError(eligibility);
+      if (eligibility.resumable) {
+        bootStatus('Matching bootstrap found. Resuming the same lifecycle without a new pairing code…');
+        var resumePair=await pairedClient(), resumeDeviceId=String(resumePair.state.deviceId || '');
+        return await reconstructAndAttest(eligibility.cloudBinding || await contextForDevice(resumePair,resumeDeviceId),resumePair,resumeDeviceId,true);
+      }
       var name=String((document.getElementById('m5a4EnrollName') || {}).value || '').trim();
       var code=String((document.getElementById('m5a4EnrollCode') || {}).value || '').trim();
       var url=String((document.getElementById('m5a4EnrollUrl') || {}).value || '').trim();
       var key=String((document.getElementById('m5a4EnrollKey') || {}).value || '').trim();
       if (!name || !code || !url || !key) throw new Error('Enter the device name, pairing code, project URL, and publishable key.');
-      bootStatus('Claiming the code with the existing or a fresh anonymous device identity…');
+      journalWrite({ stage:'CLAIMING', deviceId:String(eligibility.localState.deviceId || ''), lastVerifiedStage:'ELIGIBLE' });
+      bootStatus('Eligible: '+eligibility.reasonCode+'. Claiming the code with the existing or a fresh anonymous identity…');
       var s=cloud();
-      if (!s || typeof s.claimM5a4SafeBootstrap !== 'function') throw new Error('The r70E safe-bootstrap claim bridge is unavailable. Reload the updated application.');
+      if (!s || typeof s.claimM5a4SafeBootstrap !== 'function') throw new Error('The r70F safe-bootstrap claim bridge is unavailable. Reload the updated application.');
       var claimed=await s.claimM5a4SafeBootstrap({ deviceName:name, pairingCode:code, supabaseUrl:url, publishableKey:key });
       if (!claimed || !claimed.lifecycle_id) throw new Error('The server did not return the bootstrap lifecycle context.');
       var pair=await pairedClient(), deviceId=String(pair.state.deviceId || '');
-      var contextResult=await pair.client.rpc('zezms_m5a4_device_context', { p_device_id:deviceId, p_allowed_states:['BOOTSTRAPPING','VERIFYING','ACTIVE'] });
-      if (contextResult.error) throw contextResult.error;
-      var context=row(contextResult.data);
-      if (!context || !context.lifecycle_id) throw new Error('The claimed device is not available at the bootstrap lifecycle gate.');
-      bootStatus('Claim accepted. Downloading the fixed checkpoint and ordered post-checkpoint operations…');
-      var manifestResult=await pair.client.rpc('zezms_m5a4_bootstrap_manifest', { p_lifecycle_id:context.lifecycle_id });
-      if (manifestResult.error) throw manifestResult.error;
-      var manifest=row(manifestResult.data);
-      if (!manifest || !manifest.checkpoint_payload || !manifest.checkpoint_hash) throw new Error('The server has no verified checkpoint suitable for safe bootstrap.');
-      var manifestRevision=Number(manifest.lifecycle_revision);
-      if (!Number.isFinite(manifestRevision) || manifestRevision <= 0) throw new Error('ZEZMS_BOOTSTRAP_MANIFEST_REVISION_INVALID: The server did not return a valid lifecycle revision.');
-      if (cleanHash(manifest.checkpoint_payload) !== String(manifest.checkpoint_hash)) throw new Error('Checkpoint payload hash mismatch. Local data was not changed.');
-      var operations=await loadBootstrapOperations(pair.client, context.lifecycle_id, manifest.checkpoint_cursor);
-      var prepared=s.prepareM5a4BootstrapCandidate;
-      if (typeof prepared !== 'function') throw new Error('The r61 cloud bootstrap bridge is unavailable. Reload the updated application.');
-      var candidate=prepared(manifest.checkpoint_payload, operations.map(function (item) { return item.payload || item.operation || item; }));
-      candidateIntegrity(candidate);
-      var snapshot=fingerprintCandidate(candidate);
-      var cursor=operations.reduce(function (last, item) { return Math.max(last,Number(item.server_seq || item.seq || 0)); },Number(manifest.checkpoint_cursor || 0));
-      if (cursor !== Number(manifest.cloud_head_cursor || cursor)) throw new Error('Cloud advanced while bootstrap was staging. Retry before any local commit.');
-      bootStatus('Submitting Integrity Core and Fleet verification evidence for Owner approval…');
-      var attest=await pair.client.rpc('zezms_m5a4_submit_attestation', { p_lifecycle_id:context.lifecycle_id, p_expected_revision:manifestRevision, p_cursor:cursor, p_operational_hash:String(snapshot.operationalHash || ''), p_extended_hash:String(snapshot.extendedHash || ''), p_collection_fingerprints:snapshot.collections || {}, p_integrity_ok:true, p_queue_count:0, p_failed_count:0 });
-      if (attest.error) throw attest.error;
-      stageWrite({ version:1, build:BUILD, lifecycleId:context.lifecycle_id, deviceId:deviceId, cursor:cursor, candidate:candidate, attestedAt:new Date().toISOString(), fingerprint:snapshot });
-      clearManagedParams();
-      bootStatus('Verification is complete. Ask the Owner to approve this device from Managed Device Lifecycle. This device remains write-locked.');
-      notify('Bootstrap verified. Waiting for Owner approval.', 'ok');
-      return context;
+      if (!deviceId) throw new Error('ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING: The claim did not establish a stable local device ID.');
+      var context=await contextForDevice(pair,deviceId);
+      if (String(context.lifecycle_id)!==String(claimed.lifecycle_id)) throw new Error('ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING: The claimed lifecycle does not match this device context.');
+      journalWrite({ lifecycleId:String(context.lifecycle_id), pairingId:String(context.pairing_id || claimed.pairing_id || ''), deviceId:deviceId, stage:'BOOTSTRAPPING', lastVerifiedStage:'CLAIMED' });
+      return await reconstructAndAttest(context,pair,deviceId,false);
     } catch (error) {
       var claimCode=showBootstrapIssue(error);
+      journalWrite({ stage:'FAILED', lastErrorCode:claimCode, lastErrorDetail:bootstrapErrorDetail(error) });
       bootStatus('Bootstrap claim failed: '+bootstrapErrorMessage(claimCode), true);
       notify('Bootstrap claim failed: '+claimCode, 'err');
       return false;
@@ -432,6 +521,7 @@
     if (typeof s.activateM5a4Live !== 'function') throw new Error('The r61 live-sync activation bridge is unavailable. Reload the updated application.');
     await s.activateM5a4Live();
     stageClear();
+    journalClear();
     notify('Safe bootstrap is active. Live Sync is now enabled for this device.', 'ok');
     if (typeof render === 'function') render();
     return true;
@@ -502,9 +592,9 @@
   function initialize() {
     installSettingsCard(); installLegacyGuards();
     if (managedParams().requested) setTimeout(function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); },750);
-    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70e');
+    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70f');
   }
 
-  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, stageRead:stageRead, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
+  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
   setTimeout(initialize,500);
 }());

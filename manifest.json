@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.5 r70E hardens safe managed-device bootstrap claims, including retry-safe anonymous identities and visible claim errors. M4/3 remains active; M4/4 activation is still blocked.",
-  "start_url": "./index.html?build=20261003-r70e-safe-bootstrap-claim-reliability",
+  "description": "ZEZMS Owner Edition v3.31.6 r70F stabilizes resumable Safe Bootstrap and local staff-access recovery for ACTIVE devices. M4/3 remains active; M4/4 activation is still blocked.",
+  "start_url": "./index.html?build=20261004-r70f-recovery-stabilization",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
