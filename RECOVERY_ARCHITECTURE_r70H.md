@@ -1,0 +1,7 @@
+# r70H architecture
+
+The local `deviceId` is a pointer, not proof that the physical device is new. If its exact active-context lookup fails while an Owner session survives, r70H reads only eligible ACTIVE records for the current business, requires explicit selection, and has the server verify the selected lifecycle under Owner/Admin AAL2.
+
+For PAIRED records, the server verifies the same existing lifecycle/access/registry binding and replaces only its anonymous `device_user_id`; r70H adopts and verifies that exact session before it changes the local pointer. OWNER records keep the Owner session. Business roots, queue, cursor and failed count are checked around the operation. If presence or staff-directory recovery fails, the prior session, identity bindings, pointer fields (including `r70hRelinkLifecycleId`) and local DB snapshot are restored. The staff recovery hydrates only `sharedDeviceDirectory` and `sharedDeviceAuth`.
+
+Presence is one resolver-protected normal control-plane update. The M5A3 compatibility context now forwards its supplied running version into it after existing M5A4 validation. For the one Owner-selected relink case, the same update is additionally bound to that selected lifecycle and requires AAL2. It updates matched existing access, registered-device and lifecycle metadata with device name, platform, running version and current last-seen time. It never inserts a registered row or lifecycle.
