@@ -1,8 +1,8 @@
 # r70H files changed
 
-- `js/identity-relink-r70h.js` — preserves the selected OWNER/PAIRED mode, verifies paired session identity, and fully rolls back pointer/session state on failure.
-- `index.html` — embeds r70H module and Cloud control-plane helpers.
-- `SUPABASE_R70H_ACTIVE_DEVICE_IDENTITY_RELINK.sql` — unexecuted active-fleet read, Owner/AAL2 selection verification, self-contained paired identity rebind, presence and narrow M5A3 app-version propagation correction.
+- `js/identity-relink-r70h.js` — resolves a surviving anonymous paired identity before any Owner-only flow, provides MFA-gated Owner fallback, preserves selected OWNER/PAIRED mode, and fully rolls back pointer/session state on failure.
+- `index.html` — embeds r70H module and Cloud control-plane helpers, including temporary Owner verification that does not overwrite an anonymous primary session before selection.
+- `SUPABASE_R70H_ACTIVE_DEVICE_IDENTITY_RELINK.sql` — unexecuted no-argument self-binding read, active-fleet read, Owner/AAL2 selection verification, self-contained paired identity rebind, presence and narrow M5A3 app-version propagation correction.
 - Release/cache files — version and shell-cache rotation to 3.31.8/r70H.
 - `tests/r70h-existing-active-device-identity-relink.integration.test.js`, SQL contract test, and r70G-preservation regression tests updated for the r70H release marker.
 

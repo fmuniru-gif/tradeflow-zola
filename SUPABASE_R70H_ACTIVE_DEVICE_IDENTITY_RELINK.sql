@@ -31,6 +31,46 @@ begin
   return v_result;
 end $function$;
 
+/* Self-binding is intentionally narrower than the Owner fleet reader: it has
+   no caller-controlled device or lifecycle argument and returns at most the
+   one ACTIVE PAIRED record which already belongs to auth.uid(). */
+create or replace function public.zezms_m5a4_my_active_device_binding()
+returns jsonb language plpgsql SECURITY DEFINER set search_path to '' as $function$
+declare v_actor uuid:=auth.uid(); v_count integer:=0; v_result jsonb;
+begin
+  if v_actor is null then raise exception 'ZEZMS_AUTH_REQUIRED' using errcode='P0001'; end if;
+  select count(*) into v_count
+  from public.zezms_device_access access_row
+  join public.zezms_device_lifecycle life on life.business_id=access_row.business_id and life.device_id=access_row.device_id
+  join public.zezms_business_devices device_row on device_row.business_id=life.business_id and device_row.device_id=life.device_id
+  join public.zezms_businesses business on business.id=life.business_id and business.status='ACTIVE'
+  join public.zezms_branches branch on branch.id=life.branch_id and branch.business_id=life.business_id and branch.status='ACTIVE'
+  where access_row.device_user_id=v_actor and access_row.status='ACTIVE' and access_row.revoked_at is null
+    and life.lifecycle_state='ACTIVE' and life.device_user_id=v_actor
+    and device_row.revoked_at is null and device_row.user_id=v_actor
+    and access_row.owner_id=life.owner_id and access_row.branch_id=life.branch_id;
+  if v_count=0 then raise exception 'ZEZMS_ACTIVE_DEVICE_SELF_BINDING_NOT_FOUND' using errcode='P0001'; end if;
+  if v_count<>1 then raise exception 'ZEZMS_ACTIVE_DEVICE_SELF_BINDING_AMBIGUOUS' using errcode='P0001'; end if;
+  select jsonb_build_object(
+    'lifecycle_id',life.id,'owner_id',life.owner_id,'business_id',life.business_id,
+    'branch_id',life.branch_id,'branch_name',branch.name,'branch_code',branch.code,
+    'device_id',life.device_id,'device_name',life.device_name,'device_user_id',access_row.device_user_id,
+    'pairing_id',life.pairing_id,'lifecycle_state',life.lifecycle_state,'device_status',life.lifecycle_state,
+    'mode','PAIRED','app_version',coalesce(device_row.app_version,life.app_version,''),
+    'last_seen_at',coalesce(device_row.last_seen_at,life.updated_at)
+  ) into v_result
+  from public.zezms_device_access access_row
+  join public.zezms_device_lifecycle life on life.business_id=access_row.business_id and life.device_id=access_row.device_id
+  join public.zezms_business_devices device_row on device_row.business_id=life.business_id and device_row.device_id=life.device_id
+  join public.zezms_businesses business on business.id=life.business_id and business.status='ACTIVE'
+  join public.zezms_branches branch on branch.id=life.branch_id and branch.business_id=life.business_id and branch.status='ACTIVE'
+  where access_row.device_user_id=v_actor and access_row.status='ACTIVE' and access_row.revoked_at is null
+    and life.lifecycle_state='ACTIVE' and life.device_user_id=v_actor
+    and device_row.revoked_at is null and device_row.user_id=v_actor
+    and access_row.owner_id=life.owner_id and access_row.branch_id=life.branch_id;
+  return v_result;
+end $function$;
+
 create or replace function public.zezms_m5a4_owner_relink_active_device(p_business_id uuid,p_lifecycle_id uuid)
 returns jsonb language plpgsql SECURITY DEFINER set search_path to '' as $function$
 declare v_actor uuid:=auth.uid(); v_life public.zezms_device_lifecycle%rowtype; v_access public.zezms_device_access%rowtype; v_branch record; v_has_access boolean:=false; v_has_paired boolean:=false;
@@ -121,11 +161,13 @@ begin
 end $function$;
 
 revoke all on function public.zezms_m5a4_recovery_active_fleet(uuid) from public,anon;
+revoke all on function public.zezms_m5a4_my_active_device_binding() from public,anon;
 revoke all on function public.zezms_m5a4_owner_relink_active_device(uuid,uuid) from public,anon;
 revoke all on function public.zezms_m5a4_owner_rebind_paired_active_device(uuid,uuid,uuid) from public,anon;
 revoke all on function public.zezms_m5a4_record_device_presence(text,text,text,text,uuid) from public,anon;
 revoke all on function public.zezms_m5a3_device_context(text,text,text,text) from public,anon;
 grant execute on function public.zezms_m5a4_recovery_active_fleet(uuid) to authenticated,postgres,service_role;
+grant execute on function public.zezms_m5a4_my_active_device_binding() to authenticated,postgres,service_role;
 grant execute on function public.zezms_m5a4_owner_relink_active_device(uuid,uuid) to authenticated,postgres,service_role;
 grant execute on function public.zezms_m5a4_owner_rebind_paired_active_device(uuid,uuid,uuid) to authenticated,postgres,service_role;
 grant execute on function public.zezms_m5a4_record_device_presence(text,text,text,text,uuid) to authenticated,postgres,service_role;
