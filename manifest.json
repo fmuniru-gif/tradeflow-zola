@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.9 r70I adds strict historical M4/3 checkpoint-hash verification for Safe Bootstrap. M4/3 remains active; M4/4 activation is still blocked.",
-  "start_url": "./index.html?build=20261005-r70i-legacy-checkpoint-hash-compatibility",
+  "description": "ZEZMS Owner Edition v3.31.10 r70J restores authoritative r70 dynamic capability validation for Safe Bootstrap and Live Sync. M4/3 remains active; M4/4 activation is still blocked.",
+  "start_url": "./index.html?build=20261005-r70j-authoritative-capability-guard",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

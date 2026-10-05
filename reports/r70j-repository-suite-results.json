@@ -1,0 +1,688 @@
+{
+  "release": "ZEZMS TradeFlow v3.31.10 / r70J",
+  "build": "20261005-r70j-authoritative-capability-guard",
+  "startedAt": "2026-10-05T18:36:19.802Z",
+  "status": "completed",
+  "timeoutMsPerTest": 45000,
+  "results": [
+    {
+      "name": "canonical-security-root-r62s.test.js",
+      "status": "failed",
+      "durationMs": 214,
+      "detail": "AssertionError [ERR_ASSERTION]: The r62S Canonical Restore build marker is absent."
+    },
+    {
+      "name": "cloud-certified-reference-r62t.test.js",
+      "status": "passed",
+      "durationMs": 142,
+      "detail": ""
+    },
+    {
+      "name": "managed-device-lifecycle-r61.test.js",
+      "status": "failed",
+      "durationMs": 191,
+      "detail": "Error: r61 overlay missing freshDeviceCheck"
+    },
+    {
+      "name": "manager-scope-staff-login-v32212.test.js",
+      "status": "passed",
+      "durationMs": 196,
+      "detail": ""
+    },
+    {
+      "name": "others-wallet-regression-r61.test.js",
+      "status": "passed",
+      "durationMs": 150,
+      "detail": ""
+    },
+    {
+      "name": "provenance-r64.test.js",
+      "status": "failed",
+      "durationMs": 159,
+      "detail": "Error: Protected r64 embedded component changed: CANONICAL_RESTORE_B64"
+    },
+    {
+      "name": "provenance-r65.test.js",
+      "status": "failed",
+      "durationMs": 159,
+      "detail": "Error: Protected r64 embedded component changed: CANONICAL_RESTORE_B64"
+    },
+    {
+      "name": "provenance-r66.test.js",
+      "status": "failed",
+      "durationMs": 171,
+      "detail": "AssertionError [ERR_ASSERTION]: Inherited CANONICAL_RESTORE_B64 must remain byte-identical from r65."
+    },
+    {
+      "name": "provenance-r67.test.js",
+      "status": "failed",
+      "durationMs": 149,
+      "detail": "AssertionError [ERR_ASSERTION]: Inherited CANONICAL_RESTORE_B64 must remain byte-identical from r66."
+    },
+    {
+      "name": "provenance-r67a.test.js",
+      "status": "failed",
+      "durationMs": 154,
+      "detail": "AssertionError [ERR_ASSERTION]: Inherited CLOUD_B64 must remain byte-identical from r67."
+    },
+    {
+      "name": "provenance-v32212.test.js",
+      "status": "failed",
+      "durationMs": 139,
+      "detail": "Error: Protected r64 embedded component changed: CANONICAL_RESTORE_B64"
+    },
+    {
+      "name": "quick-sale-cash-buckets-v32211.test.js",
+      "status": "passed",
+      "durationMs": 125,
+      "detail": ""
+    },
+    {
+      "name": "r67c-provenance.test.js",
+      "status": "failed",
+      "durationMs": 149,
+      "detail": "AssertionError [ERR_ASSERTION]: r67C loader markers missing"
+    },
+    {
+      "name": "r67c-runtime.test.js",
+      "status": "failed",
+      "durationMs": 4814,
+      "detail": "Error: ENOENT: no such file or directory, open 'C:\\Users\\USER\\Documents\\Codex\\2026-08-07\\we-are-back-at-v3-7\\work\\ZEZMS_OWNER_EDITION_v3.31.10_R70J_CAPABILITY_GUARD_PRECEDENCE\\js\\dashboard-period-controls-r67c.js'"
+    },
+    {
+      "name": "r67d-dashboard-restoration.test.js",
+      "status": "failed",
+      "durationMs": 4158,
+      "detail": "AssertionError [ERR_ASSERTION]: All History must retain full Dashboard layout"
+    },
+    {
+      "name": "r67d-full-shell-screenshot.test.js",
+      "status": "failed",
+      "durationMs": 33252,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67d-provenance.test.js",
+      "status": "failed",
+      "durationMs": 185,
+      "detail": "AssertionError [ERR_ASSERTION]: r67D release markers missing"
+    },
+    {
+      "name": "r67d-runtime-bootstrap.test.js",
+      "status": "failed",
+      "durationMs": 865,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "r67d-title-state.test.js",
+      "status": "passed",
+      "durationMs": 3525,
+      "detail": ""
+    },
+    {
+      "name": "r67e-management-reporting-charts.test.js",
+      "status": "failed",
+      "durationMs": 33451,
+      "detail": "page.waitForSelector: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67e-runtime-bootstrap.test.js",
+      "status": "failed",
+      "durationMs": 127,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "r67f-before-after-chart.test.js",
+      "status": "failed",
+      "durationMs": 3393,
+      "detail": "page.evaluate: TypeError: Cannot read properties of undefined (reading '_test')"
+    },
+    {
+      "name": "r67f-browser-visual.test.js",
+      "status": "failed",
+      "durationMs": 33080,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67f-kpi-visual.test.js",
+      "status": "failed",
+      "durationMs": 3317,
+      "detail": "page.evaluate: TypeError: Cannot read properties of undefined (reading '_test')"
+    },
+    {
+      "name": "r67f-management-lifecycle.test.js",
+      "status": "passed",
+      "durationMs": 3645,
+      "detail": ""
+    },
+    {
+      "name": "r67f-management-pdf-samples.test.js",
+      "status": "passed",
+      "durationMs": 8495,
+      "detail": ""
+    },
+    {
+      "name": "r67g-compact-kpi-layout.test.js",
+      "status": "passed",
+      "durationMs": 2953,
+      "detail": ""
+    },
+    {
+      "name": "r67g-runtime-bootstrap.test.js",
+      "status": "failed",
+      "durationMs": 128,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "r67h-live-sync-state-machine.test.js",
+      "status": "failed",
+      "durationMs": 197,
+      "detail": "AssertionError [ERR_ASSERTION]: missing CLOUD_B64"
+    },
+    {
+      "name": "r67h-runtime-bootstrap.test.js",
+      "status": "failed",
+      "durationMs": 176,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "r67h-runtime-browser.test.js",
+      "status": "failed",
+      "durationMs": 182,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "r67i-embedded-provenance-and-no-sync-xhr.test.js",
+      "status": "failed",
+      "durationMs": 230,
+      "detail": "AssertionError [ERR_ASSERTION]: Missing CLOUD_B64 payload."
+    },
+    {
+      "name": "r67i-persistent-live-sync-regression.test.js",
+      "status": "failed",
+      "durationMs": 191,
+      "detail": "AssertionError [ERR_ASSERTION]: missing CLOUD_B64"
+    },
+    {
+      "name": "r67i-r67h-before-slow-browser.test.js",
+      "status": "passed",
+      "durationMs": 14383,
+      "detail": ""
+    },
+    {
+      "name": "r67i-startup-offline-browser.test.js",
+      "status": "failed",
+      "durationMs": 33096,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67j-embedded-provenance-and-no-sync-xhr.test.js",
+      "status": "failed",
+      "durationMs": 252,
+      "detail": "AssertionError [ERR_ASSERTION]: Missing or unterminated CLOUD_B64 payload."
+    },
+    {
+      "name": "r67j-production-capability-guard.test.js",
+      "status": "passed",
+      "durationMs": 252,
+      "detail": ""
+    },
+    {
+      "name": "r67k-embedded-wallet-transfer.test.js",
+      "status": "failed",
+      "durationMs": 175,
+      "detail": "AssertionError [ERR_ASSERTION]: Missing or unterminated CLOUD_B64 payload."
+    },
+    {
+      "name": "r67k-wallet-transfer.test.js",
+      "status": "passed",
+      "durationMs": 193,
+      "detail": ""
+    },
+    {
+      "name": "r67n-dynamic-wallets-regression.test.js",
+      "status": "passed",
+      "durationMs": 139,
+      "detail": ""
+    },
+    {
+      "name": "r67n-receipt-adjustment-removal.test.js",
+      "status": "failed",
+      "durationMs": 217,
+      "detail": "AssertionError [ERR_ASSERTION]: Current r67X release marker missing."
+    },
+    {
+      "name": "r67o-account-settlement-wallet-integration.test.js",
+      "status": "passed",
+      "durationMs": 207,
+      "detail": ""
+    },
+    {
+      "name": "r67o-runtime-embedding.test.js",
+      "status": "failed",
+      "durationMs": 195,
+      "detail": "AssertionError [ERR_ASSERTION]: Current r67P release marker is present."
+    },
+    {
+      "name": "r67p-browser-visual.test.js",
+      "status": "failed",
+      "durationMs": 33010,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67p-financial-entry-editing.test.js",
+      "status": "passed",
+      "durationMs": 332,
+      "detail": ""
+    },
+    {
+      "name": "r67p-live-sync-preservation.test.js",
+      "status": "failed",
+      "durationMs": 184,
+      "detail": "AssertionError [ERR_ASSERTION]: Missing CLOUD_B64"
+    },
+    {
+      "name": "r67p-runtime-embedding.test.js",
+      "status": "failed",
+      "durationMs": 173,
+      "detail": "AssertionError [ERR_ASSERTION]: r67Q release marker is missing."
+    },
+    {
+      "name": "r67q-dashboard-kpi-layout.test.js",
+      "status": "failed",
+      "durationMs": 33691,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67q-runtime-embedding.test.js",
+      "status": "failed",
+      "durationMs": 162,
+      "detail": "AssertionError [ERR_ASSERTION]: r67Q release marker is missing."
+    },
+    {
+      "name": "r67r-cash-bucket-price-list.test.js",
+      "status": "failed",
+      "durationMs": 33061,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67r-provenance.test.js",
+      "status": "failed",
+      "durationMs": 184,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67s-final-price-list-alphabetical.test.js",
+      "status": "failed",
+      "durationMs": 33193,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67s-provenance.test.js",
+      "status": "failed",
+      "durationMs": 242,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67t-price-list-content-fit.test.js",
+      "status": "failed",
+      "durationMs": 34525,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67t-provenance.test.js",
+      "status": "failed",
+      "durationMs": 221,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67u-proforma-invoice-runtime.test.js",
+      "status": "timed_out",
+      "durationMs": 45080,
+      "detail": "Timed out after 45000 ms."
+    },
+    {
+      "name": "r67u-provenance.test.js",
+      "status": "failed",
+      "durationMs": 248,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67v-proforma-stability-runtime.test.js",
+      "status": "failed",
+      "durationMs": 33724,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67v-provenance.test.js",
+      "status": "failed",
+      "durationMs": 180,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67w-proforma-fleet-print-runtime.test.js",
+      "status": "failed",
+      "durationMs": 33439,
+      "detail": "page.waitForFunction: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "r67w-provenance.test.js",
+      "status": "failed",
+      "durationMs": 336,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67x-preservation-provenance.test.js",
+      "status": "failed",
+      "durationMs": 260,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67x-wallet-daily-qty-receipt-reference.test.js",
+      "status": "failed",
+      "durationMs": 179,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r67z-warranty-settings-ui-interaction.test.js",
+      "status": "passed",
+      "durationMs": 192,
+      "detail": ""
+    },
+    {
+      "name": "r68-promotion-candidate-intelligence.test.js",
+      "status": "failed",
+      "durationMs": 212,
+      "detail": "AssertionError [ERR_ASSERTION]: The r68B production loader must register Promotion Intelligence."
+    },
+    {
+      "name": "r68-promotion-navigation-contract.test.js",
+      "status": "passed",
+      "durationMs": 196,
+      "detail": ""
+    },
+    {
+      "name": "r68-promotion-preservation.test.js",
+      "status": "passed",
+      "durationMs": 214,
+      "detail": ""
+    },
+    {
+      "name": "r68a-promotion-product-universe.test.js",
+      "status": "failed",
+      "durationMs": 164,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "r68b-promotion-current-month-scope.test.js",
+      "status": "passed",
+      "durationMs": 172,
+      "detail": ""
+    },
+    {
+      "name": "r68c-promotion-evidence-bridge.test.js",
+      "status": "passed",
+      "durationMs": 244,
+      "detail": ""
+    },
+    {
+      "name": "r68c-provenance-cache.test.js",
+      "status": "failed",
+      "durationMs": 176,
+      "detail": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "name": "r68c-rendered-shell-patch.test.js",
+      "status": "failed",
+      "durationMs": 255,
+      "detail": "AssertionError [ERR_ASSERTION]: Rendered application owns the r68E version."
+    },
+    {
+      "name": "r68d-quotation-navigation-restoration.test.js",
+      "status": "failed",
+      "durationMs": 169,
+      "detail": "AssertionError [ERR_ASSERTION]: Built production shell owns the r68E release marker"
+    },
+    {
+      "name": "r68e-account-cash-pdf-compact-kpi-charts.test.js",
+      "status": "failed",
+      "durationMs": 136,
+      "detail": "AssertionError [ERR_ASSERTION]: Built production shell owns r68E release markers"
+    },
+    {
+      "name": "r69b-managed-fleet-auto-load.test.js",
+      "status": "failed",
+      "durationMs": 157,
+      "detail": "AssertionError [ERR_ASSERTION]: Missing MANAGED_DEVICE_LIFECYCLE_R61_B64 payload."
+    },
+    {
+      "name": "r70-mb3-m44-transition.test.js",
+      "status": "passed",
+      "durationMs": 190,
+      "detail": ""
+    },
+    {
+      "name": "r70a-deterministic-rollover-conflict-recovery.test.js",
+      "status": "passed",
+      "durationMs": 161,
+      "detail": ""
+    },
+    {
+      "name": "r70b-canonical-recovery-checkpoint-bridge.test.js",
+      "status": "passed",
+      "durationMs": 220,
+      "detail": ""
+    },
+    {
+      "name": "r70c-native-recovery-picker-stability.browser.test.js",
+      "status": "passed",
+      "durationMs": 23012,
+      "detail": ""
+    },
+    {
+      "name": "r70d-canonical-restore-execution.integration.test.js",
+      "status": "passed",
+      "durationMs": 305,
+      "detail": ""
+    },
+    {
+      "name": "r70e-bootstrap-manifest-revision-handoff.integration.test.js",
+      "status": "passed",
+      "durationMs": 279,
+      "detail": ""
+    },
+    {
+      "name": "r70e-safe-bootstrap-claim-reliability.test.js",
+      "status": "passed",
+      "durationMs": 296,
+      "detail": ""
+    },
+    {
+      "name": "r70f-recovery-stabilization.integration.test.js",
+      "status": "passed",
+      "durationMs": 225,
+      "detail": ""
+    },
+    {
+      "name": "r70g-active-device-binding-recovery.integration.test.js",
+      "status": "passed",
+      "durationMs": 166,
+      "detail": ""
+    },
+    {
+      "name": "r70g-m43-freeze.contract.test.js",
+      "status": "passed",
+      "durationMs": 150,
+      "detail": ""
+    },
+    {
+      "name": "r70g-reconnect-sql-ambiguity.contract.test.js",
+      "status": "passed",
+      "durationMs": 123,
+      "detail": ""
+    },
+    {
+      "name": "r70g-safe-bootstrap-preservation.integration.test.js",
+      "status": "passed",
+      "durationMs": 135,
+      "detail": ""
+    },
+    {
+      "name": "r70h-control-plane-sql.contract.test.js",
+      "status": "passed",
+      "durationMs": 116,
+      "detail": ""
+    },
+    {
+      "name": "r70h-existing-active-device-identity-relink.integration.test.js",
+      "status": "passed",
+      "durationMs": 144,
+      "detail": ""
+    },
+    {
+      "name": "r70i-legacy-checkpoint-hash-compatibility.integration.test.js",
+      "status": "failed",
+      "durationMs": 126,
+      "detail": "AssertionError [ERR_ASSERTION]: ZEZMS_PRODUCTION_CHECKPOINT_EXPORT must point to the local Supabase checkpoint export."
+    },
+    {
+      "name": "r70i-m43-freeze.contract.test.js",
+      "status": "passed",
+      "durationMs": 142,
+      "detail": ""
+    },
+    {
+      "name": "r70j-readiness-publication-audit.contract.test.js",
+      "status": "passed",
+      "durationMs": 137,
+      "detail": ""
+    },
+    {
+      "name": "recovery-ui-dedup-r62u.test.js",
+      "status": "passed",
+      "durationMs": 222,
+      "detail": ""
+    },
+    {
+      "name": "runtime-bootstrap-r63.test.js",
+      "status": "failed",
+      "durationMs": 1255,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "runtime-bootstrap-r64.test.js",
+      "status": "failed",
+      "durationMs": 903,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "runtime-bootstrap-r65.test.js",
+      "status": "failed",
+      "durationMs": 769,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "runtime-bootstrap-r66.test.js",
+      "status": "failed",
+      "durationMs": 754,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "runtime-bootstrap-r67.test.js",
+      "status": "failed",
+      "durationMs": 871,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "runtime-bootstrap-r67a.test.js",
+      "status": "failed",
+      "durationMs": 886,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "runtime-bootstrap-r70e.test.js",
+      "status": "failed",
+      "durationMs": 837,
+      "detail": "Error: The r70E service-worker cache name is missing."
+    },
+    {
+      "name": "runtime-bootstrap-v32210.test.js",
+      "status": "failed",
+      "durationMs": 788,
+      "detail": "Error: The r60L service-worker cache name is missing."
+    },
+    {
+      "name": "runtime-bootstrap-v32211.test.js",
+      "status": "failed",
+      "durationMs": 769,
+      "detail": "Error: The r60L service-worker cache name is missing."
+    },
+    {
+      "name": "runtime-bootstrap-v3231.test.js",
+      "status": "failed",
+      "durationMs": 813,
+      "detail": "Error: The r62W service-worker cache name is missing."
+    },
+    {
+      "name": "runtime-navigation-r67a.test.js",
+      "status": "failed",
+      "durationMs": 824,
+      "detail": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "name": "sale-cash-buckets-v32210.test.js",
+      "status": "passed",
+      "durationMs": 138,
+      "detail": ""
+    },
+    {
+      "name": "self-service-recovery-r62.test.js",
+      "status": "passed",
+      "durationMs": 164,
+      "detail": ""
+    },
+    {
+      "name": "stage7a-executive-performance-v3240.test.js",
+      "status": "passed",
+      "durationMs": 243,
+      "detail": ""
+    },
+    {
+      "name": "stage7a-route-access-v3240.test.js",
+      "status": "passed",
+      "durationMs": 203,
+      "detail": ""
+    },
+    {
+      "name": "stage7b-targets-forecasting-v3250.test.js",
+      "status": "passed",
+      "durationMs": 258,
+      "detail": ""
+    },
+    {
+      "name": "stage7c-management-alerts-v3260.test.js",
+      "status": "failed",
+      "durationMs": 263,
+      "detail": "C:\\Users\\USER\\Documents\\Codex\\2026-08-07\\we-are-back-at-v3-7\\work\\ZEZMS_OWNER_EDITION_v3.31.10_R70J_CAPABILITY_GUARD_PRECEDENCE\\tests\\stage7c-management-alerts-v3260.test.js:82"
+    },
+    {
+      "name": "stage8a-management-actions-v3270.test.js",
+      "status": "passed",
+      "durationMs": 220,
+      "detail": ""
+    },
+    {
+      "name": "stage8b-controlled-decision-workflows-v3280.test.js",
+      "status": "passed",
+      "durationMs": 196,
+      "detail": ""
+    }
+  ],
+  "completedAt": "2026-10-05T18:44:49.561Z",
+  "summary": {
+    "total": 112,
+    "passed": 43,
+    "failed": 68,
+    "timed_out": 1
+  }
+}

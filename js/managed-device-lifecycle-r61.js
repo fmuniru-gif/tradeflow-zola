@@ -5,7 +5,7 @@
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20261004-r70h-existing-active-device-identity-relink';
+  var BUILD = '20261005-r70j-authoritative-capability-guard';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
   var JOURNAL_KEY = 'zezms_m5a4_safe_bootstrap_journal_v2';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];
@@ -60,9 +60,19 @@
       ZEZMS_BOOTSTRAP_LOCAL_BUSINESS_DATA_PRESENT:'This browser contains ordinary business records and is not safe to use as a replacement bootstrap profile.',
       ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING:'The local device identity is incomplete and cannot be safely matched to its Cloud lifecycle.',
       ZEZMS_BOOTSTRAP_UNKNOWN_UNSAFE_STATE:'The device binding could not be verified safely. Retry when online; do not clear site data.',
-      ZEZMS_BOOTSTRAP_MANIFEST_REVISION_INVALID:'The server did not return a valid lifecycle revision for safe bootstrap attestation.'
+      ZEZMS_BOOTSTRAP_MANIFEST_REVISION_INVALID:'The server did not return a valid lifecycle revision for safe bootstrap attestation.',
+      ZEZMS_BOOTSTRAP_CHECKPOINT_HASH_MISMATCH:'Checkpoint payload hash mismatch. Local data was not changed.',
+      ZEZMS_BOOTSTRAP_CHECKPOINT_HASH_FORMAT_UNSUPPORTED:'The checkpoint hash format is not supported. Local data was not changed.'
     };
-    return messages[code] || 'The bootstrap claim was rejected before this device received any business data.';
+    return messages[code] || 'The bootstrap did not complete before this device received any business data.';
+  }
+  function bootstrapFailureHeading(code) {
+    var stage=String((journalRead() || {}).stage || '').toUpperCase();
+    if (/^ZEZMS_BOOTSTRAP_CHECKPOINT_HASH_/.test(String(code || '')) || stage === 'CHECKPOINT_VERIFYING' || stage === 'MANIFEST_READY') return 'Bootstrap checkpoint verification failed';
+    if (stage === 'OPERATION_REPLAYING' || stage === 'RECONSTRUCTING') return 'Bootstrap operation replay failed';
+    if (stage === 'INTEGRITY_VERIFYING') return 'Bootstrap integrity verification failed';
+    if (stage === 'ATTESTING') return 'Bootstrap attestation failed';
+    return 'Bootstrap claim failed';
   }
   function setClaimBusy(value) {
     claimInFlight=!!value;
@@ -77,7 +87,7 @@
     var code=bootstrapErrorCode(error), box=document.getElementById('m5a4EnrollIssue');
     if (box) {
       box.hidden=false;
-      box.innerHTML='<b>Bootstrap claim failed</b><br><span class="mono">'+esc(code)+'</span><br><small>'+esc(bootstrapErrorMessage(code))+' '+esc(bootstrapErrorDetail(error))+'</small>';
+      box.innerHTML='<b>'+esc(bootstrapFailureHeading(code))+'</b><br><span class="mono">'+esc(code)+'</span><br><small>'+esc(bootstrapErrorMessage(code))+' '+esc(bootstrapErrorDetail(error))+'</small>';
     }
     return code;
   }
@@ -174,6 +184,52 @@
     var s=cloud();
     if (!s || !s._test || !s._test.cleanSnapshot || !s._test.deterministicHash) throw new Error('M4/3 verification helpers are unavailable.');
     return String(s._test.deterministicHash(s._test.cleanSnapshot(database)) || '');
+  }
+  /* M4/3 checkpoint r57 canonicalization, retained for historical eight-hex
+     checkpoint rows.  This is deliberately separate from the current cloud
+     helper: the hash format chooses the verifier, never a fallback result. */
+  function legacyCheckpointSnapshot(database) {
+    var copy=clone(database || {});
+    ['backupHistory','backupSettings','syncSettings','syncMeta','syncRejectedTransactions'].forEach(function (key) { delete copy[key]; });
+    return copy;
+  }
+  function legacyCheckpointCanonicalize(value) {
+    if (value === undefined) return null;
+    if (value === null || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(legacyCheckpointCanonicalize);
+    var result={};
+    Object.keys(value).sort().forEach(function (key) {
+      if (['payloadHash','outboxState','attempts','lastAttempt','lastError','_legacyPayload'].indexOf(key) < 0) result[key]=legacyCheckpointCanonicalize(value[key]);
+    });
+    return result;
+  }
+  function legacyCheckpointHash(database) {
+    var text=JSON.stringify(legacyCheckpointCanonicalize(legacyCheckpointSnapshot(database)));
+    var hash=0x811c9dc5;
+    for (var index=0; index<text.length; index+=1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash,0x01000193);
+    }
+    return ('00000000'+(hash >>> 0).toString(16)).slice(-8).toUpperCase();
+  }
+  function checkpointHashError(code, message) {
+    var error=new Error(code+': '+message);
+    error.code=code;
+    return error;
+  }
+  function verifyCheckpointPayloadHash(payload, storedHash) {
+    var stored=String(storedHash == null ? '' : storedHash).trim().toUpperCase(), actual, format;
+    if (/^[0-9A-F]{8}$/.test(stored)) {
+      format='M43_LEGACY_FNV1A_32';
+      actual=legacyCheckpointHash(payload).toUpperCase();
+    } else if (/^[0-9A-F]{16}$/.test(stored)) {
+      format='M43_CURRENT_DETERMINISTIC_64';
+      actual=cleanHash(payload).trim().toUpperCase();
+    } else {
+      throw checkpointHashError('ZEZMS_BOOTSTRAP_CHECKPOINT_HASH_FORMAT_UNSUPPORTED','The checkpoint hash format is not supported. Local data was not changed.');
+    }
+    if (actual !== stored) throw checkpointHashError('ZEZMS_BOOTSTRAP_CHECKPOINT_HASH_MISMATCH','Checkpoint payload hash mismatch. Local data was not changed.');
+    return { ok:true, format:format, storedHash:stored, computedHash:actual };
   }
 
   function lifecycleBadge(value) {
@@ -445,14 +501,19 @@
     var manifestRevision=Number(manifest.lifecycle_revision);
     if (!Number.isFinite(manifestRevision) || manifestRevision <= 0) throw new Error('ZEZMS_BOOTSTRAP_MANIFEST_REVISION_INVALID: The server did not return a valid lifecycle revision.');
     journalWrite({ stage:'MANIFEST_READY', checkpointCursor:Number(manifest.checkpoint_cursor || 0), checkpointHash:String(manifest.checkpoint_hash), manifestLifecycleRevision:manifestRevision });
-    if (cleanHash(manifest.checkpoint_payload) !== String(manifest.checkpoint_hash)) throw new Error('Checkpoint payload hash mismatch. Local data was not changed.');
+    journalWrite({ stage:'CHECKPOINT_VERIFYING' });
+    verifyCheckpointPayloadHash(manifest.checkpoint_payload,manifest.checkpoint_hash);
+    journalWrite({ stage:'CHECKPOINT_VERIFIED' });
     bootStatus('Reconstructing the verified checkpoint and replaying ordered post-checkpoint operations…');
+    journalWrite({ stage:'OPERATION_REPLAYING' });
     var operations=await loadBootstrapOperations(pair.client, context.lifecycle_id, manifest.checkpoint_cursor);
     journalWrite({ stage:'OPERATIONS_REPLAYED', replayCursor:operations.reduce(function(last,item){ return Math.max(last,Number(item.server_seq || item.seq || 0)); },Number(manifest.checkpoint_cursor || 0)) });
     var prepared=s && s.prepareM5a4BootstrapCandidate;
     if (typeof prepared !== 'function') throw new Error('The r61 cloud bootstrap bridge is unavailable. Reload the updated application.');
+    journalWrite({ stage:'RECONSTRUCTING' });
     var candidate=prepared(manifest.checkpoint_payload, operations.map(function (item) { return item.payload || item.operation || item; }));
     bootStatus('Running Integrity Core and Fleet fingerprint verification…');
+    journalWrite({ stage:'INTEGRITY_VERIFYING' });
     candidateIntegrity(candidate);
     var snapshot=fingerprintCandidate(candidate);
     var cursor=operations.reduce(function (last, item) { return Math.max(last,Number(item.server_seq || item.seq || 0)); },Number(manifest.checkpoint_cursor || 0));
@@ -500,9 +561,10 @@
       return await reconstructAndAttest(context,pair,deviceId,false);
     } catch (error) {
       var claimCode=showBootstrapIssue(error);
+      var failureHeading=bootstrapFailureHeading(claimCode);
       journalWrite({ stage:'FAILED', lastErrorCode:claimCode, lastErrorDetail:bootstrapErrorDetail(error) });
-      bootStatus('Bootstrap claim failed: '+bootstrapErrorMessage(claimCode), true);
-      notify('Bootstrap claim failed: '+claimCode, 'err');
+      bootStatus(failureHeading+': '+bootstrapErrorMessage(claimCode), true);
+      notify(failureHeading+': '+claimCode, 'err');
       return false;
     } finally {
       setClaimBusy(false);
@@ -592,9 +654,9 @@
   function initialize() {
     installSettingsCard(); installLegacyGuards();
     if (managedParams().requested) setTimeout(function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); },750);
-    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70h');
+    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70i');
   }
 
-  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
+  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
   setTimeout(initialize,500);
 }());
