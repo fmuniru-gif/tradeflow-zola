@@ -1,0 +1,24 @@
+{
+  "release": "ZEZMS TradeFlow Owner Edition v3.31.13 / r70M",
+  "build": "20261006-r70m-device-control-plane-stabilization",
+  "scope": "local source and VM fixtures only",
+  "production_mutations": false,
+  "sql_executed": false,
+  "m43": "ACTIVE",
+  "m44": "READY_ONLY",
+  "results": [
+    {"name": "r70M builder idempotency", "status": "PASS", "sha256": "9ED5800655761916E89EB92DFF902D2CC76BAB67BA8481FB683E0F904976FFED"},
+    {"name": "r70M generated runtime", "status": "PASS", "checks": 24},
+    {"name": "r70L replay regression", "status": "PASS", "checks": 68},
+    {"name": "r70K replay regression", "status": "PASS", "checks": 30},
+    {"name": "r70 MB3/M4/4 transition", "status": "PASS", "checks": 196},
+    {"name": "r70E claim reliability", "status": "PASS", "checks": 61},
+    {"name": "r70F recovery stabilization", "status": "PASS", "checks": 63},
+    {"name": "r70G active-device binding", "status": "PASS", "checks": 55},
+    {"name": "r70G Safe Bootstrap preservation", "status": "PASS", "checks": 24},
+    {"name": "r70I M4/3 freeze", "status": "PASS", "checks": 9},
+    {"name": "r70H SQL contract", "status": "PASS", "checks": 40, "executed": false},
+    {"name": "r70J readiness audit", "status": "PASS", "checks": 10, "executed": false},
+    {"name": "r70I historical checkpoint acceptance", "status": "NOT_RUN", "reason": "ZEZMS_PRODUCTION_CHECKPOINT_EXPORT not supplied; production fixture intentionally excluded"}
+  ]
+}

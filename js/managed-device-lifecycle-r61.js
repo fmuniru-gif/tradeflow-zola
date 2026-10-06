@@ -1,11 +1,11 @@
-/* ZEZMS TradeFlow v3.31.12 r70L — Managed Device Lifecycle & Safe Bootstrap.
+/* ZEZMS TradeFlow v3.31.13 r70M — Managed Device Lifecycle & Safe Bootstrap.
    Control-plane only. This overlay deliberately does not alter normal M4/3
    business operations, checkpoints, Canonical Restore, or the local DB key. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20261006-r70l-bootstrap-replay-origin-invariant';
+  var BUILD = '20261006-r70m-device-control-plane-stabilization';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
   var JOURNAL_KEY = 'zezms_m5a4_safe_bootstrap_journal_v2';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];
@@ -579,9 +579,13 @@
     if (!context || String(context.lifecycle_state || context.device_status || '').toUpperCase() !== 'ACTIVE') throw new Error('This device has not been activated by the Owner yet.');
     var s=cloud();
     if (!s || typeof s.commitM5a4BootstrapCandidate !== 'function') throw new Error('The r61 cloud bootstrap bridge is unavailable. Reload the updated application.');
-    s.commitM5a4BootstrapCandidate(staged.candidate, { cursor:staged.cursor, context:context });
-    if (typeof s.activateM5a4Live !== 'function') throw new Error('The r61 live-sync activation bridge is unavailable. Reload the updated application.');
-    await s.activateM5a4Live();
+    if (typeof s.activateVerifiedBootstrapR70M === 'function') {
+      await s.activateVerifiedBootstrapR70M(staged.candidate, { cursor:staged.cursor, context:context });
+    } else {
+      s.commitM5a4BootstrapCandidate(staged.candidate, { cursor:staged.cursor, context:context });
+      if (typeof s.activateM5a4Live !== 'function') throw new Error('The r61 live-sync activation bridge is unavailable. Reload the updated application.');
+      await s.activateM5a4Live();
+    }
     stageClear();
     journalClear();
     notify('Safe bootstrap is active. Live Sync is now enabled for this device.', 'ok');
@@ -591,7 +595,17 @@
   function stagedCardHtml() {
     var staged=stageRead();
     if (!staged) return '';
-    return '<div class="card" style="margin-top:12px;border-color:#38bdf8"><h3>Safe bootstrap awaiting activation</h3><p class="muted">Checkpoint and post-checkpoint operations were verified at cursor '+esc(staged.cursor)+'. No business data has been committed to this device yet.</p><button class="btn" onclick="ZEZMS.managedDevices.finish()">Check Owner approval and activate</button></div>';
+    var pending=cloud() && cloud().getOutbox ? cloud().getOutbox().length : 0;
+    return '<div class="card" style="margin-top:12px;border-color:#38bdf8"><h3>Safe bootstrap awaiting activation</h3><p class="muted">Checkpoint and post-checkpoint operations were verified at cursor '+esc(staged.cursor)+'. No business data has been committed to this device yet.</p>'
+      +(pending ? '<p class="muted"><b>'+esc(pending)+'</b> local setup item(s) need inspection before activation. Unknown or business changes remain blocked.</p><button class="btn ghost" onclick="ZEZMS.managedDevices.inspectBootstrapOutbox()">Inspect bootstrap outbox</button> ' : '')
+      +'<button class="btn" onclick="ZEZMS.managedDevices.finish()">Complete activation</button></div>';
+  }
+  function inspectBootstrapOutbox() {
+    var s=cloud(); if (!s || typeof s.inspectM5a4BootstrapOutbox !== 'function') throw new Error('The r70M bootstrap outbox inspector is unavailable. Reload the updated application.');
+    var report=s.inspectM5a4BootstrapOutbox();
+    var rows=(report.rows || []).map(function (item) { return '<li><b>'+esc(item.type || 'UNKNOWN')+'</b> — '+esc(item.classification)+'<br><small>'+esc(item.reason)+' · '+esc(item.operationId)+'</small><pre style="white-space:pre-wrap;max-height:180px;overflow:auto">'+esc(JSON.stringify(item.patches || [],null,2))+'</pre></li>'; }).join('') || '<li>No queued local operations were found.</li>';
+    if (typeof openModal === 'function') openModal('<h3>Bootstrap outbox inspection</h3><p class="muted">Read-only evidence. Only exact, candidate-equivalent setup residue can be reconciled during Owner-approved activation.</p><p><b>Activation eligible:</b> '+esc(report.activationEligible ? 'Yes' : 'No')+' · <b>Business records:</b> '+esc(report.localBusinessRecordCount)+' · <b>Failed operations:</b> '+esc(report.failedOperationCount)+'</p><ol>'+rows+'</ol>');
+    return report;
   }
   async function activate(lifecycleId, revision) {
     if (!window.confirm('Approve this verified device? It will become ACTIVE. A replacement will retire its old device at the same time.')) return false;
@@ -654,9 +668,9 @@
   function initialize() {
     installSettingsCard(); installLegacyGuards();
     if (managedParams().requested) setTimeout(function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); },750);
-    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70l');
+    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70m');
   }
 
-  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
+  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, inspectBootstrapOutbox:function(){return inspectBootstrapOutbox();}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
   setTimeout(initialize,500);
 }());

@@ -117,6 +117,9 @@
     }).join('');
   }
   function cardHtml() {
+    if (String(state().deviceAccessMode || '').toUpperCase() === 'PAIRED') {
+      return '<div class="card" style="margin-top:12px" data-zezms-branch-management="r70m-neutral"><h3>Branch Management</h3><p class="muted">Branch management is available on Owner/Admin devices.</p></div>';
+    }
     if (!canManage()) return '';
     alignBusinessContext();
     var html='<div class="card" style="margin-top:12px" data-zezms-branch-management="r69a">'

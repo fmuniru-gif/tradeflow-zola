@@ -420,6 +420,9 @@ function r70kRecoveryCardHtml() {
 async function r70kInspectFromUi() {
   var from = (document.getElementById('r70kBootstrapFrom') || {}).value;
   var to = (document.getElementById('r70kBootstrapTo') || {}).value;
+  if (String(from == null ? '' : from).trim() === '' || String(to == null ? '' : to).trim() === '') {
+    throw new Error('ZEZMS_BOOTSTRAP_REPLAY_RANGE_REQUIRED: Enter both the bootstrap boundary and Cloud-head cursor. Empty values are never interpreted as zero.');
+  }
   var audit = await r70kInspectBootstrapReplay(from, to);
   notify('Read-only Safe Bootstrap replay audit completed: '+audit.rows.length+' operation(s).', 'ok');
   try { if (typeof render === 'function') render(); } catch (_) {}
