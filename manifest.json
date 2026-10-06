@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.10 r70J restores authoritative r70 dynamic capability validation for Safe Bootstrap and Live Sync. M4/3 remains active; M4/4 activation is still blocked.",
-  "start_url": "./index.html?build=20261005-r70j-authoritative-capability-guard",
+  "description": "ZEZMS Owner Edition v3.31.12 r70L enforces origin-independent materialization proof during verified Safe Bootstrap replay. M4/3 remains active; M4/4 is Ready only.",
+  "start_url": "./index.html?build=20261006-r70l-bootstrap-replay-origin-invariant",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

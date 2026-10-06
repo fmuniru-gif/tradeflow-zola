@@ -1,0 +1,23 @@
+{
+  "release": "v3.31.12 / r70L",
+  "build": "20261006-r70l-bootstrap-replay-origin-invariant",
+  "execution": "local source and isolated in-memory Node VM only",
+  "tests": [
+    {"name":"build-r70l-bootstrap-replay-origin-invariant.js","status":"PASS"},
+    {"name":"r70l-bootstrap-replay-origin-invariant.runtime.test.js","status":"PASS","assertions":68},
+    {"name":"r70i-m43-freeze.contract.test.js","status":"PASS","assertions":9},
+    {"name":"r70-mb3-m44-transition.test.js","status":"PASS","assertions":196},
+    {"name":"r70g-safe-bootstrap-preservation.integration.test.js","status":"PASS","assertions":24},
+    {"name":"r70f-recovery-stabilization.integration.test.js","status":"PASS","assertions":63},
+    {"name":"r70g-active-device-binding-recovery.integration.test.js","status":"PASS","assertions":55},
+    {"name":"r70e-safe-bootstrap-claim-reliability.test.js","status":"PASS","assertions":61},
+    {"name":"r70i-legacy-checkpoint-hash-compatibility.integration.test.js","status":"FAIL","classification":"environmental","reason":"The executed test stopped at its required ZEZMS_PRODUCTION_CHECKPOINT_EXPORT prerequisite; no local production checkpoint export was supplied in this clean workspace."}
+  ],
+  "prohibited_actions": {
+    "sql_executed": false,
+    "m44_activated": false,
+    "cloud_history_changed": false,
+    "identity_tenant_branch_lifecycle_changed": false,
+    "business_data_changed": false
+  }
+}

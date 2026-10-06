@@ -1,7 +1,7 @@
-/* ZEZMS Owner Edition v3.31.10 - Authoritative Capability Guard r70J.
+/* ZEZMS Owner Edition v3.31.12 - Bootstrap Replay Origin Invariant r70L.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-r70j-authoritative-capability-guard-20261005';
-const PATCHED_INDEX_CACHE = 'zezms-r70j-authoritative-capability-guard-cache-v1';
+const CACHE = 'zezms-r70l-bootstrap-replay-origin-invariant-20261006';
+const PATCHED_INDEX_CACHE = 'zezms-r70l-bootstrap-replay-origin-invariant-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20260812-portfolio-signals-r39','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -35,8 +35,8 @@ const ASSETS = [
   './js/navigation-v3101-r68.js?v=20261004-r70f-recovery-stabilization','./js/route-title-ownership-r68.js?v=20261004-r70f-recovery-stabilization',
   './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/account-cash-pdf-r68e.js?v=20261004-r70f-recovery-stabilization','./js/kpi-charts-compact-r68e.js?v=20261004-r70f-recovery-stabilization',
-  './js/branch-management-r69.js?v=20261004-r70f-recovery-stabilization','./js/managed-device-lifecycle-r61.js?v=20261005-r70j-authoritative-capability-guard',
-  './js/recovery-stabilization-r70g.js?v=20261005-r70j-authoritative-capability-guard','./js/identity-relink-r70h.js?v=20261005-r70j-authoritative-capability-guard',
+  './js/branch-management-r69.js?v=20261004-r70f-recovery-stabilization','./js/managed-device-lifecycle-r61.js?v=20261006-r70l-bootstrap-replay-origin-invariant',
+  './js/recovery-stabilization-r70g.js?v=20261006-r70l-bootstrap-replay-origin-invariant','./js/identity-relink-r70h.js?v=20261006-r70l-bootstrap-replay-origin-invariant',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
 let postShellCachePromise = null;
@@ -83,7 +83,7 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && ((data.type === 'ZEZMS_R70J_SHELL_READY' && data.release === '20261005-r70j-authoritative-capability-guard') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70L_SHELL_READY' && data.release === '20261006-r70l-bootstrap-replay-origin-invariant') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
