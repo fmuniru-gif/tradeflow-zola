@@ -1,11 +1,11 @@
-/* ZEZMS TradeFlow v3.31.13 r70M — Managed Device Lifecycle & Safe Bootstrap.
+/* ZEZMS TradeFlow v3.31.15 r70O — Managed Device Lifecycle & Safe Bootstrap.
    Control-plane only. This overlay deliberately does not alter normal M4/3
    business operations, checkpoints, Canonical Restore, or the local DB key. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20261006-r70m-device-control-plane-stabilization';
+  var BUILD = '20261006-r70o-deterministic-device-control';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
   var JOURNAL_KEY = 'zezms_m5a4_safe_bootstrap_journal_v2';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];
@@ -308,16 +308,15 @@
     if (fleetLoadStatus === 'IDLE') fleetLoadStatus='LOADING';
     scheduleFleetHydration();
   }
-  function lifecycleCardHtml() {
-    if (isPaired()) return '<div class="card" style="margin-top:12px"><h3>Managed Device Lifecycle</h3><p class="muted">This paired device is controlled by its Owner. It cannot issue codes, activate a device, retire a device, or revoke a device.</p></div>';
-    primeFleetCard();
-    return '<div class="card" style="margin-top:12px" data-zezms-managed-lifecycle="r70h">'
-      +'<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Managed Device Lifecycle</h3><span class="badge ok">r70F</span></div>'
-      +'<p class="muted" style="font-size:12px;line-height:1.45">New devices remain write-locked until they reconstruct a verified checkpoint, pass Integrity Core and Fleet evidence, and an Owner approves activation. Retired and revoked devices keep their transaction history but lose cloud access.</p>'
-      +'<div class="table-wrap"><table><thead><tr><th>Device</th><th>Mode</th><th>Lifecycle</th><th>Assigned Branch</th><th>Last seen</th><th>Verified cursor</th><th>App</th><th>Action</th></tr></thead><tbody id="m5a4DeviceRows">'+deviceRows()+'</tbody></table></div>'
-      +'<p id="m5a4FleetStatus" class="muted" style="margin:9px 0 0">'+esc(fleetStatusText())+'</p>'
-      +'<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ghost" onclick="ZEZMS.managedDevices.refresh()">Refresh managed fleet</button><button class="btn" onclick="ZEZMS.managedDevices.beginDialog(\'ADD\')">Add new device</button><button class="btn ghost" onclick="ZEZMS.managedDevices.beginDialog(\'REPLACEMENT\')">Repair / replace a device</button></div>'
-      +'</div>';
+  /* r70O has one Settings composition owner.  This module owns the stable
+     slot; the current Device Control Center only supplies its contents.  It
+     must never independently wrap window.viewSettings. */
+  function deviceManagementSlotHtml() {
+    var control=window.ZEZMS && window.ZEZMS.deviceControlPlaneR70O;
+    var contents=control && typeof control.settingsHtml === 'function'
+      ? control.settingsHtml()
+      : '<p class="muted">Preparing device-management service…</p>';
+    return '<div id="zezmsDeviceManagementSlot" data-zezms-device-management-slot="r70o">'+contents+'</div>';
   }
 
   async function loadBranches() {
@@ -653,9 +652,21 @@
 
   function installSettingsCard() {
     var original=window.viewSettings;
-    if (typeof original !== 'function' || original.__m5a4LifecycleWrapped) return false;
-    var wrapped=function () { return original.apply(this,arguments)+lifecycleCardHtml()+stagedCardHtml(); };
-    wrapped.__m5a4LifecycleWrapped=true; window.viewSettings=wrapped; return true;
+    if (typeof original !== 'function' || original.__zezmsDeviceManagementComposerR70O) return false;
+    var wrapped=function () {
+      var html=original.apply(this,arguments)+deviceManagementSlotHtml()+stagedCardHtml();
+      /* This is post-render DOM reconciliation, not a second renderer or a
+         retry wrapper.  It lets r70O remove stale cached card nodes after the
+         framework has installed this single composed Settings result. */
+      setTimeout(function () {
+        var control=window.ZEZMS && window.ZEZMS.deviceControlPlaneR70O;
+        if (control && typeof control.afterSettingsRender === 'function') control.afterSettingsRender();
+      },0);
+      return html;
+    };
+    wrapped.__zezmsDeviceManagementComposerR70O=true;
+    window.viewSettings=wrapped;
+    return true;
   }
   function installLegacyGuards() {
     /* The old M5A-3 buttons remain in older embedded markup, but every route
@@ -668,7 +679,8 @@
   function initialize() {
     installSettingsCard(); installLegacyGuards();
     if (managedParams().requested) setTimeout(function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); },750);
-    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70m');
+    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70o');
+    if (typeof render === 'function') render();
   }
 
   ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, inspectBootstrapOutbox:function(){return inspectBootstrapOutbox();}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
