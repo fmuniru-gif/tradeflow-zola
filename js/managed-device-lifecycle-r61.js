@@ -1,11 +1,11 @@
-/* ZEZMS TradeFlow v3.31.15 r70O — Managed Device Lifecycle & Safe Bootstrap.
+/* ZEZMS TradeFlow v3.31.16 r70P — Managed Device Lifecycle & Safe Bootstrap.
    Control-plane only. This overlay deliberately does not alter normal M4/3
    business operations, checkpoints, Canonical Restore, or the local DB key. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20261006-r70o-deterministic-device-control';
+  var BUILD = '20261007-r70p-production-stabilization';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
   var JOURNAL_KEY = 'zezms_m5a4_safe_bootstrap_journal_v2';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];
@@ -308,15 +308,15 @@
     if (fleetLoadStatus === 'IDLE') fleetLoadStatus='LOADING';
     scheduleFleetHydration();
   }
-  /* r70O has one Settings composition owner.  This module owns the stable
+  /* r70P has one Settings composition owner.  This module owns the stable
      slot; the current Device Control Center only supplies its contents.  It
      must never independently wrap window.viewSettings. */
   function deviceManagementSlotHtml() {
-    var control=window.ZEZMS && window.ZEZMS.deviceControlPlaneR70O;
+    var control=window.ZEZMS && window.ZEZMS.deviceControlPlaneR70P;
     var contents=control && typeof control.settingsHtml === 'function'
       ? control.settingsHtml()
       : '<p class="muted">Preparing device-management service…</p>';
-    return '<div id="zezmsDeviceManagementSlot" data-zezms-device-management-slot="r70o">'+contents+'</div>';
+    return '<div id="zezmsDeviceManagementSlot" data-zezms-device-management-slot="r70p">'+contents+'</div>';
   }
 
   async function loadBranches() {
@@ -652,19 +652,19 @@
 
   function installSettingsCard() {
     var original=window.viewSettings;
-    if (typeof original !== 'function' || original.__zezmsDeviceManagementComposerR70O) return false;
+    if (typeof original !== 'function' || original.__zezmsDeviceManagementComposerR70P) return false;
     var wrapped=function () {
       var html=original.apply(this,arguments)+deviceManagementSlotHtml()+stagedCardHtml();
       /* This is post-render DOM reconciliation, not a second renderer or a
-         retry wrapper.  It lets r70O remove stale cached card nodes after the
+         retry wrapper.  It lets r70P remove stale cached card nodes after the
          framework has installed this single composed Settings result. */
       setTimeout(function () {
-        var control=window.ZEZMS && window.ZEZMS.deviceControlPlaneR70O;
+        var control=window.ZEZMS && window.ZEZMS.deviceControlPlaneR70P;
         if (control && typeof control.afterSettingsRender === 'function') control.afterSettingsRender();
       },0);
       return html;
     };
-    wrapped.__zezmsDeviceManagementComposerR70O=true;
+    wrapped.__zezmsDeviceManagementComposerR70P=true;
     window.viewSettings=wrapped;
     return true;
   }
@@ -679,7 +679,7 @@
   function initialize() {
     installSettingsCard(); installLegacyGuards();
     if (managedParams().requested) setTimeout(function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); },750);
-    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70o');
+    document.documentElement.setAttribute('data-zezms-managed-device-lifecycle','r70p');
     if (typeof render === 'function') render();
   }
 

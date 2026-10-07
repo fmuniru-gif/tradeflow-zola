@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.15 r70O uses one deterministic Device Control Center with explicit loading evidence. M4/3 remains active; M4/4 is Ready only.",
-  "start_url": "./index.html?build=20261006-r70o-deterministic-device-control",
+  "description": "ZEZMS Owner Edition v3.31.16 r70P uses one deterministic Device Control Center with explicit loading evidence. M4/3 remains active; M4/4 is Ready only.",
+  "start_url": "./index.html?build=20261007-r70p-production-stabilization",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
