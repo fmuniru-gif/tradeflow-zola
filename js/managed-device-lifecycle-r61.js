@@ -1,11 +1,11 @@
-/* ZEZMS TradeFlow v3.31.16 r70P — Managed Device Lifecycle & Safe Bootstrap.
+/* ZEZMS TradeFlow v3.31.17 r70Q Phase A Review — Managed Device Lifecycle & Safe Bootstrap.
    Control-plane only. This overlay deliberately does not alter normal M4/3
    business operations, checkpoints, Canonical Restore, or the local DB key. */
 (function () {
   'use strict';
 
   window.ZEZMS = window.ZEZMS || {};
-  var BUILD = '20261007-r70p-production-stabilization';
+  var BUILD = '20261008-r70q-phase-a-review';
   var STAGE_KEY = 'zezms_m5a4_safe_bootstrap_stage_v1';
   var JOURNAL_KEY = 'zezms_m5a4_safe_bootstrap_journal_v2';
   var states = ['ENROLLING', 'BOOTSTRAPPING', 'VERIFYING', 'ACTIVE', 'RETIRED', 'REVOKED'];

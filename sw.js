@@ -1,27 +1,27 @@
-/* ZEZMS Owner Edition v3.31.16 - Deterministic Device Control r70P.
+/* ZEZMS Owner Edition v3.31.17 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-r70p-production-stabilization-20261007';
-const PATCHED_INDEX_CACHE = 'zezms-r70p-deterministic-device-control-cache-v1';
+const CACHE = 'zezms-r70q-phase-a-review-20261008';
+const PATCHED_INDEX_CACHE = 'zezms-r70q-phase-a-review-cache-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
-  './js/app.js?v=20261007-r70p-production-stabilization','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
+  './js/app.js?v=20261008-r70q-phase-a-review','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/cloud-sync.js?v=20260823-sync-integrity-r52','./js/input-defaults-v3130.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/bootpatch.js?v=20261007-r70p-production-stabilization','./js/config.js?v=20261007-r70p-production-stabilization',
-  './js/db-events.js?v=20261007-r70p-production-stabilization','./js/dbservice.js?v=20261007-r70p-production-stabilization',
-  './js/diagnostics.js?v=20261007-r70p-production-stabilization','./js/events.js?v=20261007-r70p-production-stabilization',
-  './js/health-module.js?v=20261007-r70p-production-stabilization','./js/lifecycle-module.js?v=20261007-r70p-production-stabilization',
-  './js/logger.js?v=20261007-r70p-production-stabilization','./js/notifications-module.js?v=20261007-r70p-production-stabilization',
-  './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51','./js/auto-month-rollover.js?v=20261007-r70p-production-stabilization',
-  './js/invoice-waybill.js?v=20260822-supplier-procurement-intelligence-r51','./js/product-search-adapter.js?v=20261007-r70p-production-stabilization',
-  './js/product-search-controller.js?v=20261007-r70p-production-stabilization','./js/product-search-events.js?v=20261007-r70p-production-stabilization',
-  './js/product-search-facade.js?v=20261007-r70p-production-stabilization','./js/product-search-metrics.js?v=20261007-r70p-production-stabilization',
-  './js/product-search-module.js?v=20261007-r70p-production-stabilization','./js/product-search-service.js?v=20261007-r70p-production-stabilization',
-  './js/registry.js?v=20261007-r70p-production-stabilization','./js/storage.js?v=20261007-r70p-production-stabilization',
-  './js/system-module.js?v=20261007-r70p-production-stabilization','./js/utils-module.js?v=20261007-r70p-production-stabilization',
-  './js/mobile-vertical-layout.js?v=20260817-loopback-network-r47','./js/kpi-freeze-pane.js?v=20261007-r70p-production-stabilization',
-  './js/confirmed-july-snapshot.js?v=20261007-r70p-production-stabilization','./js/commercial-foundation.js?v=20261007-r70p-production-stabilization',
+  './js/bootpatch.js?v=20261008-r70q-phase-a-review','./js/config.js?v=20261008-r70q-phase-a-review',
+  './js/db-events.js?v=20261008-r70q-phase-a-review','./js/dbservice.js?v=20261008-r70q-phase-a-review',
+  './js/diagnostics.js?v=20261008-r70q-phase-a-review','./js/events.js?v=20261008-r70q-phase-a-review',
+  './js/health-module.js?v=20261008-r70q-phase-a-review','./js/lifecycle-module.js?v=20261008-r70q-phase-a-review',
+  './js/logger.js?v=20261008-r70q-phase-a-review','./js/notifications-module.js?v=20261008-r70q-phase-a-review',
+  './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51','./js/auto-month-rollover.js?v=20261008-r70q-phase-a-review',
+  './js/invoice-waybill.js?v=20260822-supplier-procurement-intelligence-r51','./js/product-search-adapter.js?v=20261008-r70q-phase-a-review',
+  './js/product-search-controller.js?v=20261008-r70q-phase-a-review','./js/product-search-events.js?v=20261008-r70q-phase-a-review',
+  './js/product-search-facade.js?v=20261008-r70q-phase-a-review','./js/product-search-metrics.js?v=20261008-r70q-phase-a-review',
+  './js/product-search-module.js?v=20261008-r70q-phase-a-review','./js/product-search-service.js?v=20261008-r70q-phase-a-review',
+  './js/registry.js?v=20261008-r70q-phase-a-review','./js/storage.js?v=20261008-r70q-phase-a-review',
+  './js/system-module.js?v=20261008-r70q-phase-a-review','./js/utils-module.js?v=20261008-r70q-phase-a-review',
+  './js/mobile-vertical-layout.js?v=20260817-loopback-network-r47','./js/kpi-freeze-pane.js?v=20261008-r70q-phase-a-review',
+  './js/confirmed-july-snapshot.js?v=20261008-r70q-phase-a-review','./js/commercial-foundation.js?v=20261008-r70q-phase-a-review',
   './js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
-  './js/transaction-badge-v372.js?v=20261007-r70p-production-stabilization','./js/management-intelligence-v380.js?v=20261004-r70f-recovery-stabilization',
+  './js/transaction-badge-v372.js?v=20261008-r70q-phase-a-review','./js/management-intelligence-v380.js?v=20261004-r70f-recovery-stabilization',
   './js/margin-intelligence-v381.js?v=20261004-r70f-recovery-stabilization','./js/pricing-guidance-v382.js?v=20261004-r70f-recovery-stabilization',
   './js/pricing-policy-lab-v383.js?v=20261004-r70f-recovery-stabilization','./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
   './js/stock-velocity-v390.js?v=20261004-r70f-recovery-stabilization','./js/portfolio-signals-v391.js?v=20261004-r70f-recovery-stabilization',
@@ -35,8 +35,8 @@ const ASSETS = [
   './js/navigation-v3101-r68.js?v=20261004-r70f-recovery-stabilization','./js/route-title-ownership-r68.js?v=20261004-r70f-recovery-stabilization',
   './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/account-cash-pdf-r68e.js?v=20261004-r70f-recovery-stabilization','./js/kpi-charts-compact-r68e.js?v=20261004-r70f-recovery-stabilization',
-  './js/branch-management-r69.js?v=20261004-r70f-recovery-stabilization','./js/managed-device-lifecycle-r61.js?v=20261007-r70p-production-stabilization',
-  './js/recovery-stabilization-r70g.js?v=20261007-r70p-production-stabilization','./js/identity-relink-r70h.js?v=20261007-r70p-production-stabilization',
+  './js/branch-management-r69.js?v=20261004-r70f-recovery-stabilization','./js/managed-device-lifecycle-r61.js?v=20261008-r70q-phase-a-review',
+  './js/recovery-stabilization-r70g.js?v=20261008-r70q-phase-a-review','./js/identity-relink-r70h.js?v=20261008-r70q-phase-a-review',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
 let postShellCachePromise = null;
@@ -85,11 +85,11 @@ self.addEventListener('message', (event) => {
   const data = event && event.data;
   if (data && data.type === 'ZEZMS_RUNTIME_INTEGRITY_PROBE') {
     if (event.source && typeof event.source.postMessage === 'function') {
-      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261007-r70p-production-stabilization', cache:CACHE });
+      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261008-r70q-phase-a-review', cache:CACHE });
     }
     return;
   }
-  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && data.release === '20261007-r70p-production-stabilization') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && data.release === '20261008-r70q-phase-a-review') || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }

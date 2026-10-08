@@ -34,6 +34,7 @@
   }
 
   function applyConfirmedJulySnapshot() {
+    if (!window.ZEZMS || !ZEZMS.bootstrapPhaseA || ZEZMS.bootstrapPhaseA.pending()) return false;
     if (typeof DB === 'undefined' || !DB) return false;
     if (!Array.isArray(DB.kpiHistory)) DB.kpiHistory = [];
 
@@ -65,6 +66,7 @@
 
   async function run() {
     if (running) return;
+    if (!window.ZEZMS || !ZEZMS.bootstrapPhaseA || ZEZMS.bootstrapPhaseA.pending()) return;
     running = true;
     try {
       const sync = window.ZEZMS && window.ZEZMS.cloudSync;
@@ -103,6 +105,7 @@
   }, { once: true });
 
   window.ZEZMSConfirmedJulySnapshot = {
+    build: '20261008-r70q-phase-a-review',
     run: run,
     apply: applyConfirmedJulySnapshot,
     values: CONFIRMED
