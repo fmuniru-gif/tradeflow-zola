@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition v3.31.17 r70Q Phase A Review uses one deterministic Device Control Center with explicit loading evidence. M4/3 remains active; M4/4 is Ready only.",
-  "start_url": "./index.html?build=20261008-r70q-phase-a-review",
+  "description": "ZEZMS Owner Edition r70R Phase B Preservation candidate. M4/3 active; M4/4 Ready only.",
+  "start_url": "./index.html?build=20261010-r70r-phase-b-preservation-candidate",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
