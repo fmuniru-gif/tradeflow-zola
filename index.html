@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0f766e" />
 <meta name="description" content="ZEZMS TradeFlow v3.31.17 r70Q Phase A Review provides one deterministic Device Control Center with explicit fleet loading states. M4/3 remains active; M4/4 is Ready only." />
 <meta name="zezms-build" content="20261008-r70q-phase-a-review" />
-<title>ZEZMS TradeFlow v3.31.17 — Preservation Cache Review 4 (UNAPPROVED)</title>
+<title>ZEZMS TradeFlow v3.31.17 — r70R Phase B Preservation</title>
 <style>
 html,body{margin:0;min-height:100%;background:#0f172a;color:#f1f5f9;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #r55Boot{max-width:760px;margin:14vh auto;padding:24px;background:#1e293b;border:1px solid #334155;border-radius:16px;box-sizing:border-box}
@@ -12653,10 +12653,10 @@ function directoryPayload(){`;
     if((output.split(directoryImportLastLoginNeedle).length-1)!==1)throw new Error('r60L staff directory import marker mismatch.');
     output=output.replace(directoryImportLastLoginNeedle,directoryImportLastLoginReplacement);
     output=output.replace('<meta name="zezms-build" content="20260823-sync-integrity-r52" />','<meta name="zezms-build" content="'+RELEASE+'" />');
-    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>ZEZMS TradeFlow v3.31.17 — Phase A Review Candidate r70Q</title>');
+    output=output.replace('<title>Zola Electronics Zone - TradeFlow v3.16.1 - Cross-Device Data Integrity</title>','<title>ZEZMS TradeFlow v3.31.17 — r70R Phase B Preservation</title>');
     output=output.replace("const APP_VERSION = '3.16.1';","const APP_VERSION = '3.31.17';");
-    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.31.17 · Phase A Review Candidate r70Q');
-    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.31.17 · Phase A Review Candidate r70Q');
+    output=output.replace(/TradeFlow v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow v3.31.17 · r70R Phase B Preservation');
+    output=output.replace(/TradeFlow PWA · v3\.16\.1 · Cross-Device Data Integrity/g,'TradeFlow PWA · v3.31.17 · r70R Phase B Preservation');
     output=output.replace('<html lang="en-GH">','<html lang="en-GH" data-zezms-release="v3.31.17-r70q">');
     const legacyBuildCleanup=/<script>\n\(function\(\)\{\n  'use strict';\n  const BUILD = '20260823-sync-integrity-r52';[\s\S]*?\n\}\(\)\);\n<\/script>/;
     if((output.match(legacyBuildCleanup)||[]).length!==1)throw new Error('r67I legacy cache-reset marker mismatch.');
