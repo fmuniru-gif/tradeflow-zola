@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.17 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-r70r-phase-b-preservation-20261010';
-const PATCHED_INDEX_CACHE = 'zezms-r70r-phase-b-preservation-patched-v1';
+const CACHE = 'zezms-r70s-q-offline-directory-quarantine-20261012';
+const PATCHED_INDEX_CACHE = 'zezms-r70s-q-offline-directory-quarantine-patched-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20261008-r70q-phase-a-review','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -82,27 +82,30 @@ self.addEventListener('install', (event) => {
       { cache:'reload' }));
     await cache.addAll(requests);
     // Fail closed on a mixed deployment: do not activate the new worker with an old shell.
-    const expected = 'const RELEASE=\"20261010-r70r-phase-b-preservation-candidate\";';
+    const expected = 'const RELEASE=\"20261012-r70s-q-offline-directory-quarantine-review\";';
     for (const entry of ['./', './index.html']) {
       const response = await cache.match(new URL(entry, self.registration.scope).href, {ignoreVary:true});
       if (!response || !response.ok || !(await response.text()).includes(expected)) {
         throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
       }
     }
-  }).then(() => self.skipWaiting()));
+    const manifestResponse = await cache.match(new URL('./manifest.json', self.registration.scope).href, {ignoreVary:true});
+    const manifestData = manifestResponse && manifestResponse.ok ? await manifestResponse.json() : null;
+    if (!manifestData || manifestData.start_url !== './index.html?build=20261012-r70s-q-offline-directory-quarantine-review') throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
+  }));
 });
 self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE && key !== PATCHED_INDEX_CACHE && key !== 'zezms-r70q-phase-a-review-20261008' && key !== 'zezms-r70q-phase-a-review-cache-v1' && !key.startsWith('zezms-commercial-pilot-')).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE && key !== PATCHED_INDEX_CACHE && key !== 'zezms-r70q-phase-a-review-20261008' && key !== 'zezms-r70q-phase-a-review-cache-v1' && !key.startsWith('zezms-commercial-pilot-')).map((key) => caches.delete(key)))));
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
   if (data && data.type === 'ZEZMS_RUNTIME_INTEGRITY_PROBE') {
     if (event.source && typeof event.source.postMessage === 'function') {
-      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261010-r70r-phase-b-preservation-candidate', cache:CACHE });
+      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261012-r70s-q-offline-directory-quarantine-review', cache:CACHE });
     }
     return;
   }
-  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261010-r70r-phase-b-preservation-candidate' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261012-r70s-q-offline-directory-quarantine-review' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
