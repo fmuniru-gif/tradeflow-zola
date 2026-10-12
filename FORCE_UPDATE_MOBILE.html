@@ -10,25 +10,25 @@
   </style>
 </head>
 <body>
-<main><h2>Updating ZEZMS Owner Edition</h2><p>Loading v3.31.17 / r70R Phase B Preservation...</p><p>This refresh clears only app caches. It does not clear site data, device identity, local staff access, business data, or the recovery journal.</p></main>
+<main><h2>TradeFlow r70S-Q update</h2><p id="status">Checking the r70S-Q service worker...</p><p>Close every other TradeFlow tab on this device before opening the update. Keep this device's site data, IndexedDB, identity, and queue.</p><p><a id="open" href="./index.html?build=20261012-r70s-q-offline-directory-quarantine-review" style="color:#67e8f9">Open TradeFlow r70S-Q</a></p></main>
 <script>
 (async()=>{
   try{
-    const basePath=location.pathname.replace(/[^/]*$/,'');
+    const status=document.getElementById('status');
+    const open=document.getElementById('open');
     if('serviceWorker' in navigator){
       for(const registration of await navigator.serviceWorker.getRegistrations()){
-        let belongs=false;
-        try{belongs=new URL(registration.scope).pathname.indexOf(basePath)===0;}catch(_){belongs=false;}
-        if(belongs)await registration.unregister();
+        if(!location.href.startsWith(registration.scope))continue;
+        await registration.update();
+        if(registration.waiting){
+          status.textContent='r70S-Q is waiting. Close all TradeFlow tabs, including this one, then reopen TradeFlow. Keep site data.';
+          open.hidden=true;
+          return;
+        }
       }
     }
-    if('caches' in window){
-      for(const key of await caches.keys()){
-        if(key.startsWith('zezms-')&&!key.startsWith('zezms-commercial-pilot-'))await caches.delete(key);
-      }
-    }
-  }catch(_){ }
-  location.replace('./index.html?build=20261010-r70r-phase-b-preservation-candidate&t='+Date.now());
+    status.textContent='Update check complete. Close other TradeFlow tabs, then open r70S-Q in this tab.';
+  }catch(error){document.getElementById('status').textContent='Update check failed. Keep this device offline and ask the Owner to verify the deployed release.';document.getElementById('open').hidden=true;}
 })();
 </script>
 </body>

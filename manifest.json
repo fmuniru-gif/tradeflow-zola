@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition r70R Phase B Preservation candidate. M4/3 active; M4/4 Ready only.",
-  "start_url": "./index.html?build=20261010-r70r-phase-b-preservation-candidate",
+  "description": "ZEZMS Owner Edition r70S-Q Offline Directory Quarantine review candidate. M4 protocol follows verified server capability.",
+  "start_url": "./index.html?build=20261012-r70s-q-offline-directory-quarantine-review",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
