@@ -10,7 +10,7 @@
   </style>
 </head>
 <body>
-<main><h2>TradeFlow r70S-Q update</h2><p id="status">Checking the r70S-Q service worker...</p><p>Close every other TradeFlow tab on this device before opening the update. Keep this device's site data, IndexedDB, identity, and queue.</p><p><a id="open" href="./index.html?build=20261012-r70s-q-offline-directory-quarantine-review" style="color:#67e8f9">Open TradeFlow r70S-Q</a></p></main>
+<main><h2>TradeFlow r70S-Q1 update</h2><p id="status">Checking the r70S-Q1 service worker...</p><p>Close every other TradeFlow tab on this device before opening the update. Keep this device's site data, IndexedDB, identity, and queue.</p><p><a id="open" href="./index.html?build=20261013-r70s-q1-integrity-guard-fix" style="color:#67e8f9">Open TradeFlow r70S-Q1</a></p></main>
 <script>
 (async()=>{
   try{
@@ -21,13 +21,13 @@
         if(!location.href.startsWith(registration.scope))continue;
         await registration.update();
         if(registration.waiting){
-          status.textContent='r70S-Q is waiting. Close all TradeFlow tabs, including this one, then reopen TradeFlow. Keep site data.';
+          status.textContent='r70S-Q1 is waiting. Close all TradeFlow tabs, including this one, then reopen TradeFlow. Keep site data.';
           open.hidden=true;
           return;
         }
       }
     }
-    status.textContent='Update check complete. Close other TradeFlow tabs, then open r70S-Q in this tab.';
+    status.textContent='Update check complete. Close other TradeFlow tabs, then open r70S-Q1 in this tab.';
   }catch(error){document.getElementById('status').textContent='Update check failed. Keep this device offline and ask the Owner to verify the deployed release.';document.getElementById('open').hidden=true;}
 })();
 </script>
