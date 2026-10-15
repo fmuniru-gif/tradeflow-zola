@@ -265,33 +265,7 @@
   }
 
   async function revokeDevice(deviceId) {
-    const context = state.context;
-    if (!context || !context.business_id) return;
-    if (!['OWNER','ADMIN'].includes(String(context.member_role || ''))) {
-      if (typeof toast === 'function') toast('Only an Owner or Admin can revoke devices.', 'err');
-      return;
-    }
-    if (!confirm(
-      'Revoke this device?\n\nDevice ID: ' + deviceId
-      + '\n\nThe device will be blocked when M5A tenant enforcement is activated.'
-    )) return;
-
-    const reason = String(prompt('Reason for revocation (optional)', 'Device no longer authorised') || '').trim();
-
-    try {
-      const pair = await getClientAndSession();
-      const result = await pair.client.rpc('zezms_revoke_business_device', {
-        p_business_id: context.business_id,
-        p_device_id: deviceId,
-        p_reason: reason
-      });
-      if (result.error) throw result.error;
-      await refresh({ silent: false });
-      if (typeof toast === 'function') toast('Device revoked.');
-    } catch (error) {
-      const message = friendlyError(error);
-      if (typeof toast === 'function') toast(message, 'err');
-    }
+    throw new Error('Legacy registration cannot change managed-device access. Use Device Control Center and the authoritative lifecycle.');
   }
 
   function badge() {
@@ -308,8 +282,6 @@
 
   function devicesHtml() {
     if (!state.context) return '';
-    const role = String(state.context.member_role || '');
-    const canRevoke = role === 'OWNER' || role === 'ADMIN';
     const syncState = cloudState();
     const currentDeviceId = String(syncState.deviceId || '');
 
@@ -322,19 +294,15 @@
         + '<td class="mono" style="font-size:10px">' + esc(device.device_id || '') + '</td>'
         + '<td>' + esc(device.app_version || '—') + '</td>'
         + '<td style="font-size:11px">' + esc(when(device.last_seen_at)) + '</td>'
-        + '<td>' + (revoked
-          ? '<span class="badge bad">REVOKED</span>'
-          : '<span class="badge ok">ACTIVE</span>') + '</td>'
-        + '<td>' + (!revoked && canRevoke
-          ? '<button class="btn sm danger" onclick="m5a1RevokeDevice(\'' + attr(device.device_id) + '\')">Revoke</button>'
-          : '—') + '</td>'
+        + '<td>' + (revoked ? 'Registry revocation recorded' : 'No registry revocation recorded') + '</td>'
         + '</tr>';
-    }).join('') || '<tr><td colspan="6" class="empty">No registered device has been returned yet.</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="empty">No registration records were returned.</td></tr>';
 
-    return '<hr class="hr"><h3>Registered devices</h3>'
+    return '<details style="margin-top:12px"><summary>Historical registration audit — read only</summary>'
+      + '<p class="muted">Registry entries are historical evidence. Only Device Control Center determines current lifecycle and access.</p>'
       + '<div class="table-wrap"><table>'
-      + '<thead><tr><th>Device</th><th>Device ID</th><th>App</th><th>Last seen</th><th>Status</th><th>Action</th></tr></thead>'
-      + '<tbody>' + rows + '</tbody></table></div>';
+      + '<thead><tr><th>Device</th><th>Device ID</th><th>App</th><th>Last seen</th><th>Registry evidence</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div></details>';
   }
 
   function settingsCardHtml() {
@@ -349,7 +317,7 @@
         + '<div class="statline"><span>Tenant ID</span><b class="mono" style="font-size:10px">' + esc(context.business_id) + '</b></div>'
         + '<div class="statline"><span>Cloud role</span><b>' + esc(context.member_role) + '</b></div>'
         + '<div class="statline"><span>Primary branch</span><b>' + esc(context.branch_name || 'Not assigned') + '</b></div>'
-        + '<div class="statline"><span>Device status</span><b>' + esc(context.device_status || 'ACTIVE') + '</b></div>'
+        + '<div class="statline"><span>Legacy device registry</span><b>' + esc(context.device_status || 'Unknown') + ' (not lifecycle authority)</b></div>'
       : '<div class="grid g2">'
         + '<div class="field"><label>Trading name</label><input id="m5TradingName" value="' + attr(localName) + '"></div>'
         + '<div class="field"><label>Legal name (optional)</label><input id="m5LegalName" value="' + attr(localName) + '"></div>'

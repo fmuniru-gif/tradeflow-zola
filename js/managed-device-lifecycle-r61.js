@@ -106,15 +106,16 @@
     if (!s) throw new Error('Cloud Sync M4/3 is unavailable.');
     if (s.waitUntilReady) await s.waitUntilReady(9000);
     var snapshot=s.getState ? s.getState() || {} : {};
-    if (String(snapshot.deviceAccessMode || '').toUpperCase() === 'PAIRED') throw new Error('Managed fleet details are available only on an Owner or Admin device.');
-    var client=s.getClient && s.getClient(), session=s.getSession && s.getSession();
-    if (!client || !session || !session.user) throw new Error('Sign in to the Owner cloud account first.');
-    return { client:client, session:session, state:snapshot };
+    var authority=s.getOwnerManagementContext && s.getOwnerManagementContext();
+    if (!authority || !authority.ready) throw new Error(authority && authority.message || 'Owner device-management authorization is unavailable.');
+    return { client:authority.client, session:authority.session, state:snapshot, temporary:authority.temporary, assurance:authority.assurance };
   }
 
   async function mutationClient() {
     var pair=await readClient(), s=cloud();
-    if (s.ensureMfa && !(await s.ensureMfa())) throw new Error('Owner authenticator verification was cancelled.');
+    if (pair.temporary) {
+      if (pair.assurance!=='aal2') throw new Error('Owner authenticator verification is required.');
+    } else if (s.ensureMfa && !(await s.ensureMfa())) throw new Error('Owner authenticator verification was cancelled.');
     return pair;
   }
 
@@ -638,11 +639,11 @@
       +(pending ? '<p class="muted"><b>'+esc(pending)+'</b> local setup item(s) need inspection before activation. Unknown or business changes remain blocked.</p><button class="btn ghost" onclick="ZEZMS.managedDevices.inspectBootstrapOutbox()">Inspect bootstrap outbox</button> ' : '')
       +'<button class="btn" onclick="ZEZMS.managedDevices.finish()">Complete activation</button></div>';
   }
-  function inspectBootstrapOutbox() {
+  function inspectBootstrapOutbox(options) {
     var s=cloud(); if (!s || typeof s.inspectM5a4BootstrapOutbox !== 'function') throw new Error('The r70M bootstrap outbox inspector is unavailable. Reload the updated application.');
     var report=s.inspectM5a4BootstrapOutbox();
-    var rows=(report.rows || []).map(function (item) { return '<li><b>'+esc(item.type || 'UNKNOWN')+'</b> — '+esc(item.classification)+'<br><small>'+esc(item.reason)+' · '+esc(item.operationId)+'</small><pre style="white-space:pre-wrap;max-height:180px;overflow:auto">'+esc(JSON.stringify(item.patches || [],null,2))+'</pre></li>'; }).join('') || '<li>No queued local operations were found.</li>';
-    if (typeof openModal === 'function') openModal('<h3>Bootstrap outbox inspection</h3><p class="muted">Read-only evidence. Only exact, candidate-equivalent setup residue can be reconciled during Owner-approved activation.</p><p><b>Activation eligible:</b> '+esc(report.activationEligible ? 'Yes' : 'No')+' · <b>Business records:</b> '+esc(report.localBusinessRecordCount)+' · <b>Failed operations:</b> '+esc(report.failedOperationCount)+'</p><ol>'+rows+'</ol>');
+    var rows=(report.rows || []).map(function (item) { return '<li><b>'+esc(item.type || 'UNKNOWN')+'</b> — '+esc(item.classification)+'<br><small>'+esc(item.reason)+' · '+esc(item.operationId)+'</small><ul>'+(item.patches || []).map(function (entry) {return '<li>'+esc(entry.patch && entry.patch.action || 'UNKNOWN')+' · root: '+esc(entry.root || '—')+' · collection: '+esc(entry.collection || '—')+' · '+esc(entry.classification)+'</li>';}).join('')+'</ul></li>'; }).join('') || '<li>No queued local operations were found.</li>';
+    if ((!options || options.display !== false) && typeof openModal === 'function') openModal('<h3>Bootstrap outbox inspection — read only</h3><p class="muted">No queued operation is changed or uploaded by this inspection. Only exact, candidate-equivalent setup residue can be reconciled during a separately approved activation.</p><p><b>Queue:</b> '+esc(report.queueCount)+' · <b>Activation eligible:</b> '+esc(report.activationEligible ? 'Yes' : 'No')+' · <b>Business records:</b> '+esc(report.localBusinessRecordCount)+' · <b>Failed operations:</b> '+esc(report.failedOperationCount)+'</p><ol>'+rows+'</ol>');
     return report;
   }
   async function activate(lifecycleId, revision) {
@@ -714,6 +715,9 @@
     window.secureDeviceEnrollmentOpen=function () { if (typeof openModal === 'function') openModal(bootstrapForm(managedParams())); };
     window.secureDeviceEnrollmentConfirmOpen=function () { window.secureDeviceEnrollmentOpen(); return false; };
     window.secureDeviceEnrollmentClaim=function () { return claimAndStage(); };
+    window.secureDeviceEnrollmentCreateCode=function () { beginDialog('ADD'); return false; };
+    window.secureDeviceEnrollmentOpenRevocation=function () { throw new Error('Legacy registration cannot revoke a managed device. Use Device Control Center.'); };
+    window.secureDeviceEnrollmentConfirmRevocation=function () { throw new Error('Legacy registration cannot revoke a managed device. Use Device Control Center.'); };
   }
   function initialize() {
     installSettingsCard(); installLegacyGuards();
@@ -722,6 +726,157 @@
     if (typeof render === 'function') render();
   }
 
-  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){if (finishPromise) return finishPromise; finishPromise=finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;}).finally(function(){finishPromise=null;}); return finishPromise;}, hasVerifiedPendingStage:function(){return !!verifiedPendingStage();}, inspectBootstrapOutbox:function(){return inspectBootstrapOutbox();}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
+  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){if (finishPromise) return finishPromise; finishPromise=finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;}).finally(function(){finishPromise=null;}); return finishPromise;}, hasVerifiedPendingStage:function(){return !!verifiedPendingStage();}, inspectBootstrapOutbox:inspectBootstrapOutbox, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
   setTimeout(initialize,500);
+}());
+
+/* ZEZMS TradeFlow v3.31.19 / r70V — deterministic Device Control Center.
+ *
+ * Settings composition belongs exclusively to managed-device-lifecycle-r61.
+ * This module never wraps window.viewSettings.  It supplies one slot payload,
+ * owns fleet-read state, and treats old registration rows only as evidence.
+ */
+(function () {
+  'use strict';
+  var BUILD='20261015-r70v-outbox-settings';
+  var CANONICAL_RPC='zezms_m5a4_canonical_fleet_read';
+  var LEGACY_RPC='zezms_m5a4_managed_fleet_with_branch';
+  var REQUIRED_FIELDS=['lifecycle_id','device_id','device_name','enrollment_mode','lifecycle_state','revision','replaces_lifecycle_id','replacement_lifecycle_id','lifecycle_retired_at','lifecycle_revoked_at','last_seen_at','verified_cursor','queue_count','failed_count','app_version','branch_id','branch_name','branch_code','device_access_status','device_access_revoked_at','registered_device_status','registered_device_revoked_at','authentication_eligible'];
+  var LOAD={UNINITIALIZED:'UNINITIALIZED',WAITING:'WAITING_FOR_CLOUD',LOADING:'LOADING',CANONICAL:'CANONICAL',LIMITED:'LIMITED_EVIDENCE',ERROR:'ERROR',WAITING_AUTHORITY:'WAITING_FOR_AUTHORITY'};
+  var rows=[],historyFilter='ALL',loadState=LOAD.UNINITIALIZED,loadError='',inFlight=null,loadedBusinessId='',contract={mode:'UNLOADED',reason:'',requiredFields:REQUIRED_FIELDS.slice()};
+
+  function text(value){return String(value==null?'':value);}
+  function up(value){return text(value).trim().toUpperCase();}
+  function esc(value){return text(value).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
+  function clone(value){return value==null?value:JSON.parse(JSON.stringify(value));}
+  function own(value,key){return !!value&&Object.prototype.hasOwnProperty.call(value,key);}
+  function idOf(item){return text(item&&(item.lifecycle_id||item.lifecycleId));}
+  function deviceIdOf(item){return text(item&&(item.device_id||item.deviceId));}
+  function parentOf(item){return text(item&&(item.replaces_lifecycle_id||item.replacesLifecycleId));}
+  function childOf(item){return text(item&&(item.replacement_lifecycle_id||item.replacementLifecycleId));}
+  function numeric(value){return typeof value==='number'&&Number.isFinite(value);}
+  function cloud(){return window.ZEZMS&&window.ZEZMS.cloudSync?window.ZEZMS.cloudSync:null;}
+  function foundation(){return window.ZEZMS&&window.ZEZMS.commercialFoundation?window.ZEZMS.commercialFoundation:null;}
+  function isMissingRpc(error){return /PGRST202|could not find the function|does not exist|schema cache/i.test(text(error&&(error.message||error.details||error.hint)||error));}
+  function safeError(error){var value=text(error&&(error.message||error.details||error.hint)||error).replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ').trim();return value&&value!=='[object Object]'?value.slice(0,240):'Unable to load devices.';}
+  function shape(input){return Array.isArray(input)&&input.every(function(item){return REQUIRED_FIELDS.every(function(field){return own(item,field);});});}
+  function markRows(input,mode){return (Array.isArray(input)?input:[]).map(function(item){var row=clone(item)||{};row.__r70pContract=mode;return row;});}
+  function fullEvidence(item){return !!item&&item.__r70pContract==='CANONICAL';}
+  function lifecycleOf(item){return up(item&&(item.lifecycle_state||item.lifecycle));}
+  function context(){
+    var service=cloud();
+    if(!service||typeof service.getOwnerManagementContext!=='function')return {ready:false,state:LOAD.WAITING,message:'Connecting to device-management service…'};
+    var state=service.getState?service.getState()||{}:{};
+    var f=foundation(),foundationState=f&&f.getState?f.getState()||{}:{};
+    var businessId=text(foundationState.businessId||(foundationState.context&&foundationState.context.business_id)||state.businessId);
+    if(!businessId)return {ready:false,state:LOAD.WAITING,message:'Business context is unavailable.'};
+    var authority=service.getOwnerManagementContext();
+    if(!authority||!authority.ready)return {ready:false,state:LOAD.WAITING_AUTHORITY,message:authority&&authority.message||'Owner cloud verification is required.'};
+    return {ready:true,client:authority.client,service:service,state:state,session:authority.session,businessId:businessId};
+  }
+  function renderNow(){
+    var slot=document.getElementById&&document.getElementById('zezmsDeviceManagementSlot');
+    if(slot&&window.ZEZMS.uiR70P)window.ZEZMS.uiR70P.reconcile(slot,settingsHtml());
+    consolidateLegacyPanels();
+  }
+  function setState(next,error){loadState=next;loadError=text(error);}
+  function resetForBusiness(id){if(id!==loadedBusinessId){rows=[];contract={mode:'UNLOADED',reason:'',requiredFields:REQUIRED_FIELDS.slice()};loadedBusinessId=id||'';setState(LOAD.UNINITIALIZED,'');}}
+  function resolveCanonicalDeviceState(item){
+    var lifecycle=lifecycleOf(item),full=fullEvidence(item),access=full?up(item.device_access_status):'UNKNOWN',registration=full?up(item.registered_device_status):'UNKNOWN',canonical='FAILED / EXPIRED',contradictions=[];
+    if(lifecycle==='ACTIVE')canonical='ACTIVE';
+    else if(lifecycle==='VERIFYING')canonical='AWAITING OWNER APPROVAL';
+    else if(['ENROLLING','BOOTSTRAPPING'].indexOf(lifecycle)>=0)canonical='VERIFYING';
+    else if(lifecycle==='RETIRED')canonical=full&&childOf(item)?'REPLACED':'RETIRED';
+    else if(lifecycle==='REVOKED')canonical='REVOKED';
+    else if(['REPLACED','SUPERSEDED'].indexOf(lifecycle)>=0||full&&childOf(item))canonical='REPLACED';
+    var terminal=['REPLACED','RETIRED','REVOKED','FAILED / EXPIRED'].indexOf(canonical)>=0;
+    var eligible=terminal?false:(full&&typeof item.authentication_eligible==='boolean'?item.authentication_eligible:null);
+    if(full&&terminal&&(access==='ACTIVE'||registration==='ACTIVE'||registration==='REGISTERED'))contradictions.push('Lifecycle '+canonical+' but legacy registration/access evidence remains '+(access==='ACTIVE'?'ACTIVE':registration||'present')+'. Operational access is denied.');
+    if(full&&canonical==='ACTIVE'&&eligible!==true)contradictions.push('Lifecycle is ACTIVE but canonical access evidence does not permit operational authentication.');
+    if(!full)contradictions.push('Canonical fleet read upgrade required; the legacy RPC does not provide lineage, registration, access or health evidence.');
+    return {lifecycleState:lifecycle||'UNKNOWN',canonicalStatus:canonical,deviceAccessStatus:access,registrationStatus:registration,authenticationEligible:eligible,operationalAccess:eligible===true,limitedEvidence:!full,replacementParent:full?parentOf(item):'',replacementChild:full?childOf(item):'',contradictions:contradictions};
+  }
+  function lineageRoot(item,byId){var current=item,seen={},next=parentOf(current);while(next&&byId[next]&&!seen[next]){seen[next]=true;current=byId[next];next=parentOf(current);}return idOf(current)||idOf(item)||deviceIdOf(item);}
+  function rank(item){return Number(item.revision||0)*10000000000000+Number(new Date(item.last_seen_at||0).getTime()||0);}
+  function health(item){if(item.canonicalStatus!=='ACTIVE')return item.canonicalStatus==='AWAITING OWNER APPROVAL'?'Syncing':'Needs attention';if(!fullEvidence(item)||item.authenticationEligible!==true||!numeric(item.queue_count)||!numeric(item.failed_count))return 'Unknown';if(item.failed_count>0)return 'Needs attention';if(item.queue_count>0)return 'Syncing';return 'Healthy';}
+  function projectFleet(input){
+    var source=Array.isArray(input)?input:[],byId={};source.forEach(function(item){if(idOf(item))byId[idOf(item)]=item;});
+    var all=source.map(function(item){return Object.assign({},clone(item),resolveCanonicalDeviceState(item),{lineageRoot:fullEvidence(item)?lineageRoot(item,byId):idOf(item)||deviceIdOf(item)});});
+    var activeByLineage={},conflicts={};
+    all.forEach(function(item){if(fullEvidence(item)&&item.lifecycleState==='ACTIVE'){var key=item.lineageRoot;activeByLineage[key]=(activeByLineage[key]||[]).concat(item);}});
+    Object.keys(activeByLineage).forEach(function(key){if(activeByLineage[key].length>1)conflicts[key]=true;});
+    var active=[],pending=[],history=[],limited=[];
+    all.forEach(function(item){
+      if(conflicts[item.lineageRoot]&&item.lifecycleState==='ACTIVE'){item.canonicalStatus='CONFLICTING ACTIVE';item.authenticationEligible=false;item.operationalAccess=false;item.contradictions=item.contradictions.concat(['More than one ACTIVE lifecycle exists in this authoritative replacement lineage. No convenience action is available.']);pending.push(item);return;}
+      if(item.limitedEvidence){limited.push(item);return;}
+      if(item.canonicalStatus==='ACTIVE'&&item.operationalAccess)active.push(item);
+      else if(['VERIFYING','AWAITING OWNER APPROVAL','ACTIVE'].indexOf(item.canonicalStatus)>=0)pending.push(item);
+      else history.push(item);
+    });
+    function sort(items){return items.sort(function(a,b){var byName=text(a.device_name||a.device_id).localeCompare(text(b.device_name||b.device_id));return byName||rank(b)-rank(a);});}
+    return {active:sort(active),pending:sort(pending),history:sort(history),limited:sort(limited),all:all,canonical:contract.mode==='CANONICAL'};
+  }
+  function badge(value){var state=up(value),kind=state==='ACTIVE'||state==='HEALTHY'?'ok':/REVOKED|FAILED|CONFLICT|ATTENTION|ERROR/.test(state)?'bad':/RETIRED|REPLACED|UNKNOWN|LIMITED/.test(state)?'warn':'info';return '<span class="badge '+kind+'">'+esc(value)+'</span>';}
+  function when(value){if(!value)return '—';var date=new Date(value);return Number.isNaN(date.getTime())?'—':date.toLocaleString();}
+  function itemAction(item){var managed=window.ZEZMS&&window.ZEZMS.managedDevices,id=idOf(item),safe=esc(JSON.stringify(id));if(!managed||!id)return '—';if(fullEvidence(item)&&item.canonicalStatus==='ACTIVE'&&item.operationalAccess)return '<button class="btn sm ghost" onclick="ZEZMS.managedDevices.changeBranch('+safe+','+Number(item.revision||0)+')">Change Branch</button> <button class="btn sm ghost" onclick="ZEZMS.managedDevices.retire('+safe+')">Retire</button> <button class="btn sm danger" onclick="ZEZMS.managedDevices.revoke('+safe+')">Revoke</button>';if(fullEvidence(item)&&item.canonicalStatus==='AWAITING OWNER APPROVAL')return '<button class="btn sm" onclick="ZEZMS.managedDevices.activate('+safe+','+Number(item.revision||0)+')">Approve</button>';return '<small>'+(item.limitedEvidence?'Read-only evidence':'Historical / review only')+'</small>';}
+  function evidenceLine(item){var items=[];if(item.replacementParent)items.push('Replaces '+item.replacementParent);if(item.replacementChild)items.push('Replaced by '+item.replacementChild);if(item.contradictions.length)items.push(item.contradictions.join(' '));return items.join(' ');}
+  function table(items,history,empty){return '<div class="table-wrap"><table><thead><tr><th>Device</th><th>Role/type</th><th>Branch</th><th>Status</th><th>Sync health</th><th>Last seen</th><th>App</th><th>'+(history?'Lineage / evidence':'Actions')+'</th></tr></thead><tbody>'+(items.map(function(item){return '<tr><td><b>'+esc(item.device_name||item.device_id||'ZEZMS Device')+'</b><br><small class="mono">'+esc(deviceIdOf(item))+'</small></td><td>'+esc(item.enrollment_mode||'Device')+'</td><td>'+esc(item.branch_name||item.branch_code||'Unassigned')+'</td><td>'+badge(item.canonicalStatus)+'</td><td>'+badge(health(item))+'</td><td>'+esc(when(item.last_seen_at))+'</td><td>'+esc(item.app_version||'—')+'</td><td>'+(history?'<small>'+esc(evidenceLine(item)||'Historical record')+'</small>':itemAction(item))+'</td></tr>';}).join('')||'<tr><td colspan="8" class="empty">'+esc(empty)+'</td></tr>')+'</tbody></table></div>';}
+  function controls(){return '<div class="row" style="margin-top:10px"><button class="btn" onclick="ZEZMS.deviceControlPlaneR70P.add()">Add device</button><button class="btn ghost" onclick="ZEZMS.deviceControlPlaneR70P.replace()">Recover / replace device</button><button class="btn ghost" onclick="ZEZMS.deviceControlPlaneR70P.refresh()">Refresh</button><button class="btn ghost" onclick="ZEZMS.deviceControlPlaneR70P.downloadReport()">Download fleet reconciliation report</button></div>';}
+  function settingsHtml(){
+    var heading='<section class="card" data-zezms-device-control-plane="r70p" style="margin-top:12px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Device Control Center</h3><span class="badge '+(loadState===LOAD.CANONICAL?'ok':loadState===LOAD.ERROR?'bad':'info')+'">r70V</span></div><p class="muted">One authoritative fleet projection. Registration history remains available for audit and cannot override lifecycle authority.</p>';
+    var authority=context();
+    if(!authority.ready)return heading+'<p class="muted">'+esc(authority.message)+'</p></section>';
+    if(loadState===LOAD.UNINITIALIZED||loadState===LOAD.WAITING)return heading+'<p class="muted">Connecting to device-management service…</p></section>';
+    if(loadState===LOAD.WAITING_AUTHORITY)return heading+'<p class="muted">'+esc(loadError||'Device management is available on an Owner/Admin device.')+'</p></section>';
+    if(loadState===LOAD.LOADING)return heading+'<p class="muted">Loading devices…</p></section>';
+    if(loadState===LOAD.ERROR)return heading+'<div class="notice warn"><b>Unable to load devices.</b> '+esc(loadError||'The fleet request did not complete.')+'</div><button class="btn ghost" onclick="ZEZMS.deviceControlPlaneR70P.refresh()">Retry</button></section>';
+    var projection=projectFleet(rows),historyRows=historyFilter==='ALL'?projection.history:projection.history.filter(function(item){return item.canonicalStatus===historyFilter;});
+    if(loadState===LOAD.LIMITED)return heading+'<div class="notice warn"><b>Canonical fleet read upgrade required.</b> '+esc(contract.reason||'The installed server RPC does not return the evidence required for canonical fleet status.')+'</div><h4>Legacy read-only lifecycle evidence</h4>'+table(projection.limited,true,'No legacy lifecycle records found after the successful read.')+'<div class="row" style="margin-top:10px"><button class="btn ghost" onclick="ZEZMS.deviceControlPlaneR70P.refresh()">Refresh</button><button class="btn ghost" onclick="ZEZMS.deviceControlPlaneR70P.downloadReport()">Download read-only evidence report</button></div></section>';
+    var activeEmpty=rows.length===0?'No devices found.':'No current operational devices.';
+    return heading+'<h4>Active Devices</h4>'+table(projection.active,false,activeEmpty)+controls()+'<h4 style="margin-top:18px">Pending / Needs Attention</h4>'+table(projection.pending,false,'No items require attention.')+'<details style="margin-top:18px"><summary><b>Device History</b> ('+projection.history.length+')</summary><p class="muted">Replaced, retired, revoked and failed identities are preserved for audit only; they have no operational actions.</p><label>Filter <select onchange="ZEZMS.deviceControlPlaneR70P.setHistoryFilter(this.value)"><option value="ALL"'+(historyFilter==='ALL'?' selected':'')+'>All history</option><option value="REPLACED"'+(historyFilter==='REPLACED'?' selected':'')+'>Replaced</option><option value="RETIRED"'+(historyFilter==='RETIRED'?' selected':'')+'>Retired</option><option value="REVOKED"'+(historyFilter==='REVOKED'?' selected':'')+'>Revoked</option><option value="FAILED / EXPIRED"'+(historyFilter==='FAILED / EXPIRED'?' selected':'')+'>Failed enrollment</option></select></label>'+table(historyRows,true,'No historical devices match this filter.')+'</details></section>';
+  }
+  function cleanupObsoleteNodes(){if(!document||!document.querySelectorAll)return;Array.prototype.forEach.call(document.querySelectorAll('[data-zezms-device-control-plane="r70m"],[data-zezms-device-control-plane="r70n"]'),function(node){if(node&&node.parentNode)node.parentNode.removeChild(node);});}
+  function consolidateLegacyPanels(scope){
+    scope=scope||document;if(!scope||!scope.querySelectorAll)return;
+    Array.prototype.forEach.call(scope.querySelectorAll('h1,h2,h3,h4'),function(heading){
+      var label=up(heading&&heading.textContent);if(!/REGISTERED DEVICES|ENROLLED DEVICES|SECURE DEVICE ENROLLMENT|MANAGED DEVICE LIFECYCLE|LEGACY REGISTRATION EVIDENCE/.test(label))return;
+      var card=heading.closest&&heading.closest('.card');if(!card||card.hasAttribute('data-zezms-device-control-plane')||card.hasAttribute('data-zezms-device-management-slot'))return;
+      // Retain read-only registration evidence in a collapsed history section.
+      card.style.display='';
+      card.setAttribute('data-zezms-legacy-registration-evidence','true');heading.textContent='Legacy registration evidence — not canonical fleet status';
+      if(!card.querySelector||card.querySelector('[data-zezms-r70p-registration-history]'))return;
+      var tableWrap=card.querySelector('.table-wrap')||card.querySelector('table');if(!tableWrap){card.style.display='none';return;}
+      var details=document.createElement('details');details.setAttribute('data-zezms-r70p-registration-history','true');details.innerHTML='<summary><b>Registration History</b></summary><p class="muted">These are legacy registration records, not the operational fleet. Their historical ACTIVE labels cannot restore a retired, replaced or revoked lifecycle.</p>';
+      if(tableWrap.parentNode){tableWrap.parentNode.insertBefore(details,tableWrap);details.appendChild(tableWrap);}
+      Array.prototype.forEach.call(details.querySelectorAll('button'),function(button){if(/revoke|retire|replace/i.test(text(button.textContent))){button.disabled=true;button.title='Historical registration evidence is read-only here.';}});
+    });
+  }
+  async function readFleet(pair){
+    var canonical=await pair.client.rpc(CANONICAL_RPC,{p_business_id:pair.businessId});
+    if(!canonical.error&&shape(canonical.data)){contract={mode:'CANONICAL',reason:'',requiredFields:REQUIRED_FIELDS.slice()};return markRows(canonical.data,'CANONICAL');}
+    if(canonical.error&&!isMissingRpc(canonical.error))throw canonical.error;
+    var legacy=await pair.client.rpc(LEGACY_RPC,{p_business_id:pair.businessId});if(legacy.error)throw legacy.error;
+    contract={mode:'UPGRADE_REQUIRED',reason:canonical.error?'The canonical read RPC is not deployed.':'The canonical read RPC returned an incomplete contract.',requiredFields:REQUIRED_FIELDS.slice()};return markRows(legacy.data,'LEGACY');
+  }
+  function ensureFleetLoaded(force){
+    var pair=context();if(!pair.ready){resetForBusiness('');setState(pair.state,pair.message);renderNow();return Promise.resolve(null);}
+    resetForBusiness(pair.businessId);
+    if(!force&&(loadState===LOAD.CANONICAL||loadState===LOAD.LIMITED))return Promise.resolve(projectFleet(rows));
+    if(inFlight)return inFlight;
+    setState(LOAD.LOADING,'');renderNow();
+    inFlight=readFleet(pair).then(function(result){rows=result;setState(contract.mode==='CANONICAL'?LOAD.CANONICAL:LOAD.LIMITED,'');return projectFleet(rows);}).catch(function(error){setState(LOAD.ERROR,safeError(error));throw error;}).finally(function(){inFlight=null;renderNow();});
+    return inFlight;
+  }
+  function afterSettingsRender(){cleanupObsoleteNodes();consolidateLegacyPanels();ensureFleetLoaded(false).catch(function(){/* load state is recorded and rendered visibly */});}
+  function add(){var managed=window.ZEZMS&&window.ZEZMS.managedDevices;if(!managed)return false;managed.beginDialog('ADD');return true;}
+  function replace(){var managed=window.ZEZMS&&window.ZEZMS.managedDevices;if(!managed)return false;managed.beginDialog('REPLACEMENT');return true;}
+  function refresh(){return ensureFleetLoaded(true);}
+  function setHistoryFilter(value){historyFilter=['ALL','REPLACED','RETIRED','REVOKED','FAILED / EXPIRED'].indexOf(value)>=0?value:'ALL';renderNow();}
+  function fleetReport(input){return projectFleet(input==null?rows:input).all.map(function(item){return {lifecycleId:idOf(item),deviceId:deviceIdOf(item),name:text(item.device_name),lifecycleMode:text(item.enrollment_mode),lifecycleState:item.lifecycleState,canonicalStatus:item.canonicalStatus,registrationStatus:item.registrationStatus,registeredDeviceStatus:item.registrationStatus,deviceAccessStatus:item.deviceAccessStatus,deviceAccessRevokedAt:item.device_access_revoked_at||null,registeredDeviceRevokedAt:item.registered_device_revoked_at||null,authenticationEligible:item.authenticationEligible,replacesLifecycleId:item.replacementParent||null,replacementLifecycleId:item.replacementChild||null,lineageRoot:item.lineageRoot,branch:{id:item.branch_id||null,name:text(item.branch_name),code:text(item.branch_code)},lastSeen:item.last_seen_at||null,appVersion:text(item.app_version),verifiedCursor:numeric(item.verified_cursor)?item.verified_cursor:null,queueCount:numeric(item.queue_count)?item.queue_count:null,failedCount:numeric(item.failed_count)?item.failed_count:null,syncHealth:health(item),showInActive:item.canonicalStatus==='ACTIVE'&&item.operationalAccess,historyOnly:['REPLACED','RETIRED','REVOKED','FAILED / EXPIRED'].indexOf(item.canonicalStatus)>=0,contradictions:item.contradictions.slice(),evidenceSources:fullEvidence(item)?['zezms_device_lifecycle','zezms_device_access','zezms_business_devices','zezms_branches','zezms_m5a4_canonical_fleet_read']:['zezms_m5a4_managed_fleet_with_branch (legacy limited evidence)']};});}
+  function downloadReport(){var report={build:BUILD,generatedAt:new Date().toISOString(),readOnly:true,loadState:loadState,contract:clone(contract),records:fleetReport()};var blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='ZEZMS_Fleet_Reconciliation_r70V_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);return report;}
+  function eventReady(){ensureFleetLoaded(false).catch(function(){});}
+  window.ZEZMS=window.ZEZMS||{};
+  window.ZEZMS.deviceControlPlaneR70P={build:BUILD,normalizeSettings:consolidateLegacyPanels,settingsHtml:settingsHtml,afterSettingsRender:afterSettingsRender,ensureFleetLoaded:ensureFleetLoaded,refresh:refresh,add:add,replace:replace,setHistoryFilter:setHistoryFilter,downloadReport:downloadReport,getProjection:function(){return projectFleet(rows);},getContract:function(){return clone(contract);},getLoadState:function(){return {state:loadState,error:loadError,loading:!!inFlight,businessId:loadedBusinessId};},_test:{requiredFields:REQUIRED_FIELDS.slice(),shape:shape,markRows:markRows,resolveCanonicalDeviceState:resolveCanonicalDeviceState,projectFleet:projectFleet,fleetReport:fleetReport,health:health,settingsHtml:settingsHtml,afterSettingsRender:afterSettingsRender,ensureFleetLoaded:ensureFleetLoaded}};
+  if(window.addEventListener){['zezms-cloud-ready','zezms-cloud-sync-ready','zezms-auth-ready','zezms-session-ready','zezms-business-context-ready','zezms-settings-opened','zezms-shared-device-directory-updated','focus'].forEach(function(name){window.addEventListener(name,eventReady);});}
+  document.documentElement.setAttribute('data-zezms-device-control-plane','r70p');
 }());

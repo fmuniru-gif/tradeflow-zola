@@ -1,0 +1,36 @@
+# r70V incident review — review candidate only
+
+Base: production `main` at `3995a77` (r70U merge). Candidate release: v3.31.19 / `20261015-r70v-outbox-settings`. No production device, database, queue, lifecycle, or cloud record was accessed or changed during this review.
+
+## Camon 17P activation
+
+The r70M outbox guard is working as designed. It permits only `root-set` patches to `sharedDeviceDirectory`, `settings`, `selectedYear`, or `selectedMonth` when the exact value is already in the verified staged candidate. A business patch, a different value, an unrecognized patch, a failed operation, or local business records block reconciliation. Activation rolls back queue, stage, journal, local database, and sync state if a later step fails. r70V does not change this classifier, the queue, or the activation bridge.
+
+A fresh synthetic browser profile running the assembled production shell generated one `DATABASE_CHANGE` operation before staging. It contained `insert` into `kpiHistory` and `root-set` at `settings`; the mixed operation classified `UNKNOWN / REVIEW REQUIRED` and produced the incident's exact `ZEZMS_BOOTSTRAP_OUTBOX_REVIEW_REQUIRED` error. `js/confirmed-july-snapshot.js` can insert a KPI history record and save the database during startup when no Phase A stage exists. Other local saves during first-time setup, staff hydration, or an upgrade can also create queued patches before the stage; once a stage exists, r70M suppresses only newly generated candidate-equivalent setup roots. This explains a reproducible route to the error. **The actual Camon 17P queue has not been inspected.** Its operation count, types, paths, values, and origin remain unknown.
+
+r70V places **Inspect bootstrap outbox (read only)** beside the pre-login activation button only while a valid verified stage is pending. It calls the existing r70M inspector and displays queue count, operation IDs and types, patch action/root/collection, classification, candidate-equivalence, failed count, and local business record count. It never displays patch payloads or credentials. The inspection does not upload, reconcile, clear, or relabel operations. The old Settings inspector now presents the same metadata without raw patch values.
+
+## Settings and lifecycle
+
+Production r70U contained an M5A-4 Settings slot that referred to `ZEZMS.deviceControlPlaneR70P`, but that controller was absent from the loaded shell. The older M5A-1 Registered Devices and M5A-3 Secure Device Enrollment cards remained visible. They derived ACTIVE status from legacy registration rows, which is not authoritative lifecycle status. M5A-3 also scheduled branch and registry reads after each Settings render and updated table DOM asynchronously. The r70P DOM reconciler and these independent Settings wrappers could repeatedly replace competing nodes. This is a concrete source of the reported flicker; the exact Main animation was not observed remotely.
+
+r70V restores the already reviewed deterministic Device Control Center in the single M5A-4 slot. It reads the canonical fleet RPC when available; if the RPC is missing or its contract is incomplete, it shows limited **read-only** evidence and no lifecycle actions. Replaced, retired, revoked, and failed lifecycle rows are history, including when a legacy registry row still reports ACTIVE. M5A-1 registry rows remain under a collapsed historical audit section without an ACTIVE badge or revoke button. The M5A-3 Settings wrapper is disabled, and its direct pairing and revocation routes fail closed or route to the guarded M5A-4 enrollment UI. Existing records are retained. This client change does not establish the current server-side RLS or RPC permissions; those require separate production verification.
+
+## Verification
+
+`node --test tests/*.cjs`: **36 passed, 0 failed**. The browser tests use the assembled `index.html` and production modules in isolated synthetic Chrome profiles with non-local network requests blocked. They cover the exact blocked-login error and preservation of stage/journal/queue/identity, safe candidate-equivalent residue, business-operation refusal, read-only pre-login inspection, one stable Device Control Center across repeated DOM reconciliation, no conflicting legacy cards, and revoked lifecycle history despite a legacy ACTIVE label. The existing r70U browser tests cover successful activation and real staff-login/recovery modules in a synthetic fixture. Release tests verify shell/source parity and that embedded Cloud Sync, verified baseline, integrity, and convergence payloads are unchanged from production main.
+
+The tests do **not** prove the contents of Camon 17P's actual queue, the live canonical RPC contract, physical-device Settings stability, or production activation success. These remain deployment and recovery gates.
+
+## Controlled Camon 17P procedure after separate release approval
+
+1. Preserve the already verified external encrypted Phase B evidence and record its integrity hash and storage location. Confirm Camon 17P remains the new approved ACTIVE identity and that the verified staged candidate and journal are still present. Do not clear site data, re-enrol, or change lifecycle state.
+2. Deliver the complete r70V application release through the approved same-origin update process. Verify v3.31.19 / r70V and retain the existing queue and stage. Do not enable Live Sync or press Complete verified activation yet.
+3. On Camon 17P's pre-login screen, press **Inspect bootstrap outbox (read only)**. Capture the entire report as evidence, including queue count, every operation ID/type, every action/root/collection, each classification, failed count, local business record count, and activation eligibility. Confirm the device and lifecycle identifiers match the preserved record. This action performs no queue or cloud write.
+4. Independently review the captured report against the verified staged candidate and preserved evidence. If any row is `UNKNOWN / REVIEW REQUIRED` or `BUSINESS_OPERATION`, or counts/identity differ, **stop**. Keep the device write-locked and the original queue, stage, journal, and evidence intact. Do not manually delete, upload, or relabel an operation. A separately reviewed, operation-specific reconciliation decision is required.
+5. Only if every queued operation is independently verified candidate-equivalent setup residue, the inspector reports zero failed operations and zero local business records, and the live Owner-approved lifecycle binding remains ACTIVE, explicitly approve pressing **Complete verified activation**. The existing r70M path rechecks these guards before any reconciliation and commits the verified candidate.
+6. Verify the new device ID, current cloud cursor/business data, usable existing staff login, empty queue, and no unexpected operations. If any check fails, stop and preserve the stage and evidence for investigation. Never repeat enrollment as a shortcut.
+
+## Readiness
+
+**NO-GO for deployment and Camon 17P activation.** The actual outbox is unknown, the canonical fleet RPC and lifecycle authority need live read-only verification, and the revised Settings view has not been observed on Main. No automatic cleanup or activation is part of this candidate.
