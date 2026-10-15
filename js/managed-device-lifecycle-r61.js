@@ -21,6 +21,7 @@
   var fleetLoadPromise = null;
   var fleetHydrationScheduled = false;
   var claimInFlight = false;
+  var finishPromise = null;
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   function attr(value) { return esc(value).replace(/[\r\n]/g, ''); }
@@ -179,6 +180,42 @@
       DB=database;
       return clone(convergence.buildFingerprint());
     } finally { try { DB=previous; } catch (_) {} }
+  }
+  function verifiedPendingStage() {
+    var phase=window.ZEZMS && ZEZMS.bootstrapPhaseA;
+    var inspection=phase && phase.inspect && phase.inspect();
+    if (!inspection || inspection.status !== 'PRESENT') return null;
+    var staged=inspection.stage, snapshot=state();
+    if (!staged || !staged.candidate || !staged.fingerprint || !staged.attestedAt ||
+        !Number.isFinite(Date.parse(staged.attestedAt)) ||
+        String(staged.fingerprint.deviceId || '') !== staged.deviceId ||
+        typeof staged.fingerprint.operationalHash !== 'string' || !staged.fingerprint.operationalHash ||
+        typeof staged.fingerprint.extendedHash !== 'string' || !staged.fingerprint.extendedHash ||
+        !staged.fingerprint.collections || typeof staged.fingerprint.collections !== 'object' ||
+        String(snapshot.deviceId || '') !== staged.deviceId ||
+        String(snapshot.deviceAccessMode || '').toUpperCase() !== 'PAIRED') return null;
+    var rawJournal;
+    try { rawJournal=localStorage.getItem(JOURNAL_KEY); } catch (_) { return null; }
+    if (rawJournal !== null) {
+      try { if (JSON.parse(rawJournal).version !== 2) return null; } catch (_) { return null; }
+    }
+    var integrity=window.ZEZMS && ZEZMS.syncIntegrity;
+    if (!integrity || !integrity._test || typeof integrity._test.localAudit !== 'function') return null;
+    var journal=journalRead();
+    if (!journal || String(journal.lifecycleId || '') !== staged.lifecycleId ||
+        String(journal.deviceId || '') !== staged.deviceId ||
+        String(journal.stage || '').toUpperCase() !== 'VERIFYING' ||
+        String(journal.lastVerifiedStage || '').toUpperCase() !== 'VERIFYING' ||
+        (journal.replayCursor != null && Number(journal.replayCursor) !== staged.cursor)) return null;
+    try {
+      candidateIntegrity(staged.candidate);
+      var current=fingerprintCandidate(staged.candidate);
+      if (String(current.deviceId || '') !== staged.deviceId ||
+          current.operationalHash !== staged.fingerprint.operationalHash ||
+          current.extendedHash !== staged.fingerprint.extendedHash ||
+          JSON.stringify(current.collections) !== JSON.stringify(staged.fingerprint.collections)) return null;
+    } catch (_) { return null; }
+    return staged;
   }
   function cleanHash(database) {
     var s=cloud();
@@ -570,23 +607,25 @@
     }
   }
   async function finishIfActivated() {
-    var staged=stageRead(); if (!staged) throw new Error('No verified bootstrap candidate is stored on this device.');
+    var staged=verifiedPendingStage(); if (!staged) throw new Error('No verified bootstrap candidate matching this device is awaiting activation.');
     var pair=await pairedClient();
+    if (String(pair.state.deviceId || '') !== staged.deviceId || String(pair.state.deviceAccessMode || '').toUpperCase() !== 'PAIRED') throw new Error('ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING: This cloud session does not match the staged device.');
     var result=await pair.client.rpc('zezms_m5a4_device_context', { p_device_id:staged.deviceId, p_allowed_states:['ACTIVE'] });
     if (result.error) throw result.error;
     var context=row(result.data);
     if (!context || String(context.lifecycle_state || context.device_status || '').toUpperCase() !== 'ACTIVE') throw new Error('This device has not been activated by the Owner yet.');
+    if (String(context.lifecycle_id || '') !== staged.lifecycleId || (context.device_id && String(context.device_id) !== staged.deviceId) ||
+        (pair.state.businessId && String(context.business_id || '') !== String(pair.state.businessId)) ||
+        (pair.state.syncOwnerId && String(context.owner_id || '') !== String(pair.state.syncOwnerId)))
+      throw new Error('ZEZMS_BOOTSTRAP_INVALID_DEVICE_ID_BINDING: The ACTIVE cloud lifecycle does not match this verified candidate.');
+    context=Object.assign({},context,{ device_id:staged.deviceId });
     var s=cloud();
-    if (!s || typeof s.commitM5a4BootstrapCandidate !== 'function') throw new Error('The r61 cloud bootstrap bridge is unavailable. Reload the updated application.');
-    if (typeof s.activateVerifiedBootstrapR70M === 'function') {
-      await s.activateVerifiedBootstrapR70M(staged.candidate, { cursor:staged.cursor, context:context });
-    } else {
-      s.commitM5a4BootstrapCandidate(staged.candidate, { cursor:staged.cursor, context:context });
-      if (typeof s.activateM5a4Live !== 'function') throw new Error('The r61 live-sync activation bridge is unavailable. Reload the updated application.');
-      await s.activateM5a4Live();
-    }
+    if (!s || typeof s.activateVerifiedBootstrapR70M !== 'function') throw new Error('The verified r70M bootstrap activation bridge is unavailable. Reload the complete updated application.');
+    await s.activateVerifiedBootstrapR70M(staged.candidate, { cursor:staged.cursor, context:context });
     stageClear();
     journalClear();
+    try { window.dispatchEvent(new CustomEvent('zezms-shared-device-directory-updated')); } catch (_) {}
+    try { if (ZEZMS.recoveryStabilization && ZEZMS.recoveryStabilization.showRecoveryButton) ZEZMS.recoveryStabilization.showRecoveryButton(); } catch (_) {}
     notify('Safe bootstrap is active. Live Sync is now enabled for this device.', 'ok');
     if (typeof render === 'function') render();
     return true;
@@ -683,6 +722,6 @@
     if (typeof render === 'function') render();
   }
 
-  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){return finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;});}, inspectBootstrapOutbox:function(){return inspectBootstrapOutbox();}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
+  ZEZMS.managedDevices={ version:'M5A-4', build:BUILD, lifecycleStates:states.slice(), refresh:function(){ return loadFleet(true).catch(function(e){notify('Unable to load managed fleet. '+fleetReadError(e),'err');throw e;}); }, beginDialog:beginDialog, begin:function(mode){return beginEnrollment(mode).catch(function(e){notify(rpcError(e),'err');throw e;});}, claim:claimAndStage, finish:function(){if (finishPromise) return finishPromise; finishPromise=finishIfActivated().catch(function(e){notify(rpcError(e),'err');throw e;}).finally(function(){finishPromise=null;}); return finishPromise;}, hasVerifiedPendingStage:function(){return !!verifiedPendingStage();}, inspectBootstrapOutbox:function(){return inspectBootstrapOutbox();}, activate:function(id,rev){return activate(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, retire:function(id){return retire(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, cancel:function(id){return cancel(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, revoke:function(id){return revoke(id).catch(function(e){notify(rpcError(e),'err');throw e;});}, changeBranch:function(id,rev){return changeBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, confirmBranch:function(id,rev){return confirmBranch(id,rev).catch(function(e){notify(rpcError(e),'err');throw e;});}, copyCode:function(){if(currentEnrollment)return copy(currentEnrollment.pairing_code,'Pairing code copied.');}, copyLink:function(){if(currentEnrollment)return copy(currentEnrollment.setup_link,'Safe-bootstrap link copied.');}, getStage:stageRead, getJournal:journalRead, _test:{candidateCashIsSafe:candidateCashIsSafe, candidateIntegrity:candidateIntegrity, fingerprintCandidate:fingerprintCandidate, cleanHash:cleanHash, legacyCheckpointSnapshot:legacyCheckpointSnapshot, legacyCheckpointCanonicalize:legacyCheckpointCanonicalize, legacyCheckpointHash:legacyCheckpointHash, verifyCheckpointPayloadHash:verifyCheckpointPayloadHash, bootstrapFailureHeading:bootstrapFailureHeading, stageRead:stageRead, journalRead:journalRead, localBusinessState:localBusinessState, inspectBootstrapEligibility:inspectBootstrapEligibility, readClient:readClient, mutationClient:mutationClient, ensureFleetLoaded:ensureFleetLoaded, getFleetState:function(){return { status:fleetLoadStatus, error:fleetLoadError, businessId:fleetLoadedBusinessId, count:fleet.length, scheduled:fleetHydrationScheduled, loading:!!fleetLoadPromise };}} };
   setTimeout(initialize,500);
 }());
