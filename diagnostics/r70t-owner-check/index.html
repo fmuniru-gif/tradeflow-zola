@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Cache-Control" content="no-store">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https://*.supabase.co; img-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>TradeFlow r70T Owner Permission Check</title>
+  <style>
+    body{margin:0;padding:24px;background:#0f172a;color:#f8fafc;font:16px system-ui,sans-serif}
+    main{max-width:620px;margin:auto;background:#1e293b;border-radius:14px;padding:24px}
+    h1{font-size:1.45rem;margin-top:0}label{display:block;margin-top:14px;font-weight:600}
+    input{box-sizing:border-box;width:100%;padding:11px;margin-top:5px;border:1px solid #94a3b8;border-radius:6px;font:inherit}
+    button{margin-top:18px;padding:11px 16px;border:0;border-radius:6px;background:#2dd4bf;color:#0f172a;font-weight:700;font:inherit;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#cbd5e1}
+    .note{color:#cbd5e1;line-height:1.45}.result{margin-top:22px;padding:14px;background:#0f172a;border-radius:8px;white-space:pre-wrap}
+    .pass{color:#86efac}.fail{color:#fca5a5}[hidden]{display:none!important}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Camon 17P Owner permission check</h1>
+  <p class="note">Use this page in a fresh private browser window on a trusted computer. It signs in to the existing Supabase project in memory, then makes four read-only database requests. It does not open or change TradeFlow on any device.</p>
+  <section aria-label="Owner sign-in">
+    <p class="note">Configured project: <strong id="projectHost">Not configured</strong></p>
+    <label for="ownerEmail">Owner email</label>
+    <input id="ownerEmail" type="email" autocomplete="username">
+    <label for="ownerPassword">Owner password</label>
+    <input id="ownerPassword" type="password" autocomplete="current-password">
+    <button id="signIn" type="button" disabled>Authenticate Owner</button>
+  </section>
+  <section id="mfaSection" hidden aria-label="Owner authenticator">
+    <label for="mfaCode">Authenticator code</label>
+    <input id="mfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8">
+    <button id="verifyMfa" type="button" class="secondary">Verify authenticator</button>
+  </section>
+  <button id="runCheck" type="button" disabled>Run Read-Only Camon 17P Permission Check</button>
+  <div id="result" class="result" role="status" aria-live="polite">Not run. Deployment and Camon 17P recovery remain NO-GO.</div>
+  <p class="note">Only PASS/FAIL, lifecycle state, verified cursor, and cloud head are shown. Close the private window after saving the result. This page accepts no project key from the Owner.</p>
+</main>
+<script src="./config.js" defer></script>
+<script src="./supabase-js-2.112.1.js" defer></script>
+<script src="./owner-check.js" defer></script>
+<script src="./page.js" defer></script>
+</body>
+</html>
