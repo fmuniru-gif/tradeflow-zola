@@ -30,3 +30,35 @@ test('review-only SQL changes one guarded projection and preserves auth, 23 colu
   assert.ok(table);
   assert.equal(table[1].split(',').filter(Boolean).length,23);
 });
+
+test('review-only resolver correction gives every explicit revocation precedence',()=>{
+  const sql=file('sql/REVIEW_ONLY_R70V_RESOLVE_DEVICE_REVOKED_ACCESS.sql');
+  assert.equal((sql.match(/create or replace function public\.zezms_m5a4_resolve_device\(/gi)||[]).length,1);
+  assert.match(sql,/R70V_RESOLVE_DEVICE_DEFINITION_DRIFT/);
+  assert.match(sql,/a22b23a190733d202c97335aa9646700/);
+  assert.match(sql,/set search_path to ''/);
+  assert.match(sql,/v_uid uuid:=auth\.uid\(\)/);
+  assert.match(sql,/l\.lifecycle_state=any\(p_allowed_states\)/);
+  assert.match(sql,/not exists\s*\([\s\S]*?revoked_access\.status='REVOKED' or revoked_access\.revoked_at is not null/);
+  assert.match(sql,/a\.status='ACTIVE' and a\.revoked_at is null/);
+  assert.match(sql,/l\.owner_id=v_uid\s*and not exists\s*\([\s\S]*?public\.zezms_device_access owner_access/);
+  assert.match(sql,/d\.user_id=v_uid and d\.revoked_at is null/);
+  assert.doesNotMatch(sql,/\b(?:grant|revoke|insert|update|delete|truncate|drop|alter)\b\s+(?:on|into|public\.|table|function)/i);
+});
+
+test('authorization decision matrix includes revoked, healthy and owner-only cases',()=>{
+  // Independent policy model for reviewing the SQL. Production execution remains unverified.
+  function allowed({state,accepted=['ACTIVE'],uid,deviceUser,owner,business,registration,access=[]}){
+    return accepted.includes(state) && !access.some(a=>a.business===business&&(a.status==='REVOKED'||a.revokedAt)) &&
+      ((deviceUser===uid&&access.some(a=>a.business===business&&a.user===uid&&a.status==='ACTIVE'&&!a.revokedAt)) ||
+       (owner===uid&&!access.some(a=>a.business===business)&&registration?.business===business&&registration.user===uid&&!registration.revokedAt));
+  }
+  const base={state:'ACTIVE',uid:'owner',deviceUser:'owner',owner:'owner',business:'B',registration:{business:'B',user:'owner'},access:[{business:'B',user:'owner',status:'ACTIVE'}]};
+  assert.equal(allowed(base),true);
+  assert.equal(allowed({...base,access:[{business:'B',user:'owner',status:'REVOKED'}]}),false);
+  assert.equal(allowed({...base,access:[{business:'B',user:'owner',status:'ACTIVE',revokedAt:'now'}]}),false);
+  assert.equal(allowed({...base,state:'REVOKED'}),false);
+  assert.equal(allowed({...base,access:[]}),true);
+  assert.equal(allowed({...base,registration:{business:'OTHER',user:'owner'},access:[]}),false);
+  assert.equal(allowed({...base,uid:'outsider',access:[]}),false);
+});
