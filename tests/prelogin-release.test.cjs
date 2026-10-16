@@ -9,7 +9,7 @@ const index = read('index.html');
 const worker = read('sw.js');
 const manifest = JSON.parse(read('manifest.json'));
 const helper = read('FORCE_UPDATE_MOBILE.html');
-const release = '20261016-r70v-bootstrap-outbox-diagnostic';
+const release = '20261017-r70w-camon17p-kpi-review';
 
 test('the deployed shell, worker, manifest and update helper name one release',()=>{
   assert.match(index,new RegExp('const RELEASE="'+release+'";'));
@@ -17,9 +17,15 @@ test('the deployed shell, worker, manifest and update helper name one release',(
   assert.equal(manifest.start_url,'./index.html?build='+release);
   assert.match(helper,new RegExp(release));
   assert.match(index,/data-zezms-prelogin-verified-activation-r70u/);
+  assert.match(index,/data-zezms-camon17p-kpi-review-r70w/);
+  assert.match(worker,/camon17p-kpi-review-r70w\.js/);
   assert.match(worker,/ZEZMS_RUNTIME_INTEGRITY_PROBE/);
   assert.match(worker,/ZEZMS_PRESERVATION_RELEASE_MISMATCH/);
   assert.ok(worker.includes("data.release === '20261015-r70u-prelogin-verified-activation'"),'old in-flight shell compatibility missing');
+  assert.match(index,/const PATCH_CACHE="zezms-r70w-camon17p-kpi-patched-v1"/);
+  assert.match(worker,/const PATCHED_INDEX_CACHE = 'zezms-r70w-camon17p-kpi-patched-v1'/);
+  assert.match(worker,/CRITICAL_ASSETS = [^\n]*camon17p-kpi-review-r70w\.js/);
+  assert.ok(fs.existsSync(path.join(root,'js/camon17p-kpi-review-r70w.js')));
 });
 
 for(const [constant,file] of [
@@ -37,6 +43,7 @@ test('production cloud, business and protocol modules remain unchanged',()=>{
   const changed=execFileSync('git',['diff','--name-only','origin/main'],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/).filter(Boolean);
   assert.ok(changed.every(name=>[
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'js/camon17p-kpi-review-r70w.js','docs/r70w-camon17p-kpi-review.md','tests/r70w-camon17p-kpi.browser.cjs',
     'js/prelogin-verified-activation-r70u.js',
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
     'tests/r70v-diagnostic.browser.cjs','tests/approved-deployment-gate.test.cjs',

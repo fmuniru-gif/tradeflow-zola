@@ -10,7 +10,7 @@
   </style>
 </head>
 <body>
-<main><h2>TradeFlow r70V Diagnostic update</h2><p id="status">Checking the r70V Diagnostic service worker...</p><p>Close every other TradeFlow tab on this device before opening the update. Keep this device's site data, IndexedDB, identity, and queue.</p><p><a id="open" href="./index.html?build=20261016-r70v-bootstrap-outbox-diagnostic" style="color:#67e8f9">Open TradeFlow r70V Diagnostic</a></p></main>
+<main><h2>TradeFlow r70W KPI Review update</h2><p id="status">Checking the r70W KPI Review service worker...</p><p>Close every other TradeFlow tab on this device before opening the update. Keep this device's site data, IndexedDB, identity, and queue.</p><p><a id="open" href="./index.html?build=20261017-r70w-camon17p-kpi-review" style="color:#67e8f9">Open TradeFlow r70W KPI Review</a></p></main>
 <script>
 (async()=>{
   try{
@@ -21,13 +21,13 @@
         if(!location.href.startsWith(registration.scope))continue;
         await registration.update();
         if(registration.waiting){
-          status.textContent='r70V Diagnostic is waiting. Close all TradeFlow tabs, including this one, then reopen TradeFlow. Keep site data.';
+          status.textContent='r70W KPI Review is waiting. Close all TradeFlow tabs, including this one, then reopen TradeFlow. Keep site data.';
           open.hidden=true;
           return;
         }
       }
     }
-    status.textContent='Update check complete. Close other TradeFlow tabs, then open r70V Diagnostic in this tab.';
+    status.textContent='Update check complete. Close other TradeFlow tabs, then open r70W KPI Review in this tab.';
   }catch(error){document.getElementById('status').textContent='Update check failed. Keep this device offline and ask the Owner to verify the deployed release.';document.getElementById('open').hidden=true;}
 })();
 </script>

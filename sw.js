@@ -1,7 +1,7 @@
-/* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
+/* ZEZMS Owner Edition v3.31.20 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-r70v-diagnostic-20261016';
-const PATCHED_INDEX_CACHE = 'zezms-r70v-diagnostic-patched-v1';
+const CACHE = 'zezms-r70w-kpi-review-20261017';
+const PATCHED_INDEX_CACHE = 'zezms-r70w-camon17p-kpi-patched-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20261008-r70q-phase-a-review','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -36,9 +36,10 @@ const ASSETS = [
   './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/account-cash-pdf-r68e.js?v=20261004-r70f-recovery-stabilization','./js/kpi-charts-compact-r68e.js?v=20261004-r70f-recovery-stabilization',
   './js/branch-management-r69.js?v=20261004-r70f-recovery-stabilization','./js/managed-device-lifecycle-r61.js?v=20261008-r70q-phase-a-review',
+  './js/camon17p-kpi-review-r70w.js?v=20261017-r70w-camon17p-kpi-review',
   './js/recovery-stabilization-r70g.js?v=20261008-r70q-phase-a-review','./js/identity-relink-r70h.js?v=20261008-r70q-phase-a-review',
 ];
-const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
+const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51', './js/camon17p-kpi-review-r70w.js?v=20261017-r70w-camon17p-kpi-review'];
 let postShellCachePromise = null;
 
 async function cacheSuccessful(request, response) {
@@ -82,7 +83,7 @@ self.addEventListener('install', (event) => {
       { cache:'reload' }));
     await cache.addAll(requests);
     // Fail closed on a mixed deployment: do not activate the new worker with an old shell.
-    const expected = 'const RELEASE=\"20261016-r70v-bootstrap-outbox-diagnostic\";';
+    const expected = 'const RELEASE=\"20261017-r70w-camon17p-kpi-review\";';
     for (const entry of ['./', './index.html']) {
       const response = await cache.match(new URL(entry, self.registration.scope).href, {ignoreVary:true});
       if (!response || !response.ok || !(await response.text()).includes(expected)) {
@@ -91,7 +92,7 @@ self.addEventListener('install', (event) => {
     }
     const manifestResponse = await cache.match(new URL('./manifest.json', self.registration.scope).href, {ignoreVary:true});
     const manifestData = manifestResponse && manifestResponse.ok ? await manifestResponse.json() : null;
-    if (!manifestData || manifestData.start_url !== './index.html?build=20261016-r70v-bootstrap-outbox-diagnostic') throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
+    if (!manifestData || manifestData.start_url !== './index.html?build=20261017-r70w-camon17p-kpi-review') throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
   }));
 });
 self.addEventListener('activate', (event) => {
@@ -101,11 +102,11 @@ self.addEventListener('message', (event) => {
   const data = event && event.data;
   if (data && data.type === 'ZEZMS_RUNTIME_INTEGRITY_PROBE') {
     if (event.source && typeof event.source.postMessage === 'function') {
-      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261016-r70v-bootstrap-outbox-diagnostic', cache:CACHE });
+      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261017-r70w-camon17p-kpi-review', cache:CACHE });
     }
     return;
   }
-  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261016-r70v-bootstrap-outbox-diagnostic' || data.release === '20261015-r70u-prelogin-verified-activation' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261017-r70w-camon17p-kpi-review' || data.release === '20261015-r70u-prelogin-verified-activation' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }

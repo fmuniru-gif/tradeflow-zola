@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition r70V read-only bootstrap outbox diagnostic. M4 protocol follows verified server capability.",
-  "start_url": "./index.html?build=20261016-r70v-bootstrap-outbox-diagnostic",
+  "description": "ZEZMS Owner Edition r70W read-only Camon 17P KPI outbox review. M4 protocol follows verified server capability.",
+  "start_url": "./index.html?build=20261017-r70w-camon17p-kpi-review",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
