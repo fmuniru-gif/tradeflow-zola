@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const http=require('node:http');
 const crypto=require('node:crypto');
+const {isDeepStrictEqual}=require('node:util');
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const root=path.resolve(__dirname,'..');
 const release='v3.31.19-r70v-diagnostic';
@@ -19,6 +20,14 @@ async function page(){
   if(!server.listening)await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   if(!browser)browser=await playwright.chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'});
   const tab=await browser.newPage({acceptDownloads:true});
+  await tab.addInitScript(()=>{
+    window.__storageWriteEvents=[];
+    const original=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(key,value){
+      window.__storageWriteEvents.push({key:String(key),stack:String(new Error().stack||'').split('\n').slice(2,5).map(line=>line.replace(/https?:\/\/[^/]+/g,'[origin]'))});
+      return original.call(this,key,value);
+    };
+  });
   await tab.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
   await tab.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'domcontentloaded'});
   await tab.waitForFunction(expected=>document.documentElement.getAttribute('data-zezms-release')===expected&&window.ZEZMS&&ZEZMS.cloudSync&&ZEZMS.managedDevices,release,{timeout:15000});
@@ -48,6 +57,51 @@ async function stage(tab,kind){
 }
 async function snapshot(tab){
   return tab.evaluate(()=>({storage:Object.fromEntries(Object.keys(localStorage).sort().map(key=>[key,localStorage.getItem(key)])),db:JSON.stringify(DB),state:ZEZMS.cloudSync.getState(),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox())}));
+}
+function changedPaths(left,right,prefix=''){
+  if(isDeepStrictEqual(left,right))return [];
+  if(!left||!right||typeof left!=='object'||typeof right!=='object')return [prefix||'<root>'];
+  return [...new Set([...Object.keys(left),...Object.keys(right)])].flatMap(key=>changedPaths(left[key],right[key],prefix?prefix+'.'+key:key)).slice(0,30);
+}
+function preservationDelta(before,after,writes){
+  const storageKeys=[...new Set([...Object.keys(before.storage),...Object.keys(after.storage)])]
+    .filter(key=>before.storage[key]!==after.storage[key]);
+  return {storageKeys:storageKeys.map(key=>{
+    let paths=[];
+    try{paths=changedPaths(JSON.parse(before.storage[key]),JSON.parse(after.storage[key]));}catch(_){paths=['<non-JSON>'];}
+    return {key,paths};
+  }),dbPaths:changedPaths(JSON.parse(before.db),JSON.parse(after.db)),statePaths:changedPaths(before.state,after.state),
+    queueChanged:before.queue!==after.queue,writes};
+}
+function assertPreservedSnapshot(before,after,writes){
+  const delta=preservationDelta(before,after,writes);
+  const diagnosticKey='zezms_commercial_m5a1_state';
+  const sameKeys=isDeepStrictEqual(Object.keys(before.storage).filter(key=>key!==diagnosticKey),Object.keys(after.storage).filter(key=>key!==diagnosticKey));
+  assert.ok(sameKeys,JSON.stringify(delta));
+  for(const key of Object.keys(before.storage)){
+    if(key!==diagnosticKey){
+      assert.equal(after.storage[key],before.storage[key],JSON.stringify(delta));
+      continue;
+    }
+    // M5A-1 independently refreshes its display status after page startup.
+    // Its timestamp and error text are diagnostics, not recovery authority.
+    const prior=JSON.parse(before.storage[key]),later=JSON.parse(after.storage[key]);
+    for(const field of ['lastCheckedAt','lastError']){delete prior[field];delete later[field];}
+    assert.ok(isDeepStrictEqual(later,prior),JSON.stringify(delta));
+  }
+  if(!(diagnosticKey in before.storage) && diagnosticKey in after.storage){
+    const created=JSON.parse(after.storage[diagnosticKey]);
+    assert.equal(created.businessId,'',JSON.stringify(delta));
+    assert.equal(created.context,null,JSON.stringify(delta));
+    assert.equal(created.status,'error',JSON.stringify(delta));
+  }
+  assert.equal(after.db,before.db,JSON.stringify(delta));
+  assert.ok(isDeepStrictEqual(after.state,before.state),JSON.stringify(delta));
+  assert.equal(after.queue,before.queue,JSON.stringify(delta));
+  for(const write of writes){
+    assert.equal(write.key,diagnosticKey,JSON.stringify(delta));
+    assert.ok(write.stack.some(line=>/at refresh \(\[origin\]\/js\/commercial-foundation\.js/.test(line)),JSON.stringify(delta));
+  }
 }
 async function inspect(tab){
   await tab.locator('#r70vInspectBootstrapOutbox').click();
@@ -80,6 +134,7 @@ for(const kind of ['startup','safe','business','unknown'])test('read-only assemb
   try{
     const identity=await stage(tab,kind);
     const before=await snapshot(tab);
+    const writeStart=await tab.evaluate(()=>window.__storageWriteEvents.length);
     let calls=0;
     await tab.evaluate(()=>{
       window.__rpcCalls=0;window.__activationCalls=0;
@@ -101,7 +156,16 @@ for(const kind of ['startup','safe','business','unknown'])test('read-only assemb
       assert.equal(report.rows[0].candidateEquivalent,false);
       assert.equal(report.activationEligible,false);
     }
-    if(kind==='startup')assert.deepEqual(report.rows[0].paths.map(p=>[p.action,p.root,p.collection]),[['insert','','kpiHistory'],['root-set','settings','']]);
+    const queued=JSON.parse(before.queue);
+    assert.equal(report.rows[0].operationId,queued[0].opId);
+    assert.deepEqual(report.rows[0].paths.map(p=>[p.action,p.root,p.collection]),queued[0].patches.map(p=>[p.action,p.root||'',p.collection||'']));
+    if(kind==='startup'){
+      // The independent wallet seed can persist settings before or with July's
+      // KPI save. Inspect the exact queued patches instead of assuming timing.
+      const paths=report.rows[0].paths.map(p=>[p.action,p.root,p.collection]);
+      assert.ok(paths.some(p=>p[0]==='insert'&&p[2]==='kpiHistory'));
+      assert.ok(paths.every(p=>(p[0]==='insert'&&p[2]==='kpiHistory')||(p[0]==='root-set'&&p[1]==='settings')));
+    }
     assert.ok(!JSON.stringify(envelope).includes('secret-password'));
     assert.ok(!JSON.stringify(envelope).includes('secret-token'));
     const downloadPromise=tab.waitForEvent('download');
@@ -109,7 +173,9 @@ for(const kind of ['startup','safe','business','unknown'])test('read-only assemb
     const download=await downloadPromise;
     assert.match(download.suggestedFilename(),/^ZEZMS_Bootstrap_Outbox_Diagnostic_\d{4}-\d\d-\d\d\.json$/);
     assert.deepEqual(JSON.parse(fs.readFileSync(await download.path(),'utf8')),envelope);
-    assert.deepEqual(await snapshot(tab),before);
+    const afterSnapshot=await snapshot(tab);
+    const writes=await tab.evaluate(start=>window.__storageWriteEvents.slice(start),writeStart);
+    assertPreservedSnapshot(before,afterSnapshot,writes);
     assert.deepEqual(await tab.evaluate(()=>({rpc:window.__rpcCalls,activation:window.__activationCalls})),{rpc:0,activation:0});
     assert.equal(await tab.locator('#r70uCompleteVerifiedActivation').count(),1);
   }finally{await tab.close();}
