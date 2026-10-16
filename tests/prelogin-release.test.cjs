@@ -9,7 +9,7 @@ const index = read('index.html');
 const worker = read('sw.js');
 const manifest = JSON.parse(read('manifest.json'));
 const helper = read('FORCE_UPDATE_MOBILE.html');
-const release = '20261015-r70u-prelogin-verified-activation';
+const release = '20261016-r70v-bootstrap-outbox-diagnostic';
 
 test('the deployed shell, worker, manifest and update helper name one release',()=>{
   assert.match(index,new RegExp('const RELEASE="'+release+'";'));
@@ -19,6 +19,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
   assert.match(index,/data-zezms-prelogin-verified-activation-r70u/);
   assert.match(worker,/ZEZMS_RUNTIME_INTEGRITY_PROBE/);
   assert.match(worker,/ZEZMS_PRESERVATION_RELEASE_MISMATCH/);
+  assert.ok(worker.includes("data.release === '20261015-r70u-prelogin-verified-activation'"),'old in-flight shell compatibility missing');
 });
 
 for(const [constant,file] of [
@@ -36,12 +37,14 @@ test('production cloud, business and protocol modules remain unchanged',()=>{
   const changed=execFileSync('git',['diff','--name-only','origin/main'],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/).filter(Boolean);
   assert.ok(changed.every(name=>[
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
-    'js/managed-device-lifecycle-r61.js','js/prelogin-verified-activation-r70u.js',
+    'js/prelogin-verified-activation-r70u.js',
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
-    'docs/r70u-prelogin-activation.md','docs/r70u-test-report.md'
+    'tests/r70v-diagnostic.browser.cjs','tests/approved-deployment-gate.test.cjs',
+    'scripts/approved-deployment-gate.cjs','docs/r70v-diagnostic-runbook.md','docs/approved-github-deployment.md'
   ].includes(name)));
   const previous=execFileSync('git',['show','origin/main:index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
-  for(const name of ['CLOUD_B64','VERIFIED_BASELINE_B64','INTEGRITY_B64','CONVERGENCE_B64']){
+  const embedded=[...previous.matchAll(/const ([A-Z0-9_]+_B64)="([^"]+)";/g)].map(match=>match[1]);
+  for(const name of embedded.filter(name=>name!=='PRELOGIN_VERIFIED_ACTIVATION_R70U_B64')){
     const pattern=new RegExp('const '+name+'="([^"]+)";');
     assert.equal(index.match(pattern)?.[1],previous.match(pattern)?.[1],name+' changed');
   }

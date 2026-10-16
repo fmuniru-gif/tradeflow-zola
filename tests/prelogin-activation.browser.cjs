@@ -171,7 +171,7 @@ test('complete production shell renders with the pre-login module and no stage c
   try{
     await page.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
     await page.goto('http://127.0.0.1:'+server.address().port+'/full/index.html',{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(()=>document.documentElement.getAttribute('data-zezms-release')==='v3.31.18-r70u',null,{timeout:12000});
+    await page.waitForFunction(()=>document.documentElement.getAttribute('data-zezms-release')==='v3.31.19-r70v-diagnostic',null,{timeout:12000});
     await page.locator('script[data-zezms-prelogin-verified-activation-r70u]').waitFor({state:'attached'});
     assert.equal(await page.locator('script[data-zezms-prelogin-verified-activation-r70u]').count(),1);
     assert.equal(await page.locator('#r70uCompleteVerifiedActivation').count(),0);

@@ -1,0 +1,20 @@
+# Approval-controlled Codex GitHub deployment
+
+This procedure is for a **future, exact, separately approved commit**. It grants no approval now. The read-only `scripts/approved-deployment-gate.cjs` checks input, remote `main`, changed-file set, and verification status; it never pushes or merges. Its `approvedByOwner` field must be set only from a real Owner instruction in the current authorized conversation. A JSON value alone is not approval.
+
+## Observed configuration and unknowns
+
+- Repository: `fmuniru-gif/tradeflow-zola`, public, default branch `main`; the review baseline is `3995a77a7d0873d77a3df4193231f73c9a03a84a`. Local Git uses Git Credential Manager. Review-branch pushes have worked, but permission to update `main` is **unproven**.
+- The installed GitHub connector returned HTTP 403 for branch-protection reads. Its rulesets read returned `[]`; this does not rule out classic branch protection. `gh` CLI is not installed. Do not weaken repository settings or switch credentials to get around a policy.
+- The repository has no `.github/workflows` files at this baseline. Public GitHub metadata reports Pages enabled, and `https://fmuniru-gif.github.io/tradeflow-zola/` served build `20261015-r70u-prelogin-verified-activation` during review. The Pages publishing source and build method are **not verified**; an authorized repository administrator must check Settings → Pages before deployment. Do not assume the source is `main` merely because root assets are served.
+
+## Exact gated sequence for Codex
+
+1. Develop on a dedicated branch from the verified remote `main`; run tests, syntax checks, release consistency, changed-file and forbidden-file review. Push only the review branch. Return its exact SHA, changed files, security/device impact and GO/NO-GO recommendation.
+2. Wait for an explicit Owner instruction approving **that SHA and release**. If the SHA changes, obtain approval for the new SHA. Record the approval in the task, not in a reusable file.
+3. Re-fetch `origin/main`, confirm it still equals the approved baseline, confirm the review branch still equals the approved SHA, rerun tests, inspect `git diff --name-status origin/main <approved-SHA>`, and run the read-only deployment gate with the approved SHA, baseline and exact file list. Stop on any mismatch.
+4. Check Pages source and branch protection using authorized GitHub read access. If Pages source cannot be confirmed, stop. If PR review is required, create/verify the exact PR and use its required checks and protected merge API. If protected merge is unavailable but a fast-forward main update is authorized, `git push origin <approved-SHA>:refs/heads/main` is acceptable **only** after the baseline check and explicit approval; never force push. Stop on 403, non-fast-forward or ruleset failure. Never silently retry under another credential.
+5. After a successful GitHub update, independently fetch `refs/heads/main`, confirm the published commit, wait for the configured Pages job, and fetch live `index.html`, `manifest.json`, `sw.js`, and `FORCE_UPDATE_MOBILE.html` with cache-busting requests. Confirm one release marker, expected assets, HTTP success, and service-worker cache rotation. Report the deployed SHA, URL and exact verification result. If the site is mixed/old, stop device-update instructions and investigate; do not clear device data.
+6. If rollback is separately approved, create a new reviewable revert commit of the exact release, verify its files and cache identifiers, then use the same approval and deployment gates. No reset, force push, SQL migration, browser-data clear or queue manipulation is part of rollback.
+
+The gate tests simulate absent approval, changed baseline/files, failed tests, and a failed or wrong-SHA GitHub mutation. They do **not** prove remote merge rights or Pages publishing configuration. A manual GitHub step remains necessary only if the authorized Codex credentials lack required rights or branch policies require human review; Codex must report that blocker rather than bypass it.

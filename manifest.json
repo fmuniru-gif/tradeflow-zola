@@ -1,8 +1,8 @@
 {
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
-  "description": "ZEZMS Owner Edition r70U verified pre-login activation hotfix. M4 protocol follows verified server capability.",
-  "start_url": "./index.html?build=20261015-r70u-prelogin-verified-activation",
+  "description": "ZEZMS Owner Edition r70V read-only bootstrap outbox diagnostic. M4 protocol follows verified server capability.",
+  "start_url": "./index.html?build=20261016-r70v-bootstrap-outbox-diagnostic",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
