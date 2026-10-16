@@ -61,4 +61,12 @@ test('authorization decision matrix includes revoked, healthy and owner-only cas
   assert.equal(allowed({...base,access:[]}),true);
   assert.equal(allowed({...base,registration:{business:'OTHER',user:'owner'},access:[]}),false);
   assert.equal(allowed({...base,uid:'outsider',access:[]}),false);
+  // Both production device_context and ops_push delegate to this resolver in
+  // the reviewed read-only function exports; these model checks are not live RPC calls.
+  for(const operation of ['device_context','ops_push']){
+    const invoke=identity=>allowed(identity);
+    assert.equal(invoke({...base,access:[{business:'B',user:'owner',status:'REVOKED'}]}),false,operation);
+    assert.equal(invoke({...base,access:[{business:'B',user:'owner',status:'ACTIVE',revokedAt:'now'}]}),false,operation);
+    assert.equal(invoke(base),true,operation);
+  }
 });
