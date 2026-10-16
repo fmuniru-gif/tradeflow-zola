@@ -790,7 +790,12 @@
     else if(lifecycle==='REVOKED')canonical='REVOKED';
     else if(['REPLACED','SUPERSEDED'].indexOf(lifecycle)>=0||full&&childOf(item))canonical='REPLACED';
     var terminal=['REPLACED','RETIRED','REVOKED','FAILED / EXPIRED'].indexOf(canonical)>=0;
-    var eligible=terminal?false:(full&&typeof item.authentication_eligible==='boolean'?item.authentication_eligible:null);
+    /* The server projection is advisory. An explicit access revocation wins
+       even if an older canonical RPC reports authentication_eligible=true. */
+    var accessRevoked=full&&(access==='REVOKED'||!!item.device_access_revoked_at);
+    if(accessRevoked&&lifecycle==='ACTIVE')canonical='ACCESS REVOKED';
+    var eligible=terminal||accessRevoked?false:(full&&typeof item.authentication_eligible==='boolean'?item.authentication_eligible:null);
+    if(accessRevoked)contradictions.push('The authoritative device-access record is revoked. Historical registration and server eligibility cannot restore operational access.');
     if(full&&terminal&&(access==='ACTIVE'||registration==='ACTIVE'||registration==='REGISTERED'))contradictions.push('Lifecycle '+canonical+' but legacy registration/access evidence remains '+(access==='ACTIVE'?'ACTIVE':registration||'present')+'. Operational access is denied.');
     if(full&&canonical==='ACTIVE'&&eligible!==true)contradictions.push('Lifecycle is ACTIVE but canonical access evidence does not permit operational authentication.');
     if(!full)contradictions.push('Canonical fleet read upgrade required; the legacy RPC does not provide lineage, registration, access or health evidence.');
@@ -810,7 +815,7 @@
       if(conflicts[item.lineageRoot]&&item.lifecycleState==='ACTIVE'){item.canonicalStatus='CONFLICTING ACTIVE';item.authenticationEligible=false;item.operationalAccess=false;item.contradictions=item.contradictions.concat(['More than one ACTIVE lifecycle exists in this authoritative replacement lineage. No convenience action is available.']);pending.push(item);return;}
       if(item.limitedEvidence){limited.push(item);return;}
       if(item.canonicalStatus==='ACTIVE'&&item.operationalAccess)active.push(item);
-      else if(['VERIFYING','AWAITING OWNER APPROVAL','ACTIVE'].indexOf(item.canonicalStatus)>=0)pending.push(item);
+      else if(['VERIFYING','AWAITING OWNER APPROVAL','ACTIVE','ACCESS REVOKED'].indexOf(item.canonicalStatus)>=0)pending.push(item);
       else history.push(item);
     });
     function sort(items){return items.sort(function(a,b){var byName=text(a.device_name||a.device_id).localeCompare(text(b.device_name||b.device_id));return byName||rank(b)-rank(a);});}

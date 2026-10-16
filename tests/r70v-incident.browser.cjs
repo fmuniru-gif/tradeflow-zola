@@ -181,7 +181,7 @@ test('Settings has one stable canonical control and legacy registration stays re
         calls++;
         if(name!=='zezms_m5a4_canonical_fleet_read')throw Error('unexpected RPC');
         return {data:[{
-          lifecycle_id:'lifecycle-old',device_id:'device-old',device_name:'Old Camon',enrollment_mode:'REPLACEMENT',lifecycle_state:'REVOKED',revision:2,replaces_lifecycle_id:null,replacement_lifecycle_id:'lifecycle-new',lifecycle_retired_at:null,lifecycle_revoked_at:'2026-10-01T00:00:00Z',last_seen_at:null,verified_cursor:42,queue_count:0,failed_count:0,app_version:'3.31.18',branch_id:'branch-1',branch_name:'Shop',branch_code:'S',device_access_status:'REVOKED',device_access_revoked_at:'2026-10-01T00:00:00Z',registered_device_status:'ACTIVE',registered_device_revoked_at:null,authentication_eligible:false
+          lifecycle_id:'lifecycle-old',device_id:'device-old',device_name:'Old Camon',enrollment_mode:'REPLACEMENT',lifecycle_state:'REVOKED',revision:2,replaces_lifecycle_id:null,replacement_lifecycle_id:'lifecycle-new',lifecycle_retired_at:null,lifecycle_revoked_at:'2026-10-01T00:00:00Z',last_seen_at:null,verified_cursor:42,queue_count:0,failed_count:0,app_version:'3.31.18',branch_id:'branch-1',branch_name:'Shop',branch_code:'S',device_access_status:'REVOKED',device_access_revoked_at:'2026-10-01T00:00:00Z',registered_device_status:'ACTIVE',registered_device_revoked_at:null,authentication_eligible:true
         }],error:null};
       }}});
       const first=viewSettings();
@@ -215,5 +215,43 @@ test('Settings has one stable canonical control and legacy registration stays re
     assert.equal(result.legacyCards,0);
     assert.equal(result.first.includes('Device Control Center'),true);
     assert.equal(result.second.includes('Device Control Center'),true);
+  }finally{await tab.close();}
+});
+
+test('ACTIVE lifecycle with revoked access is never operational despite owner registration or server eligibility',async()=>{
+  const tab=await page();
+  try{
+    const result=await tab.evaluate(async()=>{
+      const controller=ZEZMS.deviceControlPlaneR70P;
+      const original=ZEZMS.cloudSync.getOwnerManagementContext;
+      const originalState=ZEZMS.cloudSync.getState;
+      ZEZMS.cloudSync.getState=()=>Object.assign({},originalState(),{businessId:'business-1'});
+      const base={device_name:'Device',enrollment_mode:'ADD',lifecycle_state:'ACTIVE',revision:1,replaces_lifecycle_id:null,replacement_lifecycle_id:null,lifecycle_retired_at:null,lifecycle_revoked_at:null,last_seen_at:null,verified_cursor:42,queue_count:0,failed_count:0,app_version:'3.31.19',branch_id:'branch-1',branch_name:'Main',branch_code:'M',registered_device_status:'REGISTERED',registered_device_revoked_at:null,authentication_eligible:true};
+      const rows=[
+        Object.assign({},base,{lifecycle_id:'life-revoked-status',device_id:'device-revoked-status',device_name:'Revoked access',device_access_status:'REVOKED',device_access_revoked_at:null}),
+        Object.assign({},base,{lifecycle_id:'life-revoked-timestamp',device_id:'device-revoked-timestamp',device_name:'Revoked timestamp',device_access_status:'ACTIVE',device_access_revoked_at:'2026-10-01T00:00:00Z'}),
+        Object.assign({},base,{lifecycle_id:'life-healthy',device_id:'device-healthy',device_name:'Healthy device',device_access_status:'ACTIVE',device_access_revoked_at:null})
+      ];
+      ZEZMS.cloudSync.getOwnerManagementContext=()=>({ready:true,session:{user:{id:'owner-1'}},client:{rpc:async name=>{
+        if(name!=='zezms_m5a4_canonical_fleet_read')throw Error('unexpected RPC');
+        return {data:rows,error:null};
+      }}});
+      await controller.ensureFleetLoaded(true);
+      const projection=controller.getProjection();
+      const html=controller.settingsHtml();
+      ZEZMS.cloudSync.getOwnerManagementContext=original;
+      ZEZMS.cloudSync.getState=originalState;
+      return {active:projection.active.map(row=>row.device_id),pending:projection.pending.map(row=>({deviceId:row.device_id,status:row.canonicalStatus,eligible:row.authenticationEligible,operational:row.operationalAccess,contradictions:row.contradictions})),html};
+    });
+    assert.deepEqual(result.active,['device-healthy']);
+    assert.equal(result.pending.length,2);
+    result.pending.forEach(row=>{
+      assert.equal(row.status,'ACCESS REVOKED');
+      assert.equal(row.eligible,false);
+      assert.equal(row.operational,false);
+      assert.match(row.contradictions.join(' '),/cannot restore operational access/);
+    });
+    assert.match(result.html,/ACCESS REVOKED/);
+    assert.match(result.html,/Healthy device/);
   }finally{await tab.close();}
 });

@@ -38,8 +38,9 @@ test('production cloud, business and protocol modules remain unchanged',()=>{
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
     'js/managed-device-lifecycle-r61.js','js/prelogin-verified-activation-r70u.js','js/commercial-foundation.js',
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
-    'tests/r70v-incident.browser.cjs','tests/r70v-incident.test.cjs',
-    'docs/r70u-prelogin-activation.md','docs/r70u-test-report.md','docs/r70v-incident-review.md'
+    'tests/r70v-incident.browser.cjs','tests/r70v-incident.test.cjs','tests/r70v-security.test.cjs',
+    'docs/r70u-prelogin-activation.md','docs/r70u-test-report.md','docs/r70v-incident-review.md','docs/r70v-security-review.md',
+    'sql/REVIEW_ONLY_R70V_CANONICAL_FLEET_ACCESS.sql'
   ].includes(name)));
   const previous=execFileSync('git',['show','origin/main:index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
   for(const name of ['CLOUD_B64','VERIFIED_BASELINE_B64','INTEGRITY_B64','CONVERGENCE_B64']){
