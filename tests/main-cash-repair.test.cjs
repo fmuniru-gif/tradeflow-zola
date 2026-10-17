@@ -58,6 +58,31 @@ test('completed state is idempotent and cannot build another candidate',()=>{
   assert.equal(again.status,'ALREADY_REPAIRED');
   assert.throws(()=>core.candidate(f.local,again,{at:'later'}),/STOP_NOT_READY/);
 });
+test('audit stop names every failed check and shows only safe counts and cursors',()=>{
+  const f=fixture();
+  f.state.cursor=2;
+  f.report.unappliedCloudOperations.push({opId:'private-operation-id'});
+  f.report.unacknowledgedLocalOperations.push({opId:'private-queued-id'});
+  f.report.cloudProjectionConflicts.push({entityId:'private-record-id'});
+  assert.throws(()=>core.assess(f),error=>{
+    assert.match(error.message,/reasons=CURSOR_HEAD_MISMATCH,APPLIED_REGISTER_GAPS,UNACKNOWLEDGED_OUTBOX,CLOUD_REPLAY_CONFLICTS/);
+    assert.match(error.message,/localCursor=2; cloudHead=3; appliedRegisterGaps=1; unacknowledgedOutbox=1; cloudReplayConflicts=1/);
+    assert.doesNotMatch(error.message,/private-/);
+    return true;
+  });
+});
+test('missing audit arrays remain blocked with explicit invalid-audit reason',()=>{
+  const f=fixture();delete f.report.unappliedCloudOperations;
+  assert.throws(()=>core.assess(f),/STOP_AUDIT_STATE reasons=INVALID_AUDIT_VALUES/);
+});
+test('local queue stop shows queue and failed-operation counts without identifiers',()=>{
+  const f=fixture();f.queue=[{opId:'private-operation-id'}];f.failed=[{opId:'private-failed-id'}];
+  assert.throws(()=>core.assess(f),error=>{
+    assert.match(error.message,/STOP_LOCAL_SYNC_STATE queueCount=1; failedCount=1; interruptedApplyJournal=false/);
+    assert.doesNotMatch(error.message,/private-/);
+    return true;
+  });
+});
 for(const [name,change,reason] of [
   ['wrong device',f=>{f.state.deviceId='shop';},'MAIN_OWNER_IDENTITY'],
   ['paired session',f=>{f.state.deviceAccessMode='PAIRED';},'MAIN_OWNER_IDENTITY'],

@@ -45,6 +45,10 @@ async function setup(options={}){
   const f=fixture(),requests=[];
   if(options.wrongDevice){const state=JSON.parse(f.raw.zezms_cloud_sync_m4_state);
     state.deviceId='shop-synthetic';f.raw.zezms_cloud_sync_m4_state=JSON.stringify(state);}
+  if(options.cursorBehind){const state=JSON.parse(f.raw.zezms_cloud_sync_m4_state);
+    state.cursor=2;f.raw.zezms_cloud_sync_m4_state=JSON.stringify(state);}
+  if(options.appliedGap)f.raw.zezms_cloud_sync_m4_applied_v2=JSON.stringify({
+    [f.operations[0].op_id]:f.operations[0].seq,[f.operations[1].op_id]:f.operations[1].seq});
   if(options.alreadyDeducted){const db=JSON.parse(f.raw.tradeflow_v321_zola);
     db.cashBalances['Cash in Hand']=830;db.cashBalances.Others=430;
     f.raw.tradeflow_v321_zola=JSON.stringify(db);}
@@ -154,6 +158,23 @@ test('wrong device and cloud head drift stop before backup or local changes',asy
     const {tab,context,f,requests}=await setup(options);
     try{
       assert.match(await tab.locator('#status').textContent(),/STOP_/);
+      assert.equal(await tab.locator('#backup').isDisabled(),true);
+      assert.equal(await tab.locator('#repair').isDisabled(),true);
+      assert.equal(await tab.evaluate(()=>localStorage.getItem('tradeflow_v321_zola')),f.raw.tradeflow_v321_zola);
+      assert.ok(requests.every(x=>['GET','OPTIONS'].includes(x.method)));
+    }finally{await context.close();}
+  }
+});
+test('live-page preflight distinguishes cursor mismatch from applied-register gap without local writes',async()=>{
+  for(const [options,reason,metrics] of [
+    [{cursorBehind:true},'CURSOR_HEAD_MISMATCH','localCursor=2; cloudHead=3; appliedRegisterGaps=0'],
+    [{appliedGap:true},'APPLIED_REGISTER_GAPS','localCursor=3; cloudHead=3; appliedRegisterGaps=1']
+  ]){
+    const {tab,context,f,requests}=await setup(options);
+    try{
+      const message=await tab.locator('#status').textContent();
+      assert.match(message,new RegExp(reason));
+      assert.ok(message.includes(metrics));
       assert.equal(await tab.locator('#backup').isDisabled(),true);
       assert.equal(await tab.locator('#repair').isDisabled(),true);
       assert.equal(await tab.evaluate(()=>localStorage.getItem('tradeflow_v321_zola')),f.raw.tradeflow_v321_zola);

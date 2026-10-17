@@ -52,6 +52,27 @@
     if(typeof value!=='number'||!Number.isFinite(value))fail('INVALID_MONEY');
     return Math.round(value*100);
   }
+  function assertAuditState(state,bundle,report) {
+    const localCursor=Number(state.cursor),cloudHead=Number(bundle?.headSeq);
+    const count=value=>Array.isArray(value)?value.length:null;
+    const appliedRegisterGaps=count(report?.unappliedCloudOperations);
+    const unacknowledgedOutbox=count(report?.unacknowledgedLocalOperations);
+    const cloudReplayConflicts=count(report?.cloudProjectionConflicts);
+    const reasons=[];
+    if(!Number.isSafeInteger(localCursor)||localCursor<0||
+       !Number.isSafeInteger(cloudHead)||cloudHead<0||
+       appliedRegisterGaps===null||unacknowledgedOutbox===null||cloudReplayConflicts===null)
+      reasons.push('INVALID_AUDIT_VALUES');
+    if(localCursor!==cloudHead)reasons.push('CURSOR_HEAD_MISMATCH');
+    if(appliedRegisterGaps>0)reasons.push('APPLIED_REGISTER_GAPS');
+    if(unacknowledgedOutbox>0)reasons.push('UNACKNOWLEDGED_OUTBOX');
+    if(cloudReplayConflicts>0)reasons.push('CLOUD_REPLAY_CONFLICTS');
+    if(reasons.length)fail('AUDIT_STATE reasons='+reasons.join(',')+
+      '; localCursor='+localCursor+'; cloudHead='+cloudHead+
+      '; appliedRegisterGaps='+appliedRegisterGaps+
+      '; unacknowledgedOutbox='+unacknowledgedOutbox+
+      '; cloudReplayConflicts='+cloudReplayConflicts);
+  }
   function assertOperationEvidence(bundle,records) {
     const rows=bundle.operations||[];
     const ids=new Set();let last=Number(bundle.baselineCursor);
@@ -87,11 +108,11 @@
     if(!local||!cloud||!state||state.deviceId!==MAIN||state.deviceAccessMode!=='OWNER'||
       state.initialized!==true||!Number.isSafeInteger(Number(state.cursor))||
       !ownerId||(state.syncOwnerId&&String(state.syncOwnerId)!==String(ownerId)))fail('MAIN_OWNER_IDENTITY');
-    if(!Array.isArray(queue)||queue.length||!Array.isArray(failed)||failed.length||applyJournal)
-      fail('LOCAL_SYNC_STATE');
-    if(Number(state.cursor)!==Number(bundle.headSeq)||!report||
-      (report.unappliedCloudOperations||[]).length||(report.unacknowledgedLocalOperations||[]).length||
-      (report.cloudProjectionConflicts||[]).length)fail('AUDIT_STATE');
+    if(!Array.isArray(queue)||!Array.isArray(failed)||queue.length||failed.length||applyJournal)
+      fail('LOCAL_SYNC_STATE queueCount='+(Array.isArray(queue)?queue.length:'unavailable')+
+        '; failedCount='+(Array.isArray(failed)?failed.length:'unavailable')+
+        '; interruptedApplyJournal='+Boolean(applyJournal));
+    assertAuditState(state,bundle,report);
     const records={cashLog:{},expenses:{}};
     for(const item of CASH){
       const row=exactlyOne(cloud,'cashLog',item.id);
