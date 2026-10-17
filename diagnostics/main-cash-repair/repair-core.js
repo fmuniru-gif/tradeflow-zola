@@ -13,6 +13,16 @@
   ]);
   const EXPENSE = 'EXP-20261015-113005-658-4F25DF798ADA47048395FE1C9E6B1969';
   const EXPECTED_MISSING = new Set(CASH.map(x=>'cashLog/'+x.id).concat('expenses/'+EXPENSE));
+  // Exact M4 snapshot exclusions and indexed collections from js/cloud-sync.js.
+  const LOCAL_ONLY_ROOTS = new Set(['backupHistory','backupSettings','syncSettings','syncMeta',
+    'syncRejectedTransactions','syncReconciliationLog']);
+  const SYNC_COLLECTIONS = new Set([
+    'products','customers','customerFollowups','salesOpportunities','quotations',
+    'stockRows','stockCorrections','warranties','warrantyClaims','debtors','creditors','depositors',
+    'sales','receipts','invoices','waybills','purchaseOrders','saleLines','accountTxns','cashLog',
+    'expenses','inventoryTxns','undoLog','debtorsMonthly','creditorsMonthly','depositorsMonthly',
+    'kpiHistory','monthRollovers'
+  ]);
   const clone=x=>JSON.parse(JSON.stringify(x));
   function fail(code) { throw Error('STOP_'+code); }
   function canonicalize(value) {
@@ -52,6 +62,38 @@
     if(typeof value!=='number'||!Number.isFinite(value))fail('INVALID_MONEY');
     return Math.round(value*100);
   }
+  function entityKey(item) {
+    if(!item||typeof item!=='object')return '';
+    return String(item.id||item.followupId||item.opportunityId||item.quotationId||item.correctionId||
+      item.warrantyId||item.claimId||item.customerId||item.receiptNo||item._syncId||'');
+  }
+  function businessState(database) {
+    if(!database||typeof database!=='object'||Array.isArray(database))fail('BUSINESS_STATE_SHAPE');
+    const result={};
+    for(const root of Object.keys(database).sort()){
+      if(LOCAL_ONLY_ROOTS.has(root))continue;
+      const value=database[root];
+      if(!SYNC_COLLECTIONS.has(root)){result[root]=value;continue;}
+      if(!Array.isArray(value))fail('BUSINESS_COLLECTION_SHAPE category='+root);
+      const rows=new Map();
+      for(const row of value){
+        const key=entityKey(row);
+        if(!key||rows.has(key))fail('BUSINESS_COLLECTION_IDENTITY category='+root);
+        rows.set(key,row);
+      }
+      result[root]=[...rows].sort((a,b)=>a[0].localeCompare(b[0]));
+    }
+    return result;
+  }
+  function assertBusinessStateMatch(local,cloud) {
+    const left=businessState(local),right=businessState(cloud);
+    const categories=[...new Set([...Object.keys(left),...Object.keys(right)])].sort()
+      .filter(root=>stable(left[root])!==stable(right[root]))
+      .map(root=>(SYNC_COLLECTIONS.has(root)?'collection:':'root:')+root);
+    if(categories.length)fail('BUSINESS_STATE_DIFF categoryCount='+categories.length+
+      '; categories='+categories.slice(0,12).join(',')+(categories.length>12?',more':''));
+    return true;
+  }
   function assertAuditState(state,bundle,report) {
     const localCursor=Number(state.cursor),cloudHead=Number(bundle?.headSeq);
     const count=value=>Array.isArray(value)?value.length:null;
@@ -61,10 +103,10 @@
     const reasons=[];
     if(!Number.isSafeInteger(localCursor)||localCursor<0||
        !Number.isSafeInteger(cloudHead)||cloudHead<0||
-       appliedRegisterGaps===null||unacknowledgedOutbox===null||cloudReplayConflicts===null)
+       appliedRegisterGaps===null||unacknowledgedOutbox===null||cloudReplayConflicts===null||
+       !Array.isArray(report?.differences))
       reasons.push('INVALID_AUDIT_VALUES');
     if(localCursor!==cloudHead)reasons.push('CURSOR_HEAD_MISMATCH');
-    if(appliedRegisterGaps>0)reasons.push('APPLIED_REGISTER_GAPS');
     if(unacknowledgedOutbox>0)reasons.push('UNACKNOWLEDGED_OUTBOX');
     if(cloudReplayConflicts>0)reasons.push('CLOUD_REPLAY_CONFLICTS');
     if(reasons.length)fail('AUDIT_STATE reasons='+reasons.join(',')+
@@ -72,6 +114,7 @@
       '; appliedRegisterGaps='+appliedRegisterGaps+
       '; unacknowledgedOutbox='+unacknowledgedOutbox+
       '; cloudReplayConflicts='+cloudReplayConflicts);
+    return appliedRegisterGaps;
   }
   function assertOperationEvidence(bundle,records) {
     const rows=bundle.operations||[];
@@ -112,7 +155,7 @@
       fail('LOCAL_SYNC_STATE queueCount='+(Array.isArray(queue)?queue.length:'unavailable')+
         '; failedCount='+(Array.isArray(failed)?failed.length:'unavailable')+
         '; interruptedApplyJournal='+Boolean(applyJournal));
-    assertAuditState(state,bundle,report);
+    const appliedRegisterGaps=assertAuditState(state,bundle,report);
     const records={cashLog:{},expenses:{}};
     for(const item of CASH){
       const row=exactlyOne(cloud,'cashLog',item.id);
@@ -139,10 +182,16 @@
     }
     const differences=(report.differences||[]).map(d=>d.category+'/'+d.collection+'/'+d.id);
     const expected=[...EXPECTED_MISSING].map(x=>'Missing Locally/'+x).sort();
-    if(already){if(differences.length)fail('POST_RECORD_DIFFERENCE');}
-    else if(stable(differences.sort())!==stable(expected))fail('UNEXPECTED_RECORD_DIFFERENCE');
+    const differenceCategories=()=>[...new Set(report.differences.map(d=>
+      String(d.category||'Unknown')+':'+String(d.collection||'Unknown')))].sort().join(',');
+    if(already){if(differences.length)fail('POST_RECORD_DIFFERENCE categories='+differenceCategories());}
+    else if(stable(differences.sort())!==stable(expected))
+      fail('UNEXPECTED_RECORD_DIFFERENCE categories='+differenceCategories()+
+        '; differenceCount='+differences.length);
     const localWallets=local.cashBalances,cloudWallets=cloud.cashBalances;
-    if(!localWallets||!cloudWallets||stable(Object.keys(localWallets).sort())!==stable(Object.keys(cloudWallets).sort()))
+    if(!localWallets||!cloudWallets||
+      ['Cash in Hand','Others'].some(wallet=>!Object.hasOwn(localWallets,wallet)||!Object.hasOwn(cloudWallets,wallet))||
+      stable(Object.keys(localWallets).sort())!==stable(Object.keys(cloudWallets).sort()))
       fail('WALLET_SET');
     const balances=[];
     for(const wallet of Object.keys(cloudWallets)){
@@ -151,8 +200,17 @@
       if(already ? delta!==0 : delta!==0&&delta!==allowed)fail('WALLET_DELTA_'+wallet);
       balances.push({wallet,before:before/100,cloud:target/100,difference:delta/100});
     }
+    const virtual=clone(local);
+    if(!already){
+      for(const item of CASH)virtual.cashLog.push(clone(records.cashLog[item.id]));
+      virtual.expenses.push(clone(records.expenses[EXPENSE]));
+      virtual.cashBalances['Cash in Hand']=cloudWallets['Cash in Hand'];
+      virtual.cashBalances.Others=cloudWallets.Others;
+    }
+    assertBusinessStateMatch(virtual,cloud);
     return {status:already?'ALREADY_REPAIRED':'READY',records,operations,balances,
-      headSeq:Number(bundle.headSeq),deviceId:MAIN,recordIds:[...EXPECTED_MISSING].sort()};
+      appliedRegisterGaps,headSeq:Number(bundle.headSeq),deviceId:MAIN,
+      recordIds:[...EXPECTED_MISSING].sort()};
   }
   function candidate(local,plan,audit) {
     if(plan.status!=='READY')fail('NOT_READY');
@@ -182,5 +240,7 @@
     if(stable(restored)!==stable(local))fail('CANDIDATE_OTHER_DATA');
     return true;
   }
-  return Object.freeze({MAIN,CASH,EXPENSE,operationHash,stable,assess,candidate,assertOnlyExpectedChanges});
+  return Object.freeze({MAIN,CASH,EXPENSE,operationHash,stable,assess,candidate,
+    assertOnlyExpectedChanges,assertBusinessStateMatch,
+    syncScope:Object.freeze({collections:[...SYNC_COLLECTIONS],localOnlyRoots:[...LOCAL_ONLY_ROOTS]})});
 });

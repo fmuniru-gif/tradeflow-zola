@@ -52,6 +52,8 @@ async function setup(options={}){
   if(options.alreadyDeducted){const db=JSON.parse(f.raw.tradeflow_v321_zola);
     db.cashBalances['Cash in Hand']=830;db.cashBalances.Others=430;
     f.raw.tradeflow_v321_zola=JSON.stringify(db);}
+  if(options.unrelatedRoot){const db=JSON.parse(f.raw.tradeflow_v321_zola);
+    db.settings={unrelated:'local'};f.raw.tradeflow_v321_zola=JSON.stringify(db);}
   await tab.addInitScript(({raw,origin,pickerFailure})=>{
     if(location.origin!==origin)return;
     if(!sessionStorage.getItem('synthetic-seeded')){
@@ -69,6 +71,7 @@ async function setup(options={}){
         getFile:async()=>({text:async()=>saved})};
     };
   },{raw:f.raw,origin,pickerFailure:!!options.pickerFailure});
+  let headReads=0;
   await tab.route('**/*',async route=>{
     const url=new URL(route.request().url());
     if(url.origin===origin){
@@ -88,7 +91,10 @@ async function setup(options={}){
       if(url.pathname==='/auth/v1/user')result={id:'owner-1',is_anonymous:false,app_metadata:{provider:'email'}};
       else if(url.pathname==='/rest/v1/zezms_sync_state')result=[f.master];
       else if(url.pathname==='/rest/v1/zezms_sync_operations'){
-        if(url.searchParams.get('select')==='seq')result=[{seq:options.headDrift?4:3}];
+        if(url.searchParams.get('select')==='seq'){
+          headReads++;
+          result=[{seq:options.headDrift||options.changeHeadAfterConfirm&&headReads>=5?4:3}];
+        }
         else result=f.operations.filter(o=>o.seq>Number((url.searchParams.get('seq')||'gt.0').slice(3)));
       }else{await route.fulfill({status:404,body:'Unknown cloud read'});return;}
       await route.fulfill({status:200,contentType:'application/json',
@@ -97,14 +103,15 @@ async function setup(options={}){
     requests.push({method:route.request().method(),pathname:url.pathname});
     await route.abort();
   });
-  await tab.goto(origin+'/tradeflow-zola/diagnostics/main-cash-repair/'+(options.versionedEntry?'preflight-r2.html':''));
+  await tab.goto(origin+'/tradeflow-zola/diagnostics/main-cash-repair/'+(options.versionedEntry?'preflight-r3.html':''));
   await tab.waitForFunction(()=>!document.getElementById('status').textContent.includes('Running read-only'));
   return {tab,context,f,requests};
 }
-test('real projection module and Main-only screen repair four records with verified backup and no cloud write',async()=>{
-  const {tab,context,f,requests}=await setup();
+test('real projection module repairs four records with register gaps unchanged and no cloud write',async()=>{
+  const {tab,context,f,requests}=await setup({appliedGap:true});
   try{
     assert.match(await tab.locator('#status').textContent(),/Read-only preflight passed/);
+    assert.match(await tab.locator('#status').textContent(),/Applied-register gaps: 1/);
     assert.equal(await tab.locator('#repair').isDisabled(),true);
     await tab.locator('#passphrase').fill('synthetic-long-backup-passphrase');
     await tab.locator('#backup').click();
@@ -114,6 +121,7 @@ test('real projection module and Main-only screen repair four records with verif
     await tab.waitForFunction(()=>document.getElementById('status').textContent.startsWith('PASS:'));
     const result=await tab.evaluate(()=>({db:JSON.parse(localStorage.getItem('tradeflow_v321_zola')),
       queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),
+      applied:localStorage.getItem('zezms_cloud_sync_m4_applied_v2'),
       confirmationCount:window.__confirmationCount,backup:window.__savedBackup()}));
     assert.equal(result.db.cashLog.length,3);
     assert.equal(result.db.expenses.length,1);
@@ -121,6 +129,7 @@ test('real projection module and Main-only screen repair four records with verif
     assert.equal(result.db.cashBalances.Others,430);
     assert.equal(result.db.syncReconciliationLog.length,1);
     assert.equal(result.queue,f.raw.zezms_cloud_sync_m4_queue);
+    assert.equal(result.applied,f.raw.zezms_cloud_sync_m4_applied_v2);
     assert.equal(result.confirmationCount,1);
     assert.equal(result.backup.includes('synthetic-long-backup-passphrase'),false);
     assert.equal(decrypt(result.backup,'synthetic-long-backup-passphrase').raw.tradeflow_v321_zola,
@@ -165,20 +174,31 @@ test('wrong device and cloud head drift stop before backup or local changes',asy
     }finally{await context.close();}
   }
 });
-test('live-page preflight distinguishes cursor mismatch from applied-register gap without local writes',async()=>{
-  for(const [options,reason,metrics] of [
-    [{cursorBehind:true,versionedEntry:true},'CURSOR_HEAD_MISMATCH','localCursor=2; cloudHead=3; appliedRegisterGaps=0'],
-    [{appliedGap:true},'APPLIED_REGISTER_GAPS','localCursor=3; cloudHead=3; appliedRegisterGaps=1']
+test('cursor mismatch and unrelated root difference still block with exact categories',async()=>{
+  for(const [options,reason] of [
+    [{cursorBehind:true,versionedEntry:true},'CURSOR_HEAD_MISMATCH'],
+    [{appliedGap:true,unrelatedRoot:true},'BUSINESS_STATE_DIFF categoryCount=1; categories=root:settings']
   ]){
     const {tab,context,f,requests}=await setup(options);
     try{
-      const message=await tab.locator('#status').textContent();
-      assert.match(message,new RegExp(reason));
-      assert.ok(message.includes(metrics));
+      assert.ok((await tab.locator('#status').textContent()).includes(reason));
       assert.equal(await tab.locator('#backup').isDisabled(),true);
       assert.equal(await tab.locator('#repair').isDisabled(),true);
       assert.equal(await tab.evaluate(()=>localStorage.getItem('tradeflow_v321_zola')),f.raw.tradeflow_v321_zola);
       assert.ok(requests.every(x=>['GET','OPTIONS'].includes(x.method)));
     }finally{await context.close();}
   }
+});
+test('cloud head change after confirmation prevents the Main database write',async()=>{
+  const {tab,context,f,requests}=await setup({appliedGap:true,changeHeadAfterConfirm:true});
+  try{
+    await tab.locator('#passphrase').fill('synthetic-long-backup-passphrase');
+    await tab.locator('#backup').click();
+    await tab.waitForFunction(()=>document.getElementById('status').textContent.includes('backup saved'));
+    await tab.locator('#repair').click();
+    await tab.waitForFunction(()=>document.getElementById('status').textContent.startsWith('NO_CHANGE:'));
+    assert.match(await tab.locator('#status').textContent(),/HEAD_OR_LOCAL_CHANGED_BEFORE_COMMIT/);
+    assert.equal(await tab.evaluate(()=>localStorage.getItem('tradeflow_v321_zola')),f.raw.tradeflow_v321_zola);
+    assert.ok(requests.every(x=>['GET','OPTIONS'].includes(x.method)));
+  }finally{await context.close();}
 });

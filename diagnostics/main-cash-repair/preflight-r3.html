@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://ruadyqcsutfprrxdaahi.supabase.co; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TradeFlow Main cash repair — review candidate</title>
+<link rel="stylesheet" href="style.css">
+<main>
+  <h1>Main cash reconciliation — review candidate</h1>
+  <p>This page is for the named Main device only. It reads the current cloud projection and restores exactly three cash-log records, one linked expense, and two wallet values after a verified safety backup. It never uploads a business operation.</p>
+  <p><strong>Before use:</strong> close every other TradeFlow tab on Main. Do not use this page on Shop, Camon 50 Pro or Camon 17P.</p>
+  <p id="status" role="status">Running read-only preflight…</p>
+  <section id="preview" hidden><h2>Exact cloud record and balance preview</h2><pre id="details"></pre></section>
+  <section><h2>Verified safety backup</h2>
+    <label>Backup passphrase (at least 20 characters)<input id="passphrase" type="password" autocomplete="new-password"></label>
+    <button id="backup" type="button" disabled>Save and verify encrypted full backup</button>
+  </section>
+  <button id="repair" type="button" disabled>Confirm Main-only repair</button>
+</main>
+<script src="../../js/sync-integrity-v3161.js"></script>
+<script src="repair-core-r3.js"></script>
+<script src="repair-r3.js"></script>
+</html>

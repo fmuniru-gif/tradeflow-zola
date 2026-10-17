@@ -111,13 +111,16 @@
   function show(result){
     const plan=result.plan;
     details.textContent=JSON.stringify({deviceId:plan.deviceId,cloudHead:plan.headSeq,
+      appliedRegisterGaps:plan.appliedRegisterGaps,businessStateMatch:true,
       wallets:plan.balances.filter(x=>x.wallet==='Cash in Hand'||x.wallet==='Others'),
       sourceOperations:plan.operations,exactCloudRecords:plan.records},null,2);
     preview.hidden=false;
     backupButton.disabled=plan.status!=='READY';
     repairButton.disabled=plan.status!=='READY'||!verifiedBackup;
-    setStatus(plan.status==='ALREADY_REPAIRED'?'Already repaired: cloud records and wallet balances match. No write is needed.':
-      'Read-only preflight passed. Review the four exact cloud records, then save and verify the full backup.');
+    const warning=plan.appliedRegisterGaps?' Applied-register gaps: '+plan.appliedRegisterGaps+
+      '; preserved unchanged after complete business-state comparison.':'';
+    setStatus(plan.status==='ALREADY_REPAIRED'?'Already repaired: complete synchronized business state matches the cloud. No write is needed.'+warning:
+      'Read-only preflight passed: only the four records and permitted wallet values differ. Review the exact cloud records, then save and verify the full backup.'+warning);
   }
   async function automatic(){
     busy=true;backupButton.disabled=true;repairButton.disabled=true;
@@ -186,7 +189,9 @@
         backupSha256:verifiedBackup.sha256,beforeSha256:verifiedBackup.beforeSha256});
       core.assertOnlyExpectedChanges(fresh.local.db,next,fresh.plan);
       const precheck=projector.compareDatabases(next,fresh.cloud,fresh.bundle);
-      if(precheck.differences.length||precheck.unappliedCloudOperations.length||
+      core.assertBusinessStateMatch(next,fresh.cloud);
+      if(precheck.differences.length||
+        precheck.unappliedCloudOperations.length!==fresh.plan.appliedRegisterGaps||
         Object.keys(fresh.cloud.cashBalances).some(w=>Number(next.cashBalances[w])!==Number(fresh.cloud.cashBalances[w])))
         stop('CANDIDATE_POST_COMPARE');
       if(core.stable(readRaw())!==core.stable(verifiedBackup.raw))stop('LOCAL_CHANGED_AT_COMMIT');
@@ -194,10 +199,11 @@
       if(localStorage.getItem(DB_KEY)!==JSON.stringify(next))stop('DATABASE_READBACK');
       const post=await gather();
       if(post.plan.status!=='ALREADY_REPAIRED'||post.report.differences.length||
+        post.plan.appliedRegisterGaps!==fresh.plan.appliedRegisterGaps||
         post.plan.balances.some(x=>x.difference!==0)||
         KEYS.slice(1).some(key=>post.local.raw[key]!==verifiedBackup.raw[key]))stop('POST_COMPARE');
       current=post;verifiedBackup=null;show(post);
-      setStatus('PASS: Main matches the current cloud projection for all compared records and cash balances. No operation was queued. Keep the encrypted backup.');
+      setStatus('PASS: Main matches the complete synchronized cloud business state. No operation was queued. Applied-register gaps '+post.plan.appliedRegisterGaps+' were preserved unchanged. Keep the encrypted backup.');
     }catch(error){setStatus((committed?'REPAIR_SAVED_POSTCHECK_STOP: ':'NO_CHANGE: ')+(error.message||String(error)));
       verifiedBackup=null;
       if(committed)current=null;}

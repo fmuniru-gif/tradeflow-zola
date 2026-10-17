@@ -1,7 +1,17 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const core=require('../diagnostics/main-cash-repair/repair-core.js');
 const copy=x=>JSON.parse(JSON.stringify(x));
+test('complete-state scope matches M4 indexed collections and local-only roots',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../js/cloud-sync.js'),'utf8');
+  const names=block=>[...block.matchAll(/'([^']+)'/g)].map(match=>match[1]).sort();
+  const collections=source.match(/const COLLECTIONS = \[([\s\S]*?)\];/)[1];
+  const localOnly=source.match(/const LOCAL_ONLY_ROOTS = new Set\(\[([\s\S]*?)\]\);/)[1];
+  assert.deepEqual([...core.syncScope.collections].sort(),names(collections));
+  assert.deepEqual([...core.syncScope.localOnlyRoots].sort(),names(localOnly));
+});
 function fixture(){
   const [personal,cash100,cash70]=core.CASH;
   const logs=[
@@ -50,6 +60,42 @@ test('wallet already reflects cloud: records restore without a second deduction'
   assert.equal(next.cashBalances.Others,430);
   assert.ok(plan.balances.every(x=>x.difference===0));
 });
+test('1028 historical register gaps become a warning only with complete business-state proof',()=>{
+  const f=fixture();f.report.unappliedCloudOperations=Array.from({length:1028},(_,i)=>({seq:i+1}));
+  const plan=core.assess(f);
+  assert.equal(plan.status,'READY');
+  assert.equal(plan.appliedRegisterGaps,1028);
+  const next=core.candidate(f.local,plan,{at:'now',backupSha256:'b',beforeSha256:'a'});
+  assert.equal(core.assertBusinessStateMatch(next,f.cloud),true);
+  f.local=next;f.report.differences=[];
+  assert.equal(core.assess(f).status,'ALREADY_REPAIRED');
+  assert.equal(core.assess(f).appliedRegisterGaps,1028);
+});
+test('complete state check rejects unrelated root and M4 collection differences',()=>{
+  for(const [root,value,category] of [
+    ['settings',{unexpected:'local'},'root:settings'],
+    ['kpiHistory',[{id:'local-only',amount:1}],'collection:kpiHistory']
+  ]){
+    const f=fixture();f.local[root]=value;
+    f.report.unappliedCloudOperations=[{seq:1}];
+    assert.throws(()=>core.assess(f),new RegExp('STOP_BUSINESS_STATE_DIFF.*'+category));
+  }
+});
+test('complete state check ignores only declared local-only roots',()=>{
+  const f=fixture();f.local.syncReconciliationLog=[{localAudit:'kept'}];
+  f.local.backupHistory=[{localBackup:'kept'}];
+  assert.equal(core.assess(f).status,'READY');
+});
+test('unexpected indexed differences report safe collection categories',()=>{
+  const f=fixture();f.report.unappliedCloudOperations=[{seq:1}];
+  f.report.differences.push({category:'Payload Mismatch',collection:'sales',id:'private-sale-id'});
+  assert.throws(()=>core.assess(f),error=>{
+    assert.match(error.message,/STOP_UNEXPECTED_RECORD_DIFFERENCE categories=/);
+    assert.match(error.message,/Payload Mismatch:sales/);
+    assert.doesNotMatch(error.message,/private-sale-id/);
+    return true;
+  });
+});
 test('completed state is idempotent and cannot build another candidate',()=>{
   const f=fixture();const plan=core.assess(f);
   f.local=core.candidate(f.local,plan,{at:'now',backupSha256:'b',beforeSha256:'a'});
@@ -65,7 +111,7 @@ test('audit stop names every failed check and shows only safe counts and cursors
   f.report.unacknowledgedLocalOperations.push({opId:'private-queued-id'});
   f.report.cloudProjectionConflicts.push({entityId:'private-record-id'});
   assert.throws(()=>core.assess(f),error=>{
-    assert.match(error.message,/reasons=CURSOR_HEAD_MISMATCH,APPLIED_REGISTER_GAPS,UNACKNOWLEDGED_OUTBOX,CLOUD_REPLAY_CONFLICTS/);
+    assert.match(error.message,/reasons=CURSOR_HEAD_MISMATCH,UNACKNOWLEDGED_OUTBOX,CLOUD_REPLAY_CONFLICTS/);
     assert.match(error.message,/localCursor=2; cloudHead=3; appliedRegisterGaps=1; unacknowledgedOutbox=1; cloudReplayConflicts=1/);
     assert.doesNotMatch(error.message,/private-/);
     return true;
@@ -98,6 +144,6 @@ for(const [name,change,reason] of [
   ['partial cash effect',f=>{f.local.cashBalances['Cash in Hand']=900;},'WALLET_DELTA'],
   ['other wallet drift',f=>{f.local.cashBalances.MOMO=201;},'WALLET_DELTA'],
   ['unexpected audit difference',f=>{f.report.differences.push({category:'Missing Locally',collection:'sales',id:'s'});},'UNEXPECTED_RECORD_DIFFERENCE'],
-  ['unapplied operation',f=>{f.report.unappliedCloudOperations.push({opId:'other'});},'AUDIT_STATE'],
+  ['duplicate financial effect',f=>{f.local.cashBalances['Cash in Hand']=660;},'WALLET_DELTA'],
   ['stale cursor',f=>{f.state.cursor=2;},'AUDIT_STATE']
 ])test('fail closed: '+name,()=>{const f=fixture();change(f);assert.throws(()=>core.assess(f),new RegExp('STOP_'+reason));});
