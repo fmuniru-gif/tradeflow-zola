@@ -40,7 +40,10 @@ test('production cloud, business and protocol modules remain unchanged',()=>{
     'js/prelogin-verified-activation-r70u.js',
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
     'tests/r70v-diagnostic.browser.cjs','tests/approved-deployment-gate.test.cjs',
-    'scripts/approved-deployment-gate.cjs','docs/r70v-diagnostic-runbook.md','docs/approved-github-deployment.md'
+    'scripts/approved-deployment-gate.cjs','docs/r70v-diagnostic-runbook.md','docs/approved-github-deployment.md',
+    'diagnostics/financial-audit/index.html','diagnostics/financial-audit/style.css',
+    'diagnostics/financial-audit/capture.js','tools/financial-audit/analyze.cjs',
+    'tests/financial-audit.browser.cjs','docs/financial-cash-divergence-audit.md'
   ].includes(name)));
   const previous=execFileSync('git',['show','origin/main:index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
   const embedded=[...previous.matchAll(/const ([A-Z0-9_]+_B64)="([^"]+)";/g)].map(match=>match[1]);

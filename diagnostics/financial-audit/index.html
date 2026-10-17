@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TradeFlow read-only financial evidence</title>
+<link rel="stylesheet" href="style.css">
+<main>
+  <h1>Read-only financial evidence</h1>
+  <p>This separate page reads this browser's existing TradeFlow database and sync records. It does not load the business app or contact Supabase. The downloaded file is encrypted; keep its passphrase separately.</p>
+  <label>Evidence passphrase (20 or more characters)<input id="passphrase" type="password" autocomplete="new-password"></label>
+  <button id="capture" type="button">Download encrypted snapshot</button>
+  <p id="status" role="status">Ready. Close other TradeFlow tabs to obtain a stable snapshot.</p>
+</main>
+<script src="capture.js"></script>
+</html>
