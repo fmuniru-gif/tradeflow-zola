@@ -45,7 +45,8 @@ test('production cloud, business and protocol modules remain unchanged',()=>{
     'diagnostics/financial-audit/capture.js','tools/financial-audit/analyze.cjs',
     'tests/financial-audit.browser.cjs','docs/financial-cash-divergence-audit.md',
     'diagnostics/main-cash-repair/index.html','diagnostics/main-cash-repair/style.css',
-    'diagnostics/main-cash-repair/repair-core.js','diagnostics/main-cash-repair/repair.js',
+    'diagnostics/main-cash-repair/repair-core.js','diagnostics/main-cash-repair/repair-core-r2.js',
+    'diagnostics/main-cash-repair/preflight-r2.html','diagnostics/main-cash-repair/repair.js',
     'tests/main-cash-repair.test.cjs','tests/main-cash-repair.browser.cjs',
     'docs/main-cash-repair.md','tools/main-cash-repair/verify-backup.cjs'
   ].includes(name)));

@@ -97,7 +97,7 @@ async function setup(options={}){
     requests.push({method:route.request().method(),pathname:url.pathname});
     await route.abort();
   });
-  await tab.goto(origin+'/tradeflow-zola/diagnostics/main-cash-repair/');
+  await tab.goto(origin+'/tradeflow-zola/diagnostics/main-cash-repair/'+(options.versionedEntry?'preflight-r2.html':''));
   await tab.waitForFunction(()=>!document.getElementById('status').textContent.includes('Running read-only'));
   return {tab,context,f,requests};
 }
@@ -167,7 +167,7 @@ test('wrong device and cloud head drift stop before backup or local changes',asy
 });
 test('live-page preflight distinguishes cursor mismatch from applied-register gap without local writes',async()=>{
   for(const [options,reason,metrics] of [
-    [{cursorBehind:true},'CURSOR_HEAD_MISMATCH','localCursor=2; cloudHead=3; appliedRegisterGaps=0'],
+    [{cursorBehind:true,versionedEntry:true},'CURSOR_HEAD_MISMATCH','localCursor=2; cloudHead=3; appliedRegisterGaps=0'],
     [{appliedGap:true},'APPLIED_REGISTER_GAPS','localCursor=3; cloudHead=3; appliedRegisterGaps=1']
   ]){
     const {tab,context,f,requests}=await setup(options);

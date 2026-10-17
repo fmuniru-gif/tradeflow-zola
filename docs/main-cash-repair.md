@@ -25,7 +25,7 @@ The app must be closed in all other Main tabs during this procedure. A storage e
 ## Owner procedure after separate deployment approval
 
 1. On Main's existing Chrome profile, ensure the genuine Owner cloud session is signed in. Close **all** TradeFlow app tabs and avoid transactions on Main during the brief repair. Keep Shop and Camon 50 Pro operating normally; do not use Camon 17P.
-2. Open the separately published `https://fmuniru-gif.github.io/tradeflow-zola/diagnostics/main-cash-repair/`. Wait for the automatic read-only preflight. **STOP** on any code beginning `STOP_` or `NO_CHANGE:`. Do not use developer tools or retry with another device.
+2. Open `https://fmuniru-gif.github.io/tradeflow-zola/diagnostics/main-cash-repair/preflight-r2.html`. This distinct path avoids the existing service worker's cache of the older diagnostic page and script. Wait for the automatic read-only preflight. **STOP** on any code beginning `STOP_` or `NO_CHANGE:`. Do not use developer tools or retry with another device.
 3. Review all four exact cloud payloads, source operation IDs and the current cloud/local wallet values shown on the screen. Enter a new 20+ character backup passphrase, save the encrypted backup to a safe file location and wait for its readback-verification message. Keep the passphrase separately. Copy the encrypted file to a second storage location after the operation.
 4. Select **Confirm Main-only repair** and accept its single confirmation. Wait for `PASS: Main matches the current cloud projection…`. Keep the backup and the displayed audit details. If the page reports a postcheck stop, leave Main's app closed and obtain review of the saved backup and local state before any further action.
 
