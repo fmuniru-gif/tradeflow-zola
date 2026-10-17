@@ -50,7 +50,15 @@ test('production cloud, business and protocol modules remain unchanged',()=>{
     'diagnostics/main-cash-repair/preflight-r3.html',
     'diagnostics/main-cash-repair/preflight-r2.html','diagnostics/main-cash-repair/repair.js',
     'tests/main-cash-repair.test.cjs','tests/main-cash-repair.browser.cjs',
-    'docs/main-cash-repair.md','tools/main-cash-repair/verify-backup.cjs'
+    'docs/main-cash-repair.md','tools/main-cash-repair/verify-backup.cjs',
+    'diagnostics/main-cash-input-compare/README.md',
+    'diagnostics/main-cash-input-compare/capture-r60o.js',
+    'diagnostics/main-cash-input-compare/compare-core.js',
+    'diagnostics/main-cash-input-compare/index.html',
+    'diagnostics/main-cash-input-compare/integrity-r60o.js',
+    'diagnostics/main-cash-input-compare/page.js',
+    'diagnostics/main-cash-input-compare/style.css',
+    'tests/main-cash-input-compare.browser.cjs'
   ].includes(name)));
   const previous=execFileSync('git',['show','origin/main:index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
   const embedded=[...previous.matchAll(/const ([A-Z0-9_]+_B64)="([^"]+)";/g)].map(match=>match[1]);

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://ruadyqcsutfprrxdaahi.supabase.co; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TradeFlow Main audit input comparison</title>
+<link rel="stylesheet" href="style.css">
+<main>
+  <h1>Main audit input comparison</h1>
+  <p>This diagnostic compares the two existing audit input paths. It reads Main's saved database and cloud evidence. It has no repair, backup, synchronization, or write control.</p>
+  <p>Run this only on Main. If the normal audit is still open, use its <strong>Export Integrity Snapshot</strong> button now and select that file below; do not rerun the audit. The file stays in this browser. If that tab was already closed, the diagnostic can still compare cloud paths, but it will mark the in-memory database check unverified.</p>
+  <label for="snapshot">Normal-app Integrity Snapshot (optional; required to verify runtime versus saved database)</label>
+  <input id="snapshot" type="file" accept=".json,application/json">
+  <button id="run" type="button">Compare audit inputs (read only)</button>
+  <p id="status" role="status">No checks have run.</p>
+  <section id="result" hidden>
+    <h2>Safe comparison report</h2>
+    <p>Only counts, SHA-256 digests, cursor values, and stage labels appear here. No customer records, credentials, operation IDs, or access tokens are shown.</p>
+    <pre id="report"></pre>
+    <button id="download" type="button">Download safe report</button>
+  </section>
+</main>
+<script src="integrity-r60o.js" integrity="sha256-HRC2GeVsCRA74y+5gmhuux0wn9eiMbSteOwdHGEHHnw="></script>
+<script src="capture-r60o.js"></script>
+<script src="../../js/sync-integrity-v3161.js" integrity="sha256-kvX99ihYdvOxf1KGK9NAbAypqyk3l4LDQs0R+Yaz6E0="></script>
+<script src="compare-core.js"></script>
+<script src="page.js"></script>
+</html>
