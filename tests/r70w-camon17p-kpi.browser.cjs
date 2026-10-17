@@ -137,6 +137,48 @@ test('new service worker installs the matching shell, manifest and verifier asse
     assert.deepEqual(proof.matches,[true,true,true,true]);
   }finally{await tab.close();}
 });
+test('pending bootstrap and KPI review survive a fully offline shell restart',async()=>{
+  const tab=await page();
+  try{
+    await prepare(tab);
+    const before=await snapshot(tab);
+    const requests=[];
+    tab.on('request',request=>requests.push(request.url()));
+    await tab.evaluate(async()=>{await navigator.serviceWorker.ready;});
+    // Simulate the first r70W open after an older release, with no prepared r70W shell.
+    await tab.evaluate(()=>caches.delete('zezms-r70w-camon17p-kpi-patched-v1'));
+    await tab.reload({waitUntil:'domcontentloaded'});
+    await tab.waitForFunction(()=>!!navigator.serviceWorker.controller&&
+      window.ZEZMS?.camon17pKpiReview&&ZEZMS.cloudSync?.isReadyForLocalOperations(),null,{timeout:18000});
+    const assetProof=await tab.evaluate(async()=>{
+      const cache=await caches.open('zezms-r70w-kpi-review-20261017');
+      const urls=[...document.scripts].map(script=>script.src).filter(url=>url&&new URL(url).origin===location.origin);
+      const uncached=[];
+      for(const url of urls)if(!(await cache.match(url,{ignoreVary:true})))uncached.push(new URL(url).pathname);
+      return {count:urls.length,uncached,release:document.documentElement.getAttribute('data-zezms-release')};
+    });
+    assert.equal(assetProof.release,'v3.31.20-r70w-review');
+    assert.ok(assetProof.count>20,'assembled shell did not load expected application modules');
+    assert.deepEqual(assetProof.uncached,[],'required same-origin application scripts were not cached');
+    assert.equal(requests.some(url=>/supabase\.co|\/rest\/v1\/|\/rpc\//i.test(url)),false,
+      'restricted-network shell startup attempted a cloud request');
+    requests.length=0;
+    await tab.context().setOffline(true);
+    await tab.reload({waitUntil:'domcontentloaded'});
+    await tab.waitForFunction(()=>window.ZEZMS?.camon17pKpiReview&&
+      ZEZMS.cloudSync?.isReadyForLocalOperations(),null,{timeout:18000});
+    const result=await inspect(tab);
+    const after=await snapshot(tab);
+    assert.equal(result.status,'EXACT_EQUALITY',JSON.stringify(result));
+    for(const field of ['queue','stage','journal','db'])assert.equal(after[field],before[field],field+' changed');
+    const previous=JSON.parse(before.state),current=JSON.parse(after.state);
+    for(const field of ['deviceId','cursor','deviceAccessMode','liveSyncEnabled'])
+      assert.deepEqual(current[field],previous[field],field+' changed');
+    assert.deepEqual(after.indexedDB,before.indexedDB,'IndexedDB inventory changed');
+    assert.equal(requests.some(url=>/supabase\.co|\/rest\/v1\/|\/rpc\//i.test(url)),false,
+      'offline review attempted a cloud request');
+  }finally{await tab.context().setOffline(false);await tab.close();}
+});
 test('one exact candidate-equivalent KPI insert is reported without reconciliation or activation',async()=>{
   const tab=await page();
   try{
