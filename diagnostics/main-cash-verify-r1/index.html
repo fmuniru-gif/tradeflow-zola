@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https://ruadyqcsutfprrxdaahi.supabase.co; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TradeFlow — Main wallet verification (read only)</title>
+<style>
+ body{font:16px/1.5 system-ui,Segoe UI,sans-serif;color:#172334;background:#f6f8fb;max-width:860px;margin:35px auto;padding:0 18px}
+ main{background:#fff;border:1px solid #dce2ea;border-radius:12px;padding:24px}
+ h1{font-size:1.55rem;margin-top:0}button{font:inherit;border:0;border-radius:7px;padding:10px 17px;background:#173e6b;color:#fff;cursor:pointer;margin-right:8px}button:disabled{opacity:.5;cursor:default}
+ .note{padding:12px;background:#f0f4f8;border-radius:7px}pre{max-height:620px;overflow:auto;white-space:pre-wrap;word-break:break-word;padding:15px;background:#eff3f7;border-radius:7px;font-size:13px}
+</style>
+<main>
+<h1>Main wallet evidence verification</h1>
+<p>This is a <strong>read-only</strong> diagnostic for Main's existing Chrome profile. It checks the three 15 October cash deductions, their linked expense, their cloud operations and the complete synchronized business state. It does not change any balance, record, sync register or cloud operation.</p>
+<p class="note">Close other TradeFlow tabs on Main, and avoid transactions on all devices during the short check. Stop if the cloud head changes. Never use this page to authorize the old repair.</p>
+<button id="run" type="button">Verify Main against cloud (read only)</button>
+<button id="download" type="button" disabled>Download evidence summary</button>
+<p id="status" role="status">Ready. No data has been changed.</p>
+<section id="results" hidden><h2>Read-only findings</h2><pre id="report"></pre></section>
+</main>
+<script src="../../js/sync-integrity-v3161.js" integrity="sha256-kvX99ihYdvOxf1KGK9NAbAypqyk3l4LDQs0R+Yaz6E0="></script>
+<script src="../main-cash-repair/repair-core-r3.js"></script>
+<script src="verify.js"></script>
+</html>
