@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-iSawCp3nwQfH26EE1eqv7nFzz58oR1g/N/RCy7o7rfw='; style-src 'self' 'sha256-5gA2+LyPmKpaq89neCzfUVgznBTjDZalcYXW3tx+LQ8='; connect-src https://ruadyqcsutfprrxdaahi.supabase.co; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TradeFlow Main — Controlled Cash Reconciliation v4</title>
+<style>
+body{font:16px/1.5 system-ui,Segoe UI,sans-serif;color:#172334;background:#f6f8fb;max-width:880px;margin:35px auto;padding:0 18px}main{background:#fff;border:1px solid #dce2ea;border-radius:12px;padding:24px}h1{font-size:1.55rem;margin-top:0}button{font:inherit;border:0;border-radius:7px;padding:10px 17px;background:#173e6b;color:#fff;cursor:pointer;margin:4px 8px 4px 0}button:disabled{opacity:.5;cursor:default}.note{padding:12px;background:#f0f4f8;border-radius:7px}pre{max-height:510px;overflow:auto;white-space:pre-wrap;word-break:break-word;padding:15px;background:#eff3f7;border-radius:7px;font-size:13px}input{font:inherit;padding:10px;border:1px solid #8b98a9;border-radius:7px;max-width:100%;box-sizing:border-box}section{margin-top:16px}
+</style>
+<main>
+<h1>Main cash reconciliation — controlled v4</h1>
+<p>This utility works on <strong>Main only</strong>. It does a cloud-backed preflight and requires a verified encrypted backup before enabling a one-time local correction of the 15 October GH₵240 cash discrepancy.</p>
+<p class="note"><strong>Critical:</strong> Close the installed TradeFlow app and all other TradeFlow tabs. Pause financial transactions on all devices only during the correction. This tool cannot prevent another device from changing the cloud; it stops if the cloud changes before its final check. Do not proceed on any STOP result. Never run the earlier r3 repair.</p>
+<button id="run" type="button">1. Verify and prepare</button>
+<button id="download" type="button" disabled>Download preflight evidence</button>
+<section>
+<label for="passphrase">Private backup passphrase (minimum 20 characters; do not share)</label><p><input id="passphrase" type="password" autocomplete="new-password" placeholder="Your private backup passphrase" size="36"></p>
+<button id="backup" type="button" disabled>2. Save and verify encrypted backup</button>
+</section>
+<section><button id="repair" type="button" disabled>3. Apply one-time Main-only correction</button></section>
+<p id="status" role="status">Ready. No financial data has been changed.</p>
+<section id="results" hidden><h2>Preflight evidence</h2><pre id="report"></pre></section>
+</main>
+<script src="../../js/sync-integrity-v3161.js" integrity="sha256-kvX99ihYdvOxf1KGK9NAbAypqyk3l4LDQs0R+Yaz6E0="></script>
+<script src="../main-cash-repair/repair-core-r3.js"></script>
+<script>
+
+/* Controlled one-use Main-only local reconciliation, never writes cloud or sync state. */
+(function () {
+ 'use strict';
+ const PROJECT='https://ruadyqcsutfprrxdaahi.supabase.co';
+ const MAIN='9a5ab8eb-f67e-425c-866d-574b641295f0';
+ const DB_KEY='tradeflow_v321_zola';
+ const CORE=window.ZEZMSMainCashRepairCore;
+ const PROJECTOR=window.ZEZMS?.syncIntegrity?._test;
+ const KEYS=[DB_KEY,'zezms_cloud_sync_m4_state','zezms_cloud_sync_m4_queue',
+  'zezms_cloud_sync_m4_failed_v2','zezms_cloud_sync_m4_rejected',
+  'zezms_cloud_sync_m4_applied_v2','zezms_cloud_sync_m4_apply_journal_v2'];
+ const $=id=>document.getElementById(id);
+ const runButton=$('run'), downloadButton=$('download'), backupButton=$('backup'),
+  repairButton=$('repair'), passphrase=$('passphrase'), status=$('status'),
+  section=$('results'), pre=$('report');
+ let lastReport=null,prepared=null,verifiedBackup=null,committed=false,busy=false;
+ const stop=code=>{throw Error('STOP_'+code);};
+ const parse=(value,name)=>{try{return JSON.parse(value);}catch{stop('INVALID_'+name);}};
+ const snapshot=()=>Object.fromEntries(KEYS.map(key=>[key,localStorage.getItem(key)]));
+ const stable=x=>CORE.stable(x);
+ const cents=(x)=>{
+  if(typeof x!=='number'||!Number.isFinite(x))stop('INVALID_BALANCE');
+  return Math.round(x*100);
+ };
+ const money=x=>Number((x/100).toFixed(2));
+ function readLocal(){
+  const raw=snapshot(),db=parse(raw[DB_KEY],'DB'),state=parse(raw.zezms_cloud_sync_m4_state,'STATE'),
+   queue=parse(raw.zezms_cloud_sync_m4_queue,'QUEUE'),
+   failed=parse(raw.zezms_cloud_sync_m4_failed_v2||'[]','FAILED'),
+   journal=raw.zezms_cloud_sync_m4_apply_journal_v2?parse(raw.zezms_cloud_sync_m4_apply_journal_v2,'JOURNAL'):null;
+  if(!db||!state||!Array.isArray(queue)||!Array.isArray(failed))stop('LOCAL_SHAPE');
+  if(state.deviceId!==MAIN||state.deviceAccessMode!=='OWNER'||state.initialized!==true)stop('NOT_MAIN_OWNER');
+  if(queue.length||failed.length||journal)stop('PENDING_OR_FAILED_LOCAL_SYNC');
+  if(String(state.supabaseUrl||'').replace(/\/$/,'')!==PROJECT||
+   !/^(sb_publishable_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.test(state.publishableKey||''))stop('PRODUCTION_PROJECT_CONFIGURATION');
+  const session=parse(localStorage.getItem('zezms-m3-supabase-auth'),'SESSION');
+  if(!session?.access_token||!session?.user?.id||session.user.is_anonymous===true||
+   !Number.isFinite(session.expires_at)||session.expires_at*1000<Date.now()+60000||
+   (state.syncOwnerId&&String(state.syncOwnerId)!==String(session.user.id)))stop('OWNER_SESSION');
+  const rejected=parse(raw.zezms_cloud_sync_m4_rejected||'[]','REJECTED');
+  const applied=parse(raw.zezms_cloud_sync_m4_applied_v2||'{}','APPLIED');
+  if(!Array.isArray(rejected)||!applied||typeof applied!=='object'||Array.isArray(applied))stop('SYNC_REGISTERS_SHAPE');
+  return {raw,db,state,auth:{key:state.publishableKey,token:session.access_token,ownerId:String(session.user.id)}};
+ }
+ async function get(path,auth,post=false){
+  if(post&&path!=='/rest/v1/rpc/zezms_m43_checkpoint_latest')stop('NETWORK_METHOD_BLOCKED');
+  const response=await fetch(PROJECT+path,{method:post?'POST':'GET',mode:'cors',credentials:'omit',cache:'no-store',
+   headers:{apikey:auth.key,Authorization:'Bearer '+auth.token,Accept:'application/json',
+    ...(post?{'Content-Type':'application/json'}:{})},
+   ...(post?{body:'{}'}:{}),signal:AbortSignal.timeout(30000)});
+  if(!response.ok)stop('CLOUD_READ_HTTP_'+response.status);
+  return response.json();
+ }
+ const rest=(table,obj)=>'/rest/v1/'+table+'?'+new URLSearchParams(obj);
+ async function cloudInfo(auth){
+  const [user,cp,headRows]=await Promise.all([
+   get('/auth/v1/user',auth),get('/rest/v1/rpc/zezms_m43_checkpoint_latest',auth,true),
+   get(rest('zezms_sync_operations',{select:'seq',owner_id:'eq.'+auth.ownerId,order:'seq.desc',limit:'1'}),auth)]);
+  if(String(user?.id||'')!==auth.ownerId||user.is_anonymous||user.app_metadata?.provider==='anonymous')stop('CLOUD_AUTH');
+  const checkpoint=Array.isArray(cp)?cp[0]:cp;
+  if(!checkpoint?.payload||checkpoint.protocol_version!=='M4/3'||
+   !Number.isSafeInteger(Number(checkpoint.checkpoint_cursor)))stop('M43_CHECKPOINT');
+  if(!Array.isArray(headRows)||headRows.length!==1)stop('CLOUD_HEAD');
+  const head=Number(headRows[0].seq),base=Number(checkpoint.checkpoint_cursor);
+  if(!Number.isSafeInteger(head)||head<base)stop('CLOUD_HEAD_VALUE');
+  return {checkpoint,head,base};
+ }
+ async function readBundle(auth){
+  const begin=await cloudInfo(auth),ops=[];
+  let cursor=begin.base;
+  while(cursor<begin.head){
+   const page=await get(rest('zezms_sync_operations',{
+    select:'seq,op_id,device_id,device_seq,kind,payload,client_created_at,created_at',
+    owner_id:'eq.'+auth.ownerId,seq:'gt.'+cursor,order:'seq.asc',limit:'500'}),auth);
+   if(!Array.isArray(page)||!page.length||page.length>500)stop('OPERATION_PAGE');
+   for(const row of page){
+    const seq=Number(row.seq);
+    if(!Number.isSafeInteger(seq)||seq<=cursor||seq>begin.head||!row.op_id||
+     !row.payload||String(row.payload.opId||'')!==String(row.op_id)||
+     !Array.isArray(row.payload.patches)||
+     (row.payload.payloadHash&&row.payload.payloadHash!==CORE.operationHash(row.payload)))stop('OPERATION_INTEGRITY');
+    ops.push(row);cursor=seq;
+   }
+  }
+  const end=await cloudInfo(auth);
+  if(end.head!==begin.head||stable(end.checkpoint)!==stable(begin.checkpoint))stop('CLOUD_CHANGED');
+  return {baseline:begin.checkpoint.payload,baselineCursor:begin.base,
+   operations:ops,headSeq:begin.head,protocolVersion:'M4/3',checkpoint:{cursor:begin.base}};
+ }
+ function sourceOperation(bundle,collection,row){
+  const matches=bundle.operations.filter(op=>(op.payload.patches||[]).some(p=>
+   p.action==='insert'&&p.collection===collection&&String(p.key)===String(row.id)&&stable(p.value)===stable(row)));
+  if(matches.length!==1||!matches[0].payload.payloadHash)stop('SOURCE_OPERATION_'+collection);
+  return matches[0];
+ }
+ function single(rows,id,collection){
+  if(!Array.isArray(rows))stop('COLLECTION_'+collection);
+  const matches=rows.filter(r=>r&&String(r.id)===String(id));
+  if(matches.length!==1)stop('CLOUD_RECORD_'+collection);
+  return matches[0];
+ }
+ // Collection-specific identity precedence matches the production audit rules.
+ // Unlike the legacy r3 comparator, a receipt is identified by receiptNo
+ // before any cross-record customer linkage. Never collapse or skip duplicates.
+ const BUSINESS_IDENTITY_FIELDS=Object.freeze({
+  products:['id','_syncId'], customers:['customerId','id','_syncId'],
+  customerFollowups:['followupId','id','_syncId'],
+  salesOpportunities:['opportunityId','id','_syncId'], quotations:['quotationId','id','_syncId'],
+  stockRows:['id','_syncId'], stockCorrections:['correctionId','id','_syncId'],
+  warranties:['warrantyId','id','_syncId'], warrantyClaims:['claimId','id','_syncId'],
+  debtors:['id','_syncId'], creditors:['id','_syncId'], depositors:['id','_syncId'],
+  sales:['id','receiptNo','_syncId'], receipts:['receiptNo','id','_syncId'],
+  invoices:['id','invoiceNo','_syncId'], waybills:['id','waybillNo','_syncId'],
+  purchaseOrders:['id','poNo','purchaseOrderNo','_syncId'], saleLines:['_syncId','id'],
+  accountTxns:['id','_syncId'], cashLog:['id','_syncId'], expenses:['id','_syncId'],
+  inventoryTxns:['id','_syncId'], undoLog:['id','_syncId'], monthRollovers:['id','_syncId'],
+  debtorsMonthly:['id','_syncId'], creditorsMonthly:['id','_syncId'],
+  depositorsMonthly:['id','_syncId'], kpiHistory:['id','_syncId'],
+  managementTargets:['targetId','id','_syncId'],
+  managementTargetHistory:['historyId','id','_syncId'],
+  managementScenarios:['scenarioId','id','_syncId'],
+  managementAlertStates:['alertKey','id','_syncId'],
+  managementAlertHistory:['eventId','id','_syncId'],
+  managementActionPlans:['planId','id','_syncId'],
+  managementActionTasks:['taskId','id','_syncId'],
+  managementActionHistory:['historyId','id','_syncId'],
+  managementExecutionHandoffs:['handoffId','id','_syncId']
+ });
+ function exactCanonical(value){
+  if(value===undefined)return {__not_present__:true};
+  if(value===null||typeof value!=='object')return value;
+  if(Array.isArray(value))return value.map(exactCanonical);
+  const sorted={};
+  for(const k of Object.keys(value).sort())sorted[k]=exactCanonical(value[k]);
+  return sorted;
+ }
+ function exactStable(value){return JSON.stringify(exactCanonical(value));}
+ function businessKey(name,row){
+  if(!row||typeof row!=='object'||Array.isArray(row))return '';
+  const fields=BUSINESS_IDENTITY_FIELDS[name]||['_syncId','id'];
+  for(const field of fields){
+   const value=row[field];
+   if(value!==null&&value!==undefined&&String(value).trim()!=='')return String(value);
+  }
+  return '';
+ }
+ function typedCollection(rows,name,side){
+  if(!Array.isArray(rows))stop('BUSINESS_COLLECTION_SHAPE_'+name+'_'+side);
+  const indexed=new Map();
+  for(const row of rows){
+   const key=businessKey(name,row);
+   if(!key||indexed.has(key))stop('BUSINESS_COLLECTION_IDENTITY_'+name+'_'+side);
+   indexed.set(key,exactStable(row));
+  }
+  return [...indexed].sort((a,b)=>a[0].localeCompare(b[0]));
+ }
+ // Strictly compare every synchronized collection and business root after the
+ // virtual targeted fix. Documented version/auth roots are preserved locally,
+ // never overwritten from the cloud. Missing *empty* management collections
+ // do not count as missing business records.
+ const MANAGEMENT_KEYS=new Set(Object.keys(BUSINESS_IDENTITY_FIELDS).filter(x=>x.startsWith('management')));
+ const ROOT_EXCEPTIONS=new Set(['version','security','sharedDeviceAuth']);
+ function compareBusinessStateTyped(localDb,cloudDb){
+  if(!localDb||!cloudDb||typeof localDb!=='object'||typeof cloudDb!=='object')stop('BUSINESS_STATE_SHAPE');
+  if(!CORE.syncScope?.collections||!CORE.syncScope?.localOnlyRoots)stop('SYNC_SCOPE_UNAVAILABLE');
+  const collections=new Set([...CORE.syncScope.collections,...MANAGEMENT_KEYS]);
+  const localOnly=new Set(CORE.syncScope.localOnlyRoots);
+  const keys=[...new Set([...Object.keys(localDb),...Object.keys(cloudDb)])].sort();
+  const bad=[],preserved=[],allowedEmpty=[];let metadata=0,collectionsCompared=0,rootsCompared=0;
+  for(const root of keys){
+   if(localOnly.has(root))continue;
+   if(ROOT_EXCEPTIONS.has(root)){
+    if(!Object.hasOwn(localDb,root)||!Object.hasOwn(cloudDb,root)||
+      exactStable(localDb[root])!==exactStable(cloudDb[root]))preserved.push(root);
+    continue;
+   }
+   const l=Object.hasOwn(localDb,root),c=Object.hasOwn(cloudDb,root);
+   if(MANAGEMENT_KEYS.has(root)&&l!==c){
+    const other=l?localDb[root]:cloudDb[root];
+    if(Array.isArray(other)&&other.length===0){allowedEmpty.push(root);continue;}
+   }
+   if(!l||!c){bad.push('presence:'+root);continue;}
+   if(root==='cashBalances'){
+    const a=localDb[root],b=cloudDb[root],zero='WLT-B125C762-3BAB-4706-8CBD-2DE199E8D695';
+    if(!a||!b||typeof a!=='object'||typeof b!=='object'||
+      !Object.hasOwn(a,zero)||Object.hasOwn(b,zero)||cents(a[zero])!==0){bad.push('cashBalances:zeroWallet');continue;}
+    const other={...a};delete other[zero];
+    if(exactStable(other)!==exactStable(b))bad.push('root:cashBalances');
+    rootsCompared++;continue;
+   }
+   if(collections.has(root)){
+    const left=typedCollection(localDb[root],root,'MAIN');
+    const right=typedCollection(cloudDb[root],root,'CLOUD');
+    if(root==='undoLog'){
+     const lMap=new Map(left),rMap=new Map(right);
+     if(exactStable([...lMap.keys()])!==exactStable([...rMap.keys()])){bad.push('collection:undoLog:identity');continue;}
+     for(const [key,ltext] of lMap){
+      const a=JSON.parse(ltext),b=JSON.parse(rMap.get(key));
+      if(exactStable(a)===exactStable(b))continue;
+      const aa={...a},bb={...b};delete aa.productId;delete bb.productId;
+      if(exactStable(aa)!==exactStable(bb))bad.push('collection:undoLog:otherFields');
+      else metadata++;
+     }
+    }else if(exactStable(left)!==exactStable(right))bad.push('collection:'+root);
+    collectionsCompared++;
+   }else{
+    if(exactStable(localDb[root])!==exactStable(cloudDb[root]))bad.push('root:'+root);
+    rootsCompared++;
+   }
+  }
+  if(bad.length)stop('BUSINESS_STATE_DIFF count='+bad.length+';categories='+bad.slice(0,16).join(',')+(bad.length>16?',more':''));
+  return {collectionsCompared,rootsCompared,historicalUndoProductIdDifferences:metadata,
+   allowedEmptyManagementRoots:allowedEmpty,preservedRootDifferences:preserved,
+   receiptIdentityRule:'receiptNo > id > _syncId',
+   mainReceiptCount:(localDb.receipts||[]).length,cloudReceiptCount:(cloudDb.receipts||[]).length};
+ }
+ function assess(local,cloud,bundle){
+  const events=[],opRows=[];
+  for(const spec of CORE.CASH){
+   const row=single(cloud.cashLog,spec.id,'cashLog');
+   if(row.action!=='Deduct'||row.cashType!==spec.wallet||cents(row.amount)!==spec.amount*100||
+    !String(row.at||row.date||'').startsWith('2026-10-15')||
+    !['ACTIVE',''].includes(String(row.status||'')))stop('CASH_RECORD_PAYLOAD');
+   const operation=sourceOperation(bundle,'cashLog',row);
+   const allWalletPatches=operation.payload.patches.filter(p=>p.action==='root-object'&&p.root==='cashBalances');
+   const matched=allWalletPatches.filter(p=>p.key===spec.wallet&&p.mode==='delta'&&cents(p.value)===-spec.amount*100);
+   if(matched.length!==1||allWalletPatches.length!==1)stop('CASH_DELTA_MISMATCH');
+   events.push({kind:'cashLog',description:spec.wallet+' deduction',amount:spec.amount,
+    presentOnMain:(local.cashLog||[]).some(x=>x?.id===spec.id),sourceSeq:Number(operation.seq),
+    sourceOperationVerified:true,cloudRecordVerified:true});
+   opRows.push(operation);
+  }
+  const expense=single(cloud.expenses,CORE.EXPENSE,'expenses');
+  const linked=single(cloud.cashLog,CORE.CASH[1].id,'cashLog');
+  if(cents(expense.amount)!==10000||expense.wallet!=='Cash in Hand'||
+   expense.cashLogId!==CORE.CASH[1].id||linked.meta?.expenseId!==CORE.EXPENSE||
+   !String(expense.date||'').startsWith('2026-10-15')||
+   !['ACTIVE',''].includes(String(expense.status||'')))stop('LINKED_EXPENSE_PAYLOAD');
+  const expenseOp=sourceOperation(bundle,'expenses',expense);
+  if(expenseOp.op_id!==opRows[1].op_id)stop('EXPENSE_SOURCE_LINK');
+  events.push({kind:'expenses',description:'Linked expense',amount:100,
+   presentOnMain:(local.expenses||[]).some(x=>x?.id===CORE.EXPENSE),
+   sourceSeq:Number(expenseOp.seq),sourceOperationVerified:true,cloudRecordVerified:true});
+  const presence=events.map(x=>x.presentOnMain);
+  if(presence.some(Boolean)&&presence.some(x=>!x))stop('PARTIAL_MAIN_RECORDS');
+  const already=presence.every(Boolean);
+  if((local.cashLog||[]).some(r=>CORE.CASH.some(spec=>spec.id===r?.id)&&
+     (local.cashLog||[]).filter(x=>x?.id===r.id).length!==1)||
+    (local.expenses||[]).filter(r=>r?.id===CORE.EXPENSE).length>1)stop('LOCAL_DUPLICATE');
+  if(already){
+   for(const spec of CORE.CASH){
+    if(stable(single(local.cashLog,spec.id,'cashLog'))!==stable(single(cloud.cashLog,spec.id,'cashLog')))
+     stop('LOCAL_CASH_RECORD_MISMATCH');
+   }
+   if(stable(single(local.expenses,CORE.EXPENSE,'expenses'))!==stable(expense))stop('LOCAL_EXPENSE_MISMATCH');
+  }
+  const mainWallets=local.cashBalances,cloudWallets=cloud.cashBalances;
+  if(!mainWallets||!cloudWallets||Array.isArray(mainWallets)||Array.isArray(cloudWallets)||
+   ['Cash in Hand','Others'].some(k=>
+   !Object.hasOwn(mainWallets,k)||!Object.hasOwn(cloudWallets,k)))stop('WALLET_ROOT_OR_CORE_KEYS');
+  const localOnly=Object.keys(mainWallets).filter(k=>!Object.hasOwn(cloudWallets,k)).sort();
+  const cloudOnly=Object.keys(cloudWallets).filter(k=>!Object.hasOwn(mainWallets,k)).sort();
+  // This is not a generic permission to ignore wallet differences. Only the
+  // independently identified local-only zero wallet is allowed for an in-memory
+  // comparison, and it must never have appeared in the ordered cloud operations.
+  const EXPECTED_ZERO_KEY='WLT-B125C762-3BAB-4706-8CBD-2DE199E8D695';
+  if(cloudOnly.length||localOnly.length!==1||localOnly[0]!==EXPECTED_ZERO_KEY||
+   cents(mainWallets[EXPECTED_ZERO_KEY])!==0)stop('UNEXPECTED_WALLET_KEYS');
+  if(bundle.operations.some(op=>(op.payload.patches||[]).some(p=>
+   p.action==='root-object'&&p.root==='cashBalances'&&p.key===EXPECTED_ZERO_KEY)))
+   stop('ZERO_WALLET_HAS_CLOUD_OPERATION');
+  const wallets=[];
+  for(const wallet of Object.keys(cloudWallets).sort()){
+   const localCents=cents(mainWallets[wallet]),cloudCents=cents(cloudWallets[wallet]),diff=localCents-cloudCents;
+   const expected=wallet==='Cash in Hand'?17000:wallet==='Others'?7000:0;
+   const matches=already?diff===0:(diff===0||diff===expected);
+   wallets.push({wallet,main:money(localCents),cloud:money(cloudCents),
+    mainMinusCloud:money(diff),permittedDifference:money(expected),matches});
+  }
+  const walletMatches=wallets.every(x=>x.matches);
+  const expectedMoneyDiff=already?wallets.every(x=>x.mainMinusCloud===0):
+   wallets.every(x=>x.mainMinusCloud===(x.wallet==='Cash in Hand'?170:
+    x.wallet==='Others'?70:0));
+  const virtual=JSON.parse(JSON.stringify(local));
+  if(!already){
+   for(const spec of CORE.CASH)virtual.cashLog.push(JSON.parse(JSON.stringify(single(cloud.cashLog,spec.id,'cashLog'))));
+   virtual.expenses.push(JSON.parse(JSON.stringify(expense)));
+   // Change only the two already proven cash differences in this ephemeral clone.
+   // The live database is never edited by this diagnostic.
+   if(walletMatches&&expectedMoneyDiff){
+    for(const wallet of ['Cash in Hand','Others'])virtual.cashBalances[wallet]=cloudWallets[wallet];
+   }
+  }
+  // Ignore the known zero-only local key inside the ephemeral comparison clone;
+  // preserve the physical wallet and every other Main database root unchanged.
+  // The known zero wallet remains in the virtual candidate and actual database.
+  let businessStateMatches=false,businessMismatchReason=null,businessComparison=null;
+  try{businessComparison=compareBusinessStateTyped(virtual,cloud);businessStateMatches=true;}
+  catch(e){businessMismatchReason=String(e.message||e).slice(0,450);}
+  wallets.push({wallet:EXPECTED_ZERO_KEY,main:0,cloud:null,mainMinusCloud:null,
+   matches:true,localOnlyZeroWallet:true,reason:'Absent in M4/3 checkpoint and cloud operations'});
+  return {recordsState:already?'ALREADY_PRESENT':'ALL_FOUR_MISSING',
+   events,wallets,walletMatches,expectedMoneyDiff,allowedLocalOnlyZeroWallet:EXPECTED_ZERO_KEY,
+   zeroWalletPreserved:true, businessStateMatches,businessMismatchReason,businessComparison,
+   cloudOperationProvenanceVerified:true};
+ }
+ function clone(x){return JSON.parse(JSON.stringify(x));}
+ const sha=async x=>{
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(x));
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+ };
+ function candidate(original,cloud,assessment,backupProof){
+  if(assessment.recordsState!=='ALL_FOUR_MISSING'||!assessment.walletMatches||
+   !assessment.expectedMoneyDiff||!assessment.businessStateMatches||
+   !assessment.cloudOperationProvenanceVerified)stop('NOT_READY');
+  const next=clone(original);
+  for(const spec of CORE.CASH)next.cashLog.push(clone(single(cloud.cashLog,spec.id,'cashLog')));
+  next.expenses.push(clone(single(cloud.expenses,CORE.EXPENSE,'expenses')));
+  next.cashBalances['Cash in Hand']=cloud.cashBalances['Cash in Hand'];
+  next.cashBalances.Others=cloud.cashBalances.Others;
+  if(next.syncReconciliationLog!=null&&!Array.isArray(next.syncReconciliationLog))stop('LOCAL_AUDIT_LOG_SHAPE');
+  next.syncReconciliationLog=(next.syncReconciliationLog||[]).concat([{
+    kind:'MAIN_CASH_RECONCILIATION_20261015',at:new Date().toISOString(),
+    deviceId:MAIN,cloudHead:assessment.head,backupSha256:backupProof.sha256,
+    recordIds:[...CORE.CASH.map(x=>x.id),CORE.EXPENSE],
+    verifiedSourceSeq:assessment.events.map(x=>x.sourceSeq)
+  }]);
+  const rolled=clone(next);
+  for(let i=CORE.CASH.length-1;i>=0;i--){
+   const removed=rolled.cashLog.pop();
+   if(stable(removed)!==stable(single(cloud.cashLog,CORE.CASH[i].id,'cashLog')))stop('CANDIDATE_CASH_ORDER');
+  }
+  const e=rolled.expenses.pop();
+  if(stable(e)!==stable(single(cloud.expenses,CORE.EXPENSE,'expenses')))stop('CANDIDATE_EXPENSE');
+  rolled.cashBalances['Cash in Hand']=original.cashBalances['Cash in Hand'];
+  rolled.cashBalances.Others=original.cashBalances.Others;
+  rolled.syncReconciliationLog.pop();
+  if(original.syncReconciliationLog===undefined)delete rolled.syncReconciliationLog;
+  if(exactStable(rolled)!==exactStable(original))stop('CANDIDATE_UNRELATED_LOCAL_CHANGE');
+  compareBusinessStateTyped(next,cloud);
+  return next;
+ }
+ async function gather(){
+  if(!CORE||!PROJECTOR?.projectCloud||location.origin!=='https://fmuniru-gif.github.io'||
+   location.pathname!=='/tradeflow-zola/diagnostics/main-cash-verify-r1/main-cash-reconcile-v4.html')stop('SAME_ORIGIN_MODULES');
+  const local=readLocal();
+  const bundle=await readBundle(local.auth);
+  if(stable(local.raw)!==stable(snapshot()))stop('MAIN_CHANGED_DURING_CHECK');
+  if(Number(local.state.cursor)!==bundle.headSeq)stop('CURSOR_VS_HEAD');
+  const projection=PROJECTOR.projectCloud(bundle);
+  if(!projection?.database||!Array.isArray(projection.conflicts)||projection.conflicts.length)stop('CLOUD_PROJECTION');
+  const assessment=assess(local.db,projection.database,bundle);
+  if(stable(local.raw)!==stable(snapshot()))stop('MAIN_CHANGED_AFTER_CHECK');
+  const report={format:'ZEZMS_MAIN_CASH_CONTROLLED_RECONCILIATION_V4',noWrite:true,
+   time:new Date().toISOString(),mainCursor:Number(local.state.cursor),cloudHead:bundle.headSeq,
+   checkpoint:bundle.baselineCursor,queueCount:0,failedCount:0,
+   ...assessment,action:assessment.recordsState==='ALL_FOUR_MISSING'&&assessment.businessStateMatches&&
+     assessment.expectedMoneyDiff?'READY_FOR_ENCRYPTED_BACKUP':'STOP_NO_REPAIR'};
+  return {local,cloud:projection.database,bundle,assessment:{...assessment,head:bundle.headSeq},report};
+ }
+ function show(report){lastReport=report;section.hidden=false;pre.textContent=JSON.stringify(report,null,2);
+  downloadButton.disabled=false;status.textContent=report.action||report.reason||'No data changed.';
+ }
+ const safeString=err=>String(err?.message||err).slice(0,500);
+ const stopReport=err=>({format:'ZEZMS_MAIN_CASH_CONTROLLED_RECONCILIATION_V4',
+  noWrite:true,time:new Date().toISOString(),action:'STOP_NO_REPAIR',reason:safeString(err)});
+ const lock=()=>{backupButton.disabled=true;repairButton.disabled=true;verifiedBackup=null;};
+ runButton.addEventListener('click',async()=>{
+  if(busy||committed)return;busy=true;lock();prepared=null;
+  runButton.disabled=true;downloadButton.disabled=true;section.hidden=true;
+  status.textContent='Reading Main and verifying immutable cloud operations. No data will change.';
+  try{
+   const result=await gather();show(result.report);
+   if(result.report.action==='READY_FOR_ENCRYPTED_BACKUP'){
+    prepared=result;backupButton.disabled=false;
+    status.textContent='All targeted preflight checks passed. Save and verify an encrypted backup before any repair can be enabled.';
+   }
+  }catch(e){show(stopReport(e));}
+  finally{runButton.disabled=false;busy=false;}
+ });
+ function b64(bytes){let str='';for(let i=0;i<bytes.length;i+=16384)
+  str+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(str);}
+ backupButton.addEventListener('click',async()=>{
+  if(busy||committed||!prepared||prepared.report.action!=='READY_FOR_ENCRYPTED_BACKUP')return;
+  busy=true;backupButton.disabled=true;repairButton.disabled=true;
+  try{
+   if(typeof showSaveFilePicker!=='function')stop('VERIFIED_SAVE_PICKER_UNAVAILABLE');
+   if(passphrase.value.length<20||passphrase.value.length>1024)stop('PASSPHRASE_MUST_BE_20_TO_1024_CHARACTERS');
+   if(stable(snapshot())!==stable(prepared.local.raw))stop('LOCAL_CHANGED_BEFORE_BACKUP');
+   const handle=await showSaveFilePicker({suggestedName:'ZEZMS_Main_Cash_PreRepair_20261018_Encrypted.json',
+    types:[{description:'Encrypted JSON',accept:{'application/json':['.json']}}]});
+   const backup={format:'ZEZMS_MAIN_CASH_V4_ENCRYPTED_BACKUP',createdAt:new Date().toISOString(),
+    cloudHead:prepared.bundle.headSeq,deviceId:MAIN,raw:prepared.local.raw};
+   const plaintext=JSON.stringify(backup),enc=new TextEncoder(),
+    salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+   const km=await crypto.subtle.importKey('raw',enc.encode(passphrase.value),'PBKDF2',false,['deriveKey']);
+   const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},km,
+    {name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+   const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(plaintext)));
+   const file=JSON.stringify({format:'ZEZMS_MAIN_CASH_V4_ENCRYPTED',kdf:'PBKDF2-SHA256',
+    iterations:600000,cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ciphertext:b64(ciphertext)});
+   const stream=await handle.createWritable();await stream.write(file);await stream.close();
+   const readback=await(await handle.getFile()).text();
+   if(readback!==file)stop('BACKUP_READBACK_MISMATCH');
+   const restored=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,
+    Uint8Array.from(atob(JSON.parse(readback).ciphertext),c=>c.charCodeAt(0)));
+   if(new TextDecoder().decode(restored)!==plaintext||stable(snapshot())!==stable(prepared.local.raw))
+    stop('BACKUP_VERIFICATION_FAILED');
+   verifiedBackup={at:Date.now(),raw:prepared.local.raw,head:prepared.bundle.headSeq,
+    sha256:await sha(readback)};
+   repairButton.disabled=false;
+   status.textContent='Encrypted backup saved and verified. No Main data changed. Review the summary before deciding to correct Main.';
+  }catch(e){verifiedBackup=null;status.textContent='BACKUP_STOP: '+safeString(e);}
+  finally{passphrase.value='';backupButton.disabled=!prepared||!verifiedBackup;busy=false;}
+ });
+ repairButton.addEventListener('click',async()=>{
+  if(busy||committed||!prepared||!verifiedBackup)return;
+  busy=true;runButton.disabled=true;backupButton.disabled=true;repairButton.disabled=true;
+  let wrote=false;
+  try{
+   if(Date.now()-verifiedBackup.at>30*60*1000)stop('BACKUP_EXPIRED');
+   if(stable(snapshot())!==stable(verifiedBackup.raw))stop('LOCAL_CHANGED_SINCE_BACKUP');
+   const fresh=await gather();
+   if(fresh.report.action!=='READY_FOR_ENCRYPTED_BACKUP'||
+    fresh.bundle.headSeq!==verifiedBackup.head||
+    stable(fresh.local.raw)!==stable(verifiedBackup.raw)||
+    stable(fresh.assessment.events)!==stable(prepared.assessment.events)||
+    stable(fresh.assessment.wallets)!==stable(prepared.assessment.wallets))stop('FRESH_PREFLIGHT_CHANGED');
+   const proposed=candidate(fresh.local.db,fresh.cloud,fresh.assessment,verifiedBackup);
+   const encoded=JSON.stringify(proposed);
+   if(!confirm('Apply the Main-only GH₵240 correction? This will restore exactly 4 already-cloud-backed records and reduce Cash in Hand by GH₵170 and Others by GH₵70. It will not modify cloud operations, sync registers, or the zero wallet. You have a verified encrypted backup. Continue?')){
+    status.textContent='Cancelled. No financial data was changed.';return;
+   }
+   if(document.visibilityState!=='visible')stop('PAGE_NOT_VISIBLE');
+   if(stable(snapshot())!==stable(verifiedBackup.raw))stop('LOCAL_CHANGED_BEFORE_COMMIT');
+   const atEnd=await cloudInfo(fresh.local.auth);
+   if(atEnd.head!==fresh.bundle.headSeq||atEnd.base!==fresh.bundle.baselineCursor||
+      stable(atEnd.checkpoint.payload)!==stable(fresh.bundle.baseline))stop('CLOUD_CHANGED_AT_COMMIT');
+   if(stable(snapshot())!==stable(verifiedBackup.raw))stop('LOCAL_CHANGED_AT_COMMIT');
+   localStorage.setItem(DB_KEY,encoded);wrote=true;committed=true;
+   if(localStorage.getItem(DB_KEY)!==encoded)stop('DB_READBACK_FAILED');
+   if(KEYS.slice(1).some(key=>localStorage.getItem(key)!==verifiedBackup.raw[key]))stop('SYNC_STATE_CHANGED');
+   const after=readLocal();
+   compareBusinessStateTyped(after.db,fresh.cloud);
+   for(const spec of CORE.CASH)if(stable(single(after.db.cashLog,spec.id,'cashLog'))!==stable(single(fresh.cloud.cashLog,spec.id,'cashLog')))
+    stop('POST_CASH_MISMATCH');
+   if(stable(single(after.db.expenses,CORE.EXPENSE,'expenses'))!==stable(single(fresh.cloud.expenses,CORE.EXPENSE,'expenses')))
+    stop('POST_EXPENSE_MISMATCH');
+   if(cents(after.db.cashBalances['Cash in Hand'])!==cents(fresh.cloud.cashBalances['Cash in Hand'])||
+    cents(after.db.cashBalances.Others)!==cents(fresh.cloud.cashBalances.Others))stop('POST_WALLET_MISMATCH');
+   status.textContent='LOCAL RECONCILIATION COMMITTED AND READ BACK. Now reopen TradeFlow and run production Cloud-vs-Local Audit. Keep your encrypted backup. No cloud operation was created by this page.';
+   show({...fresh.report,action:'LOCAL_RECONCILIATION_COMMITTED_AWAIT_PRODUCTION_AUDIT',noWrite:false,
+    verifiedBackup:true,writeScope:'ONLY_LOCAL_DATABASE_KEY',postReadback:true});
+  }catch(e){status.textContent=(wrote?'POST_WRITE_STOP; KEEP BACKUP AND DO NOT RETRY: ':'NO_CHANGE: ')+safeString(e);
+   show({...stopReport(e),action:wrote?'POST_WRITE_STOP_DO_NOT_RETRY':'STOP_NO_REPAIR',noWrite:!wrote});
+  }finally{busy=false;runButton.disabled=committed;backupButton.disabled=true;repairButton.disabled=true;
+   verifiedBackup=null;if(!wrote&&!committed)prepared=null;}
+ });
+ downloadButton.addEventListener('click',()=>{
+  if(!lastReport)return;
+  const json=JSON.stringify(lastReport,null,2),blob=new Blob([json],{type:'application/json'}),
+    url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='ZEZMS_Main_Cash_Reconciliation_v4_Evidence.json';
+  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
+ window.addEventListener('storage',event=>{
+  if(KEYS.includes(event.key)&&!committed){lock();prepared=null;
+   status.textContent='STOP_LOCAL_CHANGE_IN_ANOTHER_TAB. Close TradeFlow and rerun preflight.';}
+ });
+})();
+
+</script>
+</html>
