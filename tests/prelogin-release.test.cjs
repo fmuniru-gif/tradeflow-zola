@@ -32,11 +32,16 @@ for(const [constant,file] of [
   assert.equal(Buffer.from(match[1],'base64').toString('utf8').replace(/\r\n/g,'\n'),source);
 });
 
-test('production cloud, business and protocol modules remain unchanged',()=>{
+// Shop-specific injection is proved separately by shop-directory-delivery.test.cjs.
+test('unrelated embedded business and protocol modules remain unchanged',()=>{
   const {execFileSync}=require('node:child_process');
   const changed=execFileSync('git',['diff','--name-only','origin/main'],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/).filter(Boolean);
   assert.ok(changed.every(name=>[
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'js/shop-directory-recovery-core.js','js/shop-directory-recovery-runtime.js',
+    'tests/shop-directory-recovery.test.cjs','tests/shop-directory-recovery.browser.cjs',
+    'tests/shop-directory-delivery.test.cjs','tools/build-shop-directory-recovery.cjs',
+    'docs/shop-directory-recovery.md',
     'js/prelogin-verified-activation-r70u.js',
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
     'tests/r70v-diagnostic.browser.cjs','tests/approved-deployment-gate.test.cjs',
@@ -62,7 +67,7 @@ test('production cloud, business and protocol modules remain unchanged',()=>{
   ].includes(name)));
   const previous=execFileSync('git',['show','origin/main:index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
   const embedded=[...previous.matchAll(/const ([A-Z0-9_]+_B64)="([^"]+)";/g)].map(match=>match[1]);
-  for(const name of embedded.filter(name=>name!=='PRELOGIN_VERIFIED_ACTIVATION_R70U_B64')){
+  for(const name of embedded.filter(name=>!['PRELOGIN_VERIFIED_ACTIVATION_R70U_B64','CLOUD_B64','MANAGER_SCOPE_STAFF_LOGIN_B64'].includes(name))){
     const pattern=new RegExp('const '+name+'="([^"]+)";');
     assert.equal(index.match(pattern)?.[1],previous.match(pattern)?.[1],name+' changed');
   }

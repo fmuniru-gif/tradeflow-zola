@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-r70v-diagnostic-20261016';
-const PATCHED_INDEX_CACHE = 'zezms-r70v-diagnostic-patched-v1';
+const CACHE = 'zezms-shop-directory-recovery-v1';
+const PATCHED_INDEX_CACHE = 'zezms-shop-directory-recovery-patched-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20261008-r70q-phase-a-review','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -85,7 +85,8 @@ self.addEventListener('install', (event) => {
     const expected = 'const RELEASE=\"20261016-r70v-bootstrap-outbox-diagnostic\";';
     for (const entry of ['./', './index.html']) {
       const response = await cache.match(new URL(entry, self.registration.scope).href, {ignoreVary:true});
-      if (!response || !response.ok || !(await response.text()).includes(expected)) {
+      const shellText = response && response.ok ? await response.text() : '';
+      if (!shellText.includes(expected) || !shellText.includes('const SHOP_DIRECTORY_RECOVERY_BUILD="shop-directory-v1";')) {
         throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
       }
     }
@@ -99,6 +100,16 @@ self.addEventListener('activate', (event) => {
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
+  if (data && data.type === 'ZEZMS_SHOP_RECOVERY_CLIENTS') {
+    event.waitUntil((async () => {
+      const windows = await self.clients.matchAll({type:'window',includeUncontrolled:true});
+      if (event.ports && event.ports[0]) event.ports[0].postMessage({
+        guard:'shop-directory-v1',count:windows.length,
+        onlyClientUrl:windows.length===1?windows[0].url:null
+      });
+    })());
+    return;
+  }
   if (data && data.type === 'ZEZMS_RUNTIME_INTEGRITY_PROBE') {
     if (event.source && typeof event.source.postMessage === 'function') {
       event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261016-r70v-bootstrap-outbox-diagnostic', cache:CACHE });

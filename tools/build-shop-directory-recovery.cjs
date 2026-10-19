@@ -1,0 +1,27 @@
+/* Reproducible injection into the verified production cloud closure only. */
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..');
+const base='3582ab43f0a3ae3911f606c2d47615db291336e4';
+const original=execFileSync('git',['show',base+':index.html'],{cwd:root,maxBuffer:32*1024*1024,encoding:'utf8'});
+const pattern=/const CLOUD_B64=([\s\S]*?);\s*(?=const|function|let|var)/;
+const match=original.match(pattern);if(!match)throw Error('Embedded cloud source missing');
+const decoded=Buffer.from([...match[1].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(x=>x[1]).join(''),'base64').toString('utf8');
+if(crypto.createHash('sha256').update(decoded).digest('hex')!=='907f0e0e9946784a8e0325e282ea262d30d77c1ae414a14886f9bb17eac1a399')throw Error('Production cloud baseline mismatch');
+const core=fs.readFileSync(path.join(root,'js/shop-directory-recovery-core.js'),'utf8').replace(/\r\n/g,'\n');
+const runtime=fs.readFileSync(path.join(root,'js/shop-directory-recovery-runtime.js'),'utf8').replace(/\r\n/g,'\n');
+const end=decoded.lastIndexOf('}());');if(end<0)throw Error('Closure marker missing');
+const cloud=decoded.slice(0,end)+'/* SHOP_DIRECTORY_RECOVERY_INSERT_BEGIN */\n'+core+'\n'+runtime+'\n/* SHOP_DIRECTORY_RECOVERY_INSERT_END */\n'+decoded.slice(end);
+let shell=fs.readFileSync(path.join(root,'index.html'),'utf8');
+shell=shell.replace(pattern,'const CLOUD_B64="'+Buffer.from(cloud).toString('base64')+'";\n  ');
+const managerPattern=/const MANAGER_SCOPE_STAFF_LOGIN_B64=([\s\S]*?);\s*(?=const|function|let|var)/;
+const managerMatch=original.match(managerPattern);
+let manager=Buffer.from([...managerMatch[1].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(x=>x[1]).join(''),'base64').toString('utf8');
+const mirror='function reconcileLastLoginMetadata() {';
+if(manager.split(mirror).length!==2)throw Error('Staff timestamp mirror marker mismatch');
+manager=manager.replace(mirror,mirror+'\n    /* SHOP_DIRECTORY_TIMESTAMP_HOLD: keep login audit local during recovery. */\n    if (window.ZEZMS.cloudSync && window.ZEZMS.cloudSync.isShopDirectoryRecoveryHeld && window.ZEZMS.cloudSync.isShopDirectoryRecoveryHeld()) return false;');
+shell=shell.replace(managerPattern,'const MANAGER_SCOPE_STAFF_LOGIN_B64="'+Buffer.from(manager).toString('base64')+'";\n  ');
+shell=shell.replace('const PATCH_CACHE="zezms-r70u-prelogin-activation-patched-v1";','const PATCH_CACHE="zezms-shop-directory-recovery-patched-v1";');
+if(!shell.includes('const SHOP_DIRECTORY_RECOVERY_BUILD='))shell=shell.replace('const RELEASE=', 'const SHOP_DIRECTORY_RECOVERY_BUILD="shop-directory-v1";\n  const RELEASE=');
+fs.writeFileSync(path.join(root,'index.html'),shell);
+console.log('Embedded Shop recovery and guarded staff timestamp mirror; application version and unrelated modules preserved.');

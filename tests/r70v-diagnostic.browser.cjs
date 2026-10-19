@@ -35,7 +35,7 @@ async function page(){
 }
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(resolve=>server.close(resolve));});
 async function stage(tab,kind){
-  await tab.waitForFunction(()=>ZEZMS.cloudSync.getOutbox().length>0,null,{timeout:10000});
+  await tab.waitForFunction(()=>window.ZEZMS?.cloudSync?.getOutbox().length>0,null,{timeout:10000});
   const before=await tab.evaluate(kind=>{
     const state=ZEZMS.cloudSync.getState(),candidate=JSON.parse(JSON.stringify(DB));
     const lifecycleId='synthetic-approved-lifecycle';
@@ -52,7 +52,7 @@ async function stage(tab,kind){
     return {deviceId:state.deviceId};
   },kind);
   await tab.reload({waitUntil:'domcontentloaded'});
-  await tab.waitForFunction(()=>ZEZMS.managedDevices&&ZEZMS.managedDevices.hasVerifiedPendingStage()&&document.getElementById('r70vInspectBootstrapOutbox'),null,{timeout:15000});
+  await tab.waitForFunction(()=>window.ZEZMS?.managedDevices?.hasVerifiedPendingStage()&&document.getElementById('r70vInspectBootstrapOutbox'),null,{timeout:15000});
   return before;
 }
 async function snapshot(tab){
