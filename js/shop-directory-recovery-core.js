@@ -11,6 +11,7 @@
   const KEYS=Object.freeze({db:'tradeflow_v321_zola',state:'zezms_cloud_sync_m4_state',queue:'zezms_cloud_sync_m4_queue',applied:'zezms_cloud_sync_m4_applied_v2',failed:'zezms_cloud_sync_m4_failed_v2',apply:'zezms_cloud_sync_m4_apply_journal_v2'});
   const ROOTS=['cashBalances','selectedYear','selectedMonth','business','settings','security','sharedDeviceDirectory','warrantySettings'];
   const COLLECTIONS=['products','customers','customerFollowups','salesOpportunities','quotations','stockRows','stockCorrections','warranties','warrantyClaims','debtors','creditors','depositors','sales','receipts','invoices','waybills','purchaseOrders','saleLines','accountTxns','cashLog','expenses','inventoryTxns','undoLog','debtorsMonthly','creditorsMonthly','depositorsMonthly','kpiHistory','monthRollovers','managementTargets','managementTargetHistory','managementScenarios','managementAlertStates','managementAlertHistory','managementActionPlans','managementActionTasks','managementActionHistory','managementExecutionHandoffs'];
+  const LOCAL_DATABASE_FIELDS=['sharedDeviceAuth','backupHistory','backupSettings','syncSettings','syncMeta','syncRejectedTransactions','syncReconciliationLog','version'];
   const fail=code=>{throw Error('SHOP_STOP_'+code);
   };
   const clone=x=>JSON.parse(JSON.stringify(x));
@@ -69,24 +70,87 @@
   if(access!=='ACTIVE'&&!ownerFallback)fail('ACCESS_AUTHORITY');
   if(r.lifecycle_id!==life.id||r.lifecycle_state!=='ACTIVE'||r.authentication_eligible!==true||!own(r,'device_access_status')||!own(r,'device_access_revoked_at')||String(r.device_access_status).toUpperCase()==='REVOKED'||r.device_access_revoked_at||r.lifecycle_revoked_at||r.lifecycle_retired_at||r.replacement_lifecycle_id)fail('DEVICE_NOT_AUTHORIZED');
   }
-  function classify(q,cloud,business){directory(cloud,business);
-  return q.map(o=>{const p=o.patches[0],a=new Map(p.value.users.map(u=>[u.id,u])),b=new Map(cloud.users.map(u=>[u.id,u]));
-  let added=0,removed=0,role=0,reactivated=0,credentials=0,profile=0;
-  for(const [id,u]of a){const v=b.get(id);
-  if(!v){added++;
-  continue;
-  }if(u.role!==v.role)role++;
-  if(u.active&&!v.active)reactivated++;
-  if(u.passwordHash!==v.passwordHash||u.passwordSalt!==v.passwordSalt||u.passwordIterations!==v.passwordIterations)credentials++;
-  if(stable(u)!==stable(v))profile++;
-  }for(const id of b.keys())if(!a.has(id))removed++;
-  return {opId:o.opId,deviceSeq:o.deviceSeq,createdAt:o.createdAt,payloadHash:o.payloadHash,root:'sharedDeviceDirectory',effect:'WHOLE_STAFF_AUTHORIZATION_ROOT',classification:stable(p.value)===stable(cloud)?'ALREADY_CURRENT':Date.parse(p.value.updatedAt)<=Date.parse(cloud.updatedAt)?'SUPERSEDED_BY_CURRENT_CLOUD':'DIVERGENT_OR_NEWER_LOCAL_DIRECTORY',addedStaff:added,removedStaff:removed,roleDifferences:role,reactivations:reactivated,credentialDifferences:credentials,changedStaff:profile,directLifecycleMutation:false,disposition:'OWNER_REVIEW_REQUIRED'};
-  });
+  function directoryMeaning(d){const copy=clone(d);delete copy.updatedAt;
+    copy.users=copy.users.map(u=>{delete u.updatedAt;delete u.lastLoginAt;return u;}).sort((a,b)=>a.id.localeCompare(b.id));return stable(copy);}
+  function directoryDelta(before,value){const a=new Map(before.users.map(u=>[u.id,u])),b=new Map(value.users.map(u=>[u.id,u]));
+    const r={additions:0,removals:0,credentials:0,roles:0,reactivations:0,deactivations:0,profiles:0,timestamps:0,directoryAuthorization:before.enabled!==value.enabled?1:0};
+    if(before.updatedAt!==value.updatedAt)r.timestamps++;
+    for(const [id,u]of a){const v=b.get(id);if(!v){r.removals++;continue;}
+      for(const k of ['passwordAlgorithm','passwordIterations','passwordHash','passwordSalt','passwordChangedAt'])if(stable(u[k])!==stable(v[k])){r.credentials++;break;}
+      if(u.role!==v.role)r.roles++;if(!u.active&&v.active)r.reactivations++;if(u.active&&!v.active)r.deactivations++;
+      if(['name','tel','signatureFile','createdAt'].some(k=>stable(u[k])!==stable(v[k])))r.profiles++;
+      for(const k of ['updatedAt','lastLoginAt'])if(stable(u[k])!==stable(v[k]))r.timestamps++;
+    }for(const id of b.keys())if(!a.has(id))r.additions++;
+    return r;
+  }
+  function classify(q,cloud,business,history=[],cursor=0){directory(cloud,business);
+    return q.map(o=>{const p=o.patches[0],actualChanges=directoryDelta(p.before,p.value),cloudDifferences=directoryDelta(p.value,cloud);
+      const equivalent=directoryMeaning(p.value)===directoryMeaning(cloud),timestampOnly=directoryMeaning(p.before)===directoryMeaning(p.value);
+      let meaning=directoryMeaning(p.value),transitions=0,broken=false;
+      for(const row of history.filter(r=>r.seq>cursor))for(const patch of row.payload.patches||[]){if(patch.root!=='sharedDeviceDirectory')continue;
+        if(patch.action!=='root-set'||!patch.before||!patch.value){broken=true;continue;}
+        if(directoryMeaning(patch.before)===meaning){meaning=directoryMeaning(patch.value);transitions++;}else if(transitions)broken=true;
+      }
+      const cloudSupersessionProven=!broken&&transitions>0&&meaning===directoryMeaning(cloud);
+      const superseded=timestampOnly&&Date.parse(p.value.updatedAt)<=Date.parse(cloud.updatedAt)&&(equivalent||cloudSupersessionProven);
+      const safe=equivalent||superseded;
+      return {opId:o.opId,deviceSeq:o.deviceSeq,createdAt:o.createdAt,payloadHash:o.payloadHash,root:'sharedDeviceDirectory',effect:'WHOLE_STAFF_AUTHORIZATION_ROOT',actualChanges,cloudDifferences,
+        classification:superseded?'SUPERSEDED_TIMESTAMP_ONLY':equivalent?'AUTHORIZATION_ALREADY_REFLECTED_IN_CURRENT_CLOUD':'UNRESOLVED_STAFF_DIRECTORY_CHANGE',cloudSupersessionProven,safeToPreserveWithoutPublication:safe,
+        directLifecycleMutation:false,disposition:safe?'PRESERVE_ENCRYPTED_WITHOUT_PUBLICATION':'BLOCK_QUARANTINE_UNRESOLVED_AUTHORIZATION'};
+    });
   }
   function create(io){
     let plan=null,backup=null,busy=false;
     const crypto=io.crypto||globalThis.crypto,enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:true});
     const sha=async text=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(text))),b=>b.toString(16).padStart(2,'0')).join('');
+    const secretKey=/^(access_token|refresh_token|id_token|accessToken|refreshToken|token|authToken|sessionToken|password|passphrase|adminPIN|pricePIN|pin|authorization|publishableKey|supabaseKey|apiKey|anonKey|serviceRoleKey|secretKey|credentials)$/i;
+    // Preserve exact original JSON bytes around excluded credential values.
+    // No session-storage key is ever read. Slots are hash-bound and can only be
+    // restored from unchanged credential values still present on this device.
+    function secretRanges(text){parse(text);let at=0;const ranges=[];
+      const ws=()=>{while(/\s/.test(text[at]||'!'))at++;};
+      function string(){const start=at++;while(at<text.length){const c=text[at++];if(c==='\\'){at++;continue;}if(c==='"')return JSON.parse(text.slice(start,at));}fail('BACKUP_JSON');}
+      function value(path,masked){ws();const c=text[at];if(c==='{'){at++;ws();while(text[at]!=='}'){const k=string();if(['__proto__','prototype','constructor'].includes(k))fail('UNSAFE_KEY');ws();at++;ws();const start=at,isSecret=secretKey.test(k);value(path.concat(k),masked||isSecret);if(isSecret&&!masked)ranges.push({path:path.concat(k),start,end:at});ws();if(text[at]===','){at++;ws();}else break;}at++;}
+        else if(c==='['){at++;ws();let i=0;while(text[at]!==']'){value(path.concat(i++),masked);ws();if(text[at]===','){at++;ws();}else break;}at++;}
+        else if(c==='"')string();else{while(at<text.length&&!/[\s,}\]]/.test(text[at]))at++;}}
+      value([],false);ws();if(at!==text.length)fail('BACKUP_JSON');return ranges.sort((a,b)=>a.start-b.start);
+    }
+    async function sealSnapshot(snapshot){const result={};
+      for(const [k,text]of Object.entries(snapshot)){if(text===null){result[k]=null;continue;}let at=0;const pieces=[];
+        for(const r of secretRanges(text)){pieces.push(text.slice(at,r.start),{path:r.path,sha256:await sha(text.slice(r.start,r.end))});at=r.end;}
+        pieces.push(text.slice(at));result[k]={pieces,sha256:await sha(text)};
+      }return result;
+    }
+    async function unsealSnapshot(snapshot,current){const result={};
+      if(stable(Object.keys(snapshot).sort())!==stable(Object.keys(KEYS).sort()))fail('FULL_BACKUP_KEYS');
+      for(const [k,entry]of Object.entries(snapshot)){if(entry===null){result[k]=null;continue;}
+        if(!entry||!Array.isArray(entry.pieces)||!entry.sha256)fail('FULL_BACKUP_SHAPE');
+        const slots=new Map(current[k]===null?[]:secretRanges(current[k]).map(r=>[stable(r.path),current[k].slice(r.start,r.end)]));let text='';
+        for(const piece of entry.pieces){if(typeof piece==='string')text+=piece;else{const retained=slots.get(stable(piece.path));if(retained===undefined||await sha(retained)!==piece.sha256)fail('RETAINED_CREDENTIAL_REQUIRED');text+=retained;}}
+        if(await sha(text)!==entry.sha256)fail('FULL_BACKUP_HASH');parse(text);result[k]=text;
+      }return result;
+    }
+    function safeRows(rows){if(!Array.isArray(rows)||rows.length!==3||rows.some(r=>r.safeToPreserveWithoutPublication!==true))fail('UNRESOLVED_STAFF_DIRECTORY');}
+    function reserveCapacity(characters){const key=KEY+'_capacity_probe_v2';
+      if(!Number.isSafeInteger(characters)||characters>16*1024*1024)fail('INSUFFICIENT_STORAGE');
+      const leftover=io.storage.getItem(key);if(leftover!==null){if(!/^0*$/.test(leftover))fail('CAPACITY_PROBE_CONFLICT');io.storage.removeItem(key);}
+      try{const probe='0'.repeat(characters);io.storage.setItem(key,probe);if(io.storage.getItem(key)!==probe)fail('CAPACITY_READBACK');}
+      catch(_){try{io.storage.removeItem(key);}catch(_){}fail('INSUFFICIENT_STORAGE');}
+      io.storage.removeItem(key);if(io.storage.getItem(key)!==null)fail('CAPACITY_CLEANUP');
+    }
+    function capacityFor(c,target,j){const possible=Object.assign(clone(c.db),clone(target||c.db));
+      for(const f of LOCAL_DATABASE_FIELDS)if(own(c.db,f))possible[f]=clone(c.db[f]);
+      const targetRaw=JSON.stringify(possible),applied=parse(c.raw.applied||'{}');
+      for(const row of plan?.authority?.operations||[])applied[row.op_id]=row.seq;
+      const appliedRaw=j?.receive?.target.applied||JSON.stringify(applied);
+      const proposed=Object.assign({},j||{original:c.raw},{receive:{before:c.raw,target:{db:targetRaw,state:c.raw.state,applied:appliedRaw}}});
+      // Measure actual JSON escaping and complete register/before/target copies,
+      // with space for DB/register growth and a 64 KiB margin. Recheck each phase.
+      const required=Math.max(JSON.stringify(proposed).length,j?JSON.stringify(j).length:0)+Math.max(0,targetRaw.length-(c.raw.db||'').length)+Math.max(0,appliedRaw.length-(c.raw.applied||'').length)+65536;
+      const additional=Math.max(65536,required-(io.storage.getItem(KEY)||'').length);
+      reserveCapacity(additional);
+      return {tested:true,totalJournalAndGrowthCharacters:required,reservedCharacters:additional,utf16Bytes:additional*2};
+    }
     const raw=()=>Object.fromEntries(Object.entries(KEYS).map(([k,v])=>[k,io.storage.getItem(v)]));
     function capture(){const r=raw(),state=parse(r.state),db=parse(r.db),queue=parse(r.queue),failed=parse(r.failed||'[]');
   const runtime=io.runtime();
@@ -150,7 +214,7 @@
   const c=capture();
   validateQueue(c.queue,c.state,io.operationHash);
   const a=await cloud(c),db=project(a);
-  const rows=classify(c.queue,db.sharedDeviceDirectory,c.state.businessId);
+  const rows=classify(c.queue,db.sharedDeviceDirectory,c.state.businessId,a.operations,Number(c.state.cursor));
   if(!Array.isArray(a.accepted))fail('CLOUD_OPERATION_LOOKUP_REQUIRED');
   for(const accepted of a.accepted){const original=c.queue.find(o=>o.opId===accepted.op_id);
   if(!original||!validInt(accepted.seq)||accepted.seq>a.head||accepted.payload?.opId!==accepted.op_id||io.operationHash(accepted.payload)!==original.payloadHash||accepted.payload.payloadHash!==original.payloadHash)fail('CLOUD_OPERATION_PAYLOAD_CONFLICT');
@@ -158,7 +222,7 @@
   for(const row of rows){const accepted=a.accepted.find(o=>o.op_id===row.opId);
   row.cloudOperationStatus=accepted?'PRESENT_WITH_IDENTICAL_PAYLOAD':'NO_VISIBLE_MATCH_PRECHECKPOINT_HISTORY_UNPROVEN';
   row.cloudOperationCursor=accepted?accepted.seq:null;
-  row.wouldOverwriteCurrentDirectory=row.classification!=='ALREADY_CURRENT';
+  row.wouldOverwriteCurrentDirectory=directoryMeaning(c.queue.find(o=>o.opId===row.opId).patches[0].value)!==directoryMeaning(db.sharedDeviceDirectory);
   }for(let i=0;
   i<rows.length;
   i++){rows[i].beforeSha256=await sha(stable(c.queue[i].patches[0].before));
@@ -169,10 +233,10 @@
   const operations=c.queue.map(o=>({opId:o.opId,payloadHash:o.payloadHash,deviceSeq:o.deviceSeq,createdAt:o.createdAt}));
   const rawSha256={};
   for(const [k,v]of Object.entries(c.raw))rawSha256[k]=await sha(v===null?'null':v);
-  const manifest={rawSha256,deviceId:DEVICE,businessId:c.state.businessId,ownerId:c.state.syncOwnerId,queueSha256:await sha(c.raw.queue),operations,cloudEvidenceSha256:token,head:a.head,checkpointId:a.checkpoint.checkpoint_id,checkpointCursor:a.checkpoint.checkpoint_cursor};
+  const manifest={backupVersion:2,classificationSha256:await sha(stable(rows)),rawSha256,deviceId:DEVICE,businessId:c.state.businessId,ownerId:c.state.syncOwnerId,queueSha256:await sha(c.raw.queue),operations,cloudEvidenceSha256:token,head:a.head,checkpointId:a.checkpoint.checkpoint_id,checkpointCursor:a.checkpoint.checkpoint_cursor};
       plan={capture:c,authority:a,cloud:db,manifest,rows};
   backup=null;
-  return {readOnly:true,deviceId:DEVICE,head:a.head,localCursor:Number(c.state.cursor),checkpointId:manifest.checkpointId,rows,manifest,quarantineAuthorized:false,authority:'AUTHENTICATED_OWNER_ACTIVE_LIFECYCLE',directoryMeaning:'Staff authorization root; not a hardware enrollment registry'};
+  return {readOnly:true,deviceId:DEVICE,head:a.head,localCursor:Number(c.state.cursor),checkpointId:manifest.checkpointId,rows,manifest,quarantineAuthorized:false,dispositionEligible:rows.every(r=>r.safeToPreserveWithoutPublication),authority:'AUTHENTICATED_OWNER_ACTIVE_LIFECYCLE',directoryMeaning:'Staff authorization root; not a hardware enrollment registry'};
   }
     const b64=b=>{let s='';
   for(let i=0;
@@ -185,11 +249,12 @@
   return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']),{name:'AES-GCM',length:256},false,usages);
   }
     async function open(text,pass){let e=parse(text);
-  if(e.format!=='ZEZMS_SHOP_DIRECTORY_ENCRYPTED_V1'||e.iterations!==600000||e.cipher!=='AES-256-GCM'||text.length>64*1024*1024)fail('ARCHIVE_FORMAT');
+  if(e.format!=='ZEZMS_SHOP_DIRECTORY_ENCRYPTED_V2'||e.iterations!==600000||e.cipher!=='AES-256-GCM'||text.length>64*1024*1024)fail('ARCHIVE_FORMAT');
   let payload;
   try{payload=parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(e.iv),additionalData:enc.encode('ZEZMS_SHOP_DIRECTORY_V1|'+DEVICE)},await key(pass,bytes(e.salt),['decrypt']),bytes(e.ciphertext))));
   }catch(_){fail('ARCHIVE_AUTHENTICATION');
-  }if(payload.format!=='ZEZMS_SHOP_DIRECTORY_EVIDENCE_V1'||payload.manifest.deviceId!==DEVICE||await sha(payload.originalQueueRaw)!==payload.manifest.queueSha256)fail('ARCHIVE_MANIFEST');
+  }if(payload.format!=='ZEZMS_SHOP_DIRECTORY_FULL_BACKUP_V2'||payload.manifest.backupVersion!==2||payload.manifest.deviceId!==DEVICE||await sha(payload.originalQueueRaw)!==payload.manifest.queueSha256||await sha(stable(payload.classification))!==payload.manifest.classificationSha256||await sha(stable(payload.fullState))!==payload.fullStateSha256)fail('ARCHIVE_MANIFEST');
+  for(const [k,v]of Object.entries(payload.fullState.original))if((v===null?await sha('null'):v.sha256)!==payload.manifest.rawSha256[k])fail('FULL_BACKUP_MANIFEST');
   noSecrets(payload);
   return payload;
   }
@@ -197,10 +262,12 @@
   if(!plan)fail('PREFLIGHT_REQUIRED');
   const p=plan;
   unchanged(p.capture);
-  const data={format:'ZEZMS_SHOP_DIRECTORY_EVIDENCE_V1',capturedAt:new Date().toISOString(),manifest:p.manifest,originalQueueRaw:p.capture.raw.queue,cloudDirectory:p.cloud.sharedDeviceDirectory,classification:p.rows};
+  const prior=p.receive?p.originalBackup:null;
+  const fullState={original:prior?prior.fullState.original:await sealSnapshot(p.capture.raw),point:await sealSnapshot(p.capture.raw),target:p.receive?await sealSnapshot(receiveTarget(p)):null};
+  const data={format:'ZEZMS_SHOP_DIRECTORY_FULL_BACKUP_V2',stage:p.receive?'RECEIVE':'QUARANTINE',capturedAt:new Date().toISOString(),manifest:p.manifest,originalQueueRaw:prior?prior.originalQueueRaw:p.capture.raw.queue,cloudDirectory:p.receive?p.current.sharedDeviceDirectory:p.cloud.sharedDeviceDirectory,classification:p.rows,fullState,fullStateSha256:await sha(stable(fullState)),pointCloudToken:p.receive?p.token:null,previousArchiveSha256:p.receive?p.originalArchiveSha256:null};
   noSecrets(data);
   const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:enc.encode('ZEZMS_SHOP_DIRECTORY_V1|'+DEVICE)},await key(pass,salt,['encrypt']),enc.encode(JSON.stringify(data)));
-  const text=JSON.stringify({format:'ZEZMS_SHOP_DIRECTORY_ENCRYPTED_V1',cipher:'AES-256-GCM',iterations:600000,salt:b64(salt),iv:b64(iv),ciphertext:b64(new Uint8Array(ciphertext))});
+  const text=JSON.stringify({format:'ZEZMS_SHOP_DIRECTORY_ENCRYPTED_V2',cipher:'AES-256-GCM',iterations:600000,salt:b64(salt),iv:b64(iv),ciphertext:b64(new Uint8Array(ciphertext))});
   unchanged(p.capture);
   const writable=await handle.createWritable();
   await writable.write(text);
@@ -211,36 +278,44 @@
   if(stable(verified)!==stable(data))fail('ARCHIVE_DECRYPT_READBACK');
   unchanged(p.capture);
   backup={sha256:await sha(saved),data:verified};
-  return {savedReadbackAndDecryptionVerified:true,archiveSha256:backup.sha256,manifest:p.manifest};
+  return {savedReadbackAndDecryptionVerified:true,completeOriginalBusinessBackup:true,stage:data.stage,archiveSha256:backup.sha256,manifest:p.manifest};
   }
     async function verifyArchive(file,pass){backup=null;
-  const text=await file.text(),data=await open(text,pass),j=journal();
+  const text=await file.text(),data=await open(text,pass);let j=null,damaged=false;try{j=journal();}catch(_){damaged=true;}
   const hash=await sha(text);
-  if(j&&(hash!==j.archiveSha256||stable(data.manifest)!==stable(j.manifest)||data.originalQueueRaw!==j.original.queue))fail('WRONG_ARCHIVE');
-  if(!j&&(!plan||stable(data.manifest)!==stable(plan.manifest)||data.originalQueueRaw!==plan.capture.raw.queue))fail('WRONG_ARCHIVE');
+  if(j&&((hash!==j.archiveSha256&&data.previousArchiveSha256!==j.archiveSha256)||stable(data.manifest)!==stable(j.manifest)||data.originalQueueRaw!==j.original.queue))fail('WRONG_ARCHIVE');
+  if(!j&&plan&&(stable(data.manifest)!==stable(plan.manifest)||data.originalQueueRaw!==plan.capture.raw.queue))fail('WRONG_ARCHIVE');
+  const c=capture();if(c.state.syncOwnerId!==data.manifest.ownerId||c.state.businessId!==data.manifest.businessId)fail('WRONG_ARCHIVE_OWNER');
+  await unsealSnapshot(data.fullState.original,c.raw);unchanged(c);
   backup={sha256:hash,data};
-  return {savedReadbackAndDecryptionVerified:true,archiveSha256:hash};
+  return {savedReadbackAndDecryptionVerified:true,archiveSha256:hash,externalRestoreRequired:!j&&!plan,journalDamaged:damaged};
   }
-    async function archiveFor(j){if(!backup||backup.sha256!==j.archiveSha256||stable(backup.data.manifest)!==stable(j.manifest))fail('EXTERNAL_ARCHIVE_REQUIRED');
+    async function archiveFor(j){if(!backup||(backup.sha256!==j.archiveSha256&&backup.data.previousArchiveSha256!==j.archiveSha256)||stable(backup.data.manifest)!==stable(j.manifest)||!backup.data.fullState?.original)fail('EXTERNAL_ARCHIVE_REQUIRED');
   for(const [k,v]of Object.entries(j.original))if(await sha(v===null?'null':v)!==j.manifest.rawSha256[k])fail('ORIGINAL_SNAPSHOT_CORRUPT');
+  if(stable(await unsealSnapshot(backup.data.fullState.original,raw()))!==stable(j.original))fail('FULL_BACKUP_ORIGINAL_MISMATCH');
   }
     async function quarantine(confirmed){if(confirmed!=='QUARANTINE EXACT THREE')fail('EXPLICIT_CONFIRMATION_REQUIRED');
   if(io.online())fail('OFFLINE_QUARANTINE_REQUIRED');
   await io.exclusive();
   let j=journal();
   const c=capture();
+  if(backup)safeRows(backup.data.classification);
   if(j){await archiveFor(j);
   if(['QUARANTINED','VERIFIED_HOLD'].includes(j.phase)&&c.raw.queue==='[]')return {alreadyQuarantined:true};
   if(j.phase!=='QUARANTINE_PREPARED'||![j.original.queue,'[]'].includes(c.raw.queue))fail('INTERRUPTED_REVIEW_REQUIRED');
   }else{if(!plan||!backup)fail('VERIFIED_ARCHIVE_REQUIRED');
+  safeRows(plan.rows);
   unchanged(plan.capture);
   if(Date.now()-Date.parse(plan.authority.checkedAt)>15*60*1000)fail('STALE_PREFLIGHT');
   j={version:1,deviceId:DEVICE,phase:'QUARANTINE_PREPARED',archiveSha256:backup.sha256,manifest:plan.manifest,original:plan.capture.raw,actor:c.staffId,createdAt:new Date().toISOString(),reason:'Owner chose current authenticated cloud staff directory; preserved local publications are not uploaded',events:[]};
   await archiveFor(j);
+  unchanged(c);
+  capacityFor(c,plan.cloud,j);
   writeJournal(j);
   }
       if(io.online())fail('OFFLINE_QUARANTINE_REQUIRED');
   unchanged(c);
+  capacityFor(c,plan?.cloud||c.db,j);
   if(c.raw.queue!==j.original.queue&&c.raw.queue!=='[]')fail('QUEUE_CHANGED');
   const paused=Object.assign({},parse(j.original.state),{liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true,directoryOutboxReviewRequired:true});
   put(KEYS.state,JSON.stringify(paused));
@@ -272,6 +347,7 @@
   const c=capture(),j=journal();
   if(!j||!['QUARANTINED','VERIFIED_HOLD'].includes(j.phase)||c.raw.queue!=='[]')fail('QUARANTINE_REQUIRED');
   await archiveFor(j);
+  safeRows(backup.data.classification);
   const a=await cloud(c),cursor=Number(c.state.cursor);
   if(cursor>a.head)fail('SHOP_CURSOR_AHEAD_OF_CLOUD');
   if(a.checkpoint.checkpoint_cursor>cursor)fail('CHECKPOINT_AHEAD_OF_SHOP');
@@ -294,9 +370,13 @@
   const cloudOrphans=io.integrity.findOrphans(current),localOrphans=io.integrity.findOrphans(candidate);
   if(stable(localOrphans)!==stable(cloudOrphans))fail('REFERENCE_DIVERGENCE');
   unchanged(c);
-  plan={receive:true,capture:c,authority:a,token:await fingerprint(a),candidate,tail,current,report};
-  return {readOnly:true,head:a.head,cursor,receiveOperationCount:tail.length,productionDifferences:bad.length,authoritativeOrphanReferences:cloudOrphans.length,historicalReferences:report.historicalReferences.length,historicalMetadata:report.historicalMetadata.length,walletsMatch:true,requiresSeparateConfirmation:true};
+  plan={receive:true,capture:c,authority:a,token:await fingerprint(a),candidate,tail,current,report,manifest:j.manifest,rows:backup.data.classification,originalBackup:backup.data,originalArchiveSha256:j.archiveSha256};
+  return {readOnly:true,head:a.head,cursor,receiveOperationCount:tail.length,productionDifferences:bad.length,authoritativeOrphanReferences:cloudOrphans.length,historicalReferences:report.historicalReferences.length,historicalMetadata:report.historicalMetadata.length,walletsMatch:true,requiresSeparateConfirmation:true,saveFreshFullBackupBeforeReceive:true};
   }
+    function receiveTarget(p){const applied=parse(p.capture.raw.applied||'{}');for(const o of p.tail)applied[o.op_id]=o.seq;
+      const state=Object.assign({},p.capture.state,{cursor:p.authority.head,cloudHeadSeq:p.authority.head,liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true});
+      return Object.assign({},p.capture.raw,{db:JSON.stringify(p.candidate),applied:JSON.stringify(applied),state:JSON.stringify(state)});
+    }
     async function receive(confirmed){if(confirmed!=='RECEIVE ONLY')fail('EXPLICIT_CONFIRMATION_REQUIRED');
   await io.exclusive();
   let j=journal();
@@ -305,6 +385,7 @@
   if(j.phase==='RECEIVE_PREPARED')return resume(confirmed);
   if(!plan?.receive)fail('RECEIVE_PREFLIGHT_REQUIRED');
   const p=plan;
+  if(backup.data.stage!=='RECEIVE'||backup.data.pointCloudToken!==p.token||stable(await unsealSnapshot(backup.data.fullState.point,p.capture.raw))!==stable(p.capture.raw)||stable(await unsealSnapshot(backup.data.fullState.target,p.capture.raw))!==stable(receiveTarget(p)))fail('FRESH_FULL_RECEIVE_BACKUP_REQUIRED');
   unchanged(p.capture);
   const latest=await cloud(p.capture);
   if(await fingerprint(latest)!==p.token)fail('CLOUD_CHANGED');
@@ -316,6 +397,8 @@
   const nextState=Object.assign({},p.capture.state,{cursor:p.authority.head,cloudHeadSeq:p.authority.head,liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true});
   j.phase='RECEIVE_PREPARED';
   j.receive={before:p.capture.raw,target:{db:JSON.stringify(p.candidate),applied:JSON.stringify(applied),state:JSON.stringify(nextState)},cloudToken:p.token,head:p.authority.head,events:p.tail.map(o=>({seq:o.seq,opId:o.op_id,payloadHash:o.payload.payloadHash}))};
+  j.archiveSha256=backup.sha256;
+  capacityFor(p.capture,p.candidate,j);
   writeJournal(j);
   return resume(confirmed);
   }
@@ -341,9 +424,10 @@
   const expectedState=Object.assign({},originalState,{cursor:a.head,cloudHeadSeq:a.head,liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true});
   if(stable(expectedApplied)!==stable(parse(j.receive.target.applied))||stable(expectedState)!==stable(parse(j.receive.target.state)))fail('PREPARED_METADATA_CORRUPT');
   unchanged(c);
+  capacityFor(c,expected.database,j);
   for(const k of ['db','applied','state']){const now=io.storage.getItem(KEYS[k]);
-  if(now!==j.receive.before[k]&&now!==j.receive.target[k])fail('CONCURRENT_LOCAL_CHANGE');
-  }for(const k of ['db','applied','state'])put(KEYS[k],j.receive.target[k]);
+  if(![j.receive.before[k],j.receive.target[k]].some(v=>knownValue(k,now,v)))fail('CONCURRENT_LOCAL_CHANGE');
+  }for(const k of ['db','applied','state'])put(KEYS[k],k==='db'?preserveLocalMetadata(j.receive.target.db,c.raw.db):j.receive.target[k]);
   j.phase='VERIFIED_HOLD';
   j.events.push({action:'RECEIVE_ONLY_COMMITTED',at:new Date().toISOString(),head:j.receive.head});
   writeJournal(j);
@@ -374,11 +458,12 @@
   if(!['QUARANTINE_PREPARED','QUARANTINED','RECEIVE_PREPARED','VERIFIED_HOLD','ROLLBACK_PREPARED'].includes(j.phase))fail('ROLLBACK_STATE');
   if(![j.original.queue,'[]'].includes(c.raw.queue))fail('UNRELATED_QUEUE');
   const before=j.original;
-  for(const k of ['db','applied'])if(c.raw[k]!==before[k]&&c.raw[k]!==j.receive?.before[k]&&c.raw[k]!==j.receive?.target[k])fail('LATER_LOCAL_DATA');
+  for(const k of ['db','applied'])if(![before[k],j.receive?.before[k],j.receive?.target[k]].some(v=>knownValue(k,c.raw[k],v)))fail('LATER_LOCAL_DATA');
   j.phase='ROLLBACK_PREPARED';
+  capacityFor(c,parse(before.db),j);
   writeJournal(j);
   for(const k of ['db','applied']){
-  if(before[k]!==null)put(KEYS[k],before[k]);
+  if(before[k]!==null)put(KEYS[k],k==='db'?preserveLocalMetadata(before[k],c.raw.db):before[k]);
   else{io.storage.removeItem(KEYS[k]);
   if(io.storage.getItem(KEYS[k])!==null)fail('STORAGE_READBACK');
   }}
@@ -391,14 +476,43 @@
   io.reloadRuntime();
   return {restoredOperations:3,uploadBlocked:true};
   }
+    function knownValue(k,now,expected){if(now===expected)return true;if(!now||!expected)return false;
+      if(k==='state'){const normalize=text=>{const s=parse(text);delete s.status;delete s.pending;return stable(s);};return normalize(now)===normalize(expected);}
+      if(k!=='db')return false;
+      const normalize=text=>{const d=parse(text);for(const f of LOCAL_DATABASE_FIELDS)delete d[f];for(const row of d.undoLog||[])delete row.productId;return stable(d);};
+      return normalize(now)===normalize(expected);
+    }
+    function preserveLocalMetadata(original,current){const result=parse(original),local=parse(current);
+      for(const k of LOCAL_DATABASE_FIELDS){if(own(local,k))result[k]=local[k];else delete result[k];}return JSON.stringify(result);
+    }
+    async function restoreExternal(confirmed){if(confirmed!=='RESTORE VERIFIED EXTERNAL BACKUP')fail('EXPLICIT_CONFIRMATION_REQUIRED');
+      if(io.online())fail('OFFLINE_ROLLBACK_REQUIRED');await io.exclusive();
+      if(!backup?.data.fullState?.original)fail('VERIFIED_FULL_EXTERNAL_BACKUP_REQUIRED');
+      let existing=null;try{existing=journal();}catch(_){}
+      if(existing){if(existing.externalRestoration&&['ROLLBACK_PREPARED','ROLLED_BACK'].includes(existing.phase))return rollback('RESTORE PRESERVED LOCAL STATE');fail('USE_JOURNALED_ROLLBACK');}
+      const c=capture(),data=backup.data;
+      if(c.state.syncOwnerId!==data.manifest.ownerId||c.state.businessId!==data.manifest.businessId)fail('WRONG_ARCHIVE_OWNER');
+      const original=await unsealSnapshot(data.fullState.original,c.raw),point=await unsealSnapshot(data.fullState.point,c.raw),target=data.fullState.target?await unsealSnapshot(data.fullState.target,c.raw):null;
+      validateQueue(parse(original.queue),parse(original.state),io.operationHash);
+      const paused=JSON.stringify(Object.assign({},parse(original.state),{liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true,directoryOutboxReviewRequired:true}));
+      const restored=JSON.stringify(Object.assign({},parse(original.state),{liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true}));
+      for(const k of Object.keys(KEYS)){const allowed=[original[k],point[k],target?target[k]:original[k]];
+        if(k==='queue')allowed.push('[]');if(k==='state')allowed.push(paused,restored);
+        if(!allowed.some(v=>knownValue(k,c.raw[k],v)))fail('EXTERNAL_RESTORE_UNRECOGNIZED_LOCAL_STATE_'+k.toUpperCase());
+      }
+      unchanged(c);const displaced=io.storage.getItem(KEY);
+      const j={version:1,deviceId:DEVICE,phase:'ROLLBACK_PREPARED',archiveSha256:backup.sha256,manifest:data.manifest,original,actor:c.staffId,createdAt:new Date().toISOString(),externalRestoration:true,displacedJournal:displaced,reason:'Owner-confirmed restoration from authenticated full external backup; no cloud call or upload',events:[]};
+      if(target)j.receive={before:point,target:{db:target.db,state:target.state,applied:target.applied}};
+      capacityFor(c,parse(original.db),j);writeJournal(j);return rollback('RESTORE PRESERVED LOCAL STATE');
+    }
     async function serial(fn,...args){if(busy)fail('BUSY');
   busy=true;
   try{return await fn(...args);
   }finally{busy=false;
-  const j=journal();
+  let j=null;try{j=journal();}catch(_){}
   if(j&&['RECEIVE_PREPARED','ROLLBACK_PREPARED'].includes(j.phase))io.reloadRuntime();
   }}
-    return Object.freeze({preflight:()=>serial(preflight),saveArchive:(...a)=>serial(saveArchive,...a),verifyArchive:(...a)=>serial(verifyArchive,...a),quarantine:(...a)=>serial(quarantine,...a),prepareReceive:()=>serial(prepareReceive),receive:(...a)=>serial(receive,...a),resume:(...a)=>serial(resume,...a),verifyCurrent:()=>serial(verifyCurrent),rollback:(...a)=>serial(rollback,...a)});
+    return Object.freeze({preflight:()=>serial(preflight),saveArchive:(...a)=>serial(saveArchive,...a),verifyArchive:(...a)=>serial(verifyArchive,...a),quarantine:(...a)=>serial(quarantine,...a),prepareReceive:()=>serial(prepareReceive),receive:(...a)=>serial(receive,...a),resume:(...a)=>serial(resume,...a),verifyCurrent:()=>serial(verifyCurrent),rollback:(...a)=>serial(rollback,...a),restoreExternal:(...a)=>serial(restoreExternal,...a)});
   }
   return Object.freeze({DEVICE,IDS,KEY,KEYS,ROOTS,COLLECTIONS,stable,validateQueue,classify,create});
 });

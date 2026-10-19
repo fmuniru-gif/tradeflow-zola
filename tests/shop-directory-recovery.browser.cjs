@@ -119,13 +119,15 @@ test('full shell read-only cloud preflight, real disk archive, quarantine and re
     await f.page.evaluate(()=>{session.commercialRole='CASHIER';});await assert.rejects(f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.preflight()),/SHOP_OWNER_OR_RUNTIME/);await f.page.evaluate(()=>{session.commercialRole='OWNER';});await assert.rejects(f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.preflight()),/CLOUD_OR_SESSION_CHANGED/);movingHead=false;const report=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.preflight());assert.equal(report.rows.length,3);
     assert.deepEqual(await f.page.evaluate(()=>({db:localStorage.getItem('tradeflow_v321_zola'),queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),state:localStorage.getItem('zezms_cloud_sync_m4_state'),applied:localStorage.getItem('zezms_cloud_sync_m4_applied_v2')})),original);
     await f.page.exposeFunction('__archiveWrite',text=>fs.writeFileSync(file,text));await f.page.exposeFunction('__archiveRead',()=>fs.readFileSync(file,'utf8'));
-    const archived=await f.page.evaluate(async()=>{const handle={createWritable:async()=>({write:async t=>window.__archiveWrite(t),close:async()=>{}}),getFile:async()=>({text:async()=>window.__archiveRead()})};return ZEZMS.cloudSync.shopRecovery.saveArchive(handle,'synthetic sufficiently long archive passphrase');});
+    const archived=await f.page.evaluate(async()=>{const handle={createWritable:async()=>({write:async t=>window.__archiveWrite(t),close:async()=>{}}),getFile:async()=>({text:async()=>window.__archiveRead()})};window.__testArchiveHandle=handle;return ZEZMS.cloudSync.shopRecovery.saveArchive(handle,'synthetic sufficiently long archive passphrase');});
     assert.equal(archived.savedReadbackAndDecryptionVerified,true);assert.ok(fs.existsSync(file));
     const requestsBefore=reads.length;await f.context.setOffline(true);
     await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.quarantine('QUARANTINE EXACT THREE'));
     assert.equal(reads.length,requestsBefore);assert.equal(await f.page.evaluate(()=>localStorage.getItem('zezms_cloud_sync_m4_queue')),'[]');assert.equal(await f.page.evaluate(()=>localStorage.getItem('tradeflow_v321_zola')),original.db);
     await f.context.setOffline(false);
     await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.prepareReceive());
+    await assert.rejects(f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.receive('RECEIVE ONLY')),/FRESH_FULL_RECEIVE_BACKUP_REQUIRED/);
+    await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.saveArchive(window.__testArchiveHandle,'synthetic sufficiently long archive passphrase'));
     await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.receive('RECEIVE ONLY'));
     const audited=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.verifyCurrent());assert.equal(audited.walletsEqual,true);assert.equal(audited.queueCount,0);
     assert.ok(reads.every(r=>r.method==='GET'||r.method==='OPTIONS'||r.method==='POST'&&['/rest/v1/rpc/zezms_m43_checkpoint_latest','/rest/v1/rpc/zezms_m5a4_canonical_fleet_read'].includes(r.path)));
@@ -133,5 +135,19 @@ test('full shell read-only cloud preflight, real disk archive, quarantine and re
     const after=await f.page.evaluate(()=>({state:ZEZMS.cloudSync.getState(),balance:DB.cashBalances.Others,held:ZEZMS.cloudSync.getDirectoryOutboxReview().required}));assert.equal(after.state.deviceId,core.DEVICE);assert.equal(after.state.cursor,2);assert.equal(after.balance,(Number(bundle.db.cashBalances.Others)||0)+5);assert.equal(after.state.liveSyncEnabled,false);assert.equal(after.held,true);
     const durableBeforeUpdate=await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1'),db:localStorage.getItem('tradeflow_v321_zola')}));workerGeneration++;await f.page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update();});await f.page.waitForFunction(async()=>!!(await navigator.serviceWorker.getRegistration()).waiting);assert.deepEqual(await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1'),db:localStorage.getItem('tradeflow_v321_zola')})),durableBeforeUpdate);await f.page.reload();await f.page.waitForFunction(()=>ZEZMS.cloudSync?.shopRecovery);await f.page.evaluate(async()=>{await ZEZMS.cloudSync.start(false);window.dispatchEvent(new Event('online'));});assert.equal(await f.page.evaluate(()=>ZEZMS.cloudSync.getDirectoryOutboxReview().required),true);
     assert.ok(!reads.some(r=>r.path.endsWith('zezms_ops_push')));
+    // Independent restoration in a second disposable browser profile. Only
+    // synthetic post-receive storage is transferred; the local journal is lost.
+    const snapshot=await f.page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).filter(k=>k!=='zezms_shop_directory_recovery_v1').map(k=>[k,localStorage.getItem(k)])));
+    const disposable=await browser.newContext();try{
+      const tab=await disposable.newPage();await disposable.route('**/*',r=>new URL(r.request().url()).origin===f.origin?r.continue():r.abort());
+      await tab.addInitScript(snapshot=>{if(localStorage.getItem('__external_restore_fixture'))return;for(const [k,v]of Object.entries(snapshot))localStorage.setItem(k,v);localStorage.setItem('__external_restore_fixture','1');},snapshot);
+      await tab.goto(f.origin+'/index.html');await tab.waitForFunction(()=>window.ZEZMS?.cloudSync?.shopRecovery&&window.ZEZMS?.staffAuth);
+      await tab.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js');await navigator.serviceWorker.ready;});await tab.reload();await tab.waitForFunction(()=>window.ZEZMS?.staffAuth&&window.ZEZMS?.cloudSync?.shopRecovery);
+      if(await tab.evaluate(()=>ZEZMS.staffAuth.getContext().role!=='OWNER')){await tab.locator('#sharedLoginUser').selectOption('owner-staff-synthetic');await tab.locator('#sharedLoginPassword').fill('synthetic-owner-password');await tab.evaluate(()=>ZEZMS.staffAuth.signInFromLogin());}
+      await tab.waitForFunction(()=>ZEZMS.staffAuth.getContext().role==='OWNER');await tab.exposeFunction('__readIndependentBackup',()=>fs.readFileSync(file,'utf8'));await disposable.setOffline(true);
+      await tab.evaluate(async()=>{const a=ZEZMS.cloudSync.shopRecovery;await a.verifyArchive({text:()=>window.__readIndependentBackup()},'synthetic sufficiently long archive passphrase');await a.restoreExternal('RESTORE VERIFIED EXTERNAL BACKUP');});
+      const restored=await tab.evaluate(()=>({db:JSON.parse(localStorage.getItem('tradeflow_v321_zola')),state:ZEZMS.cloudSync.getState(),queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),journal:JSON.parse(localStorage.getItem('zezms_shop_directory_recovery_v1'))}));
+      assert.equal(restored.queue,original.queue);assert.equal(restored.state.deviceId,core.DEVICE);assert.equal(restored.state.cursor,1);assert.equal(restored.state.liveSyncEnabled,false);assert.deepEqual(restored.db.cashBalances,JSON.parse(original.db).cashBalances);assert.equal(restored.journal.externalRestoration,true);
+    }finally{await disposable.close();}
   }finally{await f.context.close();fs.rmSync(file,{force:true});fs.rmdirSync(dir);}
 });

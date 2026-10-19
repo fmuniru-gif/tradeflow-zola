@@ -85,7 +85,7 @@ async function shopExclusive(){
     channel.port1.onmessage=function(event){clearTimeout(timer);channel.port1.close();resolve(event.data);};
     controller.postMessage({type:'ZEZMS_SHOP_RECOVERY_CLIENTS'},[channel.port2]);
   });
-  if(!response||response.guard!=='shop-directory-v1'||response.count!==1||response.onlyClientUrl!==location.href)
+  if(!response||response.guard!=='shop-directory-v2'||response.count!==1||response.onlyClientUrl!==location.href)
     throw Error('SHOP_STOP_CLOSE_OTHER_TRADEFLOW_TABS');
 }
 async function shopReadCloud(savedState){
@@ -148,7 +148,7 @@ function shopRecoveryHtml(){
   return '<section class="card" id="shopRecoveryPanel"><h3>ZEZMS Shop — preserved directory recovery</h3><p>All Shop uploads and local posting remain held. These are staff authorization publications, not business transactions or device enrollment records. Main and other devices are outside this control.</p>'
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'preflight\')">Read-only Shop preflight</button> '
     +'<label>Archive passphrase (20+ characters; never saved)<input id="shopArchivePass" type="password" autocomplete="off"></label>'
-    +'<button class="btn" onclick="zezmsShopRecoveryAction(\'archive\')">Save and read back encrypted evidence</button> '
+    +'<button class="btn" onclick="zezmsShopRecoveryAction(\'archive\')">Save and verify full encrypted recovery backup</button> '
     +'<label>Previously saved encrypted evidence<input id="shopArchiveFile" type="file" accept=".json"></label>'
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'verifyArchive\')">Verify saved archive</button> '
     +'<button class="btn warn" onclick="zezmsShopRecoveryAction(\'quarantine\')">Quarantine exact three (offline)</button> '
@@ -157,6 +157,7 @@ function shopRecoveryHtml(){
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'resume\')">Resume interrupted receive only</button> '
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'verifyCurrent\')">Verify current Cloud-vs-Local</button> '
     +'<button class="btn warn" onclick="zezmsShopRecoveryAction(\'rollback\')">Restore preserved local state (offline)</button>'
+    +'<button class="btn warn" onclick="zezmsShopRecoveryAction(\'restoreExternal\')">Restore verified external backup — lost journal (offline)</button>'
     +'<pre id="shopRecoveryReport" style="white-space:pre-wrap">No recovery action has run. Keep the original encrypted evidence permanently.</pre></section>';
 }
 var shopOldSettings=window.ZEZMS.cloudSync.settingsHtml;
@@ -169,7 +170,7 @@ window.zezmsShopRecoveryAction=async function(action){
     if(action==='preflight')result=await shopRecovery.preflight();
     else if(action==='archive'){
       if(typeof window.showSaveFilePicker!=='function')throw Error('SHOP_STOP_FILE_READBACK_UNAVAILABLE');
-      var handle=await showSaveFilePicker({suggestedName:'ZEZMS_Shop_Directory_Evidence_Encrypted.json',types:[{description:'Encrypted evidence',accept:{'application/json':['.json']}}]});
+      var handle=await showSaveFilePicker({suggestedName:'ZEZMS_Shop_Full_Recovery_Backup_'+Date.now()+'.json',types:[{description:'Encrypted full recovery backup',accept:{'application/json':['.json']}}]});
       result=await shopRecovery.saveArchive(handle,secret);
     }else if(action==='verifyArchive'){
       var file=document.getElementById('shopArchiveFile')?.files[0];if(!file)throw Error('SHOP_STOP_SELECT_SAVED_ARCHIVE');result=await shopRecovery.verifyArchive(file,secret);
@@ -184,6 +185,9 @@ window.zezmsShopRecoveryAction=async function(action){
     else if(action==='rollback'){
       if(!confirm('Restore ONLY this preserved Shop local state? This restores the three operations to a held queue, never uploads them, and requires the verified archive and offline mode.'))return;
       result=await shopRecovery.rollback('RESTORE PRESERVED LOCAL STATE');
+    }else if(action==='restoreExternal'){
+      if(!confirm('Restore the complete original Shop state ONLY from the verified external full backup? Use only for a missing/damaged journal, fully offline. Unknown later data or changed retained credentials blocks restoration. Uploads remain held.'))return;
+      result=await shopRecovery.restoreExternal('RESTORE VERIFIED EXTERNAL BACKUP');
     }else throw Error('SHOP_STOP_UNKNOWN_ACTION');
     report=document.getElementById('shopRecoveryReport')||report;if(report)report.textContent=JSON.stringify(result,null,2);
     return result;

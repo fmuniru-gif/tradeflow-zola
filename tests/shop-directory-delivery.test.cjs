@@ -23,7 +23,7 @@ test('standalone legacy sync, Main repairs, financial code and manifest stay byt
 test('worker requires new guard shell and enumerates old/uncontrolled clients',()=>{
   const source=fs.readFileSync(path.join(root,'sw.js'),'utf8');
   assert.match(source,/includeUncontrolled:true/);assert.match(source,/SHOP_DIRECTORY_RECOVERY_BUILD/);assert.ok(!source.includes('skipWaiting('));assert.ok(!source.includes('indexedDB.deleteDatabase'));
-  assert.match(shell,/PATCH_CACHE="zezms-shop-directory-recovery-patched-v1"/);
+  assert.match(shell,/PATCH_CACHE="zezms-shop-directory-recovery-patched-v2"/);
 });
 test('recovery compares the complete production synchronized scope',()=>{
   const core=require('../js/shop-directory-recovery-core.js'),prior=decode(original,'CLOUD_B64');
