@@ -1,8 +1,10 @@
 /* Inserted INSIDE the production embedded M4/3 closure. Healthy devices use
- * every original path. Shop stays write/upload locked even after verification. */
+ * every original path. Shop remains locked until a separately approved release
+ * enables the audited trading-activation gate. */
 var shopCore=window.ZEZMSShopRecoveryCore;
 var shopBound=String(state.deviceId||'')===shopCore.DEVICE;
-function shopHeld(){return shopBound;}
+var SHOP_TRADING_ACTIVATION_ENABLED=false;
+function shopHeld(){return shopBound&&!(SHOP_TRADING_ACTIVATION_ENABLED&&shopCore.tradingActivationRecorded(localStorage,deterministicHash));}
 function shopStop(detail){throw new Error('SHOP_STOP_RECOVERY_HOLD: Shop directory recovery holds all uploads and local posting.'+(typeof detail==='string'?' '+detail:''));}
 var shopBasePushOne=pushOne;
 pushOne=async function(operation){if(shopHeld())shopStop();return shopBasePushOne(operation);};
@@ -36,7 +38,7 @@ function shopInstallSaveGuard(){
   if(!shopHeld()||typeof window.saveDB!=='function')return false;
   if(window.saveDB.__shopDirectorySaveGuard)return true;
   var originalSave=window.saveDB;
-  var guarded=function(){shopLoadBusinessGuard();if(shopBusinessText(getDatabase()||{})!==shopObservedBusiness){var before=JSON.parse(shopObservedBusiness),now=JSON.parse(shopBusinessText(getDatabase()||{}));shopStop('Changed synchronized roots: '+Object.keys(now).filter(function(k){return shopCore.stable(now[k])!==shopCore.stable(before[k]);}).join(','));}return originalSave.apply(this,arguments);};
+  var guarded=function(){if(shopHeld()){shopLoadBusinessGuard();if(shopBusinessText(getDatabase()||{})!==shopObservedBusiness){var before=JSON.parse(shopObservedBusiness),now=JSON.parse(shopBusinessText(getDatabase()||{}));shopStop('Changed synchronized roots: '+Object.keys(now).filter(function(k){return shopCore.stable(now[k])!==shopCore.stable(before[k]);}).join(','));}}return originalSave.apply(this,arguments);};
   guarded.__shopDirectorySaveGuard=true;
   guarded.__managerScopeLastLoginWrapped=originalSave.__managerScopeLastLoginWrapped===true;
   window.saveDB=guarded;return true;
@@ -72,21 +74,42 @@ function shopReloadRuntime(){
   var saved=JSON.parse(localStorage.getItem(DB_KEY));
   if(typeof DB!=='undefined'&&DB&&saved){Object.keys(DB).forEach(function(k){delete DB[k];});Object.assign(DB,saved);}
   shopObservedBusiness=shopBusinessText(getDatabase()||{});
-  r70sDirectoryQueueHold=true;observedSnapshot=null;
+  r70sDirectoryQueueHold=shopHeld();
+  // The held initialization deliberately never established the ordinary M4
+  // snapshot. Establish it only after the audited activation journal exists,
+  // so the first legitimate business save is not silently treated as baseline.
+  observedSnapshot=shopHeld()?null:cleanSnapshot(getDatabase());
+}
+async function shopWorkerReadiness(){
+  // This is a local, read-only MessageChannel check. An old controller that
+  // cannot attest its release is reported, never treated as an empty tab list.
+  var controller=navigator.serviceWorker&&navigator.serviceWorker.controller;
+  var registration=await navigator.serviceWorker?.getRegistration().catch(function(){return null;});
+  var path=function(worker){try{return worker?new URL(worker.scriptURL).pathname:null;}catch(_){return null;}};
+  var result={readOnly:true,controllerPath:path(controller),controllerState:controller?.state||null,
+    activePath:path(registration?.active),waitingPath:path(registration?.waiting),installingPath:path(registration?.installing),
+    expectedRelease:'shop-trading-readiness-v1',expectedGuard:'shop-directory-v2',status:'NO_CONTROLLER',clientCount:null};
+  if(!controller)return result;
+  var channel=new MessageChannel();
+  var response=await new Promise(function(resolve){
+    var timer=setTimeout(function(){channel.port1.close();resolve(null);},5000);
+    channel.port1.onmessage=function(event){clearTimeout(timer);channel.port1.close();resolve(event.data);};
+    try{controller.postMessage({type:'ZEZMS_SHOP_RECOVERY_CLIENTS'},[channel.port2]);}
+    catch(_){clearTimeout(timer);channel.port1.close();resolve(null);}
+  });
+  if(!response){result.status='NO_REPLY';return result;}
+  result.guard=response.guard||null;result.release=response.release||null;
+  result.clientCount=Number.isSafeInteger(response.count)?response.count:null;
+  if(response.guard!=='shop-directory-v2'||response.release!==result.expectedRelease){result.status='OUTDATED_WORKER';return result;}
+  if(response.count!==1||response.onlyClientUrl!==location.href){result.status='OTHER_CLIENTS';return result;}
+  result.status='READY';return result;
 }
 async function shopExclusive(){
-  // A candidate worker must enumerate every window, including uncontrolled old
-  // tabs. Unsupported/old workers fail closed. No skipWaiting or cache reset.
-  var controller=navigator.serviceWorker&&navigator.serviceWorker.controller;
-  if(!controller)throw Error('SHOP_STOP_REVIEWED_WORKER_REQUIRED');
-  var channel=new MessageChannel();
-  var response=await new Promise(function(resolve,reject){
-    var timer=setTimeout(function(){channel.port1.close();reject(Error('SHOP_STOP_TAB_CHECK_TIMEOUT'));},5000);
-    channel.port1.onmessage=function(event){clearTimeout(timer);channel.port1.close();resolve(event.data);};
-    controller.postMessage({type:'ZEZMS_SHOP_RECOVERY_CLIENTS'},[channel.port2]);
-  });
-  if(!response||response.guard!=='shop-directory-v2'||response.count!==1||response.onlyClientUrl!==location.href)
-    throw Error('SHOP_STOP_CLOSE_OTHER_TRADEFLOW_TABS');
+  var report=await shopWorkerReadiness();
+  if(report.status==='READY')return;
+  if(report.status==='NO_REPLY')throw Error('SHOP_STOP_WORKER_NO_REPLY');
+  if(report.status==='OTHER_CLIENTS')throw Error('SHOP_STOP_CLOSE_OTHER_TRADEFLOW_TABS');
+  throw Error('SHOP_STOP_REVIEWED_WORKER_REQUIRED');
 }
 async function shopReadCloud(savedState){
   var project='https://ruadyqcsutfprrxdaahi.supabase.co';
@@ -141,33 +164,49 @@ if(shopHeld()){
     runtime:function(){var owner=localOwnerStaff();return {role:owner?'OWNER':'',staffId:owner?String(owner.user.id):'',deviceId:state.deviceId,cursor:Number(state.cursor),queue:queue,db:getDatabase()};},
     readCloud:shopReadCloud,operationHash:deterministicHash,entityKey:entityKey,validateOperation:validateOperationIdentity,validateDatabase:validateAppliedState,
     verifyCheckpoint:function(payload,hash){return ZEZMS.managedDevices._test.verifyCheckpointPayloadHash(payload,hash);},
-    integrity:{projectCloud:function(b){return ZEZMS.syncIntegrity._test.projectCloud(b);},compareDatabases:function(a,b,c){return ZEZMS.syncIntegrity._test.compareDatabases(a,b,c);},findOrphans:function(db){return ZEZMS.syncIntegrity._test.findOrphans(db);}},reloadRuntime:shopReloadRuntime});
+    integrity:{projectCloud:function(b){return ZEZMS.syncIntegrity._test.projectCloud(b);},compareDatabases:function(a,b,c){return ZEZMS.syncIntegrity._test.compareDatabases(a,b,c);},findOrphans:function(db){return ZEZMS.syncIntegrity._test.findOrphans(db);}},reloadRuntime:shopReloadRuntime,activationEnabled:SHOP_TRADING_ACTIVATION_ENABLED});
+}
+var shopRecoveryReportText='No recovery action has run. Keep the original encrypted evidence permanently.';
+function shopReportHtml(text){return String(text).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function shopShowReport(action,result){
+  var text=JSON.stringify({step:action,result:result},null,2);
+  if(/access_token|refresh_token|passwordHash|passwordSalt|ciphertext|Bearer\s|sb_publishable_/i.test(text))text='SHOP_STOP_REPORT_REDACTED';
+  shopRecoveryReportText=text.slice(0,20000);
+  var report=document.getElementById('shopRecoveryReport');if(report)report.textContent=shopRecoveryReportText;
 }
 function shopRecoveryHtml(){
   if(!shopHeld()||!localOwnerStaff())return '';
-  return '<section class="card" id="shopRecoveryPanel"><h3>ZEZMS Shop — preserved directory recovery</h3><p>All Shop uploads and local posting remain held. These are staff authorization publications, not business transactions or device enrollment records. Main and other devices are outside this control.</p>'
-    +'<button class="btn" onclick="zezmsShopRecoveryAction(\'preflight\')">Read-only Shop preflight</button> '
+  return '<section class="card" id="shopRecoveryPanel"><h3>ZEZMS Shop — guided directory recovery</h3><p>Shop uploads and local posting remain held. Work through these steps in order. A previous PASS is historical evidence; each mutation rechecks its required state.</p>'
+    +'<h4>1. Check the controlling worker and close other TradeFlow tabs</h4><button class="btn" onclick="zezmsShopRecoveryAction(\'worker\')">Check recovery worker and tabs</button><p>An old or silent worker blocks recovery. Close other tabs, let the waiting reviewed worker activate, then reopen this same-origin app and check again. Never clear site data or unregister the worker.</p>'
+    +'<h4>2. Verify current Owner, queue, cloud and staff-directory disposition</h4><button class="btn" onclick="zezmsShopRecoveryAction(\'preflight\')">Read-only Shop preflight</button> '
+    +'<h4>3. Preserve and verify the complete original state</h4>'
     +'<label>Archive passphrase (20+ characters; never saved)<input id="shopArchivePass" type="password" autocomplete="off"></label>'
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'archive\')">Save and verify full encrypted recovery backup</button> '
     +'<label>Previously saved encrypted evidence<input id="shopArchiveFile" type="file" accept=".json"></label>'
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'verifyArchive\')">Verify saved archive</button> '
+    +'<h4>4. Quarantine only after separate confirmation and full disconnection</h4>'
     +'<button class="btn warn" onclick="zezmsShopRecoveryAction(\'quarantine\')">Quarantine exact three (offline)</button> '
+    +'<h4>5. Reconnect for receive-only catch-up, with a fresh verified backup</h4>'
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'prepareReceive\')">Read-only receive preflight</button> '
     +'<button class="btn warn" onclick="zezmsShopRecoveryAction(\'receive\')">Confirm receive only</button> '
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'resume\')">Resume interrupted receive only</button> '
+    +'<h4>6. Verify complete equality and assess trading readiness</h4>'
     +'<button class="btn" onclick="zezmsShopRecoveryAction(\'verifyCurrent\')">Verify current Cloud-vs-Local</button> '
+    +'<button class="btn" onclick="zezmsShopRecoveryAction(\'activationReadiness\')">Read-only trading activation check</button><p>Trading activation is disabled in this review candidate until separate Owner authorization after live verification. Live Sync is never enabled automatically.</p>'
+    +'<h4>Recovery from interruption</h4>'
     +'<button class="btn warn" onclick="zezmsShopRecoveryAction(\'rollback\')">Restore preserved local state (offline)</button>'
     +'<button class="btn warn" onclick="zezmsShopRecoveryAction(\'restoreExternal\')">Restore verified external backup — lost journal (offline)</button>'
-    +'<pre id="shopRecoveryReport" style="white-space:pre-wrap">No recovery action has run. Keep the original encrypted evidence permanently.</pre></section>';
+    +'<pre id="shopRecoveryReport" style="white-space:pre-wrap">'+shopReportHtml(shopRecoveryReportText)+'</pre></section>';
 }
 var shopOldSettings=window.ZEZMS.cloudSync.settingsHtml;
 window.ZEZMS.cloudSync.settingsHtml=function(){return shopOldSettings()+shopRecoveryHtml();};
 window.zezmsShopRecoveryAction=async function(action){
-  var report=document.getElementById('shopRecoveryReport');if(!shopRecovery||!localOwnerStaff())throw Error('SHOP_STOP_OWNER_REQUIRED');
+  if(!shopRecovery||!localOwnerStaff())throw Error('SHOP_STOP_OWNER_REQUIRED');
   var pass=document.getElementById('shopArchivePass'),secret=pass?pass.value:'';if(pass)pass.value='';
   try{
     var result;
-    if(action==='preflight')result=await shopRecovery.preflight();
+    if(action==='worker')result=await shopWorkerReadiness();
+    else if(action==='preflight')result=await shopRecovery.preflight();
     else if(action==='archive'){
       if(typeof window.showSaveFilePicker!=='function')throw Error('SHOP_STOP_FILE_READBACK_UNAVAILABLE');
       var handle=await showSaveFilePicker({suggestedName:'ZEZMS_Shop_Full_Recovery_Backup_'+Date.now()+'.json',types:[{description:'Encrypted full recovery backup',accept:{'application/json':['.json']}}]});
@@ -182,6 +221,7 @@ window.zezmsShopRecoveryAction=async function(action){
       if(!confirm('Receive current authoritative cloud operations ONLY? No upload or Live Sync will be enabled. A stable cloud preflight and verified archive are required.'))return;
       result=await shopRecovery[action]('RECEIVE ONLY');
     }else if(action==='verifyCurrent')result=await shopRecovery.verifyCurrent();
+    else if(action==='activationReadiness')result=await shopRecovery.activationReadiness();
     else if(action==='rollback'){
       if(!confirm('Restore ONLY this preserved Shop local state? This restores the three operations to a held queue, never uploads them, and requires the verified archive and offline mode.'))return;
       result=await shopRecovery.rollback('RESTORE PRESERVED LOCAL STATE');
@@ -189,12 +229,12 @@ window.zezmsShopRecoveryAction=async function(action){
       if(!confirm('Restore the complete original Shop state ONLY from the verified external full backup? Use only for a missing/damaged journal, fully offline. Unknown later data or changed retained credentials blocks restoration. Uploads remain held.'))return;
       result=await shopRecovery.restoreExternal('RESTORE VERIFIED EXTERNAL BACKUP');
     }else throw Error('SHOP_STOP_UNKNOWN_ACTION');
-    report=document.getElementById('shopRecoveryReport')||report;if(report)report.textContent=JSON.stringify(result,null,2);
+    shopShowReport(action,result);
     return result;
-  }catch(error){report=document.getElementById('shopRecoveryReport')||report;if(report)report.textContent=String(error.message||error).match(/SHOP_STOP_[A-Z0-9_]+/)?.[0]||'SHOP_STOP_CHECK_FAILED';throw error;}
+  }catch(error){shopRecoveryReportText=String(error.message||error).match(/SHOP_STOP_[A-Z0-9_]+/)?.[0]||'SHOP_STOP_CHECK_FAILED';var report=document.getElementById('shopRecoveryReport');if(report)report.textContent=shopRecoveryReportText;throw error;}
 };
-Object.assign(window.ZEZMS.cloudSync,{shopRecovery:shopRecovery,isShopDirectoryRecoveryHeld:shopHeld,start:startLiveSync,reconnectNow:r67hReconnectNow,publishRoot:publishRoot,onLocalSave:onLocalSave,isReadyForLocalOperations:isReadyForLocalOperations});
+Object.assign(window.ZEZMS.cloudSync,{shopRecovery:shopRecovery,shopRecoveryWorkerReadiness:shopBound?shopWorkerReadiness:null,isShopDirectoryRecoveryHeld:shopHeld,start:startLiveSync,reconnectNow:r67hReconnectNow,publishRoot:publishRoot,onLocalSave:onLocalSave,isReadyForLocalOperations:isReadyForLocalOperations});
 // Durable queue reads at the last upload hop above are supplemented by the
 // unconditional identity hold. Old candidate tabs cannot clear it by changing
 // their in-memory queue or by replaying an authentication callback.
-if(shopHeld())window.addEventListener('storage',function(event){if([shopCore.KEY,STATE_KEY,QUEUE_KEY].includes(event.key)){stopRealtime();if(pushTimer){clearTimeout(pushTimer);pushTimer=null;}}});
+if(shopBound)window.addEventListener('storage',function(event){if(shopHeld()&&[shopCore.KEY,STATE_KEY,QUEUE_KEY].includes(event.key)){stopRealtime();if(pushTimer){clearTimeout(pushTimer);pushTimer=null;}}});

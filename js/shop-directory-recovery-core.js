@@ -66,8 +66,17 @@
   if(rows.length!==1)fail('CANONICAL_FLEET');
   const r=rows[0];
   const access=String(r.device_access_status||'').toUpperCase();
-  const ownerFallback=!access&&r.registered_device_status==='ACTIVE'&&!r.registered_device_revoked_at;
-  if(access!=='ACTIVE'&&!ownerFallback)fail('ACCESS_AUTHORITY');
+  // This block matches the corrected authorization guard in the current
+  // production embedded closure. Never rebuild from the older M4/2 source.
+  const registration=String(r.registered_device_status||'').toUpperCase();
+  const registeredOwnerFallback=(
+    (access==='MISSING'&&registration==='REGISTERED')||
+    (!access&&registration==='ACTIVE')
+  )&&r.authentication_eligible===true
+   &&r.lifecycle_id===life.id&&r.lifecycle_state==='ACTIVE'
+   &&!r.device_access_revoked_at&&!r.registered_device_revoked_at
+   &&!r.lifecycle_revoked_at&&!r.lifecycle_retired_at&&!r.replacement_lifecycle_id;
+  if(access!=='ACTIVE'&&!registeredOwnerFallback)fail('ACCESS_AUTHORITY');
   if(r.lifecycle_id!==life.id||r.lifecycle_state!=='ACTIVE'||r.authentication_eligible!==true||!own(r,'device_access_status')||!own(r,'device_access_revoked_at')||String(r.device_access_status).toUpperCase()==='REVOKED'||r.device_access_revoked_at||r.lifecycle_revoked_at||r.lifecycle_retired_at||r.replacement_lifecycle_id)fail('DEVICE_NOT_AUTHORIZED');
   }
   function directoryMeaning(d){const copy=clone(d);delete copy.updatedAt;
@@ -98,6 +107,21 @@
         classification:superseded?'SUPERSEDED_TIMESTAMP_ONLY':equivalent?'AUTHORIZATION_ALREADY_REFLECTED_IN_CURRENT_CLOUD':'UNRESOLVED_STAFF_DIRECTORY_CHANGE',cloudSupersessionProven,safeToPreserveWithoutPublication:safe,
         directLifecycleMutation:false,disposition:safe?'PRESERVE_ENCRYPTED_WITHOUT_PUBLICATION':'BLOCK_QUARANTINE_UNRESOLVED_AUTHORIZATION'};
     });
+  }
+  function tradingActivationRecorded(storage,hash){
+    try{
+      const state=parse(storage.getItem(KEYS.state)),queue=parse(storage.getItem(KEYS.queue)),failed=parse(storage.getItem(KEYS.failed)||'[]');
+      const j=parse(storage.getItem(KEY)),copy=clone(j);delete copy.checksum;
+      if(j.version!==1||j.deviceId!==DEVICE||j.phase!=='TRADING_ACTIVE'||!j.activation||!j.manifest||!j.original||!j.receive||!Array.isArray(j.events)||hash(copy)!==j.checksum)return false;
+      if(state.deviceId!==DEVICE||state.deviceAccessMode!=='OWNER'||!state.initialized||state.syncOwnerId!==j.manifest.ownerId||state.businessId!==j.manifest.businessId)return false;
+      if(!validInt(Number(state.cursor))||Number(state.cursor)<j.activation.head||j.activation.cursor!==j.activation.head||j.receive.head!==j.activation.head)return false;
+      if(j.actor!==j.activation.actor||!Number.isFinite(Date.parse(j.activation.at))||j.activation.liveSyncEnabled!==false||!j.activation.cloudToken)return false;
+      if(!Array.isArray(queue)||queue.some(o=>IDS.includes(o?.opId))||!Array.isArray(failed)||failed.length||storage.getItem(KEYS.apply))return false;
+      const originals=parse(j.original.queue);
+      if(!Array.isArray(originals)||stable(originals.map(o=>o.opId).sort())!==stable([...IDS].sort()))return false;
+      if(!Array.isArray(j.manifest.operations)||stable(j.manifest.operations.map(o=>o.opId).sort())!==stable([...IDS].sort()))return false;
+      return true;
+    }catch(_){return false;}
   }
   function create(io){
     let plan=null,backup=null,busy=false;
@@ -435,7 +459,7 @@
   plan=null;
   return {head:j.receive.head,liveSyncEnabled:false,postAuditRequired:true};
   }
-    async function verifyCurrent(){const c=capture(),j=journal();
+    async function auditCurrent(){const c=capture(),j=journal();
   if(j?.phase!=='VERIFIED_HOLD'||c.raw.queue!=='[]')fail('COMPLETE_RECEIVE_FIRST');
   await archiveFor(j);
   const a=await cloud(c);
@@ -445,7 +469,33 @@
   const report=io.integrity.compareDatabases(c.db,current,bundle(a));
   if(report.actionableDifferences.some(r=>r.category!=='Orphan Reference')||report.unappliedCloudOperations.length||report.unacknowledgedLocalOperations.length)fail('POST_AUDIT');
   unchanged(c);
-  return {readOnly:true,head:a.head,missingLocal:0,missingCloud:0,payloadMismatches:0,duplicates:0,failedOperations:0,queueCount:0,replayConflicts:0,walletsEqual:true,authoritativeOrphanReferences:io.integrity.findOrphans(current).length,historicalReferences:report.historicalReferences.length,historicalMetadata:report.historicalMetadata.length,liveSyncEnabled:false};
+  return {capture:c,journal:j,authority:a,cloudToken:await fingerprint(a),report:{readOnly:true,head:a.head,missingLocal:0,missingCloud:0,payloadMismatches:0,duplicates:0,failedOperations:0,queueCount:0,replayConflicts:0,walletsEqual:true,authoritativeOrphanReferences:io.integrity.findOrphans(current).length,historicalReferences:report.historicalReferences.length,historicalMetadata:report.historicalMetadata.length,liveSyncEnabled:false}};
+  }
+    async function verifyCurrent(){return (await auditCurrent()).report;
+  }
+    async function activationReadiness(){const checked=await auditCurrent();
+  return Object.assign({},checked.report,{activationAvailable:io.activationEnabled===true,requiresSeparateOwnerApproval:true,journalPhase:checked.journal.phase,workerExclusivityRequired:true});
+  }
+    async function activateTrading(confirmed){
+  if(io.activationEnabled!==true)fail('TRADING_ACTIVATION_DISABLED');
+  if(confirmed!=='ACTIVATE SHOP TRADING')fail('EXPLICIT_CONFIRMATION_REQUIRED');
+  await io.exclusive();
+  const checked=await auditCurrent(),c=checked.capture,j=checked.journal;
+  const savedJournal=io.storage.getItem(KEY);
+  if(j.actor!==c.staffId||j.manifest.ownerId!==c.state.syncOwnerId||j.manifest.businessId!==c.state.businessId||j.manifest.deviceId!==DEVICE)fail('ACTIVATION_OWNER_OR_DEVICE');
+  if(!Array.isArray(j.manifest.operations)||stable(j.manifest.operations.map(o=>o.opId).sort())!==stable([...IDS].sort()))fail('ACTIVATION_ORIGINAL_OPERATIONS');
+  if(c.state.liveSyncEnabled!==false||c.state.liveSyncDesired===true||c.queue.length!==0)fail('ACTIVATION_SYNC_STATE');
+  const current=await cloud(c);
+  if(await fingerprint(current)!==checked.cloudToken)fail('CLOUD_CHANGED');
+  await io.exclusive();
+  unchanged(c);
+  if(io.storage.getItem(KEY)!==savedJournal)fail('JOURNAL_CHANGED');
+  j.phase='TRADING_ACTIVE';
+  j.activation={head:checked.authority.head,cursor:Number(c.state.cursor),cloudToken:checked.cloudToken,actor:c.staffId,at:new Date().toISOString(),liveSyncEnabled:false};
+  j.events.push({action:'OWNER_APPROVED_TRADING_ACTIVATION_NO_LIVE_SYNC',at:j.activation.at,actor:c.staffId,head:j.activation.head});
+  writeJournal(j);
+  io.reloadRuntime();
+  return {tradingActive:true,head:j.activation.head,queueCount:0,liveSyncEnabled:false};
   }
     async function rollback(confirmed){if(confirmed!=='RESTORE PRESERVED LOCAL STATE')fail('EXPLICIT_CONFIRMATION_REQUIRED');
   if(io.online())fail('OFFLINE_ROLLBACK_REQUIRED');
@@ -512,7 +562,7 @@
   let j=null;try{j=journal();}catch(_){}
   if(j&&['RECEIVE_PREPARED','ROLLBACK_PREPARED'].includes(j.phase))io.reloadRuntime();
   }}
-    return Object.freeze({preflight:()=>serial(preflight),saveArchive:(...a)=>serial(saveArchive,...a),verifyArchive:(...a)=>serial(verifyArchive,...a),quarantine:(...a)=>serial(quarantine,...a),prepareReceive:()=>serial(prepareReceive),receive:(...a)=>serial(receive,...a),resume:(...a)=>serial(resume,...a),verifyCurrent:()=>serial(verifyCurrent),rollback:(...a)=>serial(rollback,...a),restoreExternal:(...a)=>serial(restoreExternal,...a)});
+    return Object.freeze({preflight:()=>serial(preflight),saveArchive:(...a)=>serial(saveArchive,...a),verifyArchive:(...a)=>serial(verifyArchive,...a),quarantine:(...a)=>serial(quarantine,...a),prepareReceive:()=>serial(prepareReceive),receive:(...a)=>serial(receive,...a),resume:(...a)=>serial(resume,...a),verifyCurrent:()=>serial(verifyCurrent),activationReadiness:()=>serial(activationReadiness),activateTrading:(...a)=>serial(activateTrading,...a),rollback:(...a)=>serial(rollback,...a),restoreExternal:(...a)=>serial(restoreExternal,...a)});
   }
-  return Object.freeze({DEVICE,IDS,KEY,KEYS,ROOTS,COLLECTIONS,stable,validateQueue,classify,create});
+  return Object.freeze({DEVICE,IDS,KEY,KEYS,ROOTS,COLLECTIONS,stable,validateQueue,classify,tradingActivationRecorded,create});
 });

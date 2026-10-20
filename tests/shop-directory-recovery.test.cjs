@@ -70,6 +70,52 @@ for(const change of ['credentials','reactivation','role','addition','removal','e
 test('already reflected consequential changes can pass without discarding an unresolved change',async()=>{const f=fixture();changedDirectory(f,'role');f.authority.checkpoint.payload.sharedDeviceDirectory=clone(f.queue[2].patches[0].value);const report=await f.api.preflight();assert.equal(report.rows[0].actualChanges.roles,1);assert.equal(report.dispositionEligible,true);await f.api.saveArchive(f.handle,pass);f.online=false;await f.api.quarantine('QUARANTINE EXACT THREE');assert.equal(f.values.get(core.KEYS.queue),'[]');});
 test('superseded timestamp-only operation reports actual delta and safe disposition privately',async()=>{const f=fixture(),before=clone(f.authority.checkpoint.payload.sharedDeviceDirectory),value=clone(before);value.users[0].passwordHash='newer-cloud-verifier';const op=f.authority.operations[0].payload;op.patches.push({action:'root-set',root:'sharedDeviceDirectory',before,value});op.payloadHash=hash(op);const report=await f.api.preflight();assert.equal(report.rows[0].classification,'SUPERSEDED_TIMESTAMP_ONLY');assert.equal(report.rows[0].actualChanges.credentials,0);assert.equal(report.rows[0].cloudDifferences.credentials,1);assert.equal(report.rows[0].cloudSupersessionProven,true);assert.equal(report.dispositionEligible,true);assert.ok(!JSON.stringify(report).includes('newer-cloud-verifier'));});
 test('timestamp-only deltas with conflicting cloud credentials and no supersession evidence remain blocked',async()=>{const f=fixture();f.authority.checkpoint.payload.sharedDeviceDirectory.users[0].passwordHash='different-cloud-verifier';const report=await f.api.preflight();assert.equal(report.dispositionEligible,false);await f.api.saveArchive(f.handle,pass);f.online=false;await assert.rejects(f.api.quarantine('QUARANTINE EXACT THREE'),/UNRESOLVED_STAFF_DIRECTORY/);assert.equal(f.values.has(core.KEY),false);});
+async function verifiedHold(f){await preserved(f);await f.api.quarantine('QUARANTINE EXACT THREE');f.online=true;await receiveReady(f);await f.api.receive('RECEIVE ONLY');}
+test('trading activation remains disabled in the review candidate after complete equality',async()=>{
+  const f=fixture();await verifiedHold(f);const before=Object.fromEntries(f.values),count=f.writes.length;
+  const readiness=await f.api.activationReadiness();assert.equal(readiness.walletsEqual,true);assert.equal(readiness.activationAvailable,false);assert.equal(readiness.journalPhase,'VERIFIED_HOLD');
+  await assert.rejects(f.api.activateTrading('ACTIVATE SHOP TRADING'),/TRADING_ACTIVATION_DISABLED/);
+  assert.equal(f.writes.length,count);assert.deepEqual(Object.fromEntries(f.values),before);
+  assert.equal(core.tradingActivationRecorded(f.storage,hash),false);
+});
+test('isolated Owner-authorized activation is audited, idempotent and never enables Live Sync',async()=>{
+  const f=fixture();await verifiedHold(f);f.io.activationEnabled=true;const beforeDb=f.values.get(core.KEYS.db),beforeApplied=f.values.get(core.KEYS.applied);
+  await assert.rejects(f.api.activateTrading('yes'),/EXPLICIT_CONFIRMATION_REQUIRED/);
+  const result=await f.api.activateTrading('ACTIVATE SHOP TRADING');
+  assert.equal(result.tradingActive,true);assert.equal(result.liveSyncEnabled,false);assert.equal(result.queueCount,0);
+  assert.equal(f.values.get(core.KEYS.db),beforeDb);assert.equal(f.values.get(core.KEYS.applied),beforeApplied);
+  assert.equal(JSON.parse(f.values.get(core.KEYS.state)).liveSyncEnabled,false);
+  assert.equal(core.tradingActivationRecorded(f.storage,hash),true);
+  const saved=f.values.get(core.KEY),writes=f.writes.length;
+  await assert.rejects(f.api.activateTrading('ACTIVATE SHOP TRADING'),/COMPLETE_RECEIVE_FIRST/);
+  assert.equal(f.values.get(core.KEY),saved);assert.equal(f.writes.length,writes);
+  const changed=JSON.parse(saved);changed.activation.head++;f.values.set(core.KEY,JSON.stringify(changed));
+  assert.equal(core.tradingActivationRecorded(f.storage,hash),false);
+});
+test('trading activation rejects stale cloud, changed queue, wrong Owner and revoked access without writes',async()=>{
+  for(const change of ['cloud','queue','owner','revoked']){
+    const f=fixture();await verifiedHold(f);f.io.activationEnabled=true;const before=f.writes.length;
+    if(change==='cloud')f.authority.head++;
+    if(change==='queue'){f.values.set(core.KEYS.queue,JSON.stringify([{opId:'unexpected-business-operation'}]));f.reload();}
+    if(change==='owner')f.role='CASHIER';
+    if(change==='revoked')f.authority.fleet[0].device_access_status='REVOKED';
+    await assert.rejects(f.api.activateTrading('ACTIVATE SHOP TRADING'),change==='queue'?/COMPLETE_RECEIVE_FIRST|SHOP_OWNER_OR_RUNTIME|QUEUE_NOT_EMPTY/:undefined);
+    assert.equal(f.writes.length,before);assert.equal(JSON.parse(f.values.get(core.KEY)).phase,'VERIFIED_HOLD');
+  }
+});
+test('trading activation requires independently verified archive and one reviewed client',async()=>{
+  const f=fixture();await verifiedHold(f);f.io.activationEnabled=true;
+  const restarted=core.create(f.io);await assert.rejects(restarted.activateTrading('ACTIVATE SHOP TRADING'),/EXTERNAL_ARCHIVE_REQUIRED/);
+  f.tabs=2;await assert.rejects(f.api.activateTrading('ACTIVATE SHOP TRADING'),/CLOSE_OTHER/);
+  assert.equal(JSON.parse(f.values.get(core.KEY)).phase,'VERIFIED_HOLD');
+});
+test('cloud authority changing between activation checks leaves the verified hold intact',async()=>{
+  const f=fixture();await verifiedHold(f);f.io.activationEnabled=true;const original=f.io.readCloud;let reads=0;
+  f.io.readCloud=async()=>{const result=await original();if(++reads===2)result.lifecycle.revision=2;return result;};
+  const before=f.values.get(core.KEY),writes=f.writes.length;
+  await assert.rejects(f.api.activateTrading('ACTIVATE SHOP TRADING'),/CLOUD_CHANGED/);
+  assert.equal(f.values.get(core.KEY),before);assert.equal(f.writes.length,writes);
+});
 test('complete encrypted snapshot independently decrypts and excludes plaintext credentials/session values',async()=>{const f=fixture();const db=JSON.parse(f.values.get(core.KEYS.db));db.security={adminPIN:'synthetic-private-pin'};db.customLocal={nested:true};f.values.set(core.KEYS.db,JSON.stringify(db,null,2));f.values.set('zezms-m3-supabase-auth','synthetic-session-never-read');f.reload();await preserved(f);const envelope=JSON.parse(f.file),salt=Buffer.from(envelope.salt,'base64');const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['decrypt']);const plain=new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:Buffer.from(envelope.iv,'base64'),additionalData:new TextEncoder().encode('ZEZMS_SHOP_DIRECTORY_V1|'+core.DEVICE)},key,Buffer.from(envelope.ciphertext,'base64')));const archive=JSON.parse(plain);assert.ok(archive.fullState.original.db);assert.ok(archive.fullState.original.state);assert.ok(archive.fullState.original.applied);for(const value of ['synthetic-private-pin','PUBLIC VALUE NOT EXPORTED','synthetic-session-never-read'])assert.ok(!plain.includes(value));assert.ok(plain.includes('local-verifier'));assert.ok(!f.file.includes('local-verifier'));assert.equal(archive.fullState.original.db.sha256,archive.manifest.rawSha256.db);});
 test('receive requires a fresh external full backup before any database write',async()=>{const f=fixture();await preserved(f);await f.api.quarantine('QUARANTINE EXACT THREE');await f.api.prepareReceive();const before=f.values.get(core.KEYS.db);await assert.rejects(f.api.receive('RECEIVE ONLY'),/FRESH_FULL_RECEIVE_BACKUP_REQUIRED/);assert.equal(f.values.get(core.KEYS.db),before);});
 for(const phase of ['quarantine','receive'])test('insufficient quota blocks '+phase+' without changing operational state',async()=>{const f=fixture();await preserved(f);if(phase==='receive'){await f.api.quarantine('QUARANTINE EXACT THREE');await receiveReady(f);}const before=Object.fromEntries(Object.values(core.KEYS).map(k=>[k,f.values.get(k)]));const oldJournal=f.values.get(core.KEY);f.quota=[...f.values.values()].reduce((n,v)=>n+v.length,0)+1024;await assert.rejects(phase==='quarantine'?f.api.quarantine('QUARANTINE EXACT THREE'):f.api.receive('RECEIVE ONLY'),/INSUFFICIENT_STORAGE/);for(const [k,v]of Object.entries(before))assert.equal(f.values.get(k),v);assert.equal(f.values.get(core.KEY),oldJournal);assert.equal(f.values.has(core.KEY+'_capacity_probe_v2'),false);});

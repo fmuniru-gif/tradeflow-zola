@@ -2,6 +2,7 @@ const {test,after}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const {execFileSync}=require('node:child_process');
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const root=path.resolve(__dirname,'..');
 const origin='https://fmuniru-gif.github.io';
@@ -17,9 +18,12 @@ test('bundled current projector is byte-for-byte the production embedded module'
   assert.ok(match);
   const encoded=[...match[1].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(item=>item[1]).join('');
   const embedded=Buffer.from(encoded,'base64');
+  const committed=execFileSync('git',['show','HEAD:diagnostics/main-cash-input-compare/integrity-r60o.js'],
+    {cwd:root,maxBuffer:8*1024*1024});
   const bundled=fs.readFileSync(path.join(root,
     'diagnostics/main-cash-input-compare/integrity-r60o.js'));
-  assert.deepEqual(bundled,embedded);
+  assert.deepEqual(committed,embedded);
+  assert.deepEqual(Buffer.from(bundled.toString('utf8').replace(/\r\n/g,'\n')),committed);
 });
 
 async function setup(options={}){
@@ -57,8 +61,9 @@ async function setup(options={}){
       const type=name.endsWith('.js')?'application/javascript':
         name.endsWith('.css')?'text/css':'text/html';
       const bytes=fs.readFileSync(file);
-      // Git stores this unchanged legacy source with LF even on a CRLF checkout.
-      const body=name==='js/sync-integrity-v3161.js'
+      // GitHub Pages serves the LF Git blobs; Windows may check them out as CRLF.
+      const body=['js/sync-integrity-v3161.js',
+        'diagnostics/main-cash-input-compare/integrity-r60o.js'].includes(name)
         ?Buffer.from(bytes.toString('utf8').replace(/\r\n/g,'\n')):bytes;
       await route.fulfill({status:200,contentType:type,body});return;
     }

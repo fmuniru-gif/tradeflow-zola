@@ -8,7 +8,7 @@ const crypto=require('node:crypto');
 const {isDeepStrictEqual}=require('node:util');
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const root=path.resolve(__dirname,'..');
-const release='v3.31.19-r70v-diagnostic';
+const release='v3.31.19-prebranch-functional';
 const server=http.createServer((request,response)=>{
   const file=path.resolve(root,'.'+new URL(request.url,'http://localhost').pathname);
   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){response.writeHead(404);response.end();return;}
