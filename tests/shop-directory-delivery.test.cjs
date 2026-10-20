@@ -28,10 +28,10 @@ test('standalone legacy sync, Main repairs and financial code stay byte-identica
 test('worker requires new guard shell and enumerates old/uncontrolled clients',()=>{
   const source=fs.readFileSync(path.join(root,'sw.js'),'utf8');
   assert.match(source,/includeUncontrolled:true/);assert.match(source,/SHOP_DIRECTORY_RECOVERY_BUILD/);assert.ok(!source.includes('skipWaiting('));assert.ok(!source.includes('clients.claim('));assert.ok(!source.includes('caches.delete('));assert.ok(!source.includes('indexedDB.deleteDatabase'));
-  assert.match(shell,/PATCH_CACHE="zezms-shop-trading-readiness-patched-v1"/);
-  assert.match(source,/release:'shop-trading-readiness-v1'/);
-  assert.match(shell,/SHOP_DIRECTORY_RECOVERY_BUILD="shop-trading-readiness-v1"/);
-  assert.match(fs.readFileSync(path.join(root,'FORCE_UPDATE_MOBILE.html'),'utf8'),/shop-build=shop-trading-readiness-v1/);
+  assert.match(shell,/PATCH_CACHE="zezms-shop-storage-capacity-patched-v1"/);
+  assert.match(source,/release:'shop-storage-capacity-v1'/);
+  assert.match(shell,/SHOP_DIRECTORY_RECOVERY_BUILD="shop-storage-capacity-v1"/);
+  assert.match(fs.readFileSync(path.join(root,'FORCE_UPDATE_MOBILE.html'),'utf8'),/shop-build=shop-storage-capacity-v1/);
   const runtime=fs.readFileSync(path.join(root,'js/shop-directory-recovery-runtime.js'),'utf8');
   assert.match(runtime,/var SHOP_TRADING_ACTIVATION_ENABLED=false;/);
   assert.match(runtime,/activationEnabled:SHOP_TRADING_ACTIVATION_ENABLED/);
