@@ -4,8 +4,13 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const core=require('../js/shop-directory-recovery-core.js');
 const root=path.resolve(__dirname,'..');
-const server=http.createServer((req,res)=>{let name=new URL(req.url,'http://localhost').pathname;if(name.endsWith('/'))name+='index.html';const file=path.resolve(root,'.'+name);if(!file.startsWith(root+path.sep)||!fs.existsSync(file)){res.writeHead(404);return res.end();}res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.html')?'text/html':'application/octet-stream');res.end(file.endsWith("sw.js")?fs.readFileSync(file,"utf8")+"\n// synthetic-worker-generation-"+workerGeneration:fs.readFileSync(file));});
-let browser,workerGeneration=0;
+let browser,workerGeneration=0,silentWorker=false,activationVariant=false;
+const server=http.createServer((req,res)=>{let name=new URL(req.url,'http://localhost').pathname;if(name.endsWith('/'))name+='index.html';const file=path.resolve(root,'.'+name);if(!file.startsWith(root+path.sep)||!fs.existsSync(file)){res.writeHead(404);return res.end();}res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.html')?'text/html':'application/octet-stream');
+  let body=fs.readFileSync(file);
+  if(file.endsWith('sw.js')){let worker=body.toString('utf8');if(silentWorker)worker=worker.replace("if (data && data.type === 'ZEZMS_SHOP_RECOVERY_CLIENTS') {","if (false && data && data.type === 'ZEZMS_SHOP_RECOVERY_CLIENTS') {");body=worker+"\n// synthetic-worker-generation-"+workerGeneration;}
+  if(file.endsWith('index.html')&&activationVariant){let shell=body.toString('utf8');shell=shell.replace(/const CLOUD_B64="([A-Za-z0-9+/=]+)";/,(_all,b64)=>{const cloud=Buffer.from(b64,'base64').toString('utf8');assert.ok(cloud.includes('var SHOP_TRADING_ACTIVATION_ENABLED=false;'));return 'const CLOUD_B64="'+Buffer.from(cloud.replace('var SHOP_TRADING_ACTIVATION_ENABLED=false;','var SHOP_TRADING_ACTIVATION_ENABLED=true;')).toString('base64')+'";';});body=shell;}
+  res.end(body);
+});
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 async function setup(device=core.DEVICE){
   if(!server.listening)await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -100,6 +105,56 @@ test('actual worker refuses recovery while another old/uncontrolled tab exists',
     assert.equal((await count()).count,2);await old.close();assert.equal((await count()).count,1);
   }finally{await f.context.close();}
 });
+test('Owner worker check reports reviewed worker, extra clients and survives Settings redraw',async()=>{
+  const f=await setup();try{
+    const before=await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),db:localStorage.getItem('tradeflow_v321_zola'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1')}));
+    const calls=f.calls.length;
+    const ready=await f.page.evaluate(()=>zezmsShopRecoveryAction('worker'));
+    assert.equal(ready.status,'READY');assert.equal(ready.clientCount,1);assert.equal(ready.release,'shop-trading-readiness-v1');
+    assert.deepEqual(await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),db:localStorage.getItem('tradeflow_v321_zola'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1')})),before);
+    assert.equal(f.calls.length,calls);
+    await f.page.evaluate(()=>nav('settings'));
+    assert.match(await f.page.locator('#shopRecoveryReport').textContent(),/"status": "READY"/);
+    const extra=await f.context.newPage();try{
+      await extra.goto(f.origin+'/diagnostics/financial-audit/');
+      const blocked=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecoveryWorkerReadiness());
+      assert.equal(blocked.status,'OTHER_CLIENTS');assert.equal(blocked.clientCount,2);
+    }finally{await extra.close();}
+    assert.equal((await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecoveryWorkerReadiness())).status,'READY');
+  }finally{await f.context.close();}
+});
+test('silent old controlling worker reports NO_REPLY and preserves the exact held queue',async()=>{
+  silentWorker=true;let f;
+  try{
+    f=await setup();const before=await f.page.evaluate(()=>localStorage.getItem('zezms_cloud_sync_m4_queue'));
+    const worker=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecoveryWorkerReadiness());
+    assert.equal(worker.status,'NO_REPLY');
+    await f.context.setOffline(true);
+    await assert.rejects(f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.quarantine('QUARANTINE EXACT THREE')),/SHOP_STOP_WORKER_NO_REPLY/);
+    assert.equal(await f.page.evaluate(()=>localStorage.getItem('zezms_cloud_sync_m4_queue')),before);
+    assert.equal(await f.page.evaluate(()=>ZEZMS.cloudSync.isShopDirectoryRecoveryHeld()),true);
+  }finally{silentWorker=false;if(f)await f.context.close();}
+});
+test('same-origin helper updates a silent worker only after old clients close, preserving Shop data',async()=>{
+  silentWorker=true;let f;
+  try{
+    f=await setup();const before=await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),db:localStorage.getItem('tradeflow_v321_zola'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1')}));
+    assert.equal((await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecoveryWorkerReadiness())).status,'NO_REPLY');
+    silentWorker=false;workerGeneration++;
+    await f.page.goto(f.origin+'/FORCE_UPDATE_MOBILE.html');
+    await f.page.waitForFunction(()=>!document.getElementById('status')?.textContent.includes('Checking'),null,{timeout:12000});
+    const helper=await f.page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();return {status:document.getElementById('status').textContent,waiting:!!r?.waiting,active:!!r?.active,controller:!!navigator.serviceWorker.controller};});
+    assert.ok(helper.status.includes('waiting')||helper.status.includes('Update check complete'),JSON.stringify(helper));
+    assert.deepEqual(await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),db:localStorage.getItem('tradeflow_v321_zola'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1')})),before);
+    await f.page.close();
+    const next=await f.context.newPage();await next.goto(f.origin+'/index.html');
+    await next.waitForFunction(()=>window.ZEZMS?.cloudSync?.shopRecoveryWorkerReadiness);
+    await next.waitForFunction(async()=>{const r=await ZEZMS.cloudSync.shopRecoveryWorkerReadiness();return r.status==='READY';},null,{timeout:25000});
+    assert.deepEqual(await next.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),db:localStorage.getItem('tradeflow_v321_zola'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1')})),before);
+    assert.equal(await next.evaluate(()=>ZEZMS.cloudSync.isShopDirectoryRecoveryHeld()),true);
+    assert.ok(!f.calls.some(r=>r.path.endsWith('zezms_ops_push')));
+  }finally{silentWorker=false;if(f)await f.context.close();}
+});
 test('full shell read-only cloud preflight, real disk archive, quarantine and receive-only audit',async()=>{
   const f=await setup(),dir=fs.mkdtempSync(path.join(os.tmpdir(),'shop-recovery-test-')),file=path.join(dir,'synthetic-encrypted.json');
   try{
@@ -140,6 +195,9 @@ test('full shell read-only cloud preflight, real disk archive, quarantine and re
     await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.saveArchive(window.__testArchiveHandle,'synthetic sufficiently long archive passphrase'));
     await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.receive('RECEIVE ONLY'));
     const audited=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.verifyCurrent());assert.equal(audited.walletsEqual,true);assert.equal(audited.queueCount,0);
+    const readiness=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.activationReadiness());assert.equal(readiness.walletsEqual,true);assert.equal(readiness.activationAvailable,false);
+    await assert.rejects(f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.activateTrading('ACTIVATE SHOP TRADING')),/TRADING_ACTIVATION_DISABLED/);
+    assert.equal(await f.page.evaluate(()=>JSON.parse(localStorage.getItem('zezms_shop_directory_recovery_v1')).phase),'VERIFIED_HOLD');
     assert.ok(reads.every(r=>r.method==='GET'||r.method==='OPTIONS'||r.method==='POST'&&['/rest/v1/rpc/zezms_m43_checkpoint_latest','/rest/v1/rpc/zezms_m5a4_canonical_fleet_read'].includes(r.path)));
     assert.ok(!JSON.stringify(report).includes('synthetic-token-never-production'));
     const after=await f.page.evaluate(()=>({state:ZEZMS.cloudSync.getState(),balance:DB.cashBalances.Others,held:ZEZMS.cloudSync.getDirectoryOutboxReview().required}));assert.equal(after.state.deviceId,core.DEVICE);assert.equal(after.state.cursor,2);assert.equal(after.balance,(Number(bundle.db.cashBalances.Others)||0)+5);assert.equal(after.state.liveSyncEnabled,false);assert.equal(after.held,true);
@@ -160,4 +218,46 @@ test('full shell read-only cloud preflight, real disk archive, quarantine and re
       assert.equal(restored.queue,original.queue);assert.equal(restored.state.deviceId,core.DEVICE);assert.equal(restored.state.cursor,1);assert.equal(restored.state.liveSyncEnabled,false);assert.deepEqual(restored.db.cashBalances,JSON.parse(original.db).cashBalances);assert.equal(restored.journal.externalRestoration,true);
     }finally{await disposable.close();}
   }finally{await f.context.close();fs.rmSync(file,{force:true});fs.rmdirSync(dir);}
+});
+test('isolated approved activation releases posting only after verified hold and leaves Live Sync off',async()=>{
+  activationVariant=true;let f;
+  try{
+    f=await setup();
+    const bundle=await f.page.evaluate(()=>{const db=JSON.parse(JSON.stringify(DB));db.sharedDeviceDirectory.updatedAt='2026-10-18T00:00:00Z';return {db,hash:ZEZMS.managedDevices._test.legacyCheckpointHash(db)};});
+    await f.context.unroute('**/*');const requests=[];
+    await f.context.route('**/*',route=>{
+      const u=new URL(route.request().url());if(u.origin===f.origin)return route.continue();
+      requests.push({method:route.request().method(),path:u.pathname});
+      if(u.origin!=='https://ruadyqcsutfprrxdaahi.supabase.co')return route.abort();
+      if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':f.origin,'access-control-allow-methods':'GET,POST,OPTIONS','access-control-allow-headers':'apikey,authorization,accept,content-type'}});
+      let data;
+      if(u.pathname==='/auth/v1/user')data={id:'synthetic-owner',is_anonymous:false};
+      else if(u.pathname.endsWith('/zezms_m43_checkpoint_latest'))data=[{checkpoint_id:'synthetic-cp',checkpoint_cursor:1,payload:bundle.db,payload_hash:bundle.hash,protocol_version:'M4/3'}];
+      else if(u.pathname.endsWith('/zezms_m5a4_canonical_fleet_read'))data=[{device_id:core.DEVICE,lifecycle_id:'synthetic-life',lifecycle_state:'ACTIVE',authentication_eligible:true,device_access_status:'ACTIVE',device_access_revoked_at:null}];
+      else if(u.pathname.endsWith('/zezms_device_lifecycle'))data=[{id:'synthetic-life',device_id:core.DEVICE,owner_id:'synthetic-owner',business_id:'synthetic-business',lifecycle_state:'ACTIVE',revision:1}];
+      else if(u.pathname.endsWith('/zezms_sync_state'))data=[{owner_id:'synthetic-owner',sync_mode:'operations',revision:1,operation_cursor:1}];
+      else if(u.pathname.endsWith('/zezms_sync_operations'))data=u.searchParams.has('op_id')?[]:u.searchParams.get('select')==='seq'?[{seq:1}]:[];
+      else throw Error('Unexpected cloud endpoint '+u.pathname);
+      return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':f.origin},body:JSON.stringify(data)});
+    });
+    const report=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.preflight());assert.equal(report.dispositionEligible,true);
+    await f.page.evaluate(async()=>{window.__testShopArchive='';window.__testShopHandle={createWritable:async()=>({write:async text=>{window.__testShopArchive=text;},close:async()=>{}}),getFile:async()=>({text:async()=>window.__testShopArchive})};await ZEZMS.cloudSync.shopRecovery.saveArchive(window.__testShopHandle,'synthetic sufficiently long archive passphrase');});
+    await f.context.setOffline(true);await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.quarantine('QUARANTINE EXACT THREE'));
+    await f.context.setOffline(false);
+    await f.page.evaluate(async()=>{await ZEZMS.cloudSync.shopRecovery.prepareReceive();await ZEZMS.cloudSync.shopRecovery.saveArchive(window.__testShopHandle,'synthetic sufficiently long archive passphrase');await ZEZMS.cloudSync.shopRecovery.receive('RECEIVE ONLY');});
+    const readiness=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.activationReadiness());assert.equal(readiness.walletsEqual,true);assert.equal(readiness.activationAvailable,true);
+    const activated=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.activateTrading('ACTIVATE SHOP TRADING'));assert.equal(activated.tradingActive,true);
+    const posted=await f.page.evaluate(()=>{
+      const api=ZEZMS.cloudSync,before=api.getOutbox().length;
+      DB.settings.syntheticTradingReadiness='review-only-synthetic';
+      saveDB();
+      return {held:api.isShopDirectoryRecoveryHeld(),ready:api.isReadyForLocalOperations(),before,queue:api.getOutbox().map(o=>({opId:o.opId,kind:o.kind})),state:api.getState(),phase:JSON.parse(localStorage.getItem('zezms_shop_directory_recovery_v1')).phase};
+    });
+    assert.equal(posted.held,false);assert.equal(posted.ready,true);assert.equal(posted.phase,'TRADING_ACTIVE');
+    assert.equal(posted.before,0);assert.equal(posted.queue.length,1);assert.ok(!core.IDS.includes(posted.queue[0].opId));
+    assert.equal(posted.state.liveSyncEnabled,false);assert.ok(!requests.some(r=>r.path.endsWith('zezms_ops_push')));
+    await f.page.reload();await f.page.waitForFunction(()=>window.ZEZMS?.cloudSync?.getState?.().deviceId==='197e3568-5a89-4a56-b9d0-07f5e8248734');
+    assert.equal(await f.page.evaluate(()=>ZEZMS.cloudSync.isShopDirectoryRecoveryHeld()),false);
+    assert.equal(await f.page.evaluate(()=>ZEZMS.cloudSync.getOutbox().length),1);
+  }finally{activationVariant=false;if(f)await f.context.close();}
 });

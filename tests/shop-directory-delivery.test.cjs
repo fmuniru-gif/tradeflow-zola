@@ -7,10 +7,13 @@ const original=execFileSync('git',['show',base+':index.html'],{cwd:root,encoding
 function decode(text,name){const m=text.match(new RegExp('const '+name+'=([\\s\\S]*?);\\s*(?:const|function|let|var)'));assert.ok(m,name);return Buffer.from([...m[1].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(x=>x[1]).join(''),'base64').toString('utf8');}
 test('the exact production Shop guard remains inside the actual embedded cloud closure',()=>{
   const current=decode(shell,'CLOUD_B64'),prior=decode(original,'CLOUD_B64');
+  assert.doesNotThrow(()=>new vm.Script(current));
   const protectedShell=execFileSync('git',['show',production+':index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
-  assert.equal(current,decode(protectedShell,'CLOUD_B64'));
   const insertion=current.match(/\/\* SHOP_DIRECTORY_RECOVERY_INSERT_BEGIN \*\/[\s\S]*?\/\* SHOP_DIRECTORY_RECOVERY_INSERT_END \*\/\n/);assert.ok(insertion);
   assert.equal(current.replace(insertion[0],''),prior);
+  const protectedCloud=decode(protectedShell,'CLOUD_B64'),protectedInsertion=protectedCloud.match(/\/\* SHOP_DIRECTORY_RECOVERY_INSERT_BEGIN \*\/[\s\S]*?\/\* SHOP_DIRECTORY_RECOVERY_INSERT_END \*\/\n/);
+  assert.ok(protectedInsertion);assert.equal(current.replace(insertion[0],''),protectedCloud.replace(protectedInsertion[0],''));
+  assert.ok(insertion[0].includes(fs.readFileSync(path.join(root,'js/shop-directory-recovery-core.js'),'utf8').replace(/\r\n/g,'\n')));
   assert.ok(insertion[0].includes(fs.readFileSync(path.join(root,'js/shop-directory-recovery-runtime.js'),'utf8').replace(/\r\n/g,'\n')));
   for(const name of ['VERIFIED_BASELINE_B64','INTEGRITY_B64','MANAGED_DEVICE_LIFECYCLE_R61_B64','PRELOGIN_VERIFIED_ACTIVATION_R70U_B64'])assert.equal(decode(shell,name),decode(original,name));
   const manager=decode(shell,'MANAGER_SCOPE_STAFF_LOGIN_B64');
@@ -25,7 +28,14 @@ test('standalone legacy sync, Main repairs and financial code stay byte-identica
 test('worker requires new guard shell and enumerates old/uncontrolled clients',()=>{
   const source=fs.readFileSync(path.join(root,'sw.js'),'utf8');
   assert.match(source,/includeUncontrolled:true/);assert.match(source,/SHOP_DIRECTORY_RECOVERY_BUILD/);assert.ok(!source.includes('skipWaiting('));assert.ok(!source.includes('clients.claim('));assert.ok(!source.includes('caches.delete('));assert.ok(!source.includes('indexedDB.deleteDatabase'));
-  assert.match(shell,/PATCH_CACHE="zezms-prebranch-functional-patched-v1"/);
+  assert.match(shell,/PATCH_CACHE="zezms-shop-trading-readiness-patched-v1"/);
+  assert.match(source,/release:'shop-trading-readiness-v1'/);
+  assert.match(shell,/SHOP_DIRECTORY_RECOVERY_BUILD="shop-trading-readiness-v1"/);
+  assert.match(fs.readFileSync(path.join(root,'FORCE_UPDATE_MOBILE.html'),'utf8'),/shop-build=shop-trading-readiness-v1/);
+  const runtime=fs.readFileSync(path.join(root,'js/shop-directory-recovery-runtime.js'),'utf8');
+  assert.match(runtime,/var SHOP_TRADING_ACTIVATION_ENABLED=false;/);
+  assert.match(runtime,/activationEnabled:SHOP_TRADING_ACTIVATION_ENABLED/);
+  assert.ok(!runtime.includes("zezmsShopRecoveryAction('activateTrading')"));
 });
 test('recovery compares the complete production synchronized scope',()=>{
   const core=require('../js/shop-directory-recovery-core.js'),prior=decode(original,'CLOUD_B64');

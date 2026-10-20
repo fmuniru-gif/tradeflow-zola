@@ -10,7 +10,7 @@
   </style>
 </head>
 <body>
-<main><h2>TradeFlow Pre-branch Business Mode update</h2><p id="status">Checking the Pre-branch Business Mode service worker...</p><p>Close every other TradeFlow tab on this device before opening the update. Keep this device's site data, IndexedDB, identity, and queue.</p><p><a id="open" href="./index.html?build=20261020-prebranch-functional-r1" style="color:#67e8f9">Open TradeFlow Pre-branch Business Mode</a></p></main>
+<main><h2>TradeFlow reviewed worker update</h2><p id="status">Checking the Shop trading-readiness service worker...</p><p>Close every other TradeFlow tab on this device before opening the update. Keep this device's site data, IndexedDB, identity, and queue. This page checks only the same-origin worker; it does not quarantine or enable Live Sync.</p><p><a id="open" href="./index.html?build=20261020-prebranch-functional-r1&amp;shop-build=shop-trading-readiness-v1" style="color:#67e8f9">Open reviewed TradeFlow shell</a></p></main>
 <script>
 (async()=>{
   try{
@@ -21,13 +21,13 @@
         if(!location.href.startsWith(registration.scope))continue;
         await registration.update();
         if(registration.waiting){
-          status.textContent='Pre-branch Business Mode is waiting. Close all TradeFlow tabs, including this one, then reopen TradeFlow. Keep site data.';
+          status.textContent='The reviewed worker is waiting. Close all TradeFlow tabs, including this one, then reopen TradeFlow and run the worker check in Settings. Keep site data.';
           open.hidden=true;
           return;
         }
       }
     }
-    status.textContent='Update check complete. Close other TradeFlow tabs, then open Pre-branch Business Mode in this tab.';
+    status.textContent='Update check complete. Close other TradeFlow tabs, then open the reviewed shell in this tab and run the worker check in Settings.';
   }catch(error){document.getElementById('status').textContent='Update check failed. Keep this device offline and ask the Owner to verify the deployed release.';document.getElementById('open').hidden=true;}
 })();
 </script>
