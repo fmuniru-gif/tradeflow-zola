@@ -156,7 +156,7 @@
     }
     function safeRows(rows){if(!Array.isArray(rows)||rows.length!==3||rows.some(r=>r.safeToPreserveWithoutPublication!==true))fail('UNRESOLVED_STAFF_DIRECTORY');}
     function reserveCapacity(characters){const key=KEY+'_capacity_probe_v2';
-      if(!Number.isSafeInteger(characters)||characters>16*1024*1024)fail('INSUFFICIENT_STORAGE');
+      if(!Number.isSafeInteger(characters)||characters>16*1024*1024)fail('STORAGE_SAFETY_CEILING');
       const leftover=io.storage.getItem(key);if(leftover!==null){if(!/^0*$/.test(leftover))fail('CAPACITY_PROBE_CONFLICT');io.storage.removeItem(key);}
       try{const probe='0'.repeat(characters);io.storage.setItem(key,probe);if(io.storage.getItem(key)!==probe)fail('CAPACITY_READBACK');}
       catch(_){try{io.storage.removeItem(key);}catch(_){}fail('INSUFFICIENT_STORAGE');}
@@ -164,16 +164,16 @@
     }
     function capacityFor(c,target,j){const possible=Object.assign(clone(c.db),clone(target||c.db));
       for(const f of LOCAL_DATABASE_FIELDS)if(own(c.db,f))possible[f]=clone(c.db[f]);
-      const targetRaw=JSON.stringify(possible),applied=parse(c.raw.applied||'{}');
-      for(const row of plan?.authority?.operations||[])applied[row.op_id]=row.seq;
-      const appliedRaw=j?.receive?.target.applied||JSON.stringify(applied);
-      const proposed=Object.assign({},j||{original:c.raw},{receive:{before:c.raw,target:{db:targetRaw,state:c.raw.state,applied:appliedRaw}}});
-      // Measure actual JSON escaping and complete register/before/target copies,
-      // with space for DB/register growth and a 64 KiB margin. Recheck each phase.
-      const required=Math.max(JSON.stringify(proposed).length,j?JSON.stringify(j).length:0)+Math.max(0,targetRaw.length-(c.raw.db||'').length)+Math.max(0,appliedRaw.length-(c.raw.applied||'').length)+65536;
-      const additional=Math.max(65536,required-(io.storage.getItem(KEY)||'').length);
+      const proposed=clone(j);delete proposed.checksum;proposed.checksum=io.operationHash(proposed);
+      const journalGrowth=Math.max(0,JSON.stringify(proposed).length-(io.storage.getItem(KEY)||'').length);
+      const dbGrowth=Math.max(0,JSON.stringify(possible).length-(c.raw.db||'').length);
+      const appliedGrowth=Math.max(0,(j.receive?.target.applied||c.raw.applied||'').length-(c.raw.applied||'').length);
+      const stateGrowth=Math.max(0,(j.receive?.target.state||c.raw.state||'').length-(c.raw.state||'').length);
+      // Reserve only the durable next phase and its writes; receive is checked
+      // again before its own journal and business-database mutation.
+      const additional=journalGrowth+dbGrowth+appliedGrowth+stateGrowth+65536;
       reserveCapacity(additional);
-      return {tested:true,totalJournalAndGrowthCharacters:required,reservedCharacters:additional,utf16Bytes:additional*2};
+      return {tested:true,journalGrowthCharacters:journalGrowth,reservedCharacters:additional,utf16Bytes:additional*2};
     }
     const raw=()=>Object.fromEntries(Object.entries(KEYS).map(([k,v])=>[k,io.storage.getItem(v)]));
     function capture(){const r=raw(),state=parse(r.state),db=parse(r.db),queue=parse(r.queue),failed=parse(r.failed||'[]');
@@ -334,12 +334,12 @@
   j={version:1,deviceId:DEVICE,phase:'QUARANTINE_PREPARED',archiveSha256:backup.sha256,manifest:plan.manifest,original:plan.capture.raw,actor:c.staffId,createdAt:new Date().toISOString(),reason:'Owner chose current authenticated cloud staff directory; preserved local publications are not uploaded',events:[]};
   await archiveFor(j);
   unchanged(c);
-  capacityFor(c,plan.cloud,j);
+  capacityFor(c,c.db,j);
   writeJournal(j);
   }
       if(io.online())fail('OFFLINE_QUARANTINE_REQUIRED');
   unchanged(c);
-  capacityFor(c,plan?.cloud||c.db,j);
+  capacityFor(c,c.db,j);
   if(c.raw.queue!==j.original.queue&&c.raw.queue!=='[]')fail('QUEUE_CHANGED');
   const paused=Object.assign({},parse(j.original.state),{liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true,directoryOutboxReviewRequired:true});
   put(KEYS.state,JSON.stringify(paused));
@@ -420,12 +420,25 @@
   for(const o of p.tail)applied[o.op_id]=o.seq;
   const nextState=Object.assign({},p.capture.state,{cursor:p.authority.head,cloudHeadSeq:p.authority.head,liveSyncEnabled:false,liveSyncDesired:false,configurationVerificationRequired:true});
   j.phase='RECEIVE_PREPARED';
-  j.receive={before:p.capture.raw,target:{db:JSON.stringify(p.candidate),applied:JSON.stringify(applied),state:JSON.stringify(nextState)},cloudToken:p.token,head:p.authority.head,events:p.tail.map(o=>({seq:o.seq,opId:o.op_id,payloadHash:o.payload.payloadHash}))};
+  j.receive={before:{dbSha256:await sha(p.capture.raw.db),applied:p.capture.raw.applied,state:p.capture.raw.state},target:{dbSha256:await sha(JSON.stringify(p.candidate)),applied:JSON.stringify(applied),state:JSON.stringify(nextState)},cloudToken:p.token,head:p.authority.head,events:p.tail.map(o=>({seq:o.seq,opId:o.op_id,payloadHash:o.payload.payloadHash}))};
   j.archiveSha256=backup.sha256;
   capacityFor(p.capture,p.candidate,j);
   writeJournal(j);
   return resume(confirmed);
   }
+    async function receiveImages(j,current){
+      if(!j.receive||!backup?.data.fullState?.point||!backup.data.fullState.target)fail('RECEIVE_ARCHIVE_REQUIRED');
+      const before=await unsealSnapshot(backup.data.fullState.point,current);
+      const target=await unsealSnapshot(backup.data.fullState.target,current);
+      if(j.receive.before.db!==undefined&&j.receive.before.db!==before.db||
+         j.receive.target.db!==undefined&&j.receive.target.db!==target.db||
+         j.receive.before.dbSha256&&await sha(before.db)!==j.receive.before.dbSha256||
+         j.receive.target.dbSha256&&await sha(target.db)!==j.receive.target.dbSha256||
+         before.state!==j.receive.before.state||before.applied!==j.receive.before.applied||
+         target.state!==j.receive.target.state||target.applied!==j.receive.target.applied)
+        fail('RECEIVE_ARCHIVE_MISMATCH');
+      return {before,target};
+    }
     async function resume(confirmed){if(confirmed!=='RECEIVE ONLY')fail('EXPLICIT_CONFIRMATION_REQUIRED');
   await io.exclusive();
   const j=journal();
@@ -433,15 +446,16 @@
   await archiveFor(j);
   const c=capture();
   if(c.raw.queue!=='[]')fail('QUEUE_NOT_EMPTY');
+  const images=await receiveImages(j,c.raw);
   const a=await cloud(c);
   if(await fingerprint(a)!==j.receive.cloudToken)fail('CLOUD_CHANGED_DURING_INTERRUPTION');
-  const originalDb=parse(j.receive.before.db),originalState=parse(j.receive.before.state),at=project(a,Number(originalState.cursor));
+  const originalDb=parse(images.before.db),originalState=parse(j.receive.before.state),at=project(a,Number(originalState.cursor));
   compareBusiness(originalDb,at,true);
   const base=clone(originalDb);
   base.sharedDeviceDirectory=clone(at.sharedDeviceDirectory);
   const tail=a.operations.filter(o=>o.seq>Number(originalState.cursor));
   const expected=io.integrity.projectCloud({baseline:base,operations:tail});
-  if(expected.conflicts.length||stable(expected.database)!==stable(parse(j.receive.target.db)))fail('PREPARED_TARGET_CORRUPT');
+  if(expected.conflicts.length||stable(expected.database)!==stable(parse(images.target.db)))fail('PREPARED_TARGET_CORRUPT');
   compareBusiness(expected.database,project(a),false);
   const expectedApplied=parse(j.receive.before.applied||'{}');
   for(const row of tail)expectedApplied[row.op_id]=row.seq;
@@ -450,8 +464,8 @@
   unchanged(c);
   capacityFor(c,expected.database,j);
   for(const k of ['db','applied','state']){const now=io.storage.getItem(KEYS[k]);
-  if(![j.receive.before[k],j.receive.target[k]].some(v=>knownValue(k,now,v)))fail('CONCURRENT_LOCAL_CHANGE');
-  }for(const k of ['db','applied','state'])put(KEYS[k],k==='db'?preserveLocalMetadata(j.receive.target.db,c.raw.db):j.receive.target[k]);
+  if(![images.before[k],images.target[k]].some(v=>knownValue(k,now,v)))fail('CONCURRENT_LOCAL_CHANGE');
+  }for(const k of ['db','applied','state'])put(KEYS[k],k==='db'?preserveLocalMetadata(images.target.db,c.raw.db):images.target[k]);
   j.phase='VERIFIED_HOLD';
   j.events.push({action:'RECEIVE_ONLY_COMMITTED',at:new Date().toISOString(),head:j.receive.head});
   writeJournal(j);
@@ -507,8 +521,8 @@
   if(j.phase==='ROLLED_BACK'&&c.raw.queue===j.original.queue)return {alreadyRestored:true};
   if(!['QUARANTINE_PREPARED','QUARANTINED','RECEIVE_PREPARED','VERIFIED_HOLD','ROLLBACK_PREPARED'].includes(j.phase))fail('ROLLBACK_STATE');
   if(![j.original.queue,'[]'].includes(c.raw.queue))fail('UNRELATED_QUEUE');
-  const before=j.original;
-  for(const k of ['db','applied'])if(![before[k],j.receive?.before[k],j.receive?.target[k]].some(v=>knownValue(k,c.raw[k],v)))fail('LATER_LOCAL_DATA');
+  const before=j.original,images=j.receive?await receiveImages(j,c.raw):null;
+  for(const k of ['db','applied'])if(![before[k],images?.before[k],images?.target[k]].some(v=>knownValue(k,c.raw[k],v)))fail('LATER_LOCAL_DATA');
   j.phase='ROLLBACK_PREPARED';
   capacityFor(c,parse(before.db),j);
   writeJournal(j);
@@ -552,7 +566,7 @@
       }
       unchanged(c);const displaced=io.storage.getItem(KEY);
       const j={version:1,deviceId:DEVICE,phase:'ROLLBACK_PREPARED',archiveSha256:backup.sha256,manifest:data.manifest,original,actor:c.staffId,createdAt:new Date().toISOString(),externalRestoration:true,displacedJournal:displaced,reason:'Owner-confirmed restoration from authenticated full external backup; no cloud call or upload',events:[]};
-      if(target)j.receive={before:point,target:{db:target.db,state:target.state,applied:target.applied}};
+       if(target)j.receive={before:{dbSha256:await sha(point.db),state:point.state,applied:point.applied},target:{dbSha256:await sha(target.db),state:target.state,applied:target.applied}};
       capacityFor(c,parse(original.db),j);writeJournal(j);return rollback('RESTORE PRESERVED LOCAL STATE');
     }
     async function serial(fn,...args){if(busy)fail('BUSY');

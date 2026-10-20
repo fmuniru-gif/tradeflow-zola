@@ -110,7 +110,7 @@ test('Owner worker check reports reviewed worker, extra clients and survives Set
     const before=await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),db:localStorage.getItem('tradeflow_v321_zola'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1')}));
     const calls=f.calls.length;
     const ready=await f.page.evaluate(()=>zezmsShopRecoveryAction('worker'));
-    assert.equal(ready.status,'READY');assert.equal(ready.clientCount,1);assert.equal(ready.release,'shop-trading-readiness-v1');
+    assert.equal(ready.status,'READY');assert.equal(ready.clientCount,1);assert.equal(ready.release,'shop-storage-capacity-v1');
     assert.deepEqual(await f.page.evaluate(()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),db:localStorage.getItem('tradeflow_v321_zola'),journal:localStorage.getItem('zezms_shop_directory_recovery_v1')})),before);
     assert.equal(f.calls.length,calls);
     await f.page.evaluate(()=>nav('settings'));
@@ -158,6 +158,17 @@ test('same-origin helper updates a silent worker only after old clients close, p
 test('full shell read-only cloud preflight, real disk archive, quarantine and receive-only audit',async()=>{
   const f=await setup(),dir=fs.mkdtempSync(path.join(os.tmpdir(),'shop-recovery-test-')),file=path.join(dir,'synthetic-encrypted.json');
   try{
+    const pressure=await f.page.evaluate(()=>{
+      DB.backupSettings=Object.assign({},DB.backupSettings,{syntheticPadding:''});
+      const pad=1894805-JSON.stringify(DB).length;if(pad<0)throw Error('Synthetic database already exceeds target');
+      DB.backupSettings.syntheticPadding='x'.repeat(pad);
+      localStorage.setItem('tradeflow_v321_zola',JSON.stringify(DB));
+      const total=()=>Object.keys(localStorage).reduce((n,k)=>n+localStorage.getItem(k).length,0);
+      const filler=2330990-total();if(filler<0)throw Error('Synthetic storage already exceeds target');
+      localStorage.setItem('__synthetic_unrelated_storage','x'.repeat(filler));
+      return {db:localStorage.getItem('tradeflow_v321_zola').length,total:total()};
+    });
+    assert.deepEqual(pressure,{db:1894805,total:2330990});
     const bundle=await f.page.evaluate(()=>{
       const db=JSON.parse(JSON.stringify(DB));db.sharedDeviceDirectory.updatedAt='2026-10-18T00:00:00Z';
       const payload={opId:'synthetic-current-cloud',deviceId:'synthetic-other',deviceSeq:1,protocolVersion:'M4/3',kind:'DATABASE_CHANGE',patches:[{action:'root-object',root:'cashBalances',key:'Others',mode:'delta',before:Number(db.cashBalances.Others)||0,value:5}]};payload.payloadHash=ZEZMS.cloudSync._test.deterministicHash(payload);

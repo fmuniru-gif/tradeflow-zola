@@ -88,7 +88,7 @@ async function shopWorkerReadiness(){
   var path=function(worker){try{return worker?new URL(worker.scriptURL).pathname:null;}catch(_){return null;}};
   var result={readOnly:true,controllerPath:path(controller),controllerState:controller?.state||null,
     activePath:path(registration?.active),waitingPath:path(registration?.waiting),installingPath:path(registration?.installing),
-    expectedRelease:'shop-trading-readiness-v1',expectedGuard:'shop-directory-v2',status:'NO_CONTROLLER',clientCount:null};
+    expectedRelease:'shop-storage-capacity-v1',expectedGuard:'shop-directory-v2',status:'NO_CONTROLLER',clientCount:null};
   if(!controller)return result;
   var channel=new MessageChannel();
   var response=await new Promise(function(resolve){
