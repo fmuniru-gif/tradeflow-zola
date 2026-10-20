@@ -33,7 +33,7 @@ async function setup(device=core.DEVICE){
     return Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]));
   },{owner,device,ids:core.IDS});
   await page.evaluate(async()=>{
-    await navigator.serviceWorker.register('./sw.js?v=20261016-r70v-bootstrap-outbox-diagnostic');
+    await navigator.serviceWorker.register('./sw.js?v=20261020-prebranch-functional-r1');
     await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Reviewed service worker did not activate')),10000))]);
   });
   if(process.env.SHOP_TEST_DEBUG)console.log('stage worker ready');
@@ -56,7 +56,7 @@ async function setup(device=core.DEVICE){
   });
   await page.evaluate(()=>nav('settings'));
   if(process.env.SHOP_TEST_DEBUG)console.log('stage Settings rendered');
-  return {page,context,calls,origin};
+  return {page,context,calls,origin,seedQueue:seed.zezms_cloud_sync_m4_queue};
 }
 test('actual shell exposes Shop-only Owner controls and blocks upload/reconnect after reload',async()=>{
   const f=await setup();try{
@@ -64,6 +64,7 @@ test('actual shell exposes Shop-only Owner controls and blocks upload/reconnect 
       console.log('SHOP_INTEGRATION_STATE',await f.page.evaluate(()=>({role:ZEZMS.staffAuth.getContext().role,device:ZEZMS.cloudSync.getState().deviceId,api:!!ZEZMS.cloudSync.shopRecovery,settingsHasControl:ZEZMS.cloudSync.settingsHtml().includes('shopRecoveryPanel'),settingsPanels:document.querySelectorAll('#shopRecoveryPanel').length,view:document.querySelector('main')?.textContent?.slice(0,80),controller:navigator.serviceWorker.controller?.scriptURL})));throw error;
     });
     const before=await f.page.evaluate(()=>localStorage.getItem('zezms_cloud_sync_m4_queue'));
+    assert.equal(before,f.seedQueue,'the first protected load rewrote the three-operation queue');
     const info=await f.page.evaluate(async()=>{
       const saved=localStorage.getItem('tradeflow_v321_zola'),old=DB.cashBalances.Others;let postingBlocked=false;DB.cashBalances.Others=Number(old)+1;try{saveDB();}catch(_){postingBlocked=true;}DB.cashBalances.Others=old;if(!postingBlocked||localStorage.getItem('tradeflow_v321_zola')!==saved)throw Error('Shop business posting guard failed');
       const api=ZEZMS.cloudSync;let publicationBlocked=false;
@@ -73,7 +74,16 @@ test('actual shell exposes Shop-only Owner controls and blocks upload/reconnect 
     });
     assert.equal(info.ready,false);assert.equal(info.review.required,true);assert.equal(info.publicationBlocked,true);
     await f.page.waitForTimeout(350);assert.equal(await f.page.evaluate(()=>localStorage.getItem('zezms_cloud_sync_m4_queue')),before);
+    for(let repeat=0;repeat<2;repeat++){
+      await f.page.reload();
+      await f.page.waitForFunction(()=>window.ZEZMS?.cloudSync?.isShopDirectoryRecoveryHeld?.());
+      assert.equal(await f.page.evaluate(()=>localStorage.getItem('zezms_cloud_sync_m4_queue')),f.seedQueue,'repeated initialization changed the protected queue');
+      assert.equal(await f.page.evaluate(()=>ZEZMS.cloudSync.getState().liveSyncEnabled),false);
+    }
     assert.ok(!f.calls.some(r=>r.path.endsWith('/zezms_ops_push')));
+    const finalQueue=await f.page.evaluate(()=>localStorage.getItem('zezms_cloud_sync_m4_queue'));
+    const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+    console.log('Synthetic Shop queue evidence: before=3 after=3; beforeSha256='+digest(f.seedQueue)+' afterSha256='+digest(finalQueue)+'; pushRequests=0; liveSync=false; hold=true');
     assert.ok(await f.page.evaluate(()=>document.body.textContent.includes('Directory recovery hold')));
   }finally{await f.context.close();}
 });

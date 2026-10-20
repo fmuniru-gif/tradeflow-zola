@@ -1,29 +1,31 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),base='3582ab43f0a3ae3911f606c2d47615db291336e4';
+const root=path.resolve(__dirname,'..'),base='3582ab43f0a3ae3911f606c2d47615db291336e4',production='a323d78da4559fe13f082cf172932ce6e7a93adb';
 const shell=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const original=execFileSync('git',['show',base+':index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
 function decode(text,name){const m=text.match(new RegExp('const '+name+'=([\\s\\S]*?);\\s*(?:const|function|let|var)'));assert.ok(m,name);return Buffer.from([...m[1].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(x=>x[1]).join(''),'base64').toString('utf8');}
-test('only the reviewed Shop guard is added inside the actual embedded cloud closure',()=>{
+test('the exact production Shop guard remains inside the actual embedded cloud closure',()=>{
   const current=decode(shell,'CLOUD_B64'),prior=decode(original,'CLOUD_B64');
+  const protectedShell=execFileSync('git',['show',production+':index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
+  assert.equal(current,decode(protectedShell,'CLOUD_B64'));
   const insertion=current.match(/\/\* SHOP_DIRECTORY_RECOVERY_INSERT_BEGIN \*\/[\s\S]*?\/\* SHOP_DIRECTORY_RECOVERY_INSERT_END \*\/\n/);assert.ok(insertion);
   assert.equal(current.replace(insertion[0],''),prior);
-  for(const file of ['js/shop-directory-recovery-core.js','js/shop-directory-recovery-runtime.js'])assert.ok(insertion[0].includes(fs.readFileSync(path.join(root,file),'utf8').replace(/\r\n/g,'\n')));
+  assert.ok(insertion[0].includes(fs.readFileSync(path.join(root,'js/shop-directory-recovery-runtime.js'),'utf8').replace(/\r\n/g,'\n')));
   for(const name of ['VERIFIED_BASELINE_B64','INTEGRITY_B64','MANAGED_DEVICE_LIFECYCLE_R61_B64','PRELOGIN_VERIFIED_ACTIVATION_R70U_B64'])assert.equal(decode(shell,name),decode(original,name));
   const manager=decode(shell,'MANAGER_SCOPE_STAFF_LOGIN_B64');
   const guard=/\n    \/\* SHOP_DIRECTORY_TIMESTAMP_HOLD: keep login audit local during recovery\. \*\/\n    if \(window\.ZEZMS\.cloudSync && window\.ZEZMS\.cloudSync\.isShopDirectoryRecoveryHeld && window\.ZEZMS\.cloudSync\.isShopDirectoryRecoveryHeld\(\)\) return false;/;
   assert.match(manager,guard);assert.equal(manager.replace(guard,''),decode(original,'MANAGER_SCOPE_STAFF_LOGIN_B64'));
 });
-test('standalone legacy sync, Main repairs, financial code and manifest stay byte-identical',()=>{
-  for(const file of ['js/cloud-sync.js','manifest.json','diagnostics/main-cash-repair/repair-core.js','diagnostics/main-cash-repair/repair-core-r3.js','diagnostics/main-cash-input-compare/integrity-r60o.js']){
+test('standalone legacy sync, Main repairs and financial code stay byte-identical',()=>{
+  for(const file of ['js/cloud-sync.js','diagnostics/main-cash-repair/repair-core.js','diagnostics/main-cash-repair/repair-core-r3.js','diagnostics/main-cash-input-compare/integrity-r60o.js']){
     const old=execFileSync('git',['show',base+':'+file],{cwd:root,maxBuffer:32*1024*1024}).toString('utf8').replace(/\r\n/g,'\n');assert.equal(fs.readFileSync(path.join(root,file),'utf8').replace(/\r\n/g,'\n'),old,file);
   }
 });
 test('worker requires new guard shell and enumerates old/uncontrolled clients',()=>{
   const source=fs.readFileSync(path.join(root,'sw.js'),'utf8');
-  assert.match(source,/includeUncontrolled:true/);assert.match(source,/SHOP_DIRECTORY_RECOVERY_BUILD/);assert.ok(!source.includes('skipWaiting('));assert.ok(!source.includes('indexedDB.deleteDatabase'));
-  assert.match(shell,/PATCH_CACHE="zezms-shop-directory-recovery-patched-v2"/);
+  assert.match(source,/includeUncontrolled:true/);assert.match(source,/SHOP_DIRECTORY_RECOVERY_BUILD/);assert.ok(!source.includes('skipWaiting('));assert.ok(!source.includes('clients.claim('));assert.ok(!source.includes('caches.delete('));assert.ok(!source.includes('indexedDB.deleteDatabase'));
+  assert.match(shell,/PATCH_CACHE="zezms-prebranch-functional-patched-v1"/);
 });
 test('recovery compares the complete production synchronized scope',()=>{
   const core=require('../js/shop-directory-recovery-core.js'),prior=decode(original,'CLOUD_B64');

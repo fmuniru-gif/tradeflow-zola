@@ -9,7 +9,7 @@ const index = read('index.html');
 const worker = read('sw.js');
 const manifest = JSON.parse(read('manifest.json'));
 const helper = read('FORCE_UPDATE_MOBILE.html');
-const release = '20261016-r70v-bootstrap-outbox-diagnostic';
+const release = '20261020-prebranch-functional-r1';
 
 test('the deployed shell, worker, manifest and update helper name one release',()=>{
   assert.match(index,new RegExp('const RELEASE="'+release+'";'));
@@ -20,6 +20,8 @@ test('the deployed shell, worker, manifest and update helper name one release',(
   assert.match(worker,/ZEZMS_RUNTIME_INTEGRITY_PROBE/);
   assert.match(worker,/ZEZMS_PRESERVATION_RELEASE_MISMATCH/);
   assert.ok(worker.includes("data.release === '20261015-r70u-prelogin-verified-activation'"),'old in-flight shell compatibility missing');
+  assert.ok(!index.includes('BRANCH_MANAGEMENT_R69_B64'),'branch-management module remains embedded');
+  assert.ok(!index.includes('<script data-zezms-branch-management-r69a>'),'branch-management UI remains injectable');
 });
 
 for(const [constant,file] of [
@@ -41,7 +43,8 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'js/shop-directory-recovery-core.js','js/shop-directory-recovery-runtime.js',
     'tests/shop-directory-recovery.test.cjs','tests/shop-directory-recovery.browser.cjs',
     'tests/shop-directory-delivery.test.cjs','tools/build-shop-directory-recovery.cjs',
-    'docs/shop-directory-recovery.md',
+    'docs/shop-directory-recovery.md','docs/prebranch-functional-rollback.md',
+    'tests/prebranch-functional-rollback.test.cjs','tests/prebranch-functional-rollback.browser.cjs',
     'js/prelogin-verified-activation-r70u.js',
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
     'tests/r70v-diagnostic.browser.cjs','tests/approved-deployment-gate.test.cjs',
@@ -67,7 +70,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
   ].includes(name)));
   const previous=execFileSync('git',['show','origin/main:index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
   const embedded=[...previous.matchAll(/const ([A-Z0-9_]+_B64)="([^"]+)";/g)].map(match=>match[1]);
-  for(const name of embedded.filter(name=>!['PRELOGIN_VERIFIED_ACTIVATION_R70U_B64','CLOUD_B64','MANAGER_SCOPE_STAFF_LOGIN_B64'].includes(name))){
+  for(const name of embedded.filter(name=>!['PRELOGIN_VERIFIED_ACTIVATION_R70U_B64','CLOUD_B64','MANAGER_SCOPE_STAFF_LOGIN_B64','BRANCH_MANAGEMENT_R69_B64'].includes(name))){
     const pattern=new RegExp('const '+name+'="([^"]+)";');
     assert.equal(index.match(pattern)?.[1],previous.match(pattern)?.[1],name+' changed');
   }

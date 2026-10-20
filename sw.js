@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-shop-directory-recovery-v2';
-const PATCHED_INDEX_CACHE = 'zezms-shop-directory-recovery-patched-v2';
+const CACHE = 'zezms-prebranch-functional-20261020-v1';
+const PATCHED_INDEX_CACHE = 'zezms-prebranch-functional-patched-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20261008-r70q-phase-a-review','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -35,7 +35,7 @@ const ASSETS = [
   './js/navigation-v3101-r68.js?v=20261004-r70f-recovery-stabilization','./js/route-title-ownership-r68.js?v=20261004-r70f-recovery-stabilization',
   './js/sales-pipeline-r67v.js?v=20260923-proforma-fleet-print-r67w','./js/proforma-invoice-r67w.js?v=20260923-proforma-fleet-print-r67w','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/account-cash-pdf-r68e.js?v=20261004-r70f-recovery-stabilization','./js/kpi-charts-compact-r68e.js?v=20261004-r70f-recovery-stabilization',
-  './js/branch-management-r69.js?v=20261004-r70f-recovery-stabilization','./js/managed-device-lifecycle-r61.js?v=20261008-r70q-phase-a-review',
+  './js/managed-device-lifecycle-r61.js?v=20261008-r70q-phase-a-review',
   './js/recovery-stabilization-r70g.js?v=20261008-r70q-phase-a-review','./js/identity-relink-r70h.js?v=20261008-r70q-phase-a-review',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json', './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
@@ -82,21 +82,18 @@ self.addEventListener('install', (event) => {
       { cache:'reload' }));
     await cache.addAll(requests);
     // Fail closed on a mixed deployment: do not activate the new worker with an old shell.
-    const expected = 'const RELEASE=\"20261016-r70v-bootstrap-outbox-diagnostic\";';
+    const expected = 'const RELEASE=\"20261020-prebranch-functional-r1\";';
     for (const entry of ['./', './index.html']) {
       const response = await cache.match(new URL(entry, self.registration.scope).href, {ignoreVary:true});
       const shellText = response && response.ok ? await response.text() : '';
-      if (!shellText.includes(expected) || !shellText.includes('const SHOP_DIRECTORY_RECOVERY_BUILD="shop-directory-v2";')) {
+      if (!shellText.includes(expected) || !shellText.includes('const SHOP_DIRECTORY_RECOVERY_BUILD="shop-directory-v2";') || shellText.includes('BRANCH_MANAGEMENT_R69_B64')) {
         throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
       }
     }
     const manifestResponse = await cache.match(new URL('./manifest.json', self.registration.scope).href, {ignoreVary:true});
     const manifestData = manifestResponse && manifestResponse.ok ? await manifestResponse.json() : null;
-    if (!manifestData || manifestData.start_url !== './index.html?build=20261016-r70v-bootstrap-outbox-diagnostic') throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
+    if (!manifestData || manifestData.start_url !== './index.html?build=20261020-prebranch-functional-r1') throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
   }));
-});
-self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE && key !== PATCHED_INDEX_CACHE && key !== 'zezms-r70q-phase-a-review-20261008' && key !== 'zezms-r70q-phase-a-review-cache-v1' && !key.startsWith('zezms-commercial-pilot-')).map((key) => caches.delete(key)))));
 });
 self.addEventListener('message', (event) => {
   const data = event && event.data;
@@ -112,11 +109,11 @@ self.addEventListener('message', (event) => {
   }
   if (data && data.type === 'ZEZMS_RUNTIME_INTEGRITY_PROBE') {
     if (event.source && typeof event.source.postMessage === 'function') {
-      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261016-r70v-bootstrap-outbox-diagnostic', cache:CACHE });
+      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261020-prebranch-functional-r1', cache:CACHE });
     }
     return;
   }
-  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261016-r70v-bootstrap-outbox-diagnostic' || data.release === '20261015-r70u-prelogin-verified-activation' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261020-prebranch-functional-r1' || data.release === '20261015-r70u-prelogin-verified-activation' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
@@ -145,7 +142,7 @@ self.addEventListener('fetch', (event) => {
     }
     const network = await refresh;
     if (network) return network;
-    if (isNavigation) return (await caches.match('./index.html')) || Response.error();
+    if (isNavigation) return (await cached(new URL('./index.html', self.registration.scope).href)) || Response.error();
     return Response.error();
   })());
 });
