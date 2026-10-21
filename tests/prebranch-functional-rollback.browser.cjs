@@ -188,6 +188,12 @@ test('an existing controlled r70V cache upgrades after old tabs close without ca
     await next.goto(f.origin+'/FORCE_UPDATE_MOBILE.html');
     await next.waitForFunction(async()=>{const registration=await navigator.serviceWorker.getRegistration();return !!registration?.active?.scriptURL.includes('20261021-shop-chrome-bootstrap-guard-r1');},null,{timeout:12000});
     await next.goto(f.origin+'/index.html');await ready(next);
+    // Passive workers do not claim a page that began loading during activation.
+    // A normal reload gives the newly active worker control without clearing data.
+    if(!await next.evaluate(release=>navigator.serviceWorker.controller?.scriptURL.includes(release),release)){
+      await next.reload();await ready(next);
+    }
+    await next.waitForFunction(release=>navigator.serviceWorker.controller?.scriptURL.includes(release),release,{timeout:12000});
     const result=await next.evaluate(async()=>({branchApi:!!window.ZEZMS.branchManagement,names:await caches.keys(),controller:navigator.serviceWorker.controller?.scriptURL}));
     assert.equal(result.branchApi,false);
     assert.ok(result.names.includes(oldCache),'old protected cache was deleted');

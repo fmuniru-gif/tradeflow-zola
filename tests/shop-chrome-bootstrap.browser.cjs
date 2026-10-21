@@ -108,6 +108,113 @@ test('established ACTIVE device still runs confirmed KPI startup once',async()=>
   }finally{await tab.close();}
 });
 
+async function signedInEstablishedPage(mode,businessId){
+  const tab=await page();
+  const salt=Buffer.alloc(16,7),password='synthetic-owner-password';
+  const owner={id:'synthetic-owner-staff',name:'Synthetic Owner',tel:'',role:'OWNER',active:true,
+    passwordAlgorithm:'PBKDF2-SHA256',passwordIterations:210000,passwordSalt:salt.toString('base64'),
+    passwordHash:crypto.pbkdf2Sync(password,salt,210000,32,'sha256').toString('base64'),
+    createdAt:'2026-10-20T00:00:00Z',updatedAt:'2026-10-20T00:00:00Z'};
+  const seed=await tab.evaluate(({owner,mode,businessId})=>{
+    const db=JSON.parse(JSON.stringify(DB));
+    db.sharedDeviceAuth={version:1,enabled:true,businessId:'synthetic-business',users:[owner],audit:[]};
+    db.sharedDeviceDirectory={version:1,enabled:true,businessId:'synthetic-business',users:[owner],
+      updatedAt:'2026-10-20T00:00:00Z'};
+    const now=new Date();
+    db.monthRollovers=[{id:'synthetic-current-month',targetYear:now.getFullYear(),targetMonth:now.getMonth()+1}];
+    db.kpiHistory=[{id:'KPI-202607-CONFIRMED',year:2026,month:7,...ZEZMSConfirmedJulySnapshot.values,
+      confirmedClosing:true,confirmationSource:'User-confirmed July 2026 closing balances',
+      correctionRelease:'3.4.23',snapshotVersion:3,automatic:false}];
+    const state={...ZEZMS.cloudSync.getState(),deviceId:'synthetic-established-'+mode.toLowerCase(),
+      deviceAccessMode:mode,deviceLifecycleState:mode==='PAIRED'?'ACTIVE':'',
+      businessId,syncOwnerId:'synthetic-cloud-owner',initialized:true,liveSyncEnabled:false};
+    return {db:JSON.stringify(db),state:JSON.stringify(state)};
+  },{owner,mode,businessId});
+  await tab.addInitScript(seed=>{
+    if(localStorage.getItem('__synthetic_trading_seed'))return;
+    localStorage.setItem('tradeflow_v321_zola',seed.db);
+    localStorage.setItem('zezms_cloud_sync_m4_state',seed.state);
+    localStorage.setItem('zezms_cloud_sync_m4_queue','[]');
+    localStorage.setItem('__synthetic_trading_seed','1');
+  },seed);
+  await tab.reload({waitUntil:'domcontentloaded'});
+  await tab.waitForFunction(()=>window.ZEZMS?.staffAuth&&window.ZEZMS?.autoMonth);
+  await tab.locator('#sharedLoginUser').selectOption(owner.id);
+  await tab.locator('#sharedLoginPassword').fill(password);
+  await tab.evaluate(()=>ZEZMS.staffAuth.signInFromLogin());
+  await tab.waitForFunction(()=>ZEZMS.staffAuth.getContext().role==='OWNER');
+  return tab;
+}
+
+for(const [mode,businessId] of [['OWNER',''],['PAIRED','synthetic-business']])
+test('established '+mode+' trading reaches real stock-in and sales despite deferred automatic maintenance',async()=>{
+  const tab=await signedInEstablishedPage(mode,businessId);
+  try{
+    const result=await tab.evaluate(async()=>{
+      const guard=ZEZMS.bootstrapStartupGuard;
+      const eligibility={automatic:guard.allowsAutomaticBusinessWrites(),trading:guard.allowsBusinessTransactions()};
+      // Simulate a maintenance-only deferral; ordinary transactions must use
+      // their own eligibility gate and the application's staff permissions.
+      ZEZMS.bootstrapStartupGuard={...guard,allowsAutomaticBusinessWrites:()=>false};
+      nav('stockin');
+      document.getElementById('siNewName').value='Synthetic Trading Item';
+      document.getElementById('siQty').value='2';
+      document.getElementById('siCost').value='10';
+      document.getElementById('siPrice').value='20';
+      const before={stock:DB.stockRows.length,undo:DB.undoLog.length,
+        queue:ZEZMS.cloudSync.getOutbox().length};
+      await doStockIn();
+      nav('pos');
+      document.getElementById('posProduct').value='Synthetic Trading Item';
+      document.getElementById('posQty').value='1';
+      document.getElementById('posUPrice').value='20';
+      await addItemToList();
+      const cartCount=cart.length;
+      await quickSaleOut();
+      ZEZMS.bootstrapStartupGuard=guard;
+      const row=DB.stockRows.find(entry=>entry.productName==='Synthetic Trading Item');
+      return {eligibility,before,cartCount,remaining:row?.rStock,cartAfter:cart.length,
+        stock:DB.stockRows.length,undo:DB.undoLog.length,queue:ZEZMS.cloudSync.getOutbox().length};
+    });
+    assert.deepEqual(result.eligibility,{automatic:true,trading:true});
+    assert.equal(result.cartCount,1);
+    assert.equal(result.stock,result.before.stock+1);
+    assert.equal(result.remaining,1);
+    assert.equal(result.cartAfter,0);
+    assert.equal(result.undo,result.before.undo+2);
+  }finally{await tab.close();}
+});
+
+test('staged bootstrap and Shop recovery hold reject manual trading and automatic writes',async()=>{
+  const tab=await page();
+  try{
+    const staged=await tab.evaluate(()=>{
+      const original=ZEZMS.cloudSync.getState;
+      ZEZMS.cloudSync.getState=()=>({initialized:true,deviceId:'synthetic-staged',
+        deviceAccessMode:'PAIRED',deviceLifecycleState:'ACTIVE',businessId:'synthetic-business',syncOwnerId:'synthetic-owner'});
+      localStorage.setItem('zezms_m5a4_safe_bootstrap_stage_v1','{"synthetic":true}');
+      const result={automatic:ZEZMS.bootstrapStartupGuard.allowsAutomaticBusinessWrites(),
+        trading:ZEZMS.bootstrapStartupGuard.allowsBusinessTransactions(),
+        transaction:addItemToList()};
+      localStorage.removeItem('zezms_m5a4_safe_bootstrap_stage_v1');
+      ZEZMS.cloudSync.getState=original;
+      return result;
+    });
+    assert.deepEqual(staged,{automatic:false,trading:false,transaction:false});
+    const held=await tab.evaluate(()=>{
+      const cloud=ZEZMS.cloudSync,originalState=cloud.getState,originalHold=cloud.isShopDirectoryRecoveryHeld;
+      cloud.getState=()=>({initialized:true,deviceId:'synthetic-held',deviceAccessMode:'OWNER',
+        syncOwnerId:'synthetic-owner',businessId:''});
+      cloud.isShopDirectoryRecoveryHeld=()=>true;
+      const result={automatic:ZEZMS.bootstrapStartupGuard.allowsAutomaticBusinessWrites(),
+        trading:ZEZMS.bootstrapStartupGuard.allowsBusinessTransactions(),transaction:doStockIn()};
+      cloud.getState=originalState;cloud.isShopDirectoryRecoveryHeld=originalHold;
+      return result;
+    });
+    assert.deepEqual(held,{automatic:false,trading:false,transaction:false});
+  }finally{await tab.close();}
+});
+
 test('exact Shop Chrome proof is read-only and conceals payload values',async()=>{
   const tab=await page();
   try{

@@ -17,6 +17,12 @@
       && guard.allowsAutomaticBusinessWrites());
   }
 
+  function transactionAllowed() {
+    const guard = window.ZEZMS && ZEZMS.bootstrapStartupGuard;
+    return !!(guard && typeof guard.allowsBusinessTransactions === 'function'
+      && guard.allowsBusinessTransactions());
+  }
+
   function getDatabase() {
     try { return (typeof DB !== 'undefined' && DB) ? DB : null; } catch (_) { return null; }
   }
@@ -457,7 +463,7 @@
     const original = window[name];
     if (typeof original !== 'function' || original.__autoMonthWrapped) return;
     const wrapped = function () {
-      if (!startupAllowed()) return false;
+      if (!transactionAllowed()) return false;
       if (hasCurrentRolloverDue()) {
         const result = ensureAutomaticMonthRollover({ silent: false, render: false });
         if (result && result.deferred) {
