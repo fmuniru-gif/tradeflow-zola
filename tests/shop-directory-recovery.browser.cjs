@@ -22,7 +22,7 @@ async function setup(device=core.DEVICE){
   await page.goto(origin+'/index.html');
   if(process.env.SHOP_TEST_DEBUG)console.log('stage initial page loaded');
   await page.waitForFunction(()=>window.ZEZMS?.cloudSync&&window.ZEZMS?.managedDevices&&window.ZEZMS?.staffAuth);
-  await page.waitForFunction(()=>ZEZMS.cloudSync.getOutbox().length>0&&document.documentElement.getAttribute('data-zezms-shared-device-auth')==='ready');
+  await page.waitForFunction(()=>document.documentElement.getAttribute('data-zezms-shared-device-auth')==='ready');
   await page.waitForTimeout(300);
   const salt=Buffer.alloc(16,9),password='synthetic-owner-password';
   const owner={id:'owner-staff-synthetic',name:'Synthetic Owner',tel:'',role:'OWNER',active:true,passwordAlgorithm:'PBKDF2-SHA256',passwordIterations:210000,passwordSalt:salt.toString('base64'),passwordHash:crypto.pbkdf2Sync(password,salt,210000,32,'sha256').toString('base64'),createdAt:'2026-10-16T00:00:00Z',updatedAt:'2026-10-16T00:00:00Z'};
@@ -38,7 +38,7 @@ async function setup(device=core.DEVICE){
     return Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]));
   },{owner,device,ids:core.IDS});
   await page.evaluate(async()=>{
-    await navigator.serviceWorker.register('./sw.js?v=20261020-prebranch-functional-r1');
+    await navigator.serviceWorker.register('./sw.js?v=20261021-shop-chrome-bootstrap-guard-r1');
     await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Reviewed service worker did not activate')),10000))]);
   });
   if(process.env.SHOP_TEST_DEBUG)console.log('stage worker ready');
@@ -50,7 +50,9 @@ async function setup(device=core.DEVICE){
     for(const [k,v]of Object.entries(seed))localStorage.setItem(k,v);
     localStorage.setItem('__synthetic_shop_seed_complete','1');
   },seed);
-  await page.goto(origin+'/index.html');await page.waitForFunction(()=>window.ZEZMS?.cloudSync&&window.ZEZMS?.staffAuth);
+  await page.goto(origin+'/index.html');await page.waitForFunction(()=>window.ZEZMS?.cloudSync&&window.ZEZMS?.staffAuth).catch(async error=>{
+    console.log('SHOP_BOOT_STATE',await page.evaluate(()=>({status:document.getElementById('r55BootStatus')?.textContent,release:document.documentElement.getAttribute('data-zezms-release'),scripts:[...document.scripts].filter(s=>s.src).map(s=>s.src).slice(-6)})));throw error;
+  });
   if(process.env.SHOP_TEST_DEBUG)console.log('stage Shop reload ready');
   await page.locator('#sharedLoginUser').selectOption(owner.id);
   await page.locator('#sharedLoginPassword').fill(password);

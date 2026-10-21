@@ -8,9 +8,9 @@ const {execFileSync}=require('node:child_process');
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const recoveryCore=require('../js/shop-directory-recovery-core.js');
 const root=path.resolve(__dirname,'..');
-const release='20261020-prebranch-functional-r1';
+const release='20261021-shop-chrome-bootstrap-guard-r1';
 const oldCache='zezms-shop-directory-recovery-v2';
-const newCache='zezms-shop-storage-capacity-20261020-v1';
+const newCache='zezms-shop-chrome-bootstrap-guard-20261021-v1';
 let mismatchedManifest=false;
 let serveBaseline=false;
 const baseline='a323d78da4559fe13f082cf172932ce6e7a93adb';
@@ -95,6 +95,15 @@ test('synthetic Main business records and local Owner access survive initializat
       db.sales.push({id:'synthetic-preserved-sale',total:125,createdAt:'2026-10-20T00:00:00Z'});
       db.cashLog.push({id:'synthetic-preserved-cash',amount:25,type:'Cash in Hand',createdAt:'2026-10-20T00:00:00Z'});
       db.cashBalances['Cash in Hand']=1234;
+      // This fixture represents an established, already reconciled Main device.
+      // Keep historical KPI and current-month rollover from racing this PDF check.
+      const july=ZEZMSConfirmedJulySnapshot.values;
+      db.kpiHistory.push({id:'KPI-202607-CONFIRMED',year:2026,month:7,debt:july.debt,
+        creditors:july.creditors,deposits:july.deposits,cashBuckets:july.cashBuckets,
+        confirmedClosing:true,confirmationSource:'User-confirmed July 2026 closing balances',
+        correctionRelease:'3.4.23',snapshotVersion:3,automatic:false});
+      const now=new Date();db.monthRollovers=db.monthRollovers||[];
+      db.monthRollovers.push({id:'synthetic-current-month',targetYear:now.getFullYear(),targetMonth:now.getMonth()+1});
       const state={...ZEZMS.cloudSync.getState(),deviceId:'9a5ab8eb-f67e-425c-866d-574b641295f0',deviceName:'ZEZMS Main synthetic',deviceAccessMode:'OWNER',syncOwnerId:'synthetic-owner',businessId:'synthetic-business',initialized:true,cursor:1,liveSyncEnabled:false,liveSyncDesired:false,supabaseUrl:'',publishableKey:''};
       return {db:JSON.stringify(db),state:JSON.stringify(state),queue:'[]',applied:'{}'};
     },owner);
@@ -177,8 +186,14 @@ test('an existing controlled r70V cache upgrades after old tabs close without ca
     await f.page.close();
     const next=await f.context.newPage();
     await next.goto(f.origin+'/FORCE_UPDATE_MOBILE.html');
-    await next.waitForFunction(async()=>{const registration=await navigator.serviceWorker.getRegistration();return !!registration?.active?.scriptURL.includes('20261020-prebranch-functional-r1');},null,{timeout:12000});
+    await next.waitForFunction(async()=>{const registration=await navigator.serviceWorker.getRegistration();return !!registration?.active?.scriptURL.includes('20261021-shop-chrome-bootstrap-guard-r1');},null,{timeout:12000});
     await next.goto(f.origin+'/index.html');await ready(next);
+    // Passive workers do not claim a page that began loading during activation.
+    // A normal reload gives the newly active worker control without clearing data.
+    if(!await next.evaluate(release=>navigator.serviceWorker.controller?.scriptURL.includes(release),release)){
+      await next.reload();await ready(next);
+    }
+    await next.waitForFunction(release=>navigator.serviceWorker.controller?.scriptURL.includes(release),release,{timeout:12000});
     const result=await next.evaluate(async()=>({branchApi:!!window.ZEZMS.branchManagement,names:await caches.keys(),controller:navigator.serviceWorker.controller?.scriptURL}));
     assert.equal(result.branchApi,false);
     assert.ok(result.names.includes(oldCache),'old protected cache was deleted');

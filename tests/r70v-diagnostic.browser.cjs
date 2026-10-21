@@ -35,17 +35,18 @@ async function page(){
 }
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(resolve=>server.close(resolve));});
 async function stage(tab,kind){
-  await tab.waitForFunction(()=>window.ZEZMS?.cloudSync?.getOutbox().length>0,null,{timeout:10000});
+  await tab.waitForFunction(()=>window.ZEZMS?.cloudSync?.getState()?.deviceId,null,{timeout:10000});
   const before=await tab.evaluate(kind=>{
     const state=ZEZMS.cloudSync.getState(),candidate=JSON.parse(JSON.stringify(DB));
     const lifecycleId='synthetic-approved-lifecycle';
     const stage={version:1,build:'r70s-q1',deviceId:state.deviceId,lifecycleId,cursor:42,candidate,fingerprint:ZEZMS.convergence.buildFingerprint(),attestedAt:new Date().toISOString()};
     const journal={version:2,deviceId:state.deviceId,lifecycleId,stage:'VERIFYING',lastVerifiedStage:'VERIFYING',replayCursor:42};
-    const queued=JSON.parse(localStorage.getItem('zezms_cloud_sync_m4_queue'));
+    const queued=[{opId:'synthetic-preserved-operation',deviceId:state.deviceId,createdAt:new Date().toISOString(),kind:'DATABASE_CHANGE',
+      patches:[{action:'insert',collection:'kpiHistory',value:{id:'synthetic-kpi'}},{action:'root-set',root:'settings',value:candidate.settings}]}];
     if(kind==='safe')queued[0].patches=[{action:'root-set',root:'settings',value:candidate.settings}];
     if(kind==='business')queued[0].patches=[{action:'insert',collection:'sales',value:{id:'secret-sale',total:97,password:'secret-password'}}];
     if(kind==='unknown')queued[0].patches=[{action:'root-set',root:'settings',value:{unexpected:'secret-token'}}];
-    if(kind!=='startup')localStorage.setItem('zezms_cloud_sync_m4_queue',JSON.stringify(queued));
+    localStorage.setItem('zezms_cloud_sync_m4_queue',JSON.stringify(queued));
     localStorage.setItem('zezms_m5a4_safe_bootstrap_stage_v1',JSON.stringify(stage));
     localStorage.setItem('zezms_m5a4_safe_bootstrap_journal_v2',JSON.stringify(journal));
     localStorage.setItem('zezms_cloud_sync_m4_state',JSON.stringify(Object.assign({},state,{deviceAccessMode:'PAIRED',businessId:'business-1',syncOwnerId:'owner-1',liveSyncEnabled:false,initialized:false,cursor:0})));
