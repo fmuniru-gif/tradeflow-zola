@@ -9,7 +9,7 @@ const index = read('index.html');
 const worker = read('sw.js');
 const manifest = JSON.parse(read('manifest.json'));
 const helper = read('FORCE_UPDATE_MOBILE.html');
-const release = '20261020-prebranch-functional-r1';
+const release = '20261021-shop-chrome-bootstrap-guard-r1';
 
 test('the deployed shell, worker, manifest and update helper name one release',()=>{
   assert.match(index,new RegExp('const RELEASE="'+release+'";'));
@@ -20,8 +20,19 @@ test('the deployed shell, worker, manifest and update helper name one release',(
   assert.match(worker,/ZEZMS_RUNTIME_INTEGRITY_PROBE/);
   assert.match(worker,/ZEZMS_PRESERVATION_RELEASE_MISMATCH/);
   assert.ok(worker.includes("data.release === '20261015-r70u-prelogin-verified-activation'"),'old in-flight shell compatibility missing');
+  assert.ok(worker.includes("data.release === '20261020-prebranch-functional-r1'"),'previous in-flight shell compatibility missing');
   assert.ok(!index.includes('BRANCH_MANAGEMENT_R69_B64'),'branch-management module remains embedded');
   assert.ok(!index.includes('<script data-zezms-branch-management-r69a>'),'branch-management UI remains injectable');
+});
+
+test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
+  for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
+    'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
+    assert.ok(worker.includes('./js/'+name+'.js?v='+release),name);
+    assert.ok(index.includes('js/'+name+'.js?v='),name);
+  }
+  assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
+  assert.ok(!/\.quarantine\s*\(|\.activateVerifiedBootstrapR70M\s*\(/.test(read('js/shop-chrome-bootstrap-proof.js')));
 });
 
 for(const [constant,file] of [
@@ -46,8 +57,12 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'docs/shop-directory-recovery.md','docs/prebranch-functional-rollback.md','docs/shop-trading-readiness.md','docs/shop-recovery-storage-capacity.md',
     'tests/prebranch-functional-rollback.test.cjs','tests/prebranch-functional-rollback.browser.cjs',
     'js/prelogin-verified-activation-r70u.js',
+    'js/bootstrap-startup-guard.js','js/auto-month-rollover-bootstrap-guard.js',
+    'js/confirmed-july-snapshot-bootstrap-guard.js','js/shop-chrome-bootstrap-proof.js',
+    'docs/shop-chrome-bootstrap-startup-guard.md','tests/shop-chrome-bootstrap.browser.cjs',
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
-    'tests/r70v-diagnostic.browser.cjs','tests/approved-deployment-gate.test.cjs',
+    'tests/r70v-diagnostic.browser.cjs','tests/shop-directory-recovery.browser.cjs',
+    'tests/approved-deployment-gate.test.cjs',
     'scripts/approved-deployment-gate.cjs','docs/r70v-diagnostic-runbook.md','docs/approved-github-deployment.md',
     'diagnostics/financial-audit/index.html','diagnostics/financial-audit/style.css',
     'diagnostics/financial-audit/capture.js','tools/financial-audit/analyze.cjs',
