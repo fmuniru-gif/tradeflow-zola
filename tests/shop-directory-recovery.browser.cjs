@@ -259,15 +259,20 @@ test('isolated approved activation releases posting only after verified hold and
     await f.context.setOffline(false);
     await f.page.evaluate(async()=>{await ZEZMS.cloudSync.shopRecovery.prepareReceive();await ZEZMS.cloudSync.shopRecovery.saveArchive(window.__testShopHandle,'synthetic sufficiently long archive passphrase');await ZEZMS.cloudSync.shopRecovery.receive('RECEIVE ONLY');});
     const readiness=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.activationReadiness());assert.equal(readiness.walletsEqual,true);assert.equal(readiness.activationAvailable,true);
+    // Record synthetic queue *shapes* around activation; never output payload values.
+    const queueShape=()=>ZEZMS.cloudSync.getOutbox().map(o=>({kind:String(o.kind||''),reason:String(o.reason||''),patches:(o.patches||[]).map(p=>({action:p.action,root:p.root||'',collection:p.collection||''}))}));
+    const beforeActivation=await f.page.evaluate(queueShape);
     const activated=await f.page.evaluate(()=>ZEZMS.cloudSync.shopRecovery.activateTrading('ACTIVATE SHOP TRADING'));assert.equal(activated.tradingActive,true);
+    const afterActivation=await f.page.evaluate(queueShape);
     const posted=await f.page.evaluate(()=>{
       const api=ZEZMS.cloudSync,before=api.getOutbox().length;
       DB.settings.syntheticTradingReadiness='review-only-synthetic';
       saveDB();
-      return {held:api.isShopDirectoryRecoveryHeld(),ready:api.isReadyForLocalOperations(),before,queue:api.getOutbox().map(o=>({opId:o.opId,kind:o.kind})),state:api.getState(),phase:JSON.parse(localStorage.getItem('zezms_shop_directory_recovery_v1')).phase};
+      return {held:api.isShopDirectoryRecoveryHeld(),ready:api.isReadyForLocalOperations(),before,beforeRows:api.getOutbox().slice(0,before).map(o=>({kind:String(o.kind||''),reason:String(o.reason||''),patches:(o.patches||[]).map(p=>({action:p.action,root:p.root||'',collection:p.collection||''}))})),queue:api.getOutbox().map(o=>({opId:o.opId,kind:o.kind})),state:api.getState(),phase:JSON.parse(localStorage.getItem('zezms_shop_directory_recovery_v1')).phase};
     });
     assert.equal(posted.held,false);assert.equal(posted.ready,true);assert.equal(posted.phase,'TRADING_ACTIVE');
-    assert.equal(posted.before,0);assert.equal(posted.queue.length,1);assert.ok(!core.IDS.includes(posted.queue[0].opId));
+    assert.equal(posted.before,0,'UNEXPECTED_SYNTHETIC_PREEXISTING_QUEUE '+JSON.stringify({beforeActivation,afterActivation,beforeSave:posted.beforeRows}));
+    assert.equal(posted.queue.length,1);assert.ok(!core.IDS.includes(posted.queue[0].opId));
     assert.equal(posted.state.liveSyncEnabled,false);assert.ok(!requests.some(r=>r.path.endsWith('zezms_ops_push')));
     await f.page.reload();await f.page.waitForFunction(()=>window.ZEZMS?.cloudSync?.getState?.().deviceId==='197e3568-5a89-4a56-b9d0-07f5e8248734');
     assert.equal(await f.page.evaluate(()=>ZEZMS.cloudSync.isShopDirectoryRecoveryHeld()),false);
