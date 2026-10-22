@@ -8,9 +8,9 @@ const {execFileSync}=require('node:child_process');
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const recoveryCore=require('../js/shop-directory-recovery-core.js');
 const root=path.resolve(__dirname,'..');
-const release='20261021-shop-chrome-bootstrap-guard-r1';
+const release='20261022-shop-chrome-directory-chain-r70w-v1';
 const oldCache='zezms-shop-directory-recovery-v2';
-const newCache='zezms-shop-chrome-bootstrap-guard-20261021-v1';
+const newCache='zezms-shop-chrome-directory-chain-20261022-v1';
 let mismatchedManifest=false;
 let serveBaseline=false;
 const baseline='a323d78da4559fe13f082cf172932ce6e7a93adb';
@@ -186,7 +186,7 @@ test('an existing controlled r70V cache upgrades after old tabs close without ca
     await f.page.close();
     const next=await f.context.newPage();
     await next.goto(f.origin+'/FORCE_UPDATE_MOBILE.html');
-    await next.waitForFunction(async()=>{const registration=await navigator.serviceWorker.getRegistration();return !!registration?.active?.scriptURL.includes('20261021-shop-chrome-bootstrap-guard-r1');},null,{timeout:12000});
+    await next.waitForFunction(async()=>{const registration=await navigator.serviceWorker.getRegistration();return !!registration?.active?.scriptURL.includes('20261022-shop-chrome-directory-chain-r70w-v1');},null,{timeout:12000});
     await next.goto(f.origin+'/index.html');await ready(next);
     // Passive workers do not claim a page that began loading during activation.
     // A normal reload gives the newly active worker control without clearing data.

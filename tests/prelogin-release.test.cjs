@@ -9,7 +9,7 @@ const index = read('index.html');
 const worker = read('sw.js');
 const manifest = JSON.parse(read('manifest.json'));
 const helper = read('FORCE_UPDATE_MOBILE.html');
-const release = '20261021-shop-chrome-bootstrap-guard-r1';
+const release = '20261022-shop-chrome-directory-chain-r70w-v1';
 
 test('the deployed shell, worker, manifest and update helper name one release',()=>{
   assert.match(index,new RegExp('const RELEASE="'+release+'";'));
@@ -49,8 +49,11 @@ for(const [constant,file] of [
 test('unrelated embedded business and protocol modules remain unchanged',()=>{
   const {execFileSync}=require('node:child_process');
   const changed=execFileSync('git',['diff','--name-only','origin/main'],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/).filter(Boolean);
+  // Dedicated branch-only CI file: read-only tests, no release/deploy permissions.
+
   assert.ok(changed.every(name=>[
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    '.github/workflows/r70w-review-gates.yml',
     'js/shop-directory-recovery-core.js','js/shop-directory-recovery-runtime.js',
     'tests/shop-directory-recovery.test.cjs','tests/shop-directory-recovery.browser.cjs',
     'tests/shop-directory-delivery.test.cjs','tools/build-shop-directory-recovery.cjs','tools/patch-shop-trading-readiness.cjs','tools/patch-shop-recovery-storage-capacity.cjs',
@@ -63,6 +66,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'tests/prelogin-activation.test.cjs','tests/prelogin-activation.browser.cjs','tests/prelogin-release.test.cjs',
     'tests/r70v-diagnostic.browser.cjs','tests/shop-directory-recovery.browser.cjs',
     'tests/approved-deployment-gate.test.cjs',
+    'tests/r70w-directory-chain.test.cjs','tests/r70w-source-proof.cjs',
     'scripts/approved-deployment-gate.cjs','docs/r70v-diagnostic-runbook.md','docs/approved-github-deployment.md',
     'diagnostics/financial-audit/index.html','diagnostics/financial-audit/style.css',
     'diagnostics/financial-audit/capture.js','tools/financial-audit/analyze.cjs',
