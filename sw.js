@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-shop-chrome-bootstrap-guard-20261021-v1';
-const PATCHED_INDEX_CACHE = 'zezms-shop-chrome-bootstrap-guard-patched-v1';
+const CACHE = 'zezms-shop-chrome-directory-chain-20261022-v1';
+const PATCHED_INDEX_CACHE = 'zezms-shop-chrome-directory-chain-patched-v1';
 const ASSETS = [
   './','./index.html','./manifest.json','./assets/zez-document-watermark.jpg',
   './js/app.js?v=20261008-r70q-phase-a-review','./js/backup-manager.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -11,8 +11,8 @@ const ASSETS = [
   './js/diagnostics.js?v=20261008-r70q-phase-a-review','./js/events.js?v=20261008-r70q-phase-a-review',
   './js/health-module.js?v=20261008-r70q-phase-a-review','./js/lifecycle-module.js?v=20261008-r70q-phase-a-review',
   './js/logger.js?v=20261008-r70q-phase-a-review','./js/notifications-module.js?v=20261008-r70q-phase-a-review',
-  './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51','./js/bootstrap-startup-guard.js?v=20261021-shop-chrome-bootstrap-guard-r1',
-  './js/auto-month-rollover-bootstrap-guard.js?v=20261021-shop-chrome-bootstrap-guard-r1',
+  './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51','./js/bootstrap-startup-guard.js?v=20261022-shop-chrome-directory-chain-r70w-v1',
+  './js/auto-month-rollover-bootstrap-guard.js?v=20261022-shop-chrome-directory-chain-r70w-v1',
   './js/invoice-waybill.js?v=20260822-supplier-procurement-intelligence-r51','./js/product-search-adapter.js?v=20261008-r70q-phase-a-review',
   './js/product-search-controller.js?v=20261008-r70q-phase-a-review','./js/product-search-events.js?v=20261008-r70q-phase-a-review',
   './js/product-search-facade.js?v=20261008-r70q-phase-a-review','./js/product-search-metrics.js?v=20261008-r70q-phase-a-review',
@@ -20,7 +20,7 @@ const ASSETS = [
   './js/registry.js?v=20261008-r70q-phase-a-review','./js/storage.js?v=20261008-r70q-phase-a-review',
   './js/system-module.js?v=20261008-r70q-phase-a-review','./js/utils-module.js?v=20261008-r70q-phase-a-review',
   './js/mobile-vertical-layout.js?v=20260817-loopback-network-r47','./js/kpi-freeze-pane.js?v=20261008-r70q-phase-a-review',
-  './js/confirmed-july-snapshot-bootstrap-guard.js?v=20261021-shop-chrome-bootstrap-guard-r1','./js/shop-chrome-bootstrap-proof.js?v=20261021-shop-chrome-bootstrap-guard-r1',
+  './js/confirmed-july-snapshot-bootstrap-guard.js?v=20261022-shop-chrome-directory-chain-r70w-v1','./js/shop-chrome-bootstrap-proof.js?v=20261022-shop-chrome-directory-chain-r70w-v1',
   './js/commercial-foundation.js?v=20261008-r70q-phase-a-review',
   './js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51','./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/transaction-badge-v372.js?v=20261008-r70q-phase-a-review','./js/management-intelligence-v380.js?v=20261004-r70f-recovery-stabilization',
@@ -41,10 +41,10 @@ const ASSETS = [
   './js/recovery-stabilization-r70g.js?v=20261008-r70q-phase-a-review','./js/identity-relink-r70h.js?v=20261008-r70q-phase-a-review',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
-  './js/bootstrap-startup-guard.js?v=20261021-shop-chrome-bootstrap-guard-r1',
-  './js/auto-month-rollover-bootstrap-guard.js?v=20261021-shop-chrome-bootstrap-guard-r1',
-  './js/confirmed-july-snapshot-bootstrap-guard.js?v=20261021-shop-chrome-bootstrap-guard-r1',
-  './js/shop-chrome-bootstrap-proof.js?v=20261021-shop-chrome-bootstrap-guard-r1',
+  './js/bootstrap-startup-guard.js?v=20261022-shop-chrome-directory-chain-r70w-v1',
+  './js/auto-month-rollover-bootstrap-guard.js?v=20261022-shop-chrome-directory-chain-r70w-v1',
+  './js/confirmed-july-snapshot-bootstrap-guard.js?v=20261022-shop-chrome-directory-chain-r70w-v1',
+  './js/shop-chrome-bootstrap-proof.js?v=20261022-shop-chrome-directory-chain-r70w-v1',
   './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
 let postShellCachePromise = null;
 
@@ -89,7 +89,7 @@ self.addEventListener('install', (event) => {
       { cache:'reload' }));
     await cache.addAll(requests);
     // Fail closed on a mixed deployment: do not activate the new worker with an old shell.
-    const expected = 'const RELEASE=\"20261021-shop-chrome-bootstrap-guard-r1\";';
+    const expected = 'const RELEASE=\"20261022-shop-chrome-directory-chain-r70w-v1\";';
     for (const entry of ['./', './index.html']) {
       const response = await cache.match(new URL(entry, self.registration.scope).href, {ignoreVary:true});
       const shellText = response && response.ok ? await response.text() : '';
@@ -99,7 +99,7 @@ self.addEventListener('install', (event) => {
     }
     const manifestResponse = await cache.match(new URL('./manifest.json', self.registration.scope).href, {ignoreVary:true});
     const manifestData = manifestResponse && manifestResponse.ok ? await manifestResponse.json() : null;
-    if (!manifestData || manifestData.start_url !== './index.html?build=20261021-shop-chrome-bootstrap-guard-r1') throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
+    if (!manifestData || manifestData.start_url !== './index.html?build=20261022-shop-chrome-directory-chain-r70w-v1') throw new Error('ZEZMS_PRESERVATION_RELEASE_MISMATCH');
     for (const [index,asset] of CRITICAL_ASSETS.slice(3,7).entries()) {
       const response = await cache.match(new URL(asset, self.registration.scope).href, {ignoreVary:true});
       const marker = index === 3 ? 'shopChromeBootstrapProof' : 'bootstrapStartupGuard';
@@ -121,11 +121,11 @@ self.addEventListener('message', (event) => {
   }
   if (data && data.type === 'ZEZMS_RUNTIME_INTEGRITY_PROBE') {
     if (event.source && typeof event.source.postMessage === 'function') {
-      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261021-shop-chrome-bootstrap-guard-r1', cache:CACHE });
+      event.source.postMessage({ type:'ZEZMS_RUNTIME_INTEGRITY_RESPONSE', release:'20261022-shop-chrome-directory-chain-r70w-v1', cache:CACHE });
     }
     return;
   }
-  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261021-shop-chrome-bootstrap-guard-r1' || data.release === '20261020-prebranch-functional-r1' || data.release === '20261015-r70u-prelogin-verified-activation' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
+  if (data && ((data.type === 'ZEZMS_R70P_SHELL_READY' && (data.release === '20261022-shop-chrome-directory-chain-r70w-v1' || data.release === '20261020-prebranch-functional-r1' || data.release === '20261015-r70u-prelogin-verified-activation' || data.release === '20261008-r70q-phase-a-review')) || (data.type === 'ZEZMS_R67I_SHELL_READY' && data.release === '20260910-r67i-fast-startup-and-offline-cache'))) {
     /* One sequential cache pass after the shell is usable; never a startup stampede. */
     event.waitUntil(cacheStaticAssetsAfterShell());
   }
