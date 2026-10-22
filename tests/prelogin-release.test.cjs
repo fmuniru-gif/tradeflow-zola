@@ -49,8 +49,11 @@ for(const [constant,file] of [
 test('unrelated embedded business and protocol modules remain unchanged',()=>{
   const {execFileSync}=require('node:child_process');
   const changed=execFileSync('git',['diff','--name-only','origin/main'],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/).filter(Boolean);
+  // Dedicated branch-only CI file: read-only tests, no release/deploy permissions.
+
   assert.ok(changed.every(name=>[
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    '.github/workflows/r70w-review-gates.yml',
     'js/shop-directory-recovery-core.js','js/shop-directory-recovery-runtime.js',
     'tests/shop-directory-recovery.test.cjs','tests/shop-directory-recovery.browser.cjs',
     'tests/shop-directory-delivery.test.cjs','tools/build-shop-directory-recovery.cjs','tools/patch-shop-trading-readiness.cjs','tools/patch-shop-recovery-storage-capacity.cjs',

@@ -1,0 +1,54 @@
+name: r70W Shop Chrome review tests (NO DEPLOY)
+
+on:
+  push:
+    branches:
+      - fix/shop-chrome-directory-replay-r70w
+
+permissions:
+  contents: read
+
+jobs:
+  r70w-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout full source history for preservation tests
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact production base and review branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "fix/shop-chrome-directory-replay-r70w"
+          test "$(git rev-parse origin/main)" = "5a9e9d2d528c2285af52462740be06341fc8cae8"
+          git merge-base --is-ancestor 5a9e9d2d528c2285af52462740be06341fc8cae8 HEAD
+          echo "Confirmed review branch and approved baseline."
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install browser-test driver only
+        shell: bash
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.0
+
+      - name: Check preinstalled Chrome
+        shell: bash
+        run: |
+          test -x /usr/bin/google-chrome
+          /usr/bin/google-chrome --version
+
+      - name: Run entire static and unit test suite
+        shell: bash
+        run: node --test tests/*.test.cjs
+
+      - name: Run entire assembled-shell Chrome browser suite
+        shell: bash
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node --test --test-concurrency=1 tests/*.browser.cjs
