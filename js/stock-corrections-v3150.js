@@ -132,6 +132,59 @@
       referenceValueImpact:impact, allocationPlan:plan, preparedAt:isoNow()
     };
   }
+  function physicalTarget(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(raw) || !Number.isFinite(Number(raw))
+      || Number(raw) * 100 > Number.MAX_SAFE_INTEGER) {
+      throw new Error('Enter a non-negative physical count with at most two decimal places.');
+    }
+    return Number(raw);
+  }
+  function stockSnapshot(product) {
+    var latest = period();
+    return JSON.stringify({ year:latest.year, month:latest.month,
+      product:[product.id, product.name, product.category, product.uPrice],
+      rows:currentRows(product).map(function (row) {
+      return [row.id, row.productId, row.productName, row.qtyIn, row.qtyOut, row.rStock, row.uCost];
+    }) });
+  }
+  function preparePhysicalCount(data) {
+    requireOwnerAdmin();
+    ensureModel();
+    var input = data || {};
+    var product = productById(input.productId);
+    if (!product) throw new Error('Select a valid Product Catalog record.');
+    var target = physicalTarget(input.physicalCount);
+    currentRows(product).forEach(function (row) {
+      var quantity = row.rStock != null ? Number(row.rStock) : Number(row.qtyIn) - Number(row.qtyOut);
+      var cost = Number(row.uCost);
+      if (!Number.isFinite(quantity) || quantity < -1e-9 || !Number.isFinite(cost) || cost < 0) {
+        throw new Error('Current stock layer quantity or cost is invalid; physical count cannot be committed.');
+      }
+    });
+    var beforeQty = currentQuantity(product);
+    var beforeValue = currentValue(product);
+    if (target === beforeQty) {
+      return { noAdjustmentRequired:true, productId:String(product.id), productName:product.name,
+        beforeQty:beforeQty, afterQty:beforeQty, beforeValue:beforeValue, afterValue:beforeValue };
+    }
+    var type = target > beforeQty ? 'Quantity Increase' : 'Quantity Decrease';
+    if (type === 'Quantity Increase') {
+      var rawCost = String(input.unitCost == null ? '' : input.unitCost).trim();
+      if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(rawCost) || !Number.isFinite(Number(rawCost))
+        || Number(rawCost) * 100 > Number.MAX_SAFE_INTEGER || Number(rawCost) <= 0) {
+        throw new Error('Actual Unit Cost must be positive with at most two decimal places.');
+      }
+    }
+    var prepared = prepareCorrection({ productId:product.id, correctionType:type,
+      quantity:round2(Math.abs(target - beforeQty)), unitCost:input.unitCost,
+      reason:'Physical Count Adjustment', notes:input.notes });
+    prepared.physicalCountTarget = target;
+    prepared.stockSnapshot = stockSnapshot(product);
+    prepared.beforeValue = beforeValue;
+    prepared.afterValue = round2(beforeValue + prepared.referenceValueImpact);
+    return prepared;
+  }
   function applyDecrease(plan) {
     var allocations = [];
     (plan || []).forEach(function (part) {
@@ -161,6 +214,17 @@
     ensureModel();
     var input = clone(prepared || pendingCorrection);
     if (!input) throw new Error('Correction preview is unavailable.');
+    if (input.noAdjustmentRequired) throw new Error('No adjustment required; no correction was created.');
+    if (Object.prototype.hasOwnProperty.call(input, 'physicalCountTarget')) {
+      var refreshed = preparePhysicalCount({ productId:input.productId,
+        physicalCount:input.physicalCountTarget, unitCost:input.unitCost, notes:input.notes });
+      if (refreshed.noAdjustmentRequired || refreshed.stockSnapshot !== input.stockSnapshot
+        || refreshed.beforeQty !== input.beforeQty || refreshed.afterQty !== input.afterQty
+        || refreshed.quantity !== input.quantity || refreshed.referenceValueImpact !== input.referenceValueImpact) {
+        throw new Error('Stock layers or value changed after preview. Re-open the physical count before committing.');
+      }
+      input = refreshed;
+    }
     var product = productByIdentity(input.productId, input.productName);
     if (!product) throw new Error('The Product Catalog record is unavailable.');
     if (Math.abs(currentQuantity(product) - Number(input.beforeQty)) > 1e-9) throw new Error('Stock changed after preview. Re-open the correction before committing.');
@@ -272,23 +336,30 @@
       + '<div class="grid g2"><div class="field"><label>Search Product Name</label><input id="stockCorrectionSearchName" type="search" autocomplete="off" placeholder="Partial, case-insensitive" oninput="ZEZMS.stockCorrections.filterProducts()"></div><div class="field"><label>Search Product ID</label><input id="stockCorrectionSearchId" type="search" autocomplete="off" placeholder="Partial or exact Product ID" oninput="ZEZMS.stockCorrections.filterProducts()"></div></div>'
       + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn sm ghost" onclick="ZEZMS.stockCorrections.clearProductSearch()">Clear Search</button><span id="stockCorrectionSearchCount" class="pill">' + (DB.products || []).length + ' products</span></div>'
       + '<div class="field"><label>Product</label><select id="scProduct" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + productOptions(productId) + '</select></div>'
-      + '<div class="grid g2"><div class="field"><label>Correction Type</label><select id="scType" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(TYPES, 'Quantity Increase') + '</select></div><div class="field"><label>Correction Qty</label><input id="scQty" type="number" min="0.01" step="0.01" placeholder="Enter actual discrepancy"></div></div>'
+      + '<div class="grid g2"><div class="field"><label>Correction Type</label><select id="scType" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(TYPES.concat(['Set Physical Count']), 'Quantity Increase') + '</select></div><div class="field"><label id="scQtyLabel">Correction Qty</label><input id="scQty" type="number" min="0.01" step="0.01" placeholder="Enter actual discrepancy" oninput="ZEZMS.stockCorrections.refreshCorrectionForm()"></div></div>'
       + '<div id="scCostWrap" class="field"><label>Actual Unit Cost</label><input id="scCost" type="number" min="0.01" step="0.01" placeholder="Required; enter actual cost basis"><small class="muted">Reference weighted cost only: <span id="scWeightedCost">' + money(guide) + '</span>. It is not inserted into the textbox.</small></div>'
-      + '<div class="field"><label>Reason</label><select id="scReason" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(REASONS, 'Physical Count Adjustment') + '</select></div>'
+      + '<div id="scReasonWrap" class="field"><label>Reason</label><select id="scReason" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(REASONS, 'Physical Count Adjustment') + '</select></div>'
       + '<div id="scOtherWrap" class="field" hidden><label>Other reason detail</label><input id="scOther" maxlength="250"></div>'
       + '<div class="field"><label>Notes</label><textarea id="scNotes" rows="3"></textarea></div>'
       + '<div class="row"><button type="button" class="btn warn" onclick="ZEZMS.stockCorrections.previewCorrection()">Preview Correction</button><button type="button" class="btn ghost" onclick="closeModal()">Cancel</button></div></div>';
   }
   function openCorrection(productId) {
-    try { requireOwnerAdmin(); openModal(correctionForm(productId)); refreshCorrectionForm(); }
+    try { requireOwnerAdmin(); pendingCorrection = null; openModal(correctionForm(productId)); refreshCorrectionForm(); }
     catch (error) { notify(error.message || error, 'err'); }
   }
   function refreshCorrectionForm() {
     var product = productById((document.getElementById('scProduct') || {}).value);
     var type = String((document.getElementById('scType') || {}).value || '');
     var reason = String((document.getElementById('scReason') || {}).value || '');
-    var cost = document.getElementById('scCostWrap'); if (cost) cost.hidden = type !== 'Quantity Increase';
-    var other = document.getElementById('scOtherWrap'); if (other) other.hidden = reason !== 'Other';
+    var physical = type === 'Set Physical Count';
+    var quantity = document.getElementById('scQty');
+    var label = document.getElementById('scQtyLabel');
+    if (label) label.textContent = physical ? 'Physical Count (target quantity; zero allowed)' : 'Correction Qty';
+    if (quantity) { quantity.min = physical ? '0' : '0.01'; quantity.placeholder = physical ? 'Enter counted stock, including 0' : 'Enter actual discrepancy'; }
+    var reasonWrap = document.getElementById('scReasonWrap'); if (reasonWrap) reasonWrap.hidden = physical;
+    var needsCost = type === 'Quantity Increase' || (physical && product && quantity && quantity.value !== '' && Number(quantity.value) > currentQuantity(product));
+    var cost = document.getElementById('scCostWrap'); if (cost) cost.hidden = !needsCost;
+    var other = document.getElementById('scOtherWrap'); if (other) other.hidden = physical || reason !== 'Other';
     var guide = document.getElementById('scWeightedCost'); if (guide) guide.textContent = money(product ? weightedCost(product) : 0);
   }
   function filterProducts() {
@@ -312,7 +383,8 @@
   }
   function previewCorrection() {
     try {
-      pendingCorrection = prepareCorrection({
+      pendingCorrection = null;
+      var fields = {
         productId:(document.getElementById('scProduct') || {}).value,
         correctionType:(document.getElementById('scType') || {}).value,
         quantity:(document.getElementById('scQty') || {}).value,
@@ -320,11 +392,22 @@
         reason:(document.getElementById('scReason') || {}).value,
         otherDetail:(document.getElementById('scOther') || {}).value,
         notes:(document.getElementById('scNotes') || {}).value
-      });
+      };
+      pendingCorrection = fields.correctionType === 'Set Physical Count'
+        ? preparePhysicalCount({ productId:fields.productId, physicalCount:fields.quantity, unitCost:fields.unitCost, notes:fields.notes })
+        : prepareCorrection(fields);
       var item = pendingCorrection;
+      if (item.noAdjustmentRequired) {
+        openModal('<h3>No adjustment required</h3><p>The physical count already equals current stock. No audit event or stock change will be created.</p>'
+          + '<div class="statline"><span>Product</span><b>' + esc(item.productName) + '</b></div>'
+          + '<div class="statline"><span>Current and counted Qty</span><b>' + number(item.beforeQty) + '</b></div>'
+          + '<div class="row"><button class="btn ghost" onclick="closeModal()">Close</button></div>');
+        return;
+      }
       openModal('<h3>Confirm Stock Correction</h3><p class="muted">Review every value. Confirmation immediately changes current stock and creates a permanent audit record.</p>'
         + '<div class="statline"><span>Product</span><b>' + esc(item.productName) + '</b></div><div class="statline"><span>Product ID</span><b class="mono">' + esc(item.productId) + '</b></div><div class="statline"><span>Current Qty</span><b>' + number(item.beforeQty) + '</b></div><div class="statline"><span>Correction Type</span><b>' + esc(item.correctionType) + '</b></div><div class="statline"><span>Correction Qty</span><b>' + number(item.quantity) + '</b></div><div class="statline"><span>Resulting Qty</span><b>' + number(item.afterQty) + '</b></div>'
         + (item.correctionType === 'Quantity Increase' ? '<div class="statline"><span>Actual Unit Cost</span><b>' + money(item.unitCost) + '</b></div>' : '')
+        + (item.physicalCountTarget == null ? '' : '<div class="statline"><span>Inventory Value Before</span><b>' + money(item.beforeValue) + '</b></div><div class="statline"><span>Inventory Value After</span><b>' + money(item.afterValue) + '</b></div>')
         + '<div class="statline"><span>Reference Value Impact</span><b>' + money(item.referenceValueImpact) + '</b></div><div class="statline"><span>Reason</span><b>' + esc(item.reason + (item.reasonDetail ? ' — ' + item.reasonDetail : '')) + '</b></div>'
         + '<div class="row" style="margin-top:14px"><button class="btn warn" onclick="ZEZMS.stockCorrections.confirmCorrection()">Confirm and Commit</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>');
     } catch (error) { notify(error.message || error, 'err'); }
@@ -381,7 +464,7 @@
   ZEZMS.stockCorrections = {
     version:VERSION, build:BUILD, types:TYPES, reasons:REASONS,
     ensureModel:ensureModel, currentQuantity:currentQuantity, weightedCost:weightedCost,
-    prepareCorrection:prepareCorrection, commitCorrection:commitCorrection, reverseCorrection:reverseCorrection,
+    prepareCorrection:prepareCorrection, preparePhysicalCount:preparePhysicalCount, commitCorrection:commitCorrection, reverseCorrection:reverseCorrection,
     actionsHTML:actionsHTML, openCorrection:openCorrection, refreshCorrectionForm:refreshCorrectionForm,
     filterProducts:filterProducts, clearProductSearch:clearProductSearch,
     previewCorrection:previewCorrection, confirmCorrection:confirmCorrection, reverseFromUI:reverseFromUI,
