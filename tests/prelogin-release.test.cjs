@@ -54,6 +54,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
   assert.ok(changed.every(name=>[
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
     '.github/workflows/r70w-review-gates.yml',
+    '.github/workflows/ui-performance-physical-count-review.yml',
     'js/shop-directory-recovery-core.js','js/shop-directory-recovery-runtime.js',
     'tests/shop-directory-recovery.test.cjs','tests/shop-directory-recovery.browser.cjs',
     'tests/shop-directory-delivery.test.cjs','tools/build-shop-directory-recovery.cjs','tools/patch-shop-trading-readiness.cjs','tools/patch-shop-recovery-storage-capacity.cjs',
