@@ -2,7 +2,7 @@
   "name": "Zola Electronics Zone TradeFlow",
   "short_name": "TradeFlow Zola",
   "description": "ZEZMS Owner Edition pre-branch business mode with protected M4 sync, device authorization and Shop recovery hold.",
-  "start_url": "./index.html?build=20261022-shop-chrome-directory-chain-r70w-v1",
+  "start_url": "./index.html?build=20261024-ui-stock-review-r1",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

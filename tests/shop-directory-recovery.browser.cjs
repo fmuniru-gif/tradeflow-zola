@@ -38,7 +38,7 @@ async function setup(device=core.DEVICE){
     return Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]));
   },{owner,device,ids:core.IDS});
   await page.evaluate(async()=>{
-    await navigator.serviceWorker.register('./sw.js?v=20261022-shop-chrome-directory-chain-r70w-v1');
+    await navigator.serviceWorker.register('./sw.js?v=20261024-ui-stock-review-r1');
     await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Reviewed service worker did not activate')),10000))]);
   });
   if(process.env.SHOP_TEST_DEBUG)console.log('stage worker ready');
