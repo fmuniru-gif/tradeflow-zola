@@ -123,10 +123,11 @@ async function seed(f,label,device,access){
   },{label,device,access});
   await f.page.reload();await ready(f.page);await f.page.waitForTimeout(700);
   // The unchanged convergence module publishes after 3500ms even with Live
-  // Sync disabled. With the SDK blocked, its existing capability guard records
-  // CLOUD_CONFIGURATION_REQUIRED. Observe that baseline outcome before capture.
-  await f.page.waitForFunction(()=>ZEZMS.cloudSync.getState().r70CapabilityBlockCode==='CLOUD_CONFIGURATION_REQUIRED');
-  console.log('DELIVERY_BASELINE_GUARD '+JSON.stringify({device:label,code:'CLOUD_CONFIGURATION_REQUIRED',syntheticCloudUnavailable:true}));
+  // Sync disabled. With the SDK blocked it records a capability error; the
+  // known Shop identity can instead be stopped by its existing recovery guard.
+  // Observe completion rather than imposing Main's guard outcome on Shop.
+  await f.page.waitForFunction(()=>!!ZEZMS.convergence?.getState().lastError);
+  console.log('DELIVERY_BASELINE_GUARD '+JSON.stringify(await f.page.evaluate(label=>({device:label,code:ZEZMS.cloudSync.getState().r70CapabilityBlockCode||null,convergenceError:ZEZMS.convergence.getState().lastError,syntheticCloudUnavailable:true}),label)));
   return snapshot(f.page);
 }
 async function snapshot(page){return page.evaluate(async()=>{

@@ -20,7 +20,7 @@ The new browser test first installs and populates the real pre-PR11 worker/cache
 
 The externally hosted Supabase SDK remains outside this same-origin byte manifest, as before. The correction does not change its configuration, authentication or synchronization behavior. Offline tests verify local application/data preservation; they do not claim online Supabase connectivity while offline.
 
-Navigation verification hashes the loaded inline module source (normalize CRLF to LF, trim surrounding whitespace), expected SHA-256 `7556cedf8c66af19c98bbb01ef19f10ec23442211a6413decdf7243fd006fa7b`. Hashing or scanning the exported function is misleading: the unchanged Manager security guard wraps it and hides the underlying renderer. Synthetic browser tests additionally prove direct-renderer delegation through that guard using a temporary renderer sentinel, then restore the module object. No guard is removed or modified.
+Navigation verification hashes the loaded inline module source (normalize CRLF to LF, trim surrounding whitespace), expected SHA-256 `7556cedf8c66af19c98bbb01ef19f10ec23442211a6413decdf7243fd006fa7b`. Hashing or scanning the exported function is misleading: the unchanged Manager security guard wraps it and hides the underlying renderer. Synthetic browser tests additionally prove direct-renderer delegation through that guard using a temporary renderer sentinel, then restore the module object. No guard is removed or modified. Fixtures observe the unchanged convergence check completing before taking baseline state: Main records the unavailable-cloud capability result, whereas the known Shop identity can be stopped earlier by its recovery guard. Neither outcome is forced to match another device's guard path.
 
 ## Validation scope
 
