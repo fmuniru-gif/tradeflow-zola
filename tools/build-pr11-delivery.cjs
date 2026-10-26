@@ -3,6 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const root=path.resolve(__dirname,'..');
 const DELIVERY='20261026-pr11-cache-r1';
+const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js'].map(file=>[file,canonicalFile('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
 const oldCache=`  async function cachePatched(source){
     if(!('caches' in window))return;
@@ -19,6 +20,7 @@ const oldCache=`  async function cachePatched(source){
   }`;
 const constants=`  // PR11_DELIVERY_CONSTANTS_BEGIN
   const DELIVERY="${DELIVERY}";
+  const DELIVERY_MODULES=Object.freeze(${JSON.stringify(coupledModules)});
   const PATCHED_SHA256="${'0'.repeat(64)}";
   const PATCH_CACHE="zezms-pr11-patched-pending";
   const PATCH_KEY=new Request(location.origin+location.pathname+'?__zezms_r67i_patched='+RELEASE+'&delivery='+DELIVERY);
@@ -32,7 +34,11 @@ const versions=`    // PR11_DELIVERY_URLS_BEGIN
     for(const asset of ['management-intelligence-v380.js','stock-velocity-v390.js']){
       const before='js/'+asset+'?v=20261008-r70q-phase-a-review';
       if(output.split(before).length!==2)throw new Error('PR11_DELIVERY_ASSET_MARKER_MISMATCH: '+asset);
-      output=output.replace(before,'js/'+asset+'?v='+DELIVERY);
+      // Couple all changed PR11 code to this verified assembled page, including
+      // when the still-active old worker would ignore a newer query parameter.
+      const marker='<script src="'+before+'"></'+'script>';
+      if(output.split(marker).length!==2)throw new Error('PR11_DELIVERY_SCRIPT_MARKER_MISMATCH: '+asset);
+      output=output.replace(marker,'<script data-zezms-pr11-module="'+asset+'">\\n'+safeInline(decodeBase64(DELIVERY_MODULES[asset]))+'\\n</'+'script>');
     }
     output=output.replace('</head>','<meta name="zezms-delivery" content="'+DELIVERY+'"></head>');
     // PR11_DELIVERY_URLS_END
@@ -54,7 +60,7 @@ const cache=`  // PR11_DELIVERY_CACHE_BEGIN
     return await patchedSourceMatches(source)?source:null;
   }
   // PR11_DELIVERY_CACHE_END`;
-const normalized=source=>source.replace(/\r\n/g,'\n');
+function normalized(source){return source.replace(/\r\n/g,'\n');}
 function replaceOnce(source,before,after){
   if(source.split(before).length!==2)throw Error('Delivery patch marker not unique: '+before.slice(0,80));
   return source.replace(before,after);

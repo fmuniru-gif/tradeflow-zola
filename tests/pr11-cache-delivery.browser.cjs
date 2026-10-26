@@ -30,7 +30,7 @@ async function apis(page){return page.evaluate(async()=>{
     velocity:typeof ZEZMS.stockVelocity.clearPlanningSnapshot==='function',delivery:document.querySelector('meta[name="zezms-delivery"]')?.content||null};
 });}
 async function workerProof(page,which='active'){return page.evaluate(which=>new Promise(async(resolve,reject)=>{
-  const r=await navigator.serviceWorker.getRegistration(),worker=r?.[which];
+  const r=await navigator.serviceWorker.getRegistration(),worker=which==='controller'?navigator.serviceWorker.controller:r?.[which];
   if(!worker)return reject(Error('No '+which+' worker'));
   const timer=setTimeout(()=>{navigator.serviceWorker.removeEventListener('message',receive);reject(Error('worker proof timeout'));},5000);
   function receive(event){if(event.source===worker&&event.data?.type==='ZEZMS_RUNTIME_INTEGRITY_RESPONSE'){clearTimeout(timer);navigator.serviceWorker.removeEventListener('message',receive);resolve(event.data);}}
@@ -102,6 +102,10 @@ async function seed(f,label,device,access){
 async function snapshot(page){return page.evaluate(async()=>{
   const keys=['tradeflow_v321_zola','zezms_cloud_sync_m4_state','zezms_cloud_sync_m4_queue','zezms_cloud_sync_m4_failed_v2','zezms_cloud_sync_m4_rejected','zezms_cloud_sync_m4_applied_v2','synthetic-delivery-preservation'];
   const storage=Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)]));
+  // Existing M4 startup/offline handling changes this presentation label. Keep
+  // every identity, cursor, sequence, configuration and preference field exact.
+  const sync=JSON.parse(storage.zezms_cloud_sync_m4_state);delete sync.status;
+  storage.zezms_cloud_sync_m4_state=JSON.stringify(sync);
   const idb=await new Promise((resolve,reject)=>{const open=indexedDB.open('synthetic-delivery-preservation',1);open.onerror=()=>reject(open.error);open.onsuccess=()=>{const db=open.result,tx=db.transaction('evidence','readonly'),read=tx.objectStore('evidence').get('identity');read.onsuccess=()=>resolve(read.result);read.onerror=()=>reject(read.error);tx.oncomplete=()=>db.close();};});
   return {storage,idb};
 });}
@@ -112,7 +116,11 @@ async function activateNaturally(f){
   const deadline=Date.now()+15000;
   while(Date.now()<deadline){if(await worker.evaluate(()=>self.registration.active?.state==='activated'&&!self.registration.waiting))break;await new Promise(r=>setTimeout(r,50));}
   f.page=await f.context.newPage();await f.page.goto(f.origin+'/index.html');await ready(f.page);
-  if(!await f.page.evaluate(()=>!!navigator.serviceWorker.controller)){await f.page.reload();await ready(f.page);}
+  // Registration.active and this page's controller need not be the same version
+  // during passive handoff. Identical script URLs do not identify worker bytes.
+  const controller=await f.page.evaluate(()=>!!navigator.serviceWorker.controller);
+  if(!controller||(await workerProof(f.page,'controller')).delivery!==delivery.DELIVERY){await f.page.reload();await ready(f.page);}
+  assert.equal((await workerProof(f.page,'controller')).delivery,delivery.DELIVERY);
   assert.equal((await workerProof(f.page)).delivery,delivery.DELIVERY);
 }
 
@@ -137,12 +145,34 @@ test('cached pre-PR11 assembled source reproduces missing APIs after unchanged w
   }finally{await f.context.close();}
 });
 
+test('a corrected outer shell controlled by the old worker still executes all three PR11 modules together',async()=>{
+  const f=await baseline();
+  try{
+    mode='corrected';
+    await f.page.reload();await ready(f.page);
+    const expected=delivery.sha(fixtureAsset('index.html'));
+    await f.page.waitForFunction(async expected=>{
+      const cache=await caches.open('zezms-ui-stock-review-20261024-v1');const response=await cache.match(location.origin+'/index.html');
+      if(!response)return false;const digest=await crypto.subtle.digest('SHA-256',await response.arrayBuffer());
+      return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('')===expected;
+    },expected,{timeout:12000});
+    await f.page.reload();await ready(f.page);
+    assert.equal((await workerProof(f.page,'controller')).cache,'zezms-ui-stock-review-20261024-v1');
+    const current=await apis(f.page);
+    assert.equal(current.navigation,'710ba54bc876845f3cefb3d5c509b5a11aadbbe57226d27e099423a8ebb08c0e');
+    assert.equal(current.management,true);assert.equal(current.velocity,true);assert.equal(current.delivery,delivery.DELIVERY);
+    console.log('DELIVERY_OLD_CONTROLLER '+JSON.stringify({allThreePR11Modules:true,oldWorkerStillControls:true,noMixedBundle:true}));
+  }finally{await f.context.close();}
+});
+
 test('Main, Shop and Camon upgrade cached old bundles passively and retain all synthetic business/sync/IDB evidence offline',async()=>{
   for(const [label,device,access] of [['Main','9a5ab8eb-f67e-425c-866d-574b641295f0','OWNER'],['Shop','197e3568-5a89-4a56-b9d0-07f5e8248734','PAIRED'],['Camon','499b7dcf-9552-4337-929b-95828263b6db','PAIRED']]){
     const f=await baseline();
     try{
       const saved=await seed(f,label,device,access);mode='corrected';
-      assert.equal(await update(f.page),'installed');
+      await f.page.goto(f.origin+'/PR11_DELIVERY_UPDATE.html');
+      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('Complete verified PR11 bundle is waiting'));
+      assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
       assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1','old active worker was replaced before its clients closed');
       assert.deepEqual(await snapshot(f.page),saved);
@@ -169,7 +199,11 @@ for(const failure of ['missing-velocity','stale-management','stale-shell'])test(
     assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1');
     assert.deepEqual(await snapshot(f.page),saved);
     await f.context.setOffline(true);await f.page.close();f.page=await f.context.newPage();await f.page.goto(f.origin+'/index.html');await ready(f.page);
-    assert.equal((await apis(f.page)).management,false);assert.deepEqual(await snapshot(f.page),saved);
+    const current=await apis(f.page);
+    assert.equal(current.management,current.velocity,'old worker delivered a mixed PR11 module set');
+    if(current.management)assert.equal(current.navigation,'710ba54bc876845f3cefb3d5c509b5a11aadbbe57226d27e099423a8ebb08c0e');
+    else assert.notEqual(current.navigation,'710ba54bc876845f3cefb3d5c509b5a11aadbbe57226d27e099423a8ebb08c0e');
+    assert.deepEqual(await snapshot(f.page),saved);
     console.log('DELIVERY_INTERRUPTED '+JSON.stringify({failure,newWorkerRejected:true,priorOfflineAppPreserved:true,businessAndSyncEvidenceUnchanged:true}));
   }finally{fault='';await f.context.close();}
 });
@@ -178,6 +212,10 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
+    await f.page.goto(f.origin+'/PR11_DELIVERY_UPDATE.html');
+    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('verified PR11 delivery worker is active'));
+    assert.equal(await f.page.locator('#open').isVisible(),true);
+    await f.page.goto(f.origin+'/index.html');await ready(f.page);
     await f.page.evaluate(async()=>{
       const names=await caches.keys(),name=names.find(n=>n.startsWith('zezms-pr11-patched-'));
       const cache=await caches.open(name),keys=await cache.keys();

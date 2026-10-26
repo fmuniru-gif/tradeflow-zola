@@ -7,10 +7,20 @@ const root=path.resolve(__dirname,'..'),base='f810940762809e89a35f982a8577a9f32d
 const read=name=>delivery.canonicalFile(name).toString('utf8');
 const old=name=>execFileSync('git',['show',base+':'+name],{cwd:root,maxBuffer:32*1024*1024});
 
-test('delivery shell changes are exactly cache identity, byte verification, metadata and two asset URLs',()=>{
+test('delivery shell changes are exactly cache identity, byte verification, metadata and coupled PR11 modules',()=>{
   assert.equal(delivery.stripDelivery(read('index.html')),delivery.normalized(old('index.html').toString()));
   assert.equal(read('index.html'),delivery.finishShell(delivery.applyDelivery(old('index.html').toString())));
   assert.deepEqual(delivery.build(true).delivery,delivery.DELIVERY);
+});
+
+test('both coupled modules have exactly the validated standalone PR11 bytes, even under an old controlling worker',()=>{
+  const shell=delivery.assembledShell(read('index.html'));
+  for(const file of ['management-intelligence-v380.js','stock-velocity-v390.js']){
+    const tag='<script data-zezms-pr11-module="'+file+'">\n',start=shell.indexOf(tag);
+    assert.ok(start>=0,file);
+    const body=shell.slice(start+tag.length,shell.indexOf('</script>',start));
+    assert.equal(body.trim(),read('js/'+file).replace(/<\/script/gi,'<\\/script').trim(),file);
+  }
 });
 
 test('all protected application sources and validated PR11 modules remain identical to production',()=>{
