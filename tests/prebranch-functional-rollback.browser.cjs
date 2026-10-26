@@ -10,7 +10,8 @@ const recoveryCore=require('../js/shop-directory-recovery-core.js');
 const root=path.resolve(__dirname,'..');
 const release='20261024-ui-stock-review-r1';
 const oldCache='zezms-shop-directory-recovery-v2';
-const newCache='zezms-ui-stock-review-20261024-v1';
+const {fixtureAsset}=require('./delivery-fixture.cjs');
+const newCache=fs.readFileSync(path.join(root,'sw.js'),'utf8').match(/const CACHE = '([^']+)'/)[1];
 let mismatchedManifest=false;
 let serveBaseline=false;
 const baseline='a323d78da4559fe13f082cf172932ce6e7a93adb';
@@ -23,7 +24,7 @@ const server=http.createServer((request,response)=>{
   response.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.html')?'text/html':'application/octet-stream');
   if(pathname==='/manifest.json'&&mismatchedManifest){const data=JSON.parse(fs.readFileSync(file,'utf8'));data.start_url='./index.html?build=stale-worker-mismatch';response.end(JSON.stringify(data));return;}
   if(serveBaseline&&priorAssets.has(path.basename(file))&&['/','/index.html','/sw.js','/manifest.json'].includes(new URL(request.url,'http://localhost').pathname)){response.end(priorAssets.get(path.basename(file)));return;}
-  response.end(fs.readFileSync(file));
+  response.end(fixtureAsset(path.relative(root,file).replace(/\\/g,'/')));
 });
 
 test('mixed shell and manifest cannot activate the new worker',async()=>{

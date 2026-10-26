@@ -49,8 +49,8 @@ test('the new worker and helper never seize clients or erase older caches',()=>{
   assert.match(shell,new RegExp('const RELEASE="'+release+'";'));
   assert.equal(manifest.start_url,'./index.html?build='+release);
   assert.ok(worker.includes(release)&&helper.includes(release));
-  assert.ok(worker.includes('zezms-ui-stock-review-20261024-v1'));
-  assert.ok(shell.includes('zezms-ui-stock-review-patched-v1'));
+  assert.match(worker,/const CACHE = 'zezms-pr11-delivery-20261026-[a-f0-9]{16}'/);
+  assert.match(shell,/PATCH_CACHE="zezms-pr11-patched-[a-f0-9]{16}"/);
   assert.ok(!worker.includes('branch-management-r69.js'));
   for(const unsafe of ['skipWaiting(', 'clients.claim(', 'caches.delete(', 'indexedDB.deleteDatabase('])assert.ok(!worker.includes(unsafe),unsafe);
   for(const unsafe of ['unregister(', 'caches.delete(', 'localStorage.clear(', 'indexedDB.deleteDatabase('])assert.ok(!helper.includes(unsafe),unsafe);

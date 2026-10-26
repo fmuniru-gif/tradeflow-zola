@@ -3,12 +3,12 @@ const {test,after}=require('node:test');const assert=require('node:assert/strict
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),os=require('node:os'),crypto=require('node:crypto');
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const core=require('../js/shop-directory-recovery-core.js');
+const {fixtureAsset}=require('./delivery-fixture.cjs');
 const root=path.resolve(__dirname,'..');
 let browser,workerGeneration=0,silentWorker=false,activationVariant=false;
 const server=http.createServer((req,res)=>{let name=new URL(req.url,'http://localhost').pathname;if(name.endsWith('/'))name+='index.html';const file=path.resolve(root,'.'+name);if(!file.startsWith(root+path.sep)||!fs.existsSync(file)){res.writeHead(404);return res.end();}res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.html')?'text/html':'application/octet-stream');
-  let body=fs.readFileSync(file);
+  let body=fixtureAsset(path.relative(root,file).replace(/\\/g,'/'),activationVariant);
   if(file.endsWith('sw.js')){let worker=body.toString('utf8');if(silentWorker)worker=worker.replace("if (data && data.type === 'ZEZMS_SHOP_RECOVERY_CLIENTS') {","if (false && data && data.type === 'ZEZMS_SHOP_RECOVERY_CLIENTS') {");body=worker+"\n// synthetic-worker-generation-"+workerGeneration;}
-  if(file.endsWith('index.html')&&activationVariant){let shell=body.toString('utf8');shell=shell.replace(/const CLOUD_B64="([A-Za-z0-9+/=]+)";/,(_all,b64)=>{const cloud=Buffer.from(b64,'base64').toString('utf8');assert.ok(cloud.includes('var SHOP_TRADING_ACTIVATION_ENABLED=false;'));return 'const CLOUD_B64="'+Buffer.from(cloud.replace('var SHOP_TRADING_ACTIVATION_ENABLED=false;','var SHOP_TRADING_ACTIVATION_ENABLED=true;')).toString('base64')+'";';});body=shell;}
   res.end(body);
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});

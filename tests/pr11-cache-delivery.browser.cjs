@@ -1,0 +1,189 @@
+// Genuine controlled-worker upgrades. Localhost, fresh profiles, synthetic data.
+const {test,after}=require('node:test');
+const assert=require('node:assert/strict'),http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {execFileSync}=require('node:child_process');
+const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
+const delivery=require('../tools/build-pr11-delivery.cjs'),{fixtureAsset}=require('./delivery-fixture.cjs');
+const root=path.resolve(__dirname,'..'),before='1241e0ea2a02d05d68e976d16f51164ad72c216b',production='f810940762809e89a35f982a8577a9f32dcabf4e';
+const memo=new Map();
+function committed(ref,name){const key=ref+':'+name;if(!memo.has(key))memo.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:32*1024*1024}));return memo.get(key);}
+let mode='before',fault='',browser;
+const requests=[];
+const server=http.createServer((req,res)=>{
+  let file=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
+  if(!/^[A-Za-z0-9_./-]+$/.test(file)||file.includes('..')||!fs.existsSync(path.join(root,file))){res.writeHead(404);return res.end();}
+  requests.push({mode,fault,file,url:req.url});
+  res.setHeader('Cache-Control','no-store');
+  res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.html')?'text/html':file.endsWith('.json')?'application/json':'application/octet-stream');
+  if(mode==='corrected'&&fault==='missing-velocity'&&file==='js/stock-velocity-v390.js'){res.writeHead(503);return res.end('synthetic interrupted download');}
+  if(mode==='corrected'&&fault==='stale-management'&&file==='js/management-intelligence-v380.js')return res.end(committed(before,file));
+  if(mode==='corrected'&&fault==='stale-shell'&&file==='index.html')return res.end(committed(before,file));
+  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='before'?before:production,file));
+});
+after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
+async function ready(page){await page.waitForFunction(()=>!!window.ZEZMS?.navigationV3101&&!!window.ZEZMS?.managementIntelligence&&!!window.ZEZMS?.stockVelocity,null,{timeout:20000});}
+async function apis(page){return page.evaluate(async()=>{
+  const fn=ZEZMS.navigationV3101.viewManagementSection;
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(Function.prototype.toString.call(fn).replace(/\r\n/g,'\n').trim()));
+  return {navigation:[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join(''),
+    management:typeof ZEZMS.managementIntelligence.viewHTML==='function'&&typeof ZEZMS.managementIntelligence.viewDashboardHTML==='function',
+    velocity:typeof ZEZMS.stockVelocity.clearPlanningSnapshot==='function',delivery:document.querySelector('meta[name="zezms-delivery"]')?.content||null};
+});}
+async function workerProof(page,which='active'){return page.evaluate(which=>new Promise(async(resolve,reject)=>{
+  const r=await navigator.serviceWorker.getRegistration(),worker=r?.[which];
+  if(!worker)return reject(Error('No '+which+' worker'));
+  const timer=setTimeout(()=>{navigator.serviceWorker.removeEventListener('message',receive);reject(Error('worker proof timeout'));},5000);
+  function receive(event){if(event.source===worker&&event.data?.type==='ZEZMS_RUNTIME_INTEGRITY_RESPONSE'){clearTimeout(timer);navigator.serviceWorker.removeEventListener('message',receive);resolve(event.data);}}
+  navigator.serviceWorker.addEventListener('message',receive);worker.postMessage({type:'ZEZMS_RUNTIME_INTEGRITY_PROBE',nonce:'synthetic-proof'});
+}),which);}
+async function update(page){return page.evaluate(async()=>{
+  const registration=await navigator.serviceWorker.getRegistration();
+  const state=new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(Error('synthetic worker install timeout')),30000);
+    registration.addEventListener('updatefound',()=>{
+      const worker=registration.installing;
+      function changed(){if(['installed','redundant'].includes(worker.state)){clearTimeout(timer);worker.removeEventListener('statechange',changed);resolve(worker.state);}}
+      worker.addEventListener('statechange',changed);changed();
+    },{once:true});
+  });
+  await registration.update();return state;
+});}
+async function baseline(initial='before'){
+  mode=initial;fault='';
+  if(!server.listening)await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  if(!browser)browser=await playwright.chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'});
+  const context=await browser.newContext(),errors=[],external=[];
+  const origin='http://127.0.0.1:'+server.address().port;
+  await context.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():(external.push(route.request().url()),route.abort()));
+  context.on('page',p=>p.on('pageerror',e=>errors.push(String(e))));
+  let page=await context.newPage();await page.goto(origin+'/index.html');await ready(page);
+  await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js?v=20261024-ui-stock-review-r1');await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('synthetic worker startup timeout')),30000))]);});
+  if(initial==='corrected'){
+    await page.reload();await ready(page);
+    return {context,page,origin,errors,external};
+  }
+  // Wait for the actual old worker's sequential post-shell cache pass, including
+  // its old query aliases. Do not fake a fresh installation or clear any cache.
+  await page.waitForFunction(async()=>{
+    const cache=await caches.open('zezms-ui-stock-review-20261024-v1');
+    return !!await cache.match('./js/management-intelligence-v380.js?v=20261004-r70f-recovery-stabilization')&&
+      !!await cache.match('./js/stock-velocity-v390.js?v=20261004-r70f-recovery-stabilization');
+  },null,{timeout:25000});
+  await page.reload();await ready(page);
+  assert.ok(await page.evaluate(()=>!!navigator.serviceWorker.controller));
+  const old=await apis(page);assert.equal(old.management,false);assert.equal(old.velocity,false);
+  assert.notEqual(old.navigation,'710ba54bc876845f3cefb3d5c509b5a11aadbbe57226d27e099423a8ebb08c0e');
+  return {context,page,origin,errors,external};
+}
+async function seed(f,label,device,access){
+  await f.page.evaluate(async({label,device,access})=>{
+    const db=JSON.parse(JSON.stringify(DB)),now=new Date();
+    db.products=[{id:'SYN-P1',name:'Synthetic preservation product',category:'Fixture',uCost:15,uPrice:25}];
+    db.stockRows=[{id:'SYN-R1',productId:'SYN-P1',productName:'Synthetic preservation product',category:'Fixture',year:now.getFullYear(),month:now.getMonth()+1,qtyIn:15,qtyOut:3,rStock:12,uCost:15,uPrice:25,tSales:75,profit:30}];
+    db.sales=[{id:'SYN-S1',date:now.toISOString(),total:75,status:'ACTIVE'}];
+    db.receipts=[{receiptNo:'SYN-RC1',date:now.toISOString(),items:[],total:75,amountPaid:75,status:'ACTIVE'}];
+    db.cashBalances={Others:12,'Cash in Hand':21,MOMO:3};
+    localStorage.setItem('tradeflow_v321_zola',JSON.stringify(db));
+    const state={...ZEZMS.cloudSync.getState(),deviceId:device,deviceName:'Synthetic '+label,deviceAccessMode:access,initialized:true,businessId:'synthetic-business',syncOwnerId:'synthetic-owner',cursor:17,deviceSeq:7,liveSyncEnabled:false,liveSyncDesired:false,supabaseUrl:'https://synthetic.invalid',publishableKey:'synthetic-not-production'};
+    localStorage.setItem('zezms_cloud_sync_m4_state',JSON.stringify(state));
+    localStorage.setItem('zezms_cloud_sync_m4_queue',JSON.stringify([{opId:'SYN-OUTBOX-'+label,deviceId:device,deviceSeq:7,kind:'DATABASE_CHANGE',patches:[],payloadHash:'synthetic'}]));
+    localStorage.setItem('zezms_cloud_sync_m4_failed_v2','[]');localStorage.setItem('zezms_cloud_sync_m4_rejected','[]');
+    localStorage.setItem('zezms_cloud_sync_m4_applied_v2',JSON.stringify({'SYN-APPLIED':17}));
+    localStorage.setItem('synthetic-delivery-preservation',JSON.stringify({identity:device,label}));
+    await new Promise((resolve,reject)=>{
+      const open=indexedDB.open('synthetic-delivery-preservation',1);
+      open.onupgradeneeded=()=>open.result.createObjectStore('evidence');open.onerror=()=>reject(open.error);
+      open.onsuccess=()=>{const database=open.result,tx=database.transaction('evidence','readwrite');tx.objectStore('evidence').put({device,label,businessRecord:'SYNTHETIC-UNCHANGED'},'identity');tx.oncomplete=()=>{database.close();resolve();};tx.onerror=()=>reject(tx.error);};
+    });
+  },{label,device,access});
+  await f.page.reload();await ready(f.page);await f.page.waitForTimeout(700);
+  return snapshot(f.page);
+}
+async function snapshot(page){return page.evaluate(async()=>{
+  const keys=['tradeflow_v321_zola','zezms_cloud_sync_m4_state','zezms_cloud_sync_m4_queue','zezms_cloud_sync_m4_failed_v2','zezms_cloud_sync_m4_rejected','zezms_cloud_sync_m4_applied_v2','synthetic-delivery-preservation'];
+  const storage=Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)]));
+  const idb=await new Promise((resolve,reject)=>{const open=indexedDB.open('synthetic-delivery-preservation',1);open.onerror=()=>reject(open.error);open.onsuccess=()=>{const db=open.result,tx=db.transaction('evidence','readonly'),read=tx.objectStore('evidence').get('identity');read.onsuccess=()=>resolve(read.result);read.onerror=()=>reject(read.error);tx.oncomplete=()=>db.close();};});
+  return {storage,idb};
+});}
+async function activateNaturally(f){
+  const worker=f.context.serviceWorkers().at(-1);
+  await f.page.close();
+  // Only observes registration state. No skipWaiting, claim, unregister or reset.
+  const deadline=Date.now()+15000;
+  while(Date.now()<deadline){if(await worker.evaluate(()=>self.registration.active?.state==='activated'&&!self.registration.waiting))break;await new Promise(r=>setTimeout(r,50));}
+  f.page=await f.context.newPage();await f.page.goto(f.origin+'/index.html');await ready(f.page);
+  if(!await f.page.evaluate(()=>!!navigator.serviceWorker.controller)){await f.page.reload();await ready(f.page);}
+  assert.equal((await workerProof(f.page)).delivery,delivery.DELIVERY);
+}
+
+test('cached pre-PR11 assembled source reproduces missing APIs after unchanged worker deployment',async()=>{
+  assert.deepEqual(committed(before,'sw.js'),committed(production,'sw.js'));
+  const f=await baseline();
+  try{
+    mode='production';
+    await f.page.reload();await ready(f.page);
+    const expected=crypto.createHash('sha256').update(committed(production,'index.html')).digest('hex');
+    await f.page.waitForFunction(async expected=>{
+      const cache=await caches.open('zezms-ui-stock-review-20261024-v1');const response=await cache.match(location.origin+'/index.html');
+      if(!response)return false;const digest=await crypto.subtle.digest('SHA-256',await response.arrayBuffer());
+      return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('')===expected;
+    },expected,{timeout:12000});
+    await f.page.reload();await ready(f.page);
+    const stale=await apis(f.page);
+    assert.equal(stale.management,false);assert.equal(stale.velocity,false);
+    assert.notEqual(stale.navigation,'710ba54bc876845f3cefb3d5c509b5a11aadbbe57226d27e099423a8ebb08c0e');
+    assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1');
+    console.log('DELIVERY_ROOT_CAUSE '+JSON.stringify({freshOuterShell:true,oldAssembledCacheReused:true,stale}));
+  }finally{await f.context.close();}
+});
+
+test('Main, Shop and Camon upgrade cached old bundles passively and retain all synthetic business/sync/IDB evidence offline',async()=>{
+  for(const [label,device,access] of [['Main','9a5ab8eb-f67e-425c-866d-574b641295f0','OWNER'],['Shop','197e3568-5a89-4a56-b9d0-07f5e8248734','PAIRED'],['Camon','499b7dcf-9552-4337-929b-95828263b6db','PAIRED']]){
+    const f=await baseline();
+    try{
+      const saved=await seed(f,label,device,access);mode='corrected';
+      assert.equal(await update(f.page),'installed');
+      const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
+      assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1','old active worker was replaced before its clients closed');
+      assert.deepEqual(await snapshot(f.page),saved);
+      await activateNaturally(f);
+      const current=await apis(f.page);
+      assert.equal(current.navigation,'710ba54bc876845f3cefb3d5c509b5a11aadbbe57226d27e099423a8ebb08c0e');assert.equal(current.management,true);assert.equal(current.velocity,true);assert.equal(current.delivery,delivery.DELIVERY);
+      assert.deepEqual(await snapshot(f.page),saved);
+      await f.context.setOffline(true);await f.page.reload();await ready(f.page);
+      assert.deepEqual(await apis(f.page),current);assert.deepEqual(await snapshot(f.page),saved);
+      assert.equal(f.errors.length,0,JSON.stringify(f.errors));
+      const cachesPresent=await f.page.evaluate(()=>caches.keys());
+      assert.ok(cachesPresent.includes('zezms-ui-stock-review-20261024-v1'));assert.ok(cachesPresent.includes('zezms-ui-stock-review-patched-v1'));
+      console.log('DELIVERY_UPGRADE '+JSON.stringify({device:label,apis:current,recordsUnchanged:true,identityCursorQueueConfigUnchanged:true,indexedDBUnchanged:true,offline:true,oldCachesRetained:true}));
+    }finally{await f.context.close();}
+  }
+});
+
+for(const failure of ['missing-velocity','stale-management','stale-shell'])test('interrupted or mixed '+failure+' cannot activate and preserves the prior offline application',async()=>{
+  const f=await baseline();
+  try{
+    const saved=await seed(f,failure,'11111111-2222-4333-8444-555555555555','OWNER');
+    mode='corrected';fault=failure;
+    assert.equal(await update(f.page),'redundant');
+    assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1');
+    assert.deepEqual(await snapshot(f.page),saved);
+    await f.context.setOffline(true);await f.page.close();f.page=await f.context.newPage();await f.page.goto(f.origin+'/index.html');await ready(f.page);
+    assert.equal((await apis(f.page)).management,false);assert.deepEqual(await snapshot(f.page),saved);
+    console.log('DELIVERY_INTERRUPTED '+JSON.stringify({failure,newWorkerRejected:true,priorOfflineAppPreserved:true,businessAndSyncEvidenceUnchanged:true}));
+  }finally{fault='';await f.context.close();}
+});
+
+test('fresh corrected installation starts cleanly and rejects an old assembled page forged into the new patched cache',async()=>{
+  const f=await baseline('corrected');
+  try{
+    const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
+    await f.page.evaluate(async()=>{
+      const names=await caches.keys(),name=names.find(n=>n.startsWith('zezms-pr11-patched-'));
+      const cache=await caches.open(name),keys=await cache.keys();
+      for(const key of keys){const hit=await cache.match(key);await cache.put(key,new Response('<html>synthetic stale assembled body</html>',{headers:hit.headers}));}
+    });
+    await f.context.setOffline(true);await f.page.reload();await ready(f.page);
+    assert.deepEqual(await apis(f.page),good);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
+  }finally{await f.context.close();}
+});

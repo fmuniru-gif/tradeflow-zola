@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const {execFileSync}=require('node:child_process');
+const {stripDelivery}=require('../tools/build-pr11-delivery.cjs');
 const root=path.resolve(__dirname,'..');
 const production='1241e0ea2a02d05d68e976d16f51164ad72c216b';
 const read=name=>fs.readFileSync(path.join(root,name),'utf8').replace(/\r\n/g,'\n');
@@ -54,12 +55,12 @@ test('assembled navigation matches reviewed source; all other shell bytes and em
   const encoded=shell.match(navPattern)[0];
   const decoded=Buffer.from([...encoded.matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(m=>m[1]).join(''),'base64').toString('utf8');
   assert.equal(decoded,read('js/navigation-v3101-r68.js'));
-  assert.equal(shell.replace(navPattern,'NAVIGATION_ONLY'),prior.replace(navPattern,'NAVIGATION_ONLY'));
+  assert.equal(stripDelivery(shell).replace(navPattern,'NAVIGATION_ONLY'),prior.replace(navPattern,'NAVIGATION_ONLY'));
 });
 
 test('all protected production files remain byte-equivalent, including Stock Balance and release lifecycle',()=>{
   const files=execFileSync('git',['ls-tree','-r','--name-only',production],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/);
-  const allowed=new Set(['index.html','js/navigation-v3101-r68.js','js/management-intelligence-v380.js','js/stock-velocity-v390.js','tests/prelogin-release.test.cjs']);
+  const allowed=new Set(['index.html','js/navigation-v3101-r68.js','js/management-intelligence-v380.js','js/stock-velocity-v390.js','tests/prelogin-release.test.cjs','sw.js','tests/desktop-ui-performance.test.cjs','tests/prebranch-functional-rollback.test.cjs','tests/prebranch-functional-rollback.browser.cjs','tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs']);
   for(const file of files){
     if(allowed.has(file))continue;
     assert.equal(read(file),old(file),'Protected or unrelated source changed: '+file);
