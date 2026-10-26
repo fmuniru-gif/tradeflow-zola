@@ -153,10 +153,13 @@ jobs:
           sudo unshare --net -- /bin/bash -c '
             set -euo pipefail
             ip link set lo up
-            test "$(ls /sys/class/net)" = lo
+            # Query the active namespace through netlink. The runner's inherited
+            # /sys mount can still describe the parent namespace's interfaces.
+            ip -brief address show
+            test "$(ip -o link show | wc -l)" -eq 1
+            ip link show dev lo > /dev/null
             test -z "$(ip -4 route show)"
             test -z "$(ip -6 route show default)"
-            ip -brief address show
             echo "Network isolation PASS: loopback interface only; no external routes."
             exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
               env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
