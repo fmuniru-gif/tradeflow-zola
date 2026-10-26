@@ -149,23 +149,24 @@ jobs:
           # default route, production access, or operational device is available.
           # Drop privileges and clear the inherited Actions environment before
           # starting Node/Chrome; no tokens or deployment credentials reach tests.
+          cat > "$RUNNER_TEMP/desktop-ci-network.sh" <<'NETWORK'
+          set -euo pipefail
+          ip link set lo up
+          # Query the active namespace through netlink rather than inherited sysfs.
+          ip -brief address show
+          test "$(ip -o link show | wc -l)" -eq 1
+          ip link show dev lo > /dev/null
+          test -z "$(ip -4 route show)"
+          test -z "$(ip -6 route show default)"
+          echo 'Network isolation PASS: loopback interface only; no external routes.'
+          exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
+            env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
+            CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" \
+            /bin/bash "$6" "$7" "$8"
+          NETWORK
           set +e
-          sudo unshare --net -- /bin/bash -c '
-            set -euo pipefail
-            ip link set lo up
-            # Query the active namespace through netlink. The runner's inherited
-            # /sys mount can still describe the parent namespace's interfaces.
-            ip -brief address show
-            test "$(ip -o link show | wc -l)" -eq 1
-            ip link show dev lo > /dev/null
-            test -z "$(ip -4 route show)"
-            test -z "$(ip -6 route show default)"
-            echo "Network isolation PASS: loopback interface only; no external routes."
-            exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
-              env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
-              CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" \
-              /bin/bash "$6" "$7" "$8"
-          ' offline "$(id -u)" "$(id -g)" "$PATH" "$RUNNER_TEMP/desktop-ci-home" \
+          sudo unshare --net -- /bin/bash "$RUNNER_TEMP/desktop-ci-network.sh" \
+            "$(id -u)" "$(id -g)" "$PATH" "$RUNNER_TEMP/desktop-ci-home" \
             "$RUNNER_TEMP/desktop-ci-deps/node_modules/playwright-core" \
             "$RUNNER_TEMP/desktop-ci-suites.sh" "$GITHUB_WORKSPACE/candidate" "$RUNNER_TEMP/desktop-ci-results"
           suite_status=$?
