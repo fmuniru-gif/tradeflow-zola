@@ -1,0 +1,186 @@
+name: Desktop performance PR 11 validation (NO DEPLOY)
+
+on:
+  push:
+    branches:
+      - review/desktop-ui-performance-r1
+
+# All unspecified token scopes are disabled. No environments, secrets, deployment
+# actions, repository writes, artifacts, or operational device access are used.
+permissions:
+  contents: read
+
+env:
+  APPLICATION_COMMIT: fc0aceb3c0f83ab7aebb7ab059001df6bf81b7c9
+  PRODUCTION_BASE: 1241e0ea2a02d05d68e976d16f51164ad72c216b
+  CI_WORKFLOW: .github/workflows/desktop-ui-performance-review.yml
+
+jobs:
+  independent-validation:
+    if: github.repository == 'fmuniru-gif/tradeflow-zola'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout precise PR branch head with full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: ci-head
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify PR 11 identity and strictly CI-only head difference
+        working-directory: ci-head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = 'review/desktop-ui-performance-r1'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse --is-shallow-repository)" = false
+          git fetch --no-tags origin refs/pull/11/head
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_BASE"
+          git merge-base --is-ancestor "$PRODUCTION_BASE" "$APPLICATION_COMMIT"
+          git merge-base --is-ancestor "$APPLICATION_COMMIT" HEAD
+          test "$(git diff --name-only "$APPLICATION_COMMIT" HEAD)" = "$CI_WORKFLOW"
+          git diff --exit-code "$APPLICATION_COMMIT" HEAD -- . ":(exclude)$CI_WORKFLOW"
+          printf 'PR 11 CI head: %s\nExact application under test: %s\nProduction base: %s\n' \
+            "$GITHUB_SHA" "$APPLICATION_COMMIT" "$PRODUCTION_BASE"
+          {
+            printf '### PR 11 independent CI validation\n\n'
+            printf '* CI-only PR head: `%s`\n' "$GITHUB_SHA"
+            printf '* Exact application commit tested: `%s`\n' "$APPLICATION_COMMIT"
+            printf '* Production comparison base: `%s`\n' "$PRODUCTION_BASE"
+            printf '* PR head differs from the application commit only by `%s`.\n' "$CI_WORKFLOW"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Existing preservation tests must run unmodified at the exact application
+      # commit, not against a later workflow-only commit or a PR merge commit.
+      - name: Checkout immutable application candidate with full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: fc0aceb3c0f83ab7aebb7ab059001df6bf81b7c9
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Independently verify embedded navigation and protected Git blobs
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$APPLICATION_COMMIT"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_BASE"
+          test "$(git rev-parse --is-shallow-repository)" = false
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const {execFileSync} = require('node:child_process');
+          const git = (...args) => execFileSync('git', args, {maxBuffer: 32 * 1024 * 1024});
+          const base = process.env.PRODUCTION_BASE;
+          const expected = [
+            'docs/desktop-ui-performance-review.md', 'index.html',
+            'js/management-intelligence-v380.js', 'js/navigation-v3101-r68.js',
+            'js/stock-velocity-v390.js', 'tests/desktop-ui-performance.browser.cjs',
+            'tests/desktop-ui-performance.test.cjs', 'tests/prelogin-release.test.cjs'
+          ].sort();
+          const changed = git('diff', '--name-only', base, 'HEAD').toString().trim().split('\n').sort();
+          assert.deepEqual(changed, expected, 'Unexpected application changes');
+          const allowed = new Set(expected);
+          const files = git('ls-tree', '-r', '--name-only', base).toString().trim().split('\n');
+          let protectedCount = 0;
+          for (const file of files) {
+            if (allowed.has(file)) continue;
+            assert.deepEqual(git('show', 'HEAD:' + file), git('show', base + ':' + file), file);
+            protectedCount++;
+          }
+          const shell = git('show', 'HEAD:index.html').toString();
+          const prior = git('show', base + ':index.html').toString();
+          const pattern = /const NAVIGATION_V3101_R68_B64=\s*(?:"[A-Za-z0-9+/=]+"\s*\+?\s*)+;/;
+          const match = shell.match(pattern);
+          assert.ok(match, 'Embedded navigation missing');
+          const encoded = [...match[0].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(m => m[1]).join('');
+          assert.equal(Buffer.from(encoded, 'base64').toString(), git('show', 'HEAD:js/navigation-v3101-r68.js').toString());
+          assert.equal(shell.replace(pattern, 'NAVIGATION_ONLY'), prior.replace(pattern, 'NAVIGATION_ONLY'));
+          console.log(`PASS: embedded navigation matches standalone source; other shell bytes unchanged; ${protectedCount} protected production Git blobs unchanged.`);
+          NODE
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Install test driver outside both source checkouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/desktop-ci-deps" --no-save --no-package-lock \
+            --ignore-scripts --no-audit --no-fund playwright-core@1.56.0
+          test -x /usr/bin/google-chrome
+          /usr/bin/google-chrome --version
+          node --version
+          mkdir -p "$RUNNER_TEMP/desktop-ci-home/tmp" "$RUNNER_TEMP/desktop-ci-results"
+
+      - name: Run complete unit/source and Chrome suites with loopback-only networking
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/desktop-ci-suites.sh" <<'OFFLINE'
+          set -uo pipefail
+          cd "$1"
+          results="$2"
+          test "$(git rev-parse HEAD)" = fc0aceb3c0f83ab7aebb7ab059001df6bf81b7c9 || exit 1
+          test -z "$(git status --porcelain)" || exit 1
+          echo 'Synthetic fixtures and disposable browser contexts only; no inherited credentials.'
+          node --test --test-reporter=tap tests/*.test.cjs 2>&1 | tee "$results/unit.log"
+          unit_status=${PIPESTATUS[0]}
+          # Run the complete browser suite even when a unit/source test fails.
+          node --test --test-reporter=tap --test-concurrency=1 tests/*.browser.cjs 2>&1 | tee "$results/browser.log"
+          browser_status=${PIPESTATUS[0]}
+          git diff --exit-code
+          source_status=$?
+          test -z "$(git status --porcelain)"
+          clean_status=$?
+          printf 'Unit/source exit: %s\nChrome browser exit: %s\nSource diff exit: %s\nClean tree exit: %s\n' \
+            "$unit_status" "$browser_status" "$source_status" "$clean_status" | tee "$results/status.txt"
+          test "$unit_status" -eq 0 && test "$browser_status" -eq 0 && \
+            test "$source_status" -eq 0 && test "$clean_status" -eq 0
+          OFFLINE
+          # Only lo exists in the fresh namespace; no uplink, DNS egress, proxy,
+          # default route, production access, or operational device is available.
+          # Drop privileges and clear the inherited Actions environment before
+          # starting Node/Chrome; no tokens or deployment credentials reach tests.
+          set +e
+          sudo unshare --net -- /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            test "$(ls /sys/class/net)" = lo
+            test -z "$(ip -4 route show)"
+            test -z "$(ip -6 route show default)"
+            ip -brief address show
+            echo "Network isolation PASS: loopback interface only; no external routes."
+            exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
+              env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
+              CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" \
+              /bin/bash "$6" "$7" "$8"
+          ' offline "$(id -u)" "$(id -g)" "$PATH" "$RUNNER_TEMP/desktop-ci-home" \
+            "$RUNNER_TEMP/desktop-ci-deps/node_modules/playwright-core" \
+            "$RUNNER_TEMP/desktop-ci-suites.sh" "$GITHUB_WORKSPACE/candidate" "$RUNNER_TEMP/desktop-ci-results"
+          suite_status=$?
+          set -e
+          {
+            printf '\n### Isolated complete-suite results\n\n'
+            printf 'Node and Chrome run without inherited credentials in a fresh loopback-only network namespace.\n\n'
+            for suite in unit browser; do
+              if test -f "$RUNNER_TEMP/desktop-ci-results/$suite.log"; then
+                printf '**%s**\n\n```text\n' "$suite"
+                grep -E '^# (tests|suites|pass|fail|cancelled|skipped|todo|duration_ms) ' \
+                  "$RUNNER_TEMP/desktop-ci-results/$suite.log" || true
+                printf '```\n\n'
+              fi
+            done
+            if test -f "$RUNNER_TEMP/desktop-ci-results/status.txt"; then
+              cat "$RUNNER_TEMP/desktop-ci-results/status.txt"
+            fi
+            printf '\nCombined test/isolation exit: %s\n' "$suite_status"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$suite_status"
