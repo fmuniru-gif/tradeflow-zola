@@ -11,6 +11,7 @@
   const VERSION = '3.8.0';
   const BUILD = '20260811-management-intelligence-r33';
   let lastAggregate = Object.freeze([]);
+  let dashboardRenderer = null;
 
   function number(value) {
     const parsed = Number(value);
@@ -224,6 +225,18 @@
       + '<tbody id="miBestMoversBody">' + tableRows(bestMovers, ['product', 'sold', 'sales', 'profit', 'margin', 'sellThrough'], 'No product has a recorded sale in the selected period.') + '</tbody></table></div></div></section>';
   }
 
+  // Share the same presentation and error handling with the direct route.
+  // Each call still calculates from the current selected period.
+  function viewHTML() {
+    try {
+      return managementIntelligenceHTML();
+    } catch (error) {
+      console.error('Management Intelligence could not be calculated.', error);
+      return '<section id="managementIntelligence" style="margin-top:18px"><div class="card"><h2>Management Intelligence</h2>'
+        + '<div class="empty">Management Intelligence could not be calculated for this period. Existing dashboard figures and operational records were not changed.</div></div></section>';
+    }
+  }
+
   function install() {
     const originalDashboard = window.viewDashboard;
     if (typeof originalDashboard !== 'function') {
@@ -231,16 +244,11 @@
       return false;
     }
     if (originalDashboard.__zezmsManagementIntelligenceV380) return true;
+    dashboardRenderer = originalDashboard;
 
     const wrappedDashboard = function () {
       const dashboard = originalDashboard.apply(this, arguments);
-      try {
-        return dashboard + managementIntelligenceHTML();
-      } catch (error) {
-        console.error('Management Intelligence could not be calculated.', error);
-        return dashboard + '<section id="managementIntelligence" style="margin-top:18px"><div class="card"><h2>Management Intelligence</h2>'
-          + '<div class="empty">Management Intelligence could not be calculated for this period. Existing dashboard figures and operational records were not changed.</div></div></section>';
-      }
+      return dashboard + viewHTML();
     };
     wrappedDashboard.__zezmsManagementIntelligenceV380 = true;
     wrappedDashboard.__zezmsOriginalDashboard = originalDashboard;
@@ -254,6 +262,8 @@
     build: BUILD,
     installed: installed,
     readOnly: true,
+    viewHTML: viewHTML,
+    viewDashboardHTML: function () { return dashboardRenderer.apply(this, arguments); },
     getSelectedPeriodAggregate: selectedPeriodProductEvidence,
     getSelectedPeriodProductEvidence: selectedPeriodProductEvidence
   });

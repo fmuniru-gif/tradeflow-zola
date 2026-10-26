@@ -1,0 +1,473 @@
+name: Desktop performance PR 11 validation (NO DEPLOY)
+
+on:
+  push:
+    branches:
+      - review/desktop-ui-performance-r1
+
+# All unspecified token scopes are disabled. No environments, secrets, deployment
+# actions, repository writes, artifacts, or operational device access are used.
+permissions:
+  contents: read
+
+env:
+  APPLICATION_COMMIT: fc0aceb3c0f83ab7aebb7ab059001df6bf81b7c9
+  PRODUCTION_BASE: 1241e0ea2a02d05d68e976d16f51164ad72c216b
+  CI_WORKFLOW: .github/workflows/desktop-ui-performance-review.yml
+
+jobs:
+  independent-validation:
+    if: github.repository == 'fmuniru-gif/tradeflow-zola' && !contains(github.event.head_commit.message, '[timeout-diagnostic]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout precise PR branch head with full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: ci-head
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify PR 11 identity and strictly CI-only head difference
+        working-directory: ci-head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = 'review/desktop-ui-performance-r1'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse --is-shallow-repository)" = false
+          git fetch --no-tags origin refs/pull/11/head
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_BASE"
+          git merge-base --is-ancestor "$PRODUCTION_BASE" "$APPLICATION_COMMIT"
+          git merge-base --is-ancestor "$APPLICATION_COMMIT" HEAD
+          test "$(git diff --name-only "$APPLICATION_COMMIT" HEAD)" = "$CI_WORKFLOW"
+          git diff --exit-code "$APPLICATION_COMMIT" HEAD -- . ":(exclude)$CI_WORKFLOW"
+          printf 'PR 11 CI head: %s\nExact application under test: %s\nProduction base: %s\n' \
+            "$GITHUB_SHA" "$APPLICATION_COMMIT" "$PRODUCTION_BASE"
+          {
+            printf '### PR 11 independent CI validation\n\n'
+            printf '* CI-only PR head: `%s`\n' "$GITHUB_SHA"
+            printf '* Exact application commit tested: `%s`\n' "$APPLICATION_COMMIT"
+            printf '* Production comparison base: `%s`\n' "$PRODUCTION_BASE"
+            printf '* PR head differs from the application commit only by `%s`.\n' "$CI_WORKFLOW"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Existing preservation tests must run unmodified at the exact application
+      # commit, not against a later workflow-only commit or a PR merge commit.
+      - name: Checkout immutable application candidate with full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: fc0aceb3c0f83ab7aebb7ab059001df6bf81b7c9
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Independently verify embedded navigation and protected Git blobs
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$APPLICATION_COMMIT"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_BASE"
+          test "$(git rev-parse --is-shallow-repository)" = false
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const {execFileSync} = require('node:child_process');
+          const git = (...args) => execFileSync('git', args, {maxBuffer: 32 * 1024 * 1024});
+          const base = process.env.PRODUCTION_BASE;
+          const expected = [
+            'docs/desktop-ui-performance-review.md', 'index.html',
+            'js/management-intelligence-v380.js', 'js/navigation-v3101-r68.js',
+            'js/stock-velocity-v390.js', 'tests/desktop-ui-performance.browser.cjs',
+            'tests/desktop-ui-performance.test.cjs', 'tests/prelogin-release.test.cjs'
+          ].sort();
+          const changed = git('diff', '--name-only', base, 'HEAD').toString().trim().split('\n').sort();
+          assert.deepEqual(changed, expected, 'Unexpected application changes');
+          const allowed = new Set(expected);
+          const files = git('ls-tree', '-r', '--name-only', base).toString().trim().split('\n');
+          let protectedCount = 0;
+          for (const file of files) {
+            if (allowed.has(file)) continue;
+            assert.deepEqual(git('show', 'HEAD:' + file), git('show', base + ':' + file), file);
+            protectedCount++;
+          }
+          const shell = git('show', 'HEAD:index.html').toString();
+          const prior = git('show', base + ':index.html').toString();
+          const pattern = /const NAVIGATION_V3101_R68_B64=\s*(?:"[A-Za-z0-9+/=]+"\s*\+?\s*)+;/;
+          const match = shell.match(pattern);
+          assert.ok(match, 'Embedded navigation missing');
+          const encoded = [...match[0].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(m => m[1]).join('');
+          assert.equal(Buffer.from(encoded, 'base64').toString(), git('show', 'HEAD:js/navigation-v3101-r68.js').toString());
+          assert.equal(shell.replace(pattern, 'NAVIGATION_ONLY'), prior.replace(pattern, 'NAVIGATION_ONLY'));
+          console.log(`PASS: embedded navigation matches standalone source; other shell bytes unchanged; ${protectedCount} protected production Git blobs unchanged.`);
+          NODE
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Install test driver outside both source checkouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/desktop-ci-deps" --no-save --no-package-lock \
+            --ignore-scripts --no-audit --no-fund playwright-core@1.56.0
+          test -x /usr/bin/google-chrome
+          /usr/bin/google-chrome --version
+          node --version
+          mkdir -p "$RUNNER_TEMP/desktop-ci-home/tmp" "$RUNNER_TEMP/desktop-ci-results"
+
+      - name: Run complete unit/source and Chrome suites with loopback-only networking
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/desktop-ci-suites.sh" <<'OFFLINE'
+          set -uo pipefail
+          cd "$1"
+          results="$2"
+          test "$(git rev-parse HEAD)" = fc0aceb3c0f83ab7aebb7ab059001df6bf81b7c9 || exit 1
+          test -z "$(git status --porcelain)" || exit 1
+          echo 'Synthetic fixtures and disposable browser contexts only; no inherited credentials.'
+          node --test --test-reporter=tap tests/*.test.cjs 2>&1 | tee "$results/unit.log"
+          unit_status=${PIPESTATUS[0]}
+          # Run the complete browser suite even when a unit/source test fails.
+          node --test --test-reporter=tap --test-concurrency=1 tests/*.browser.cjs 2>&1 | tee "$results/browser.log"
+          browser_status=${PIPESTATUS[0]}
+          git diff --exit-code
+          source_status=$?
+          test -z "$(git status --porcelain)"
+          clean_status=$?
+          printf 'Unit/source exit: %s\nChrome browser exit: %s\nSource diff exit: %s\nClean tree exit: %s\n' \
+            "$unit_status" "$browser_status" "$source_status" "$clean_status" | tee "$results/status.txt"
+          test "$unit_status" -eq 0 && test "$browser_status" -eq 0 && \
+            test "$source_status" -eq 0 && test "$clean_status" -eq 0
+          OFFLINE
+          # Only lo exists in the fresh namespace; no uplink, DNS egress, proxy,
+          # default route, production access, or operational device is available.
+          # Drop privileges and clear the inherited Actions environment before
+          # starting Node/Chrome; no tokens or deployment credentials reach tests.
+          cat > "$RUNNER_TEMP/desktop-ci-network.sh" <<'NETWORK'
+          set -euo pipefail
+          ip link set lo up
+          # Query the active namespace through netlink rather than inherited sysfs.
+          ip -brief address show
+          test "$(ip -o link show | wc -l)" -eq 1
+          ip link show dev lo > /dev/null
+          test -z "$(ip -4 route show)"
+          test -z "$(ip -6 route show default)"
+          echo 'Network isolation PASS: loopback interface only; no external routes.'
+          exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
+            env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
+            CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" \
+            /bin/bash "$6" "$7" "$8"
+          NETWORK
+          set +e
+          sudo unshare --net -- /bin/bash "$RUNNER_TEMP/desktop-ci-network.sh" \
+            "$(id -u)" "$(id -g)" "$PATH" "$RUNNER_TEMP/desktop-ci-home" \
+            "$RUNNER_TEMP/desktop-ci-deps/node_modules/playwright-core" \
+            "$RUNNER_TEMP/desktop-ci-suites.sh" "$GITHUB_WORKSPACE/candidate" "$RUNNER_TEMP/desktop-ci-results"
+          suite_status=$?
+          set -e
+          {
+            printf '\n### Isolated complete-suite results\n\n'
+            printf 'Node and Chrome run without inherited credentials in a fresh loopback-only network namespace.\n\n'
+            for suite in unit browser; do
+              if test -f "$RUNNER_TEMP/desktop-ci-results/$suite.log"; then
+                printf '**%s**\n\n```text\n' "$suite"
+                grep -E '^# (tests|suites|pass|fail|cancelled|skipped|todo|duration_ms) ' \
+                  "$RUNNER_TEMP/desktop-ci-results/$suite.log" || true
+                printf '```\n\n'
+              fi
+            done
+            if test -f "$RUNNER_TEMP/desktop-ci-results/status.txt"; then
+              cat "$RUNNER_TEMP/desktop-ci-results/status.txt"
+            fi
+            printf '\nCombined test/isolation exit: %s\n' "$suite_status"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$suite_status"
+
+  targeted-timeout-comparison:
+    if: github.repository == 'fmuniru-gif/tradeflow-zola' && contains(github.event.head_commit.message, '[timeout-diagnostic]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout diagnostic control with full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact revisions and unchanged recovery test sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = review/desktop-ui-performance-r1
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_BASE"
+          git fetch --no-tags origin refs/pull/11/head
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
+          test "$(git diff --name-only "$APPLICATION_COMMIT" HEAD)" = "$CI_WORKFLOW"
+          git diff --exit-code "$PRODUCTION_BASE" "$APPLICATION_COMMIT" -- \
+            tests/shop-directory-recovery.browser.cjs sw.js FORCE_UPDATE_MOBILE.html \
+            js/shop-directory-recovery-core.js js/shop-directory-recovery-runtime.js
+          git worktree add --detach "$RUNNER_TEMP/timeout-baseline" "$PRODUCTION_BASE"
+          git worktree add --detach "$RUNNER_TEMP/timeout-candidate" "$APPLICATION_COMMIT"
+          printf 'Diagnostic CI head: %s\nBaseline: %s\nCandidate: %s\n' \
+            "$GITHUB_SHA" "$PRODUCTION_BASE" "$APPLICATION_COMMIT"
+          git rev-parse "$PRODUCTION_BASE:tests/shop-directory-recovery.browser.cjs" \
+            "$APPLICATION_COMMIT:tests/shop-directory-recovery.browser.cjs"
+
+      - name: Set up matching Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Prepare pinned driver and observational diagnostics outside source trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/timeout-deps" --no-save --no-package-lock \
+            --ignore-scripts --no-audit --no-fund playwright-core@1.56.0
+          node --version
+          /usr/bin/google-chrome --version
+          mkdir -p "$RUNNER_TEMP/timeout-results"
+          cat > "$RUNNER_TEMP/timeout-observer.cjs" <<'OBSERVER'
+          'use strict';
+          // External observer only: no routing changes, assertions, waits, retries,
+          // navigation options, worker messages or application/test source changes.
+          const http = require('node:http');
+          const started = process.hrtime.bigint();
+          const label = process.env.DIAGNOSTIC_CASE;
+          const log = (event, data = {}) => process.stderr.write('TIMEOUT_DIAG ' + JSON.stringify({
+            case: label, pid: process.pid, ms: Number(process.hrtime.bigint() - started) / 1e6, event, ...data
+          }) + '\n');
+          const pendingServer = new Map();
+          let serverRequest = 0;
+          const emit = http.Server.prototype.emit;
+          http.Server.prototype.emit = function(event, ...args) {
+            if (event === 'listening') log('http-listening', {address: this.address()});
+            if (event === 'request') {
+              const [req, res] = args;
+              const id = ++serverRequest;
+              const entry = {id, method: req.method, url: req.url, startMs: Date.now()};
+              pendingServer.set(id, entry);
+              log('http-request', entry);
+              res.once('finish', () => {
+                pendingServer.delete(id);
+                log('http-finish', {id, url: req.url, status: res.statusCode, elapsedMs: Date.now() - entry.startMs});
+              });
+              res.once('close', () => {
+                if (!res.writableFinished) log('http-close-before-finish', {id, url: req.url, status: res.statusCode});
+              });
+              req.once('aborted', () => log('http-aborted', {id, url: req.url}));
+            }
+            return Reflect.apply(emit, this, [event, ...args]);
+          };
+          const playwright = require(process.env.PLAYWRIGHT_CORE_PATH);
+          const launch = playwright.chromium.launch.bind(playwright.chromium);
+          playwright.chromium.launch = async (...args) => {
+            const browser = await launch(...args);
+            log('browser-launched', {version: browser.version()});
+            const newContext = browser.newContext.bind(browser);
+            let contextId = 0;
+            browser.newContext = async (...options) => {
+              const context = await newContext(...options);
+              const cid = ++contextId;
+              let requestId = 0, pageId = 0;
+              const requests = new WeakMap(), pending = new Map();
+              log('context-created', {cid});
+              context.on('request', request => {
+                const id = ++requestId;
+                requests.set(request, id);
+                let worker = null;
+                try { worker = request.serviceWorker()?.url() || null; } catch {}
+                const entry = {cid, id, url: request.url(), method: request.method(), type: request.resourceType(), navigation: request.isNavigationRequest(), worker};
+                pending.set(id, entry);
+                log('browser-request', entry);
+              });
+              context.on('response', response => log('browser-response', {
+                cid, id: requests.get(response.request()), url: response.url(), status: response.status(), fromServiceWorker: response.fromServiceWorker()
+              }));
+              context.on('requestfinished', request => {
+                const id = requests.get(request); pending.delete(id);
+                log('browser-request-finished', {cid, id, url: request.url()});
+              });
+              context.on('requestfailed', request => {
+                const id = requests.get(request); pending.delete(id);
+                log('browser-request-failed', {cid, id, url: request.url(), error: request.failure()?.errorText});
+              });
+              context.on('serviceworker', worker => {
+                const url = worker.url();
+                log('worker-created', {cid, url});
+                worker.on('close', () => log('worker-closed', {cid, url}));
+              });
+              context.on('close', () => log('context-closed', {cid, pending: [...pending.values()]}));
+              context.on('page', page => {
+                const pid = ++pageId;
+                const cdpPending = new Map(), stages = [];
+                log('page-created', {cid, page: pid});
+                page.on('domcontentloaded', () => log('domcontentloaded', {cid, page: pid, url: page.url()}));
+                page.on('load', () => log('load', {cid, page: pid, url: page.url()}));
+                page.on('framenavigated', frame => { if (frame === page.mainFrame()) log('main-frame-committed', {cid, page: pid, url: frame.url()}); });
+                page.on('close', () => log('page-closed', {cid, page: pid, url: page.url()}));
+                page.on('crash', () => log('page-crashed', {cid, page: pid}));
+                page.on('pageerror', error => log('page-error', {cid, page: pid, error: error.stack?.slice(0, 1600) || String(error)}));
+                page.on('console', message => {
+                  if (message.type() === 'error' || message.type() === 'warning') log('console', {cid, page: pid, type: message.type(), text: message.text().slice(0, 1200)});
+                });
+                const snapshot = async reason => {
+                  log('pending-at-snapshot', {cid, page: pid, reason, url: page.url(), pending: [...pending.values()], cdpPending: [...cdpPending.values()], pendingServer: [...pendingServer.values()], stages});
+                  let timer;
+                  try {
+                    const data = await Promise.race([
+                      page.evaluate(async () => {
+                        const describe = worker => worker ? {scriptURL: worker.scriptURL, state: worker.state} : null;
+                        const registrations = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [];
+                        return {url: location.href, readyState: document.readyState, cloudReady: !!window.ZEZMS?.cloudSync,
+                          bootStatus: document.getElementById('r55BootStatus')?.textContent?.slice(0, 300),
+                          helperStatus: document.getElementById('status')?.textContent,
+                          controller: describe(navigator.serviceWorker?.controller),
+                          registrations: registrations.map(r => ({scope: r.scope, installing: describe(r.installing), waiting: describe(r.waiting), active: describe(r.active)})),
+                          navigation: performance.getEntriesByType('navigation').map(n => ({type: n.type, startTime: n.startTime, responseStart: n.responseStart, responseEnd: n.responseEnd, domInteractive: n.domInteractive, domContentLoadedEventStart: n.domContentLoadedEventStart, loadEventStart: n.loadEventStart, duration: n.duration}))};
+                      }),
+                      new Promise((_, reject) => { timer = setTimeout(() => reject(Error('observer snapshot unavailable after 1500ms')), 1500); })
+                    ]);
+                    log('page-snapshot', {cid, page: pid, reason, data});
+                  } catch (error) { log('snapshot-error', {cid, page: pid, reason, error: String(error)}); }
+                  finally { clearTimeout(timer); }
+                };
+                // Observe worker state transitions without attaching a debugger to a worker,
+                // pausing execution, sending messages, forcing updates or keeping it alive.
+                context.newCDPSession(page).then(async session => {
+                  session.on('ServiceWorker.workerVersionUpdated', data => log('worker-versions', {cid, page: pid, versions: data.versions}));
+                  session.on('ServiceWorker.workerRegistrationUpdated', data => log('worker-registrations', {cid, page: pid, registrations: data.registrations}));
+                  session.on('ServiceWorker.workerErrorReported', data => log('worker-error', {cid, page: pid, data}));
+                  session.on('Page.lifecycleEvent', data => {
+                    const entry = {name: data.name, frameId: data.frameId, loaderId: data.loaderId, timestamp: data.timestamp};
+                    stages.push(entry); log('lifecycle', {cid, page: pid, ...entry});
+                  });
+                  session.on('Network.requestWillBeSent', data => cdpPending.set(data.requestId, {id: data.requestId, url: data.request.url, type: data.type, timestamp: data.timestamp}));
+                  session.on('Network.responseReceived', data => {
+                    const entry = cdpPending.get(data.requestId);
+                    if (entry) Object.assign(entry, {status: data.response.status, fromServiceWorker: data.response.fromServiceWorker});
+                  });
+                  session.on('Network.loadingFinished', data => cdpPending.delete(data.requestId));
+                  session.on('Network.loadingFailed', data => {
+                    log('network-loading-failed', {cid, page: pid, request: cdpPending.get(data.requestId), error: data.errorText, canceled: data.canceled});
+                    cdpPending.delete(data.requestId);
+                  });
+                  await session.send('Page.enable');
+                  await session.send('Network.enable');
+                  await session.send('Page.setLifecycleEventsEnabled', {enabled: true});
+                  await session.send('ServiceWorker.enable');
+                }).catch(error => log('observer-cdp-error', {cid, page: pid, error: String(error)}));
+                const goto = page.goto.bind(page);
+                page.goto = async (...options) => {
+                  const start = Date.now();
+                  log('goto-start', {cid, page: pid, url: options[0], options: options[1] || null});
+                  try {
+                    const response = await goto(...options);
+                    log('goto-success', {cid, page: pid, url: options[0], status: response?.status(), elapsedMs: Date.now() - start});
+                    // Defer observation so it never delays the unchanged test's next step.
+                    void snapshot('goto-success');
+                    return response;
+                  } catch (error) {
+                    log('goto-error', {cid, page: pid, url: options[0], elapsedMs: Date.now() - start, error: String(error)});
+                    await snapshot('goto-error');
+                    throw error;
+                  }
+                };
+                const close = page.close.bind(page);
+                page.close = async (...options) => {
+                  log('page-close-start', {cid, page: pid, url: page.url()});
+                  const result = await close(...options);
+                  log('page-close-returned', {cid, page: pid});
+                  return result;
+                };
+              });
+              return context;
+            };
+            return browser;
+          };
+          process.on('exit', () => log('observer-exit', {pendingServer: [...pendingServer.values()]}));
+          OBSERVER
+          node --check "$RUNNER_TEMP/timeout-observer.cjs"
+          cat > "$RUNNER_TEMP/timeout-case.sh" <<'CASE'
+          set -uo pipefail
+          cd "$1"
+          test "$(git rev-parse HEAD)" = "$2" || exit 90
+          test -z "$(git status --porcelain)" || exit 91
+          printf 'TARGET_CASE %s commit=%s\n' "$DIAGNOSTIC_CASE" "$2"
+          node --require "$3" --test --test-reporter=tap --test-concurrency=1 \
+            --test-name-pattern='^same-origin helper updates a silent worker only after old clients close, preserving Shop data$' \
+            tests/shop-directory-recovery.browser.cjs
+          test_status=$?
+          git diff --exit-code
+          source_status=$?
+          test -z "$(git status --porcelain)"
+          clean_status=$?
+          printf 'TARGET_RESULT %s test_exit=%s source_exit=%s clean_exit=%s\n' \
+            "$DIAGNOSTIC_CASE" "$test_status" "$source_status" "$clean_status"
+          test "$source_status" -eq 0 && test "$clean_status" -eq 0 || exit 92
+          exit "$test_status"
+          CASE
+          cat > "$RUNNER_TEMP/timeout-network.sh" <<'NETWORK'
+          set -euo pipefail
+          ip link set lo up
+          ip -brief address show
+          test "$(ip -o link show | wc -l)" -eq 1
+          ip link show dev lo > /dev/null
+          test -z "$(ip -4 route show)"
+          test -z "$(ip -6 route show default)"
+          echo 'ISOLATION_PASS loopback only, no external routes; cleared environment and dropped privileges'
+          exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
+            env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
+            CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" \
+            DIAGNOSTIC_CASE="$6" SHOP_TEST_DEBUG=1 /bin/bash "$7" "$8" "$9" "${10}"
+          NETWORK
+          bash -n "$RUNNER_TEMP/timeout-case.sh"
+          bash -n "$RUNNER_TEMP/timeout-network.sh"
+
+      - name: Compare baseline and candidate, with one reversed-order paired repetition
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          combined=0
+          # Fresh Node process, Chrome context, HOME and network namespace per case.
+          # Both rounds use the same unchanged single test and the same observer.
+          for case_name in baseline-1 candidate-1 candidate-2 baseline-2; do
+            if [[ "$case_name" == baseline-* ]]; then
+              source="$RUNNER_TEMP/timeout-baseline"
+              commit="$PRODUCTION_BASE"
+            else
+              source="$RUNNER_TEMP/timeout-candidate"
+              commit="$APPLICATION_COMMIT"
+            fi
+            case_home="$RUNNER_TEMP/timeout-home-$case_name"
+            mkdir -p "$case_home/tmp"
+            sudo unshare --net -- /bin/bash "$RUNNER_TEMP/timeout-network.sh" \
+              "$(id -u)" "$(id -g)" "$PATH" "$case_home" \
+              "$RUNNER_TEMP/timeout-deps/node_modules/playwright-core" "$case_name" \
+              "$RUNNER_TEMP/timeout-case.sh" "$source" "$commit" "$RUNNER_TEMP/timeout-observer.cjs" \
+              2>&1 | tee "$RUNNER_TEMP/timeout-results/$case_name.log"
+            case_status=${PIPESTATUS[0]}
+            printf '%s\t%s\t%s\n' "$case_name" "$commit" "$case_status" >> "$RUNNER_TEMP/timeout-results/results.tsv"
+            if test "$case_status" -ne 0; then combined=1; fi
+          done
+          {
+            printf '### Targeted unchanged recovery test comparison (NO DEPLOY)\n\n'
+            printf 'Diagnostic workflow commit: `%s`\n\n' "$GITHUB_SHA"
+            printf 'Application: `%s`\n\nProduction comparison: `%s`\n\n' "$APPLICATION_COMMIT" "$PRODUCTION_BASE"
+            printf 'Only the named recovery test was selected; this does not rerun or turn the complete suite green.\n\n'
+            printf '| Case | Exact commit | Exit |\n| --- | --- | --- |\n'
+            while IFS=$'\t' read -r case_name commit status; do
+              printf '| %s | `%s` | %s |\n' "$case_name" "$commit" "$status"
+            done < "$RUNNER_TEMP/timeout-results/results.tsv"
+            printf '\nDiagnostics are in job logs: HTTP readiness/responses, page-close and navigation stages, pending requests, browser errors and worker lifecycle states. No source, assertions or timeouts were changed.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$combined"

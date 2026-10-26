@@ -1129,6 +1129,9 @@
     changeWindow: changeWindow,
     recalculate: recalculate,
     resetScenario: resetScenario,
+    // Direct Dashboard/Management visits retain the legacy scenario reset
+    // without building an unmounted planning screen or touching business data.
+    clearPlanningSnapshot: function(){ runtime.planningSnapshot = null; },
     getProductSnapshot: productSnapshot,
     ensureProductSnapshot: ensureProductSnapshot,
     getCurrentProductEvidence: currentProductEvidence,

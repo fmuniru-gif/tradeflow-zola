@@ -16,6 +16,9 @@
   }
 
   var legacyDashboard = window.viewDashboard;
+  // A direct visit omits the legacy analytics runtime refresh. Before the
+  // Portfolio shortcut can reuse that runtime, rebuild through the old path.
+  var directVisitSinceAnalytics = false;
   var legacyRender = window.render;
   var legacyNav = window.nav;
   var auth = window.ZEZMS.staffAuth || null;
@@ -129,11 +132,24 @@
     if (typeof legacyDashboard !== 'function') {
       throw new Error('The verified Dashboard renderer is unavailable.');
     }
-    return legacyDashboard.apply(window, arguments);
+    var html = legacyDashboard.apply(window, arguments);
+    directVisitSinceAnalytics = false;
+    return html;
   }
 
   function dashboardOnlyHTML() {
-    var template = createTemplate(fullDashboardHTML.apply(window, arguments));
+    var intelligence = window.ZEZMS.managementIntelligence;
+    var velocity = window.ZEZMS.stockVelocity;
+    var direct = intelligence && intelligence.installed && typeof intelligence.viewDashboardHTML === 'function'
+      && (!velocity || typeof velocity.clearPlanningSnapshot === 'function');
+    if (direct) {
+      if (velocity) velocity.clearPlanningSnapshot();
+      directVisitSinceAnalytics = true;
+    }
+    var html = direct
+      ? intelligence.viewDashboardHTML.apply(window, arguments)
+      : fullDashboardHTML.apply(window, arguments);
+    var template = createTemplate(html);
     removeAnalyticSections(template.content, '');
     return template.innerHTML;
   }
@@ -168,7 +184,18 @@
         + window.ZEZMS.promotionIntelligence.viewHTML() + '</div>';
     }
 
-    var template = createTemplate(fullDashboardHTML());
+    var intelligence = window.ZEZMS.managementIntelligence;
+    var velocity = window.ZEZMS.stockVelocity;
+    var direct = sectionKey === 'management-intelligence' && intelligence && intelligence.installed && typeof intelligence.viewHTML === 'function'
+      && (!velocity || typeof velocity.clearPlanningSnapshot === 'function');
+    if (direct) {
+      if (velocity) velocity.clearPlanningSnapshot();
+      directVisitSinceAnalytics = true;
+    }
+    var html = direct
+      ? intelligence.viewHTML()
+      : fullDashboardHTML();
+    var template = createTemplate(html);
     var source = template.content.querySelector('[id="' + route.targetId + '"]');
     if (!source) {
       return '<div class="card"><h3>' + route.title + '</h3><p class="muted">This verified intelligence module could not be mounted. No transaction or calculation was changed.</p></div>';
@@ -420,6 +447,7 @@
     var root = document.getElementById('viewRoot');
     var mountedFromCurrentVelocity = false;
     if (currentView === 'portfolio-signals'
+      && !directVisitSinceAnalytics
       && window.ZEZMS.stockVelocity
       && typeof window.ZEZMS.stockVelocity.getRuntimeSnapshot === 'function'
       && window.ZEZMS.portfolioSignals
