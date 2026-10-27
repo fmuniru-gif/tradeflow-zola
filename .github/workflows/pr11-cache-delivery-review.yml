@@ -1,0 +1,91 @@
+name: PR11 cache delivery correction (NO DEPLOY)
+on:
+  push:
+    branches: [review/pr11-cache-delivery-r1]
+permissions:
+  contents: read
+jobs:
+  delivery-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact review head and complete history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify production baseline and review-only branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = review/pr11-cache-delivery-r1
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = f810940762809e89a35f982a8577a9f32dcabf4e
+          git merge-base --is-ancestor f810940762809e89a35f982a8577a9f32dcabf4e HEAD
+          test "$(git rev-parse --is-shallow-repository)" = false
+          printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Install driver outside source and check generated delivery manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/delivery-deps" --no-save --no-package-lock --ignore-scripts --no-audit --no-fund playwright-core@1.56.0
+          node tools/build-pr11-delivery.cjs --check
+          node --version
+          /usr/bin/google-chrome --version
+          mkdir -p "$RUNNER_TEMP/delivery-home/tmp" "$RUNNER_TEMP/delivery-results"
+      - name: Run all source/unit and Chrome suites with external networking unavailable
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/delivery-suites.sh" <<'SUITES'
+          set -uo pipefail
+          cd "$1"
+          results="$2"
+          node --test --test-reporter=tap tests/*.test.cjs 2>&1 | tee "$results/unit.log"
+          unit_status=${PIPESTATUS[0]}
+          node --test --test-reporter=tap --test-concurrency=1 tests/*.browser.cjs 2>&1 | tee "$results/browser.log"
+          browser_status=${PIPESTATUS[0]}
+          git diff --exit-code
+          source_status=$?
+          test -z "$(git status --porcelain)"
+          clean_status=$?
+          printf 'Unit/source exit: %s\nChrome browser exit: %s\nSource diff exit: %s\nClean tree exit: %s\n' \
+            "$unit_status" "$browser_status" "$source_status" "$clean_status" | tee "$results/status.txt"
+          test "$unit_status" -eq 0 && test "$browser_status" -eq 0 && test "$source_status" -eq 0 && test "$clean_status" -eq 0
+          SUITES
+          cat > "$RUNNER_TEMP/delivery-network.sh" <<'NETWORK'
+          set -euo pipefail
+          ip link set lo up
+          ip -brief address show
+          test "$(ip -o link show | wc -l)" -eq 1
+          ip link show dev lo > /dev/null
+          test -z "$(ip -4 route show)"
+          test -z "$(ip -6 route show default)"
+          echo 'ISOLATION_PASS: loopback only, no external routes or production access'
+          exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
+            env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
+            CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" \
+            /bin/bash "$6" "$7" "$8"
+          NETWORK
+          set +e
+          sudo unshare --net -- /bin/bash "$RUNNER_TEMP/delivery-network.sh" \
+            "$(id -u)" "$(id -g)" "$PATH" "$RUNNER_TEMP/delivery-home" \
+            "$RUNNER_TEMP/delivery-deps/node_modules/playwright-core" "$RUNNER_TEMP/delivery-suites.sh" \
+            "$GITHUB_WORKSPACE" "$RUNNER_TEMP/delivery-results"
+          status=$?
+          {
+            printf '### Review-only PR11 cache delivery validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
+            for suite in unit browser; do
+              printf '**%s**\n\n```text\n' "$suite"
+              grep -E '^# (tests|pass|fail|cancelled|skipped|todo|duration_ms) ' "$RUNNER_TEMP/delivery-results/$suite.log" || true
+              printf '```\n\n'
+            done
+            cat "$RUNNER_TEMP/delivery-results/status.txt" 2>/dev/null || true
+            printf '\nCombined validation/isolation exit: %s\n' "$status"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
