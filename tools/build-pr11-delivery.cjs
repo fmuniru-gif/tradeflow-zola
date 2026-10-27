@@ -1,9 +1,11 @@
 'use strict';
 // Delivery metadata only. Never rewrites an embedded module or business file.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
+const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261026-pr11-cache-r1';
-const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js'].map(file=>[file,canonicalFile('js/'+file).toString('base64')]));
+const DELIVERY='20261027-pr12-raw-bytes-r1';
+const assetMemo=new Map();
+const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
 const oldCache=`  async function cachePatched(source){
     if(!('caches' in window))return;
@@ -93,26 +95,35 @@ function finishShell(source){
   return source.replace(/const PATCHED_SHA256="[a-f0-9]{64}";/,'const PATCHED_SHA256="'+hash+'";')
     .replace(/const PATCH_CACHE="[^"]+";/,'const PATCH_CACHE="zezms-pr11-patched-'+hash.slice(0,16)+'";');
 }
-function canonicalFile(file){
-  const bytes=fs.readFileSync(path.join(root,file));
-  return /\.(?:js|json|html|css)$/.test(file)?Buffer.from(normalized(bytes.toString('utf8'))):bytes;
+function assetBytes(file){
+  // Pages publishes Git blobs, not an autocrlf-converted working copy. Read the
+  // exact next-commit bytes from the index. Refuse unstaged asset edits rather
+  // than silently signing an older version. No decoding or EOL conversion here.
+  if(!assetMemo.has(file)){
+    const changed=execFileSync('git',['diff','--name-only','--',file],{cwd:root,encoding:'utf8'}).trim();
+    if(changed)throw Error('Stage asset changes before generating delivery metadata: '+file);
+    assetMemo.set(file,execFileSync('git',['show',':'+file],{cwd:root,maxBuffer:32*1024*1024}));
+  }
+  return Buffer.from(assetMemo.get(file));
 }
 function workerHashes(worker,shell){
   const assets=[...worker.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
   return Object.fromEntries([...new Set(assets)].map(url=>{
     const name=url==='./'?'index.html':url.replace(/^\.\//,'').split('?')[0];
-    return [url,sha(name==='index.html'?Buffer.from(shell):canonicalFile(name))];
+    return [url,sha(name==='index.html'?Buffer.from(shell):assetBytes(name))];
   }));
 }
 function finishWorker(worker,shell){
   const runtime=[...assembledShell(shell).matchAll(/<script\b[^>]*\bsrc="([^"#]+)"/g)].map(m=>m[1]).filter(url=>!/^https?:/.test(url));
   const current=new Map(runtime.map(url=>[url.split('?')[0].replace(/^\.\//,''),'./'+url.replace(/^\.\//,'')]));
+  for(const file of Object.keys(coupledModules))current.set('js/'+file,'./js/'+file+'?v='+DELIVERY);
   const oldAssets=[...worker.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
-  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),['./PR11_DELIVERY_UPDATE.html']))];
+  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),['./PR12_RAW_BYTE_UPDATE.html']))];
   worker=worker.replace(/const ASSETS = \[[\s\S]*?\];/,'const ASSETS = [\n'+assets.map(url=>"  '"+url+"',").join('\n')+'\n];');
   const hashes=workerHashes(worker,shell),bundle=sha(JSON.stringify(hashes));
   const hashBlock='// PR11_VERIFIED_ASSETS_BEGIN\nconst VERIFIED_ASSETS = Object.freeze('+JSON.stringify(hashes,null,2)+');\n// PR11_VERIFIED_ASSETS_END';
   return worker.replace(/const CACHE = '[^']+';/,"const CACHE = 'zezms-pr11-delivery-20261026-"+bundle.slice(0,16)+"';")
+    .replace(/const DELIVERY = '[^']+';/,"const DELIVERY = '"+DELIVERY+"';")
     .replace(/const PATCHED_INDEX_CACHE = '[^']+';/,"const PATCHED_INDEX_CACHE = '"+shell.match(/const PATCH_CACHE="([^"]+)";/)[1]+"';")
     .replace(/\/\/ PR11_VERIFIED_ASSETS_BEGIN[\s\S]*?\/\/ PR11_VERIFIED_ASSETS_END/,hashBlock);
 }
@@ -124,5 +135,5 @@ function build(check=false){
   else{fs.writeFileSync(indexFile,index);fs.writeFileSync(workerFile,worker);}
   return {delivery:DELIVERY,patched:sha(assembledShell(index)),assets:Object.keys(workerHashes(worker,index)).length};
 }
-module.exports={DELIVERY,normalized,stripDelivery,applyDelivery,assembledShell,finishShell,finishWorker,workerHashes,canonicalFile,sha,build};
+module.exports={DELIVERY,normalized,stripDelivery,applyDelivery,assembledShell,finishShell,finishWorker,workerHashes,assetBytes,sha,build};
 if(require.main===module)console.log(JSON.stringify(build(process.argv.includes('--check'))));

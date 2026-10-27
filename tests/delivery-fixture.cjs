@@ -1,13 +1,12 @@
 'use strict';
-// Canonical Git text bytes, plus the existing explicit synthetic activation
-// variant. Re-sign only that deliberate fixture; never re-sign fault responses.
-const fs=require('node:fs'),path=require('node:path');
+// Exact staged Git bytes. Normal HTTP fixtures never normalize assets or rebuild
+// the worker: otherwise generator/fixture agreement can mask a broken manifest.
+// Re-sign only the pre-existing, explicitly requested activation variant.
 const delivery=require('../tools/build-pr11-delivery.cjs');
-const root=path.resolve(__dirname,'..');
 let previousVariant,bundle;
 function fixtureBundle(activationVariant=false){
   if(bundle&&previousVariant===activationVariant)return bundle;
-  let index=delivery.normalized(fs.readFileSync(path.join(root,'index.html'),'utf8'));
+  let index=delivery.assetBytes('index.html').toString('utf8');
   if(activationVariant){
     index=index.replace(/const CLOUD_B64="([A-Za-z0-9+/=]+)";/,(_all,b64)=>{
       const cloud=Buffer.from(b64,'base64').toString('utf8');
@@ -16,12 +15,13 @@ function fixtureBundle(activationVariant=false){
     });
     index=delivery.finishShell(index);
   }
-  const worker=delivery.finishWorker(delivery.normalized(fs.readFileSync(path.join(root,'sw.js'),'utf8')),index);
+  const rawWorker=delivery.assetBytes('sw.js').toString('utf8');
+  const worker=activationVariant?delivery.finishWorker(rawWorker,index):rawWorker;
   previousVariant=activationVariant;bundle={index,worker};return bundle;
 }
 function fixtureAsset(file,activationVariant=false){
   if(file==='index.html')return Buffer.from(fixtureBundle(activationVariant).index);
   if(file==='sw.js')return Buffer.from(fixtureBundle(activationVariant).worker);
-  return delivery.canonicalFile(file);
+  return delivery.assetBytes(file);
 }
 module.exports={fixtureAsset,fixtureBundle};

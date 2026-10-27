@@ -1,7 +1,7 @@
-name: PR11 cache delivery correction (NO DEPLOY)
+name: PR12 raw-byte delivery verification (NO DEPLOY)
 on:
   push:
-    branches: [review/pr11-cache-delivery-r1]
+    branches: [review/pr12-raw-byte-verification-r1]
 permissions:
   contents: read
 jobs:
@@ -19,10 +19,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = review/pr11-cache-delivery-r1
+          test "$GITHUB_REF_NAME" = review/pr12-raw-byte-verification-r1
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = f810940762809e89a35f982a8577a9f32dcabf4e
-          git merge-base --is-ancestor f810940762809e89a35f982a8577a9f32dcabf4e HEAD
+          test "$(git rev-parse origin/main)" = d2a91205e0c8974ad298b56b3b744a8588d32319
+          git merge-base --is-ancestor d2a91205e0c8974ad298b56b3b744a8588d32319 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
       - name: Set up Node.js 22
@@ -79,7 +79,7 @@ jobs:
             "$GITHUB_WORKSPACE" "$RUNNER_TEMP/delivery-results"
           status=$?
           {
-            printf '### Review-only PR11 cache delivery validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
+            printf '### Review-only PR12 raw-byte validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
             for suite in unit browser; do
               printf '**%s**\n\n```text\n' "$suite"
               grep -E '^# (tests|pass|fail|cancelled|skipped|todo|duration_ms) ' "$RUNNER_TEMP/delivery-results/$suite.log" || true

@@ -4,7 +4,7 @@ const {execFileSync}=require('node:child_process');
 const crypto=require('node:crypto');
 const delivery=require('../tools/build-pr11-delivery.cjs');
 const root=path.resolve(__dirname,'..'),base='f810940762809e89a35f982a8577a9f32dcabf4e';
-const read=name=>delivery.canonicalFile(name).toString('utf8');
+const read=name=>delivery.assetBytes(name).toString('utf8');
 const old=name=>execFileSync('git',['show',base+':'+name],{cwd:root,maxBuffer:32*1024*1024});
 
 test('delivery shell changes are exactly cache identity, byte verification, metadata and coupled PR11 modules',()=>{
@@ -58,10 +58,10 @@ test('worker byte verifier rejects a 200 stale module as well as failed/partial 
   const {context}=workerContext();
   for(const status of [200,503]){
     context.bad=new Response(status===200?'stale old module':'unavailable',{status});
-    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261026-pr11-cache-r1',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
+    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261027-pr12-raw-bytes-r1',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
   }
-  context.good=new Response(delivery.canonicalFile('js/management-intelligence-v380.js'));
-  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261026-pr11-cache-r1',good)",context));
+  context.good=new Response(delivery.assetBytes('js/management-intelligence-v380.js'));
+  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261027-pr12-raw-bytes-r1',good)",context));
 });
 
 test('worker scope matching and exact version lookups cannot reuse an older query alias',()=>{
@@ -71,11 +71,11 @@ test('worker scope matching and exact version lookups cannot reuse an older quer
 });
 
 test('update helper and worker retain passive activation and never erase device/origin storage',()=>{
-  for(const file of ['sw.js','PR11_DELIVERY_UPDATE.html']){
+  for(const file of ['sw.js','PR12_RAW_BYTE_UPDATE.html']){
     const source=read(file);
     for(const forbidden of ['skipWaiting(', 'clients.claim(', 'unregister(', 'caches.delete(', 'localStorage.clear(', 'indexedDB.deleteDatabase('])assert.ok(!source.includes(forbidden),file+': '+forbidden);
   }
-  const helper=read('PR11_DELIVERY_UPDATE.html');
+  const helper=read('PR12_RAW_BYTE_UPDATE.html');
   assert.ok(helper.includes('await installed(registration.installing)'));
   assert.ok(helper.includes('proof.delivery!==expected||proof.verified!==true'));
 });
