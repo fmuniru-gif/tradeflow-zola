@@ -5,6 +5,7 @@ const {execFileSync}=require('node:child_process');
 const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const delivery=require('../tools/build-pr11-delivery.cjs'),{fixtureAsset}=require('./delivery-fixture.cjs');
 const root=path.resolve(__dirname,'..'),before='1241e0ea2a02d05d68e976d16f51164ad72c216b',production='f810940762809e89a35f982a8577a9f32dcabf4e';
+const brokenProduction='d2a91205e0c8974ad298b56b3b744a8588d32319';
 const memo=new Map();
 function committed(ref,name){const key=ref+':'+name;if(!memo.has(key))memo.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:32*1024*1024}));return memo.get(key);}
 let mode='before',fault='',browser;
@@ -18,7 +19,7 @@ const server=http.createServer((req,res)=>{
   if(mode==='corrected'&&fault==='missing-velocity'&&file==='js/stock-velocity-v390.js'){res.writeHead(503);return res.end('synthetic interrupted download');}
   if(mode==='corrected'&&fault==='stale-management'&&file==='js/management-intelligence-v380.js')return res.end(committed(before,file));
   if(mode==='corrected'&&fault==='stale-shell'&&file==='index.html')return res.end(committed(before,file));
-  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='before'?before:production,file));
+  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='broken'?brokenProduction:mode==='before'?before:production,file));
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 async function ready(page){await page.waitForFunction(()=>!!window.ZEZMS?.navigationV3101&&!!window.ZEZMS?.managementIntelligence&&!!window.ZEZMS?.stockVelocity,null,{timeout:20000});}
@@ -159,6 +160,35 @@ async function activateNaturally(f){
   assert.equal((await workerProof(f.page)).delivery,delivery.DELIVERY);
 }
 
+async function cachedBrokenPR12(f){
+  mode='broken';
+  assert.equal(await update(f.page),'redundant','deployed PR12 worker unexpectedly accepted raw Git HTTP assets');
+  assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1');
+  await f.page.reload();await ready(f.page);
+  await waitForAsync(f.page,async expected=>{
+    const cache=await caches.open('zezms-ui-stock-review-20261024-v1'),response=await cache.match(location.origin+'/index.html');
+    if(!response)return false;
+    const digest=await crypto.subtle.digest('SHA-256',await response.arrayBuffer());
+    return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('')===expected;
+  },delivery.sha(committed(brokenProduction,'index.html')),12000);
+  await f.page.reload();await ready(f.page);
+  assert.equal((await apis(f.page)).delivery,'20261026-pr11-cache-r1');
+  // Cache the real old helper through the prior worker's normal HTTP path.
+  // The correction must use its fresh helper URL, without deleting this entry.
+  const oldHelper=await f.page.evaluate(async()=>await(await fetch('./PR11_DELIVERY_UPDATE.html')).text());
+  assert.ok(oldHelper.includes("const expected='20261026-pr11-cache-r1'"));
+}
+
+test('deployed PR12 rejects raw Git HTTP Management bytes and retains its old active worker',async()=>{
+  const f=await baseline();
+  try{
+    await cachedBrokenPR12(f);
+    assert.equal(delivery.sha(committed(brokenProduction,'js/management-intelligence-v380.js')),'0fcacfe9043823f1528e68c5179c59f18b2a14045b9bc8c7b6fd4c2434f228b8');
+    assert.ok(requests.some(r=>r.mode==='broken'&&r.file==='js/management-intelligence-v380.js'));
+    console.log('RAW_BYTE_ORIGINAL_INSTALL '+JSON.stringify({rawHTTP:true,workerRejected:true,oldActivePreserved:true,cachedPR12Shell:true,oldHelperRetained:true}));
+  }finally{await f.context.close();}
+});
+
 test('cached pre-PR11 assembled source reproduces missing APIs after unchanged worker deployment',async()=>{
   assert.deepEqual(committed(before,'sw.js'),committed(production,'sw.js'));
   const f=await baseline();
@@ -206,8 +236,9 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
   for(const [label,device,access] of [['Main','9a5ab8eb-f67e-425c-866d-574b641295f0','OWNER'],['Shop','197e3568-5a89-4a56-b9d0-07f5e8248734','PAIRED'],['Camon','499b7dcf-9552-4337-929b-95828263b6db','PAIRED']]){
     const f=await baseline();
     try{
+      await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
-      await f.page.goto(f.origin+'/PR11_DELIVERY_UPDATE.html');
+      await f.page.goto(f.origin+'/PR12_RAW_BYTE_UPDATE.html');
       await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('Complete verified PR11 bundle is waiting'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
@@ -250,7 +281,7 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
-    await f.page.goto(f.origin+'/PR11_DELIVERY_UPDATE.html');
+    await f.page.goto(f.origin+'/PR12_RAW_BYTE_UPDATE.html');
     await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('verified PR11 delivery worker is active'));
     assert.equal(await f.page.locator('#open').isVisible(),true);
     await f.page.goto(f.origin+'/index.html');await ready(f.page);
