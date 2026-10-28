@@ -1,7 +1,7 @@
-name: PR12 raw-byte delivery verification (NO DEPLOY)
+name: Remaining tabs performance review (NO DEPLOY)
 on:
   push:
-    branches: [review/pr12-raw-byte-verification-r1]
+    branches: [review/remaining-tabs-performance-r1]
 permissions:
   contents: read
 jobs:
@@ -19,10 +19,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = review/pr12-raw-byte-verification-r1
+          test "$GITHUB_REF_NAME" = review/remaining-tabs-performance-r1
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = d2a91205e0c8974ad298b56b3b744a8588d32319
-          git merge-base --is-ancestor d2a91205e0c8974ad298b56b3b744a8588d32319 HEAD
+          test "$(git rev-parse origin/main)" = 83c7450483f0063fd7857aff696634830d70f8d8
+          git merge-base --is-ancestor 83c7450483f0063fd7857aff696634830d70f8d8 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
       - name: Set up Node.js 22
@@ -79,7 +79,7 @@ jobs:
             "$GITHUB_WORKSPACE" "$RUNNER_TEMP/delivery-results"
           status=$?
           {
-            printf '### Review-only PR12 raw-byte validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
+            printf '### Review-only remaining-tabs validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
             for suite in unit browser; do
               printf '**%s**\n\n```text\n' "$suite"
               grep -E '^# (tests|pass|fail|cancelled|skipped|todo|duration_ms) ' "$RUNNER_TEMP/delivery-results/$suite.log" || true
@@ -89,3 +89,67 @@ jobs:
             printf '\nCombined validation/isolation exit: %s\n' "$status"
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+
+  navigation-benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [MAIN, SHOP, MOBILE]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Prepare exact-baseline paired benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = 83c7450483f0063fd7857aff696634830d70f8d8
+          git merge-base --is-ancestor 83c7450483f0063fd7857aff696634830d70f8d8 HEAD
+          npm install --prefix "$RUNNER_TEMP/bench-deps" --no-save --no-package-lock --ignore-scripts --no-audit --no-fund playwright-core@1.56.0
+          mkdir -p "$RUNNER_TEMP/bench-home/tmp" "$RUNNER_TEMP/navigation-results"
+          node --version
+          /usr/bin/google-chrome --version
+      - name: Run paired synthetic navigation with loopback-only networking
+        shell: bash
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/navigation-pair.sh" <<'PAIR'
+          set -euo pipefail
+          cd "$1"
+          output="$2"
+          profile="$3"
+          samples=7
+          if [ "$profile" = MOBILE ]; then samples=20; fi
+          BENCH_PROFILE="$profile" BENCH_SAMPLES="$samples" BENCH_BASELINE=83c7450483f0063fd7857aff696634830d70f8d8 BENCH_OUTPUT="$output/baseline.json" node tests/remaining-tabs-performance.browser.cjs 2>&1 | tee "$output/baseline.log"
+          BENCH_PROFILE="$profile" BENCH_SAMPLES="$samples" BENCH_BASELINE= BENCH_OUTPUT="$output/candidate.json" BENCH_COMPARE="$output/baseline.json" node tests/remaining-tabs-performance.browser.cjs 2>&1 | tee "$output/candidate.log"
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          PAIR
+          cat > "$RUNNER_TEMP/navigation-isolate.sh" <<'NETWORK'
+          set -euo pipefail
+          ip link set lo up
+          test "$(ip -o link show | wc -l)" -eq 1
+          test -z "$(ip -4 route show)"
+          test -z "$(ip -6 route show default)"
+          echo 'BENCHMARK_ISOLATION_PASS: loopback only; no production resources or external routes'
+          exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" /bin/bash "$6" "$7" "$8" "$9"
+          NETWORK
+          sudo unshare --net -- /bin/bash "$RUNNER_TEMP/navigation-isolate.sh" "$(id -u)" "$(id -g)" "$PATH" "$RUNNER_TEMP/bench-home" "$RUNNER_TEMP/bench-deps/node_modules/playwright-core" "$RUNNER_TEMP/navigation-pair.sh" "$GITHUB_WORKSPACE" "$RUNNER_TEMP/navigation-results" "$PROFILE"
+      - name: Save exact-head benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: remaining-tabs-${{ matrix.profile }}-${{ github.sha }}
+          path: ${{ runner.temp }}/navigation-results
+          if-no-files-found: warn
+          retention-days: 30

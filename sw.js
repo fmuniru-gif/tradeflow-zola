@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-9bc5d26dbdaece1f';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-ba0d2032e2868537';
+const CACHE = 'zezms-pr11-delivery-20261026-313dcf89b9db40d3';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-90a27f201266ea39';
 const ASSETS = [
   './',
   './index.html',
@@ -44,12 +44,12 @@ const ASSETS = [
   './js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51',
   './js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39',
-  './js/management-intelligence-v380.js?v=20261027-pr12-raw-bytes-r1',
+  './js/management-intelligence-v380.js?v=20261028-remaining-tabs-r1',
   './js/margin-intelligence-v381.js?v=20261008-r70q-phase-a-review',
   './js/pricing-guidance-v382.js?v=20261008-r70q-phase-a-review',
   './js/pricing-policy-lab-v383.js?v=20261008-r70q-phase-a-review',
   './js/new-product-pricing-v384.js?v=20260820-customer-retention-r47',
-  './js/stock-velocity-v390.js?v=20261027-pr12-raw-bytes-r1',
+  './js/stock-velocity-v390.js?v=20261028-remaining-tabs-r1',
   './js/portfolio-signals-v391.js?v=20261008-r70q-phase-a-review',
   './js/customer-intelligence-v3100.js?v=20261008-r70q-phase-a-review',
   './js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51',
@@ -76,6 +76,8 @@ const ASSETS = [
   './js/identity-relink-r70h.js?v=20261008-r70q-phase-a-review',
   './PR11_DELIVERY_UPDATE.html',
   './PR12_RAW_BYTE_UPDATE.html',
+  './js/remaining-tabs-presentation.js?v=20261028-remaining-tabs-r1',
+  './REMAINING_TABS_UPDATE.html',
 ];
 const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
   './js/bootstrap-startup-guard.js?v=20261024-ui-stock-review-r1',
@@ -84,11 +86,11 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
   './js/shop-chrome-bootstrap-proof.js?v=20261024-ui-stock-review-r1',
   './js/stock-corrections-v3150.js?v=20261024-ui-stock-review-r1',
   './js/operations-update.js?v=20260822-supplier-procurement-intelligence-r51'];
-const DELIVERY = '20261027-pr12-raw-bytes-r1';
+const DELIVERY = '20261028-remaining-tabs-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "48722182e97059ba67f8695b5d149f7584aba0c2e0ca257bc742bde761114b9a",
-  "./index.html": "48722182e97059ba67f8695b5d149f7584aba0c2e0ca257bc742bde761114b9a",
+  "./": "aa741aa66cbb39c77c8025992de3c8c92d65bec1b3725279c35ab768a4396846",
+  "./index.html": "aa741aa66cbb39c77c8025992de3c8c92d65bec1b3725279c35ab768a4396846",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -128,12 +130,12 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51": "55ab7f0e4db3e9d2e534876a35a382762878a6d1aef842902a7a550952c7ca34",
   "./js/pdf-export.js?v=20260822-supplier-procurement-intelligence-r51": "36175b30cf4fc11653b2f8a007fbbe3b709c9bace317ad375fb084d2c0c2b06a",
   "./js/transaction-badge-v372.js?v=20260812-portfolio-signals-r39": "e43c1047055032399c2e4da2485c4d29bf3f3f9bb1978c54272472df2ea15a35",
-  "./js/management-intelligence-v380.js?v=20261027-pr12-raw-bytes-r1": "0fcacfe9043823f1528e68c5179c59f18b2a14045b9bc8c7b6fd4c2434f228b8",
+  "./js/management-intelligence-v380.js?v=20261028-remaining-tabs-r1": "0fcacfe9043823f1528e68c5179c59f18b2a14045b9bc8c7b6fd4c2434f228b8",
   "./js/margin-intelligence-v381.js?v=20261008-r70q-phase-a-review": "b14b35ef2f134317c89e4578b90f3cb8792001c1b3e2f3010d9cec00688232f1",
   "./js/pricing-guidance-v382.js?v=20261008-r70q-phase-a-review": "7e979ff42bbb8246da20b951d90e00ac17b562292819a5a747fb18348a19428a",
   "./js/pricing-policy-lab-v383.js?v=20261008-r70q-phase-a-review": "cce1d64b743eb4e2a185c0af9a8e582da247f3b5e80889d460a6313724b6a175",
   "./js/new-product-pricing-v384.js?v=20260820-customer-retention-r47": "e57bde41d4d32495e3bb343e7bae9849ccc7c3c18919177ddb64ffa1c0ffdf5c",
-  "./js/stock-velocity-v390.js?v=20261027-pr12-raw-bytes-r1": "edbbefb5c0d20731feb8e99c01ee536ece68b3cf01e56623068d493c320605d0",
+  "./js/stock-velocity-v390.js?v=20261028-remaining-tabs-r1": "edbbefb5c0d20731feb8e99c01ee536ece68b3cf01e56623068d493c320605d0",
   "./js/portfolio-signals-v391.js?v=20261008-r70q-phase-a-review": "a768b2539b195f2c8b73a9837f323e17412e2d42bb598d3fffadb3baea878d98",
   "./js/customer-intelligence-v3100.js?v=20261008-r70q-phase-a-review": "8064ba76409090fb0f2c54577c6734e9671abee44b4ab4c656f7622408609ccf",
   "./js/customer-master-v3120.js?v=20260822-supplier-procurement-intelligence-r51": "4abc35ac32dd14abfceb57a1c2df051e072f941d094158104d7d4dfed87185bb",
@@ -159,7 +161,9 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/recovery-stabilization-r70g.js?v=20261008-r70q-phase-a-review": "01b67327e7808449ae589eaafdf6ae40381b18b86a2a7af0bfba83e488288df9",
   "./js/identity-relink-r70h.js?v=20261008-r70q-phase-a-review": "384ec3b2ddf00d07eb06ca2b9a5e6b09aff44ddb34c9e92a02f7e7b0daf38c27",
   "./PR11_DELIVERY_UPDATE.html": "df7e64d954f16505226e2a99d3363e1d9688ad3a2832baf1e1f8b5eb6bfabbe5",
-  "./PR12_RAW_BYTE_UPDATE.html": "95037b8f8ff3fc89a7a6ddcadad840f161e4601579920ae2d6982852226f2db9"
+  "./PR12_RAW_BYTE_UPDATE.html": "95037b8f8ff3fc89a7a6ddcadad840f161e4601579920ae2d6982852226f2db9",
+  "./js/remaining-tabs-presentation.js?v=20261028-remaining-tabs-r1": "854db5f0151eed5a7e81530770a8f722ef726856ea83c2d1f3bde6c2e9f84050",
+  "./REMAINING_TABS_UPDATE.html": "dff0ed75ead0927363b5055cbe89eaff71850ccc9297f307bbbda17168239cf5"
 });
 // PR11_VERIFIED_ASSETS_END
 let postShellCachePromise = null;
