@@ -56,7 +56,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'js/stock-velocity-v390.js',
     'tests/desktop-ui-performance.test.cjs','tests/desktop-ui-performance.browser.cjs',
     'docs/desktop-ui-performance-review.md',
-    'PR11_DELIVERY_UPDATE.html','PR12_RAW_BYTE_UPDATE.html','tools/verify-delivery-http.cjs','tests/pr12-raw-byte-delivery.test.cjs','docs/pr12-raw-byte-review.md','tools/build-pr11-delivery.cjs','tests/delivery-fixture.cjs',
+    'REMAINING_TABS_UPDATE.html','js/remaining-tabs-presentation.js','tools/remaining-tabs-transform.cjs','tests/remaining-tabs-performance.test.cjs','tests/remaining-tabs-performance.browser.cjs','docs/remaining-tabs-performance-review.md','PR11_DELIVERY_UPDATE.html','PR12_RAW_BYTE_UPDATE.html','tools/verify-delivery-http.cjs','tests/pr12-raw-byte-delivery.test.cjs','docs/pr12-raw-byte-review.md','tools/build-pr11-delivery.cjs','tests/delivery-fixture.cjs',
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',

@@ -2,10 +2,11 @@
 // Delivery metadata only. Never rewrites an embedded module or business file.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const {execFileSync}=require('node:child_process');
+const {transformRemainingTabs}=require('./remaining-tabs-transform.cjs');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261027-pr12-raw-bytes-r1';
+const DELIVERY='20261028-remaining-tabs-r1';
 const assetMemo=new Map();
-const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
+const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
 const oldCache=`  async function cachePatched(source){
     if(!('caches' in window))return;
@@ -42,6 +43,7 @@ const versions=`    // PR11_DELIVERY_URLS_BEGIN
       if(output.split(marker).length!==2)throw new Error('PR11_DELIVERY_SCRIPT_MARKER_MISMATCH: '+asset);
       output=output.replace(marker,'<script data-zezms-pr11-module="'+asset+'">\\n'+safeInline(decodeBase64(DELIVERY_MODULES[asset]))+'\\n</'+'script>');
     }
+    output=(${transformRemainingTabs.toString()})(output,safeInline(decodeBase64(DELIVERY_MODULES['remaining-tabs-presentation.js'])));
     output=output.replace('</head>','<meta name="zezms-delivery" content="'+DELIVERY+'"></head>');
     // PR11_DELIVERY_URLS_END
 `;
@@ -118,7 +120,7 @@ function finishWorker(worker,shell){
   const current=new Map(runtime.map(url=>[url.split('?')[0].replace(/^\.\//,''),'./'+url.replace(/^\.\//,'')]));
   for(const file of Object.keys(coupledModules))current.set('js/'+file,'./js/'+file+'?v='+DELIVERY);
   const oldAssets=[...worker.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
-  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),['./PR12_RAW_BYTE_UPDATE.html']))];
+  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),[...current.values()],['./REMAINING_TABS_UPDATE.html']))];
   worker=worker.replace(/const ASSETS = \[[\s\S]*?\];/,'const ASSETS = [\n'+assets.map(url=>"  '"+url+"',").join('\n')+'\n];');
   const hashes=workerHashes(worker,shell),bundle=sha(JSON.stringify(hashes));
   const hashBlock='// PR11_VERIFIED_ASSETS_BEGIN\nconst VERIFIED_ASSETS = Object.freeze('+JSON.stringify(hashes,null,2)+');\n// PR11_VERIFIED_ASSETS_END';
