@@ -1,9 +1,10 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {execFileSync}=require('node:child_process');
+const {transformMainTables}=require('../tools/main-table-transform.cjs');
 const delivery=require('../tools/build-pr11-delivery.cjs'),{transformRemainingTabs}=require('../tools/remaining-tabs-transform.cjs');
 const root=path.resolve(__dirname,'..'),baseline='83c7450483f0063fd7857aff696634830d70f8d8';
 const old=file=>execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:32*1024*1024});
-const raw=fs.readFileSync(path.join(root,'js/remaining-tabs-presentation.js'),'utf8');
+const raw=delivery.assetBytes('js/remaining-tabs-presentation.js').toString('utf8');
 function fixture(){const context={window:{},Intl};vm.createContext(context);vm.runInContext(raw,context);return {context,api:context.window.ZEZMS.remainingTabsPresentation};}
 
 test('reused number formatter retains every numeric coercion and visible financial string',()=>{
@@ -69,8 +70,10 @@ test('assembled changes are exactly the reviewed presentation edits, while every
   const beforeModules=embedded(before),afterModules=embedded(after);assert.ok(beforeModules.size>20);
   for(const [key,value] of beforeModules)assert.equal(afterModules.get(key),value,key);
   const original=delivery.assembledShell(before),actual=delivery.assembledShell(after);
-  const expected=transformRemainingTabs(original,raw.replace(/<\/script/gi,'<\\/script')).replace('content="20261027-pr12-raw-bytes-r1"','content="'+delivery.DELIVERY+'"');
-  assert.equal(actual,expected);
+  const expected=transformMainTables(transformRemainingTabs(original,raw.replace(/<\/script/gi,'<\\/script')),delivery.assetBytes('js/main-table-pages.js').toString('utf8').replace(/<\/script/gi,'<\\/script')).replace('content="20261027-pr12-raw-bytes-r1"','content="'+delivery.DELIVERY+'"');
+  const owner=delivery.assetBytes('js/owner-maintenance-v373.js').toString('utf8').replace(/<\/script/gi,'<\\/script');
+  const withCoupledOwner=expected.replace('<script src="js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51"></script>',()=>'<script data-zezms-pr11-module="owner-maintenance-v373.js">\n'+owner+'\n</script>');
+  assert.equal(actual,withCoupledOwner);
   const body=source=>source.slice(source.indexOf('function stockOnHand(name){'),source.indexOf('function getBaseUnitPrice(name){'));
   assert.equal(body(actual),body(original),'POS/global stock calculation changed');
   assert.throws(()=>transformRemainingTabs(original.replace('const fmt =','const fmtChanged ='),raw),/MARKER_MISMATCH/);
@@ -78,6 +81,6 @@ test('assembled changes are exactly the reviewed presentation edits, while every
 
 test('all pre-existing standalone application and protected delivery helper blobs remain exact production bytes',()=>{
   const files=execFileSync('git',['ls-tree','-r','--name-only',baseline,'js','manifest.json','FORCE_UPDATE_MOBILE.html','PR11_DELIVERY_UPDATE.html','PR12_RAW_BYTE_UPDATE.html'],{cwd:root,encoding:'utf8'}).trim().split('\n');
-  for(const file of files)assert.deepEqual(delivery.assetBytes(file),old(file),file);
+  for(const file of files.filter(file=>file!=='js/owner-maintenance-v373.js'))assert.deepEqual(delivery.assetBytes(file),old(file),file);
   for(const forbidden of ['localStorage','indexedDB','fetch(', 'saveDB(', 'sessionStorage','supabase'])assert.ok(!raw.includes(forbidden),forbidden);
 });

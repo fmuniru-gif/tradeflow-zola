@@ -1,7 +1,7 @@
-name: Remaining tabs performance review (NO DEPLOY)
+name: Main laptop responsiveness review (NO DEPLOY)
 on:
   push:
-    branches: [review/remaining-tabs-performance-r1]
+    branches: [review/main-laptop-responsiveness-r1]
 permissions:
   contents: read
 jobs:
@@ -19,10 +19,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = review/remaining-tabs-performance-r1
+          test "$GITHUB_REF_NAME" = review/main-laptop-responsiveness-r1
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = 83c7450483f0063fd7857aff696634830d70f8d8
-          git merge-base --is-ancestor 83c7450483f0063fd7857aff696634830d70f8d8 HEAD
+          test "$(git rev-parse origin/main)" = e3e0bf654519f3d9745ec89f3d9dbc394cf53067
+          git merge-base --is-ancestor e3e0bf654519f3d9745ec89f3d9dbc394cf53067 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
       - name: Set up Node.js 22
@@ -46,7 +46,7 @@ jobs:
           set -uo pipefail
           cd "$1"
           results="$2"
-          node --test --test-reporter=tap tests/*.test.cjs 2>&1 | tee "$results/unit.log"
+          node --test --test-reporter=tap --test-concurrency=1 tests/*.test.cjs 2>&1 | tee "$results/unit.log"
           unit_status=${PIPESTATUS[0]}
           node --test --test-reporter=tap --test-concurrency=1 tests/*.browser.cjs 2>&1 | tee "$results/browser.log"
           browser_status=${PIPESTATUS[0]}
@@ -111,8 +111,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = 83c7450483f0063fd7857aff696634830d70f8d8
-          git merge-base --is-ancestor 83c7450483f0063fd7857aff696634830d70f8d8 HEAD
+          test "$(git rev-parse origin/main)" = e3e0bf654519f3d9745ec89f3d9dbc394cf53067
+          git merge-base --is-ancestor e3e0bf654519f3d9745ec89f3d9dbc394cf53067 HEAD
           npm install --prefix "$RUNNER_TEMP/bench-deps" --no-save --no-package-lock --ignore-scripts --no-audit --no-fund playwright-core@1.56.0
           mkdir -p "$RUNNER_TEMP/bench-home/tmp" "$RUNNER_TEMP/navigation-results"
           node --version
@@ -130,8 +130,8 @@ jobs:
           profile="$3"
           samples=7
           if [ "$profile" = MOBILE ]; then samples=20; fi
-          BENCH_PROFILE="$profile" BENCH_SAMPLES="$samples" BENCH_BASELINE=83c7450483f0063fd7857aff696634830d70f8d8 BENCH_OUTPUT="$output/baseline.json" node tests/remaining-tabs-performance.browser.cjs 2>&1 | tee "$output/baseline.log"
-          BENCH_PROFILE="$profile" BENCH_SAMPLES="$samples" BENCH_BASELINE= BENCH_OUTPUT="$output/candidate.json" BENCH_COMPARE="$output/baseline.json" node tests/remaining-tabs-performance.browser.cjs 2>&1 | tee "$output/candidate.log"
+          BENCH_PROFILE="$profile" BENCH_SAMPLES="$samples" BENCH_BASELINE=e3e0bf654519f3d9745ec89f3d9dbc394cf53067 BENCH_OUTPUT="$output/baseline.json" node tests/main-responsiveness.browser.cjs 2>&1 | tee "$output/baseline.log"
+          BENCH_PROFILE="$profile" BENCH_SAMPLES="$samples" BENCH_BASELINE= BENCH_OUTPUT="$output/candidate.json" BENCH_COMPARE="$output/baseline.json" node tests/main-responsiveness.browser.cjs 2>&1 | tee "$output/candidate.log"
           git diff --exit-code
           test -z "$(git status --porcelain)"
           PAIR
@@ -149,7 +149,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: remaining-tabs-${{ matrix.profile }}-${{ github.sha }}
+          name: main-responsiveness-${{ matrix.profile }}-${{ github.sha }}
           path: ${{ runner.temp }}/navigation-results
           if-no-files-found: warn
           retention-days: 30
