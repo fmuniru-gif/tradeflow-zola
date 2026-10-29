@@ -13,9 +13,9 @@ test('delivery shell changes are exactly cache identity, byte verification, meta
   assert.deepEqual(delivery.build(true).delivery,delivery.DELIVERY);
 });
 
-test('both coupled modules have exactly the validated standalone PR11 bytes, even under an old controlling worker',()=>{
+test('coupled modules have exactly the validated standalone PR11 bytes, even under an old controlling worker',()=>{
   const shell=delivery.assembledShell(read('index.html'));
-  for(const file of ['management-intelligence-v380.js','stock-velocity-v390.js']){
+  for(const file of ['management-intelligence-v380.js','stock-velocity-v390.js','owner-maintenance-v373.js']){
     const tag='<script data-zezms-pr11-module="'+file+'">\n',start=shell.indexOf(tag);
     assert.ok(start>=0,file);
     const body=shell.slice(start+tag.length,shell.indexOf('</script>',start));
@@ -26,7 +26,7 @@ test('both coupled modules have exactly the validated standalone PR11 bytes, eve
 test('all protected application sources and validated PR11 modules remain identical to production',()=>{
   const allowed=new Set(['index.html','sw.js','tests/desktop-ui-performance.test.cjs','tests/prelogin-release.test.cjs',
     'tests/prebranch-functional-rollback.test.cjs','tests/prebranch-functional-rollback.browser.cjs',
-    'tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs']);
+    'tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs','js/owner-maintenance-v373.js','tests/ui-responsiveness.browser.cjs','tests/desktop-ui-performance.browser.cjs']);
   const files=execFileSync('git',['ls-tree','-r','--name-only',base],{cwd:root,encoding:'utf8'}).trim().split('\n');
   for(const file of files){
     if(allowed.has(file))continue;
@@ -58,10 +58,10 @@ test('worker byte verifier rejects a 200 stale module as well as failed/partial 
   const {context}=workerContext();
   for(const status of [200,503]){
     context.bad=new Response(status===200?'stale old module':'unavailable',{status});
-    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261028-remaining-tabs-r1',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
+    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261029-main-responsiveness-r1',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
   }
   context.good=new Response(delivery.assetBytes('js/management-intelligence-v380.js'));
-  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261028-remaining-tabs-r1',good)",context));
+  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261029-main-responsiveness-r1',good)",context));
 });
 
 test('worker scope matching and exact version lookups cannot reuse an older query alias',()=>{
@@ -71,11 +71,11 @@ test('worker scope matching and exact version lookups cannot reuse an older quer
 });
 
 test('update helper and worker retain passive activation and never erase device/origin storage',()=>{
-  for(const file of ['sw.js','REMAINING_TABS_UPDATE.html']){
+  for(const file of ['sw.js','MAIN_RESPONSIVENESS_UPDATE.html']){
     const source=read(file);
     for(const forbidden of ['skipWaiting(', 'clients.claim(', 'unregister(', 'caches.delete(', 'localStorage.clear(', 'indexedDB.deleteDatabase('])assert.ok(!source.includes(forbidden),file+': '+forbidden);
   }
-  const helper=read('REMAINING_TABS_UPDATE.html');
+  const helper=read('MAIN_RESPONSIVENESS_UPDATE.html');
   assert.ok(helper.includes('await installed(registration.installing)'));
   assert.ok(helper.includes('proof.delivery!==expected||proof.verified!==true'));
 });

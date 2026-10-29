@@ -1125,18 +1125,29 @@
     toast('Receipt updated - ' + receiptNo + '.');
   };
 
+  function receiptEditLookup() {
+    if (!canEditReceipts()) return function () { return false; };
+    const receipts = new Map(), sales = new Map();
+    (DB.receipts || []).forEach(function (item) { const id = text(item.receiptNo); if (!receipts.has(id)) receipts.set(id, item); });
+    (DB.sales || []).forEach(function (item) { const id = text(item.receiptNo); if (!sales.has(id)) sales.set(id, item); });
+    const period = getLatestMonth();
+    return function (id) {
+      const receipt = receipts.get(text(id)), sale = sales.get(text(id));
+      return !!(receipt && sale && !receipt.voided && receipt.status !== 'VOID' && sale.status !== 'UNDONE'
+        && Number(sale.year) === Number(period.year) && Number(sale.month) === Number(period.month));
+    };
+  }
+
   function installReceiptEditButtons() {
     if (!canEditReceipts()) return;
-    document.querySelectorAll('button[onclick^="printStoredReceipt("]').forEach(function (printButton) {
+    const printButtons = document.querySelectorAll('button[onclick^="printStoredReceipt("]');
+    if (!printButtons.length) return;
+    const activeReceipt = receiptEditLookup();
+    printButtons.forEach(function (printButton) {
       const match = text(printButton.getAttribute('onclick')).match(/printStoredReceipt\('([^']+)'\)/);
       const parent = printButton.parentElement;
       if (!match || !parent || parent.querySelector('[data-receipt-edit]')) return;
-      const receipt = (DB.receipts || []).find(function (item) { return text(item.receiptNo) === text(match[1]); });
-      const sale = (DB.sales || []).find(function (item) { return text(item.receiptNo) === text(match[1]); });
-      const period = getLatestMonth();
-      const active = receipt && sale && !receipt.voided && receipt.status !== 'VOID' && sale.status !== 'UNDONE'
-        && Number(sale.year) === Number(period.year) && Number(sale.month) === Number(period.month);
-      if (!active) return;
+      if (!activeReceipt(match[1])) return;
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'btn sm ghost'; button.textContent = 'Edit';
       button.dataset.receiptEdit = match[1];
@@ -1260,7 +1271,7 @@
   ZEZMS.ownerMaintenance = {
     version: '3.16.0', build: BUILD, ensureModel: ensureModel,
     findPurchaseOrder: findPurchaseOrder, purchaseOrderPaperHTML: purchaseOrderPaperHTML,
-    accountFilters: accountFilters, viewPurchaseOrders: viewPurchaseOrders,
+    accountFilters: accountFilters, viewPurchaseOrders: viewPurchaseOrders, receiptEditLookup: receiptEditLookup,
     preparePurchaseOrderDraft: preparePurchaseOrderDraft
   };
 }());

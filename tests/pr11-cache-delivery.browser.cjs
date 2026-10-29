@@ -6,6 +6,7 @@ const playwright=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
 const delivery=require('../tools/build-pr11-delivery.cjs'),{fixtureAsset}=require('./delivery-fixture.cjs');
 const root=path.resolve(__dirname,'..'),before='1241e0ea2a02d05d68e976d16f51164ad72c216b',production='f810940762809e89a35f982a8577a9f32dcabf4e';
 const brokenProduction='d2a91205e0c8974ad298b56b3b744a8588d32319';
+const currentProduction='e3e0bf654519f3d9745ec89f3d9dbc394cf53067';
 const memo=new Map();
 function committed(ref,name){const key=ref+':'+name;if(!memo.has(key))memo.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:32*1024*1024}));return memo.get(key);}
 let mode='before',fault='',browser;
@@ -19,7 +20,9 @@ const server=http.createServer((req,res)=>{
   if(mode==='corrected'&&fault==='missing-velocity'&&file==='js/stock-velocity-v390.js'){res.writeHead(503);return res.end('synthetic interrupted download');}
   if(mode==='corrected'&&fault==='stale-management'&&file==='js/management-intelligence-v380.js')return res.end(committed(before,file));
   if(mode==='corrected'&&fault==='stale-shell'&&file==='index.html')return res.end(committed(before,file));
-  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='broken'?brokenProduction:mode==='before'?before:production,file));
+  if(mode==='corrected'&&fault==='missing-main-pages'&&file==='js/main-table-pages.js'){res.writeHead(503);return res.end('synthetic interrupted paging download');}
+  if(mode==='corrected'&&fault==='stale-owner-maintenance'&&file==='js/owner-maintenance-v373.js')return res.end(committed(currentProduction,file));
+  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 async function ready(page){await page.waitForFunction(()=>!!window.ZEZMS?.navigationV3101&&!!window.ZEZMS?.managementIntelligence&&!!window.ZEZMS?.stockVelocity,null,{timeout:20000});}
@@ -36,7 +39,8 @@ async function apis(page){return page.evaluate(async()=>{
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source.replace(/\r\n/g,'\n').trim()));
   return {navigation:[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join(''),
     management:typeof ZEZMS.managementIntelligence.viewHTML==='function'&&typeof ZEZMS.managementIntelligence.viewDashboardHTML==='function',
-    velocity:typeof ZEZMS.stockVelocity.clearPlanningSnapshot==='function',delivery:document.querySelector('meta[name="zezms-delivery"]')?.content||null};
+    velocity:typeof ZEZMS.stockVelocity.clearPlanningSnapshot==='function',delivery:document.querySelector('meta[name="zezms-delivery"]')?.content||null,
+    tablePages:ZEZMS.tablePages?.size===50,receiptLookup:typeof ZEZMS.ownerMaintenance?.receiptEditLookup==='function'};
 });}
 async function workerProof(page,which='active'){return page.evaluate(which=>new Promise(async(resolve,reject)=>{
   const r=await navigator.serviceWorker.getRegistration(),worker=which==='controller'?navigator.serviceWorker.controller:r?.[which];
@@ -82,7 +86,7 @@ async function baseline(initial='before'){
   context.on('response',r=>{if(r.request().isNavigationRequest())navigations.push(r.body().then(body=>({url:r.url(),worker:r.fromServiceWorker(),sha:delivery.sha(body)})).catch(()=>({url:r.url(),unavailable:true})));});
   let page=await context.newPage();await page.goto(origin+'/index.html');await ready(page);
   await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js?v=20261024-ui-stock-review-r1');await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('synthetic worker startup timeout')),30000))]);});
-  if(initial==='corrected'){
+  if(initial==='corrected'||initial==='current-production'){
     await page.reload();await ready(page);
     return {context,page,origin,errors,external,navigations};
   }
@@ -238,7 +242,7 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
     try{
       await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
-      await f.page.goto(f.origin+'/REMAINING_TABS_UPDATE.html');
+      await f.page.goto(f.origin+'/MAIN_RESPONSIVENESS_UPDATE.html');
       await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('Complete verified PR11 bundle is waiting'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
@@ -259,7 +263,26 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
   }
 });
 
-for(const failure of ['missing-velocity','stale-management','stale-shell'])test('interrupted or mixed '+failure+' cannot activate and preserves the prior offline application',async()=>{
+test('exact PR14 cached Main, Shop and Camon upgrade naturally to the complete bounded-table bundle and reopen offline',async()=>{
+  for(const [label,device,access] of [['Main','9a5ab8eb-f67e-425c-866d-574b641295f0','OWNER'],['Shop','197e3568-5a89-4a56-b9d0-07f5e8248734','PAIRED'],['Camon','499b7dcf-9552-4337-929b-95828263b6db','PAIRED']]){
+    const f=await baseline('current-production');
+    try{
+      const oldProof=await workerProof(f.page),oldCaches=await f.page.evaluate(()=>caches.keys());
+      assert.equal((await apis(f.page)).tablePages,false);
+      const saved=await seed(f,label,device,access);mode='corrected';
+      assert.equal(await update(f.page),'installed');assert.equal((await workerProof(f.page)).cache,oldProof.cache);
+      assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
+      await activateNaturally(f);const current=await apis(f.page);assert.equal(current.tablePages,true);assert.equal(current.receiptLookup,true);assert.equal(current.delivery,delivery.DELIVERY);
+      assert.deepEqual(await snapshot(f.page),saved);await f.context.setOffline(true);await f.page.reload();await ready(f.page);
+      assert.deepEqual(await apis(f.page),current);assert.deepEqual(await snapshot(f.page),saved);
+      const retained=await f.page.evaluate(()=>caches.keys());assert.ok(oldCaches.every(name=>retained.includes(name)));
+      assert.equal(f.errors.length,0,JSON.stringify(f.errors));
+      console.log('PR15_CACHED_UPGRADE '+JSON.stringify({device:label,baseline:currentProduction,completePagingBundle:true,naturalActivation:true,offline:true,stateUnchanged:true}));
+    }finally{await f.context.close();}
+  }
+});
+
+for(const failure of ['missing-velocity','stale-management','stale-shell','missing-main-pages','stale-owner-maintenance'])test('interrupted or mixed '+failure+' cannot activate and preserves the prior offline application',async()=>{
   const f=await baseline();
   try{
     const saved=await seed(f,failure,'11111111-2222-4333-8444-555555555555','OWNER');
@@ -281,7 +304,7 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
-    await f.page.goto(f.origin+'/REMAINING_TABS_UPDATE.html');
+    await f.page.goto(f.origin+'/MAIN_RESPONSIVENESS_UPDATE.html');
     await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('verified PR11 delivery worker is active'));
     assert.equal(await f.page.locator('#open').isVisible(),true);
     await f.page.goto(f.origin+'/index.html');await ready(f.page);

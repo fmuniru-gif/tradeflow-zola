@@ -160,12 +160,14 @@ const server = http.createServer((request, response) => {
     }
     assert.deepEqual(changedRoots,[],'Navigation changed database roots');
     assert.equal(await page.evaluate(()=>JSON.stringify(ZEZMS.cloudSync.getOutbox())),queueBefore,'Navigation changed the outbox');
+    await require('./table-page-fixture.cjs').installProbe(page);
     result.functional=await page.evaluate(async()=>{
       const check=(value,message)=>{if(!value)throw new Error(message);};
       const settle=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,60))));
       nav('receipts');await settle();
       const rows=()=>Array.from(document.querySelectorAll('#salesRecordsBody .sales-record-row'));
-      check(rows().length===1350,'Sales records were omitted');
+      const complete=await __tableProbe.collect('receipts','#salesRecordsBody .sales-record-row');
+      check(complete.length===1350,'Sales records were omitted');
       document.getElementById('receiptNameSearch').value='Synthetic Customer 899';filterSalesRecordsByName();
       check(rows().filter(row=>row.style.display!=='none').length===1,'Customer search did not find last receipt');
       const last=rows().find(row=>row.innerText.includes('RC899'));
@@ -178,11 +180,12 @@ const server = http.createServer((request, response) => {
       finally{window.printStoredReceipt=originalPrint;}
       clearSalesRecordsNameSearch();
       check(rows().every(row=>row.style.display!=='none'),'Clear search omitted records');
-      const ids=rows().map(row=>row.children[1].innerText);
+      const ids=complete.map(row=>row.cells[1]);
       check(new Set(ids).size===1350,'Sales records duplicated');
-      const timestamps=rows().map(row=>new Date(row.children[7].innerText).getTime());
+      const timestamps=complete.map(row=>new Date(row.cells[7]).getTime());
       check(timestamps.every((time,i)=>!i||time<=timestamps[i-1]),'Existing date sort changed');
-      const quick=rows().find(row=>row.innerText.includes('Q449'));check(quick,'Last quick sale missing');
+      document.getElementById('receiptNameSearch').value='Q449';filterSalesRecordsByName();await settle();
+      const quick=rows().find(row=>row.style.display!=='none'&&row.innerText.includes('Q449'));check(quick,'Last quick sale missing');
       quick.querySelector('button').click();check(document.getElementById('modalBody').innerText.includes('Q449'),'Quick-sale detail entry point failed');closeModal();
       nav('dashboard');await settle();
       const kpiCount=document.querySelectorAll('#viewRoot .dashboard-kpi-grid .card.kpi').length;
@@ -200,7 +203,7 @@ const server = http.createServer((request, response) => {
       const report=ZEZMS.managementReporting.build('management-intelligence',{kind:'CURRENT'});
       check(report.bytes.length>100,'Management PDF generation failed');
       nav('stock');await settle();
-      const stockRows=document.querySelectorAll('#viewRoot tbody tr').length;
+      const stockRows=(await __tableProbe.collect('stock','#stockBalanceBody .stock-balance-row')).length;
       check(stockRows>=600,'Stock records missing');
       // The legacy full composition resets velocity planning. Direct routes
       // must not let Portfolio reuse a scenario that the old route discarded.

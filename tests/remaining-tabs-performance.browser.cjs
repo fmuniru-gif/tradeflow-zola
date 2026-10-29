@@ -28,7 +28,7 @@ const server = http.createServer((request, response) => {
   }
   response.end(fs.readFileSync(file));
 });
-(async () => {
+async function runFixture(diagnostic) {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   console.error('Local benchmark server ready');
   const browser = await playwright.chromium.launch({headless:true, executablePath:process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'});
@@ -102,6 +102,7 @@ const server = http.createServer((request, response) => {
       nav('cash');
     });
     const metrics=async()=>Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x=>[x.name,x.value]));
+    if(diagnostic){await diagnostic({page,context,cdp,metrics,profile,profileName,browser,baseline,blocked});return;}
     const routes=['receipts','products','stock','accounts','stockin','dashboard'];
     const result={baseline:baseline||'working-tree',profile:profileName,cpuRate:profile.cpu,samples,
       browser:browser.version(),blockedExternalRequests:blocked.length,measurements:{},snapshots:{}};
@@ -165,32 +166,8 @@ const server = http.createServer((request, response) => {
     }
     assert.deepEqual(changedRoots,[],'Navigation changed database roots');
     assert.equal(await page.evaluate(()=>JSON.stringify(ZEZMS.cloudSync.getOutbox())),queueBefore,'Navigation changed the outbox');
-    result.functional=await page.evaluate(async()=>{
-      const check=(ok,message)=>{if(!ok)throw Error(message);};
-      const settle=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,100))));
-      nav('receipts');await settle();
-      const rows=()=>[...document.querySelectorAll('#salesRecordsBody .sales-record-row')];
-      check(rows().length===1350,'Sales records omitted');
-      const ids=rows().map(row=>row.children[1].innerText);check(new Set(ids).size===1350,'Sales records duplicated');
-      const dates=rows().map(row=>new Date(row.children[7].innerText).getTime());check(dates.every((date,i)=>!i||date<=dates[i-1]),'Full sales date order changed');
-      for(const query of ['Synthetic Customer 899','RCP-00000899','ZEZ-2026-00000899']){
-        document.getElementById('receiptNameSearch').value=query;filterSalesRecordsByName();
-        check(rows().filter(row=>row.style.display!=='none').some(row=>row.innerText.includes('ZEZ-2026-00000899')),'Last receipt search failed: '+query);
-      }
-      clearSalesRecordsNameSearch();check(rows().every(row=>row.style.display!=='none'),'Clear search omitted receipts');
-      const receipt=rows().find(row=>row.innerText.includes('ZEZ-2026-00000899'));receipt.querySelector('button').click();check(document.getElementById('modalBody').innerText.includes('ZEZ-2026-00000899'),'Receipt view failed');closeModal();
-      const originalPrint=window.printStoredReceipt;let printed=null;try{window.printStoredReceipt=id=>{printed=id;};receipt.querySelectorAll('button')[1].click();check(printed==='ZEZ-2026-00000899','Receipt reprint target changed');}finally{window.printStoredReceipt=originalPrint;}
-      const quick=rows().find(row=>row.innerText.includes('Q449'));quick.querySelector('button').click();check(document.getElementById('modalBody').innerText.includes('Q449'),'Last quick sale missing');closeModal();
-      nav('products');await settle();check(document.querySelectorAll('#productCatalogBody tr').length===600,'Products omitted');
-      ZEZMS.productCatalogSearch.updateId('P599');ZEZMS.productCatalogSearch.refreshNow();await settle();check(document.getElementById('productCatalogBody').innerText.includes('Synthetic Product 599'),'Global product search failed');ZEZMS.productCatalogSearch.clear();await settle();check(document.querySelectorAll('#productCatalogBody tr').length===600,'Clear product search omitted records');
-      nav('stock');await settle();const stockRows=document.querySelectorAll('#stockBalanceBody tr.stock-balance-row');check(stockRows.length===600,'Stock balance omitted products');
-      const stockTotal=document.getElementById('stockBalanceValue').textContent;
-      document.getElementById('stockSearchId').value='P599';filterStockBalanceRows();check([...stockRows].filter(row=>row.style.display!=='none').length===1,'Global stock search failed');clearStockBalanceSearch();check(document.getElementById('stockBalanceValue').textContent===stockTotal,'Stock total changed after search');
-      nav('accounts');await settle();check(document.querySelectorAll('#viewRoot button[onclick^="openSettle"]').length===600,'Account holders omitted');
-      const statements={};for(const kind of ['debtors','creditors','depositors']){accTab=kind;render();await settle();const buttons=[...document.querySelectorAll('#viewRoot button[onclick^="openSettle"]')];check(buttons.length===600,'Missing '+kind);check(document.querySelectorAll('#accountTransactionBody tr.account-transaction-row').length===100,'Latest-100 account history changed');const last=buttons[599];check(last.getAttribute('onclick').includes(kind+'-599'),'Last account action target changed');last.click();check(document.getElementById('modalBody').innerText.includes('Synthetic '+kind+' 599'),'Settlement dialog target changed');closeModal();const report=await ZEZMS.accountCashPdfR68E.buildAccountStatement(kind,kind+'-599');check(report.bytes.length>100,'Account statement missing');check(report.model.transactions.length===150,'Account statement lost full history');statements[kind]={balance:report.model.accountBalance,transactions:report.model.transactions.length};}
-      accTab='debtors';nav('cash');await settle();
-      return {salesRecords:ids.length,uniqueIds:new Set(ids).size,receiptSearch:'PASS',dateSort:'PASS',receiptView:'PASS',quickView:'PASS',reprint:'PASS',products:600,stockProducts:600,stockTotal,accountsPerKind:600,accountHistoryPerKind:100,statements};
-    });
+    const probe=require('./table-page-fixture.cjs');await probe.installProbe(page);
+    result.functional=await probe.functional(page);
     assert.equal(await page.evaluate(()=>JSON.stringify(DB)),dbBefore,'Functional UI checks changed the database');
     assert.equal(await page.evaluate(()=>JSON.stringify(ZEZMS.cloudSync.getOutbox())),queueBefore,'Functional UI checks changed the outbox');
     for(const bucket of Object.values(result.measurements)){
@@ -203,11 +180,14 @@ const server = http.createServer((request, response) => {
     if(process.env.BENCH_OUTPUT)fs.writeFileSync(process.env.BENCH_OUTPUT,JSON.stringify(result,null,2)+'\n');
     if(process.env.BENCH_COMPARE){
       const previous=JSON.parse(fs.readFileSync(process.env.BENCH_COMPARE,'utf8'));
-      assert.deepEqual(result.snapshots,previous.snapshots,'Rendered routes differ from production');
+      // Pagination changes the mounted shell; compare every reconstructed row, action and full model instead.
+      assert.deepEqual(result.functional.all,previous.functional.all,'Complete rendered table rows differ from production');
       if(previous.functional)assert.deepEqual(result.functional,previous.functional,'Functional results differ from production');
       console.error('Production route equivalence: PASS');
     }
     console.log(JSON.stringify({profile:profileName,baseline:baseline||'candidate',measurements:Object.fromEntries(Object.entries(result.measurements).map(([k,v])=>[k,v.summary])),snapshots:result.snapshots,memoryBefore:result.memoryBefore,memoryAfter:result.memoryAfter}));
     await context.close();
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
-})().catch(error => { console.error(error); process.exitCode=1; });
+}
+module.exports={runFixture};
+if(require.main===module)runFixture().catch(error => { console.error(error); process.exitCode=1; });
