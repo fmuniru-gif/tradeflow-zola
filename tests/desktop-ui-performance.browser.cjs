@@ -108,6 +108,7 @@ const server = http.createServer((request, response) => {
     console.error('Initial collection complete');
     result.memoryBefore=await cdp.send('Memory.getDOMCounters');
     result.heapBefore=(await metrics()).JSHeapUsedSize;
+    const firstMarkup={};
     for(let round=0;round<=samples;round++){
       for(const route of routes){
         if(round===0)console.error('First visit: '+route);
@@ -141,8 +142,8 @@ const server = http.createServer((request, response) => {
         // Ignore only these decorative nodes; retain every value and control.
         const canonical=html.replace(/<div class="divider"><\/div>/g,'');
         const hash=crypto.createHash('sha256').update(canonical).digest('hex');
-        if(!result.snapshots[route])result.snapshots[route]={hash,length:canonical.length};
-        else assert.equal(hash,result.snapshots[route].hash,'Repeated route changed markup: '+route);
+        if(!result.snapshots[route]){result.snapshots[route]={hash,length:canonical.length};firstMarkup[route]=canonical;}
+        else{if(hash!==result.snapshots[route].hash){let at=0;while(at<canonical.length&&canonical[at]===firstMarkup[route][at])at++;console.error('REPEATED_MARKUP_DIFF '+JSON.stringify({route,at,before:firstMarkup[route].slice(at-120,at+200),after:canonical.slice(at-120,at+200)}));}assert.equal(hash,result.snapshots[route].hash,'Repeated route changed markup: '+route);}
       }
       console.error(profileName+' '+(baseline?'baseline':'candidate')+' round '+round+'/'+samples);
       if(process.env.BENCH_OUTPUT)fs.writeFileSync(process.env.BENCH_OUTPUT+'.partial',JSON.stringify(result,null,2)+'\n');

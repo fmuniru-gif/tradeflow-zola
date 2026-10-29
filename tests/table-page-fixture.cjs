@@ -41,6 +41,7 @@ async function functional(page){
     let receipt=Array.from(document.querySelectorAll('#salesRecordsBody .sales-record-row')).find(row=>row.style.display!=='none'&&row.textContent.includes('ZEZ-2026-00000899'));
     receipt.querySelector('button').click();check(document.getElementById('modalBody').textContent.includes('ZEZ-2026-00000899'),'Last receipt view failed');closeModal();
     const print=window.printStoredReceipt;let target;try{window.printStoredReceipt=id=>{target=id;};receipt.querySelector('button[onclick^="printStoredReceipt"]').click();check(target==='ZEZ-2026-00000899','Reprint target changed');}finally{window.printStoredReceipt=print;}
+    const pdf=window.downloadStoredReceiptPDF;let pdfTarget;try{window.downloadStoredReceiptPDF=async id=>{pdfTarget=id;};receipt.querySelector('[data-pdf-export]').click();check(pdfTarget==='ZEZ-2026-00000899','Receipt PDF target changed');}finally{window.downloadStoredReceiptPDF=pdf;}
     document.getElementById('receiptNameSearch').value='Q449';filterSalesRecordsByName();await settle();
     const quick=Array.from(document.querySelectorAll('#salesRecordsBody .sales-record-row')).find(row=>row.style.display!=='none'&&row.textContent.includes('Q449'));quick.querySelector('button').click();check(document.getElementById('modalBody').textContent.includes('Q449'),'Off-page quick sale missing');closeModal();
     clearSalesRecordsNameSearch();await settle();
@@ -49,6 +50,7 @@ async function functional(page){
     ZEZMS.productCatalogSearch.clear();await settle();check((await p.collect('products','#productCatalogBody tr')).length===600,'Clear product search omitted records');
     nav('stock');await settle();all.stock=await p.collect('stock','#stockBalanceBody .stock-balance-row');check(all.stock.length===600,'Stock rows omitted');const stockTotal=document.getElementById('stockBalanceValue').textContent;
     document.getElementById('stockSearchId').value='P599';filterStockBalanceRows();await settle();const matches=Array.from(document.querySelectorAll('#stockBalanceBody .stock-balance-row')).filter(row=>row.style.display!=='none');check(matches.length===1&&matches[0].textContent.includes('P599'),'Last stock filter failed');const filteredTotal=document.getElementById('stockBalanceValue').textContent;
+    document.getElementById('stockSearchId').value='not-a-stock-id';filterStockBalanceRows();await settle();check(document.getElementById('stockBalanceNoMatch')?.textContent.includes('No product matches'),'Stock no-match state missing');check(document.getElementById('stockBalanceMatchCount').textContent==='0 matching products','Stock no-match count changed');
     clearStockBalanceSearch();await settle();check(document.getElementById('stockBalanceValue').textContent===stockTotal,'Complete stock totals changed');
     const statements={};nav('accounts');await settle();
     for(const kind of ['debtors','creditors','depositors']){
@@ -62,8 +64,20 @@ async function functional(page){
       const report=await ZEZMS.accountCashPdfR68E.buildAccountStatement(kind,kind+'-599');check(report.model.transactions.length===150&&report.bytes.length>100,'Full statement history lost');statements[kind]={balance:report.model.accountBalance,transactions:report.model.transactions.length,model:report.model};
       setAccountHolderFilter('');await settle();
     }
+    // A disposable linked, unreferenced receipt proves the Edit predicate and
+    // callback on a record beyond the first page. Never submit the edit form.
+    const receiptRecord=DB.receipts[899],saleRecord=DB.sales[899],receiptBefore={...receiptRecord},saleBefore={...saleRecord};
+    try{
+      const period=getLatestMonth();receiptRecord.receiptRef='';saleRecord.receiptNo=receiptRecord.receiptNo;saleRecord.year=period.year;saleRecord.month=period.month;
+      nav('receipts');await settle();document.getElementById('receiptNameSearch').value='Edit';filterSalesRecordsByName();await settle();
+      const edits=Array.from(document.querySelectorAll('#salesRecordsBody .sales-record-row')).filter(row=>row.style.display!=='none');check(edits.length===1,'Global Edit-label search changed');
+      const button=edits[0].querySelector('[data-receipt-edit]');check(button?.dataset.receiptEdit===receiptRecord.receiptNo,'Off-page receipt Edit target changed');button.click();check(document.getElementById('modalBody').textContent.includes(receiptRecord.receiptNo),'Receipt Edit dialog failed');closeModal();
+    }finally{
+      for(const key of Object.keys(receiptRecord))delete receiptRecord[key];Object.assign(receiptRecord,receiptBefore);
+      for(const key of Object.keys(saleRecord))delete saleRecord[key];Object.assign(saleRecord,saleBefore);
+    }
     accTab='debtors';nav('cash');await settle();
-    return {all,searches,stockTotal,filteredTotal,statements,salesRecords:ids.length,uniqueIds:new Set(ids).size,receiptSearch:'PASS',dateSort:'PASS',receiptView:'PASS',quickView:'PASS',reprint:'PASS',products:600,stockProducts:600,accountsPerKind:600,accountHistoryPerKind:100};
+    return {all,searches,stockTotal,filteredTotal,statements,salesRecords:ids.length,uniqueIds:new Set(ids).size,receiptSearch:'PASS',dateSort:'PASS',receiptView:'PASS',quickView:'PASS',reprint:'PASS',receiptPdfTarget:'PASS',receiptEdit:'PASS',products:600,stockProducts:600,accountsPerKind:600,accountHistoryPerKind:100};
   });
 }
 module.exports={installProbe,functional};

@@ -63,5 +63,5 @@ runFixture(async({page,cdp,metrics,profile,profileName,browser,baseline,blocked}
   if(process.env.BENCH_OUTPUT)fs.writeFileSync(process.env.BENCH_OUTPUT,JSON.stringify(result,null,2)+'\n');
   if(process.env.BENCH_COMPARE){const previous=JSON.parse(fs.readFileSync(process.env.BENCH_COMPARE,'utf8'));assert.deepEqual(result.rows,previous.rows,'Complete ordered row HTML/actions differ from production');assert.deepEqual(result.functional,previous.functional,'Full search/totals/statement models differ from production');result.equivalencePassed=true;}
   if(process.env.BENCH_OUTPUT)fs.writeFileSync(process.env.BENCH_OUTPUT,JSON.stringify(result,null,2)+'\n');
-  console.log(JSON.stringify({profile:profileName,rows:result.rows,businessState:'UNCHANGED',measurements:Object.fromEntries(Object.entries(result.measurements).map(([k,v])=>[k,v.summary]))}));
+  console.log(JSON.stringify({profile:profileName,baseline:baseline||'candidate',browser:browser.version(),rows:result.rows,businessState:'UNCHANGED',interactions:result.interactions,measurements:Object.fromEntries(Object.entries(result.measurements).map(([k,v])=>[k,v.summary]))}));
 }).catch(error=>{console.error(error);process.exitCode=1;});
