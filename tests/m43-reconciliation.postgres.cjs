@@ -12,7 +12,7 @@ function asyncSQL(s){return new Promise(resolve=>{const p=spawn('psql',['-X','-q
 const fingerprint=()=>sql("SELECT jsonb_build_object('stock',(SELECT jsonb_agg(jsonb_build_array(owner_id,entity_key,value) ORDER BY owner_id,entity_key) FROM public.zezms_sync_counters),'ops',(SELECT count(*) FROM public.zezms_sync_operations),'receipts',(SELECT count(*) FROM public.zezms_m43_correction_receipts),'revision',(SELECT sum(revision) FROM public.zezms_sync_state));");
 function seed(){
  const s=scenario(),e=s.evidence,op=e.operation;
- sql(`TRUNCATE public.zezms_m43_correction_receipts,public.zezms_m43_reconciliation_evidence,public.zezms_sync_operations,public.zezms_sync_checkpoints,public.zezms_sync_counters,public.zezms_sync_state,public.zezms_branches,public.zezms_device_lifecycle,public.zezms_business_devices,public.zezms_device_access RESTART IDENTITY;
+ sql(`DROP TRIGGER IF EXISTS synthetic_abort ON public.zezms_sync_operations;DROP FUNCTION IF EXISTS public.synthetic_abort();TRUNCATE public.zezms_m43_correction_receipts,public.zezms_m43_reconciliation_evidence,public.zezms_sync_operations,public.zezms_sync_checkpoints,public.zezms_sync_counters,public.zezms_sync_state,public.zezms_branches,public.zezms_device_lifecycle,public.zezms_business_devices,public.zezms_device_access RESTART IDENTITY;
  INSERT INTO public.zezms_sync_state(owner_id,protocol_version,minimum_client_generation,rules_hash,identity_registry_hash) VALUES(${q(ids.owner)},'M4/3',31800,${q(op.rulesHash)},${q(op.identityRegistryHash)});
  INSERT INTO public.zezms_branches(id,business_id,status,is_primary) VALUES(${q(ids.branch)},${q(ids.business)},'ACTIVE',true);
  INSERT INTO public.zezms_device_lifecycle VALUES(${q(ids.life)},${q(e.device_id)},${q(ids.owner)},${q(ids.business)},${q(ids.branch)},${q(ids.other)},'ACTIVE',1);
@@ -70,7 +70,7 @@ test('concurrent unrelated operation serializes under the owner lock; stale evid
  const s=seed(),unrelated={...copy(s.evidence.operation),opId:'unrelated-concurrent',kind:'DATABASE_CHANGE',patches:[]};unrelated.payloadHash=s.f.sync._test.deterministicHash(unrelated);
  const first=asyncSQL(as(ids.owner,`BEGIN;SELECT 1 FROM public.zezms_sync_state WHERE owner_id=${q(ids.owner)} FOR UPDATE;${ordinary(unrelated)}SELECT pg_sleep(1);COMMIT;`));
  await new Promise(r=>setTimeout(r,150));const second=asyncSQL(as(ids.owner,rpc(s.evidence)));const [a,b]=await Promise.all([first,second]);
- assert.equal(a.code,0);assert.notEqual(b.code,0);assert.match(b.error,/CLOUD_HEAD_CHANGED/);assert.equal(sql("SELECT value FROM public.zezms_sync_counters WHERE entity_key='L1';"),'2');assert.equal(sql('SELECT count(*) FROM public.zezms_m43_correction_receipts;'),'0');
+ assert.equal(a.code,0,a.error);assert.notEqual(b.code,0);assert.match(b.error,/CLOUD_HEAD_CHANGED/);assert.equal(sql("SELECT value FROM public.zezms_sync_counters WHERE entity_key='L1';"),'2');assert.equal(sql('SELECT count(*) FROM public.zezms_m43_correction_receipts;'),'0');
 });
 test('wrong owner/staff, revoked device, wrong protocol/hash/rules and forbidden evidence writes reject',()=>{
  let s=seed();for(const user of [ids.other,'77777777-7777-4777-8777-777777777777'])assert.throws(()=>sql(as(user,rpc(s.evidence))),/EVIDENCE_UNAVAILABLE/);

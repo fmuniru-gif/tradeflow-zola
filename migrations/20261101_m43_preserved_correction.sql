@@ -177,7 +177,7 @@ BEGIN
 
  -- Same-ID recovery precedes stale-head/expiry checks, but never authorization,
  -- protocol, exact payload/hash or matching durable receipt validation.
- SELECT * INTO accepted FROM public.zezms_sync_operations WHERE owner_id=e.owner_id AND op_id=p_operation->>'opId';
+ SELECT o.* INTO accepted FROM public.zezms_sync_operations o WHERE o.owner_id=e.owner_id AND o.op_id=p_operation->>'opId';
  IF FOUND THEN
   SELECT * INTO prior FROM public.zezms_m43_correction_receipts WHERE owner_id=e.owner_id AND correction_id=e.correction_id;
   IF accepted.payload IS DISTINCT FROM p_operation OR prior.payload IS DISTINCT FROM p_operation
@@ -187,8 +187,8 @@ BEGIN
  END IF;
  IF e.expires_at<=clock_timestamp() OR NOT e.archived_coverage_complete OR e.approved_by<>e.owner_id THEN RAISE EXCEPTION 'M43_EVIDENCE_EXPIRED'; END IF;
  SELECT greatest(coalesce(max(seq),0),e.checkpoint_cursor),count(*),
-  encode(sha256(convert_to(coalesce(jsonb_agg(jsonb_build_array(seq,op_id,payload) ORDER BY seq),'[]')::text,'UTF8')),'hex')
-  INTO head,count_ops,digest_ops FROM public.zezms_sync_operations WHERE owner_id=e.owner_id;
+  encode(sha256(convert_to(coalesce(jsonb_agg(jsonb_build_array(o.seq,o.op_id,o.payload) ORDER BY o.seq),'[]')::text,'UTF8')),'hex')
+  INTO head,count_ops,digest_ops FROM public.zezms_sync_operations o WHERE o.owner_id=e.owner_id;
  IF head<>e.expected_head OR s.revision<>e.expected_revision OR count_ops<>e.history_count OR digest_ops<>e.history_sha256 THEN RAISE EXCEPTION 'M43_CLOUD_HEAD_CHANGED'; END IF;
  SELECT * INTO checkpoint FROM public.zezms_sync_checkpoints WHERE owner_id=e.owner_id AND checkpoint_id=e.checkpoint_id FOR SHARE;
  IF NOT FOUND OR checkpoint.checkpoint_cursor<>e.checkpoint_cursor OR checkpoint.business_id IS DISTINCT FROM e.business_id
