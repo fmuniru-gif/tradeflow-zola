@@ -52,6 +52,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
   // Dedicated branch-only CI file: read-only tests, no release/deploy permissions.
 
   assert.ok(changed.every(name=>[
+    "diagnostics/m43-correction-reconciliation/preflight.html","diagnostics/m43-correction-reconciliation/preflight.css","diagnostics/m43-correction-reconciliation/preflight-core.js","diagnostics/m43-correction-reconciliation/preflight-browser.js","diagnostics/m43-correction-reconciliation/preflight-page.js","docs/m43-readonly-preflight.md","tests/m43-preflight.test.cjs","tests/m43-preflight.browser.cjs","tests/m43-preflight-postgres.cjs","tests/m43-preflight-fixture.cjs","tests/m43-preflight-demo.cjs",
     "tests/m43-schema-71.cjs","tests/fixtures/m43-production-schema-71.json","tests/fixtures/m43-schema-71-helper-source.sql","tests/fixtures/m43-schema-71-permissions.sql",
     ".github/workflows/m43-reconciliation-review.yml","docs/m43-correction-reconciliation.md","diagnostics/m43-correction-reconciliation/coordinator.js","migrations/20261101_m43_preserved_correction.sql","tests/fixtures/m43-postgres-schema.sql","tests/fixtures/m43-server-export.sql","tests/m43-reconciliation-fixture.cjs","tests/m43-reconciliation-client.test.cjs","tests/m43-reconciliation.postgres.cjs",
     '.github/workflows/stock-correction-sync-fix.yml','docs/m43-stock-correction-fix.md',

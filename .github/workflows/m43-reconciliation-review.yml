@@ -23,7 +23,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/main)" = a3d30228cfcf2c1577209d779534164bc72452f9
           git merge-base --is-ancestor a3d30228cfcf2c1577209d779534164bc72452f9 HEAD
-          git diff --exit-code 7973e4a0c16856d536f25c84c8a3f90b08df17c6 -- index.html sw.js js assets tools diagnostics
+          git diff --exit-code cf9ff97c4f7ee9a3d65f2351ac7785fa2315bdd8 -- index.html sw.js js assets tools migrations diagnostics/m43-correction-reconciliation/coordinator.js
           test "$(git rev-parse --is-shallow-repository)" = false
           git diff --exit-code a3d30228cfcf2c1577209d779534164bc72452f9 -- js assets scripts manifest.json FORCE_UPDATE_MOBILE.html PR11_DELIVERY_UPDATE.html PR12_RAW_BYTE_UPDATE.html MAIN_RESPONSIVENESS_UPDATE.html
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -33,12 +33,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/incident-deps" --no-save --no-package-lock --ignore-scripts --no-audit --no-fund playwright-core@1.56.0
           sudo apt-get update -qq
           sudo apt-get install -y postgresql-16 postgresql-client-16
           node tools/build-pr11-delivery.cjs --check
           mkdir -p "$RUNNER_TEMP/incident-home/tmp" "$RUNNER_TEMP/incident-results"
           node --version
-      - name: Run targeted export71 compatibility tests with loopback-only networking
+      - name: Run focused read-only preflight tests with loopback-only networking
         shell: bash
         run: |
           set -euo pipefail
@@ -51,23 +52,20 @@ jobs:
           initdb -D "$HOME/pgdata" -A trust --no-locale --encoding=UTF8 > "$results/postgres-init.log" || exit 1
           pg_ctl -D "$HOME/pgdata" -o "-h 127.0.0.1 -p 55432 -k $HOME/tmp" -l "$results/postgres-server.log" start || exit 1
           trap 'pg_ctl -D "$HOME/pgdata" -m fast stop' EXIT
-          createdb tradeflow_synthetic || exit 1
-          export PGDATABASE=tradeflow_synthetic
-          node tests/m43-schema-71.cjs > "$HOME/schema71.sql" || exit 1
-          psql -X -v ON_ERROR_STOP=1 -f "$HOME/schema71.sql" -f tests/fixtures/m43-server-export.sql -f tests/fixtures/m43-schema-71-permissions.sql -f migrations/20261101_m43_preserved_correction.sql > "$results/migration.log" 2>&1 || exit 1
-          psql -X -v ON_ERROR_STOP=1 -c 'REVOKE ALL ON FUNCTION public.zezms_ops_push(jsonb) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.zezms_ops_push(jsonb) TO authenticated;' || exit 1
+          export PGDATABASE=postgres
           psql -X -At -c 'SELECT version();' | tee "$results/postgres-version.log"
-          node --test --test-reporter=tap --test-concurrency=1 tests/m43-reconciliation.postgres.cjs 2>&1 | tee "$results/postgres.log"
+          node --test --test-reporter=tap tests/m43-preflight-postgres.cjs 2>&1 | tee "$results/postgres.log"
           postgres_status=${PIPESTATUS[0]}
-          test "$postgres_status" -eq 0 || exit "$postgres_status"
-          node --test --test-reporter=tap tests/m43-reconciliation-client.test.cjs 2>&1 | tee "$results/client.log"
-          client_status=${PIPESTATUS[0]}
+          node --test --test-reporter=tap tests/m43-preflight.test.cjs 2>&1 | tee "$results/preflight.log"
+          preflight_status=${PIPESTATUS[0]}
+          node --test --test-reporter=tap tests/m43-preflight.browser.cjs 2>&1 | tee "$results/browser.log"
+          browser_status=${PIPESTATUS[0]}
           git diff --exit-code
           source_status=$?
           test -z "$(git status --porcelain)"
           clean_status=$?
-          printf 'Controlled client exit: %s\nSource diff exit: %s\nClean tree exit: %s\n' "$client_status" "$source_status" "$clean_status" | tee "$results/status.txt"
-          test "$client_status" -eq 0 && test "$source_status" -eq 0 && test "$clean_status" -eq 0
+          printf 'SELECT-only PostgreSQL exit: %s\nPreflight exit: %s\nBrowser exit: %s\nSource diff exit: %s\nClean tree exit: %s\n' "$postgres_status" "$preflight_status" "$browser_status" "$source_status" "$clean_status" | tee "$results/status.txt"
+          test "$postgres_status" -eq 0 && test "$preflight_status" -eq 0 && test "$browser_status" -eq 0 && test "$source_status" -eq 0 && test "$clean_status" -eq 0
           SUITES
           cat > "$RUNNER_TEMP/incident-network.sh" <<'NETWORK'
           set -euo pipefail
@@ -84,7 +82,7 @@ jobs:
           {
             printf 'Fix review commit: `%s`\n\nApplication: `a3d30228cfcf2c1577209d779534164bc72452f9` (protected business modules unchanged)\n\n' "$GITHUB_SHA"
             printf 'Review only. No live correction reconciliation, retry, repair or deployment is authorized.\n\n'
-            for suite in postgres client; do
+            for suite in postgres preflight browser; do
               printf '**%s**\n\n```text\n' "$suite"
               grep -E '^# (tests|pass|fail|cancelled|skipped|todo|duration_ms) ' "$RUNNER_TEMP/incident-results/$suite.log" || true
               printf '```\n\n'
@@ -96,6 +94,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: m43-schema71-targeted-compatibility
+          name: m43-readonly-preflight-focused
           path: ${{ runner.temp }}/incident-results
           retention-days: 14
