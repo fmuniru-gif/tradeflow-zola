@@ -42,6 +42,10 @@ test('unknown400s remain unclassified, absent400 evidence holds, and foreign-pro
  assert.ok((await check(p=>p.observed=[{url:p.origin+'/rest/v1/zezms_business_devices',status:400,method:'GET'}])).r.blockers.includes('HTTP400_BLOCKING_EFFECT_UNVERIFIED'));
  assert.ok((await check(p=>p.observed=[{url:'https://foreign.supabase.co/rest/v1/rpc/zezms_mb3_publish_protocol_readiness',status:400}])).r.blockers.includes('HTTP400_ENDPOINT_NOT_IDENTIFIED'));
 });
+test('a new failed read does not impersonate the reported historical400, and changing enrollment is held',async()=>{
+ const p=await packet();p.observed=[];const i=io(p),r=await core.run({...i,read:async(n,q)=>n==='capability'?{ok:false,status:400}:i.read(n,q)});assert.ok(r.blockers.includes('HTTP400_ENDPOINT_NOT_IDENTIFIED'));assert.equal(r.http400[0].source,'preflight-read');
+ const p2=await packet(),base=io(p2);let reads=0;const r2=await core.run({...base,read:async(n,q)=>{const x=await base.read(n,q);if(n==='lifecycle'&&reads++)x.data[0].lifecycle_state='REVOKED';return x;}});assert.ok(r2.blockers.includes('MAIN_SCOPE_CHANGED_DURING_PREFLIGHT'));
+});
 test('unexpected exceptions cannot disclose record names, IDs or arbitrary server messages',async()=>{
  const p=await packet(),r=await core.run({...io(p),read:async()=>{throw Error('PRIVATE_CUSTOMER_SECRET');}});assert.ok(!JSON.stringify(r).includes('PRIVATE_CUSTOMER_SECRET'));assert.ok(r.blockers.includes('PREFLIGHT_READ_FAILED'));
 });

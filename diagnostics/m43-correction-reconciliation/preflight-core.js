@@ -43,7 +43,7 @@
   }
   return db;
  }
- function references(value,id){if(!value||typeof value!=='object')return false;if(Array.isArray(value))return value.some(v=>references(v,id));for(const [k,v]of Object.entries(value)){if(['correctionId','reversalOf','reversalCorrectionId'].includes(k)&&v===id)return true;if(k==='collection'&&v==='stockCorrections'&&value.key===id)return true;if(typeof v==='object'&&references(v,id))return true;}return false;}
+ function references(value,id){if(typeof value==='string')return value.includes(id);if(!value||typeof value!=='object')return false;if(Array.isArray(value))return value.some(v=>references(v,id));for(const [k,v]of Object.entries(value)){if(['correctionId','reversalOf','reversalCorrectionId'].includes(k)&&v===id)return true;if(k==='collection'&&v==='stockCorrections'&&value.key===id)return true;if(references(v,id))return true;}return false;}
  async function run(io){
   const blockers=new Set(),http400=[];const add=c=>blockers.add(c);let before;
   const result=()=>Object.freeze({status:blockers.size?'NO-GO':'GO',readOnly:true,authorizesExecution:false,blockers:[...blockers],http400});
@@ -114,12 +114,18 @@
    io.progress?.('Checking that local and cloud evidence stayed unchanged…');const second=await cloud(),counterAfter=await counter();
    if(!same(first,second)||!same(counterBefore,counterAfter))add('CLOUD_CHANGED_DURING_PREFLIGHT');
    const roleAgain=await read('owner',{p_business_id:s.businessId,p_roles:'{OWNER}'});if(roleAgain?.data!==true)add('ACTIVE_OWNER_MEMBERSHIP_UNVERIFIED');
+   const authAgain=await read('auth');if(!authAgain||!same(authAgain.data,auth.data))add('OWNER_SESSION_CHANGED');
+   const lifeAgain=await read('lifecycle',{...scope,device_id:'eq.'+s.deviceId,select:'owner_id,business_id,branch_id,device_id,lifecycle_state,revoked_at'});
+   const devicesAgain=await read('devices',{business_id:'eq.'+s.businessId,user_id:'eq.'+s.syncOwnerId,device_id:'eq.'+s.deviceId,select:'business_id,user_id,device_id,revoked_at'});
+   const branchAgain=await read('branches',{business_id:'eq.'+s.businessId,id:'eq.'+s.branchId,select:'id,business_id,status'});
+   if(!same(life?.data,lifeAgain?.data)||!same(devices?.data,devicesAgain?.data)||!same(branch?.data,branchAgain?.data))add('MAIN_SCOPE_CHANGED_DURING_PREFLIGHT');
+   if(cap){const again=await read('capability',{p_device_id:s.deviceId});if(!again||!same(cap.data,again.data))add('CAPABILITY_CHANGED_DURING_PREFLIGHT');}
    if(e){const again=await read('evidence',{...scope,correction_id:'eq.'+identity.correction,select:'*,audit_text:audit::text,operation_text:operation::text,stock_before_text:stock_before::text,product_text:product::text'});if(!again||!same(again.data,eResult.data))add('INDEPENDENT_BINDING_CHANGED');}
    if(e&&!(Date.parse(e.expires_at)>io.now()))add('INDEPENDENT_BINDING_EXPIRED');
   }catch(error){add(SAFE_ERRORS.has(error?.message)?error.message:'PREFLIGHT_READ_FAILED');}
   if(before){try{if(!same(before,io.capture()))add('LOCAL_CHANGED_DURING_PREFLIGHT');}catch(_){add('LOCAL_EVIDENCE_UNAVAILABLE');}}
-  const unique=new Map(http400.map(e=>[e.method+e.endpoint,e]));http400.splice(0,http400.length,...unique.values());
-  if(!http400.length)add('HTTP400_ENDPOINT_NOT_IDENTIFIED');
+  const unique=new Map(http400.map(e=>[e.source+e.method+e.endpoint,e]));http400.splice(0,http400.length,...unique.values());
+  if(!http400.some(e=>e.source==='existing-request-metadata'))add('HTTP400_ENDPOINT_NOT_IDENTIFIED');
   if(http400.some(e=>e.blocking===true))add('HTTP400_ON_DELIVERY_DEPENDENCY');
   if(http400.some(e=>e.blocking===null))add('HTTP400_BLOCKING_EFFECT_UNVERIFIED');
   return result();
