@@ -52,6 +52,10 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
   // Dedicated branch-only CI file: read-only tests, no release/deploy permissions.
 
   assert.ok(changed.every(name=>[
+    '.github/workflows/stock-correction-sync-fix.yml','docs/m43-stock-correction-fix.md',
+    'tools/m43-inverse-identity-fix.cjs','tools/m43-queued-rebase-body.js',
+    'tests/stock-correction-sync-fixture.cjs','tests/stock-correction-sync-incident.test.cjs',
+    'tests/r70w-source-proof.cjs',
     'js/navigation-v3101-r68.js','js/management-intelligence-v380.js',
     'js/stock-velocity-v390.js',
     'tests/desktop-ui-performance.test.cjs','tests/desktop-ui-performance.browser.cjs',

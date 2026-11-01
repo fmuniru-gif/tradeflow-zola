@@ -3,6 +3,7 @@
  * preservation comparisons. Fail if an expected anchor is absent or repeated. */
 function undoR70W(source){
  let s=String(source);
+ if(s.includes('M43_QUEUED_REBASE_R1_BEGIN'))s=require('../tools/m43-inverse-identity-fix.cjs').unpatch(s);
  const changes=[
   [ '\n  var r70wEntry=r70wReplayEntry(row,operation);\n  if (r70wEntry) return r70wEntry;', '' ],
   [ '\n  if (plan.r70wExactChain) {\n    if (!r70wReplayEntry(row,operation) || !r70wSame(getDatabase().sharedDeviceDirectory,r70wActivePlan.finalDirectory))\n      throw new Error("ZEZMS_R70W_STOP_FINAL_DIRECTORY_NOT_MATERIALIZED");\n    return true;\n  }', '' ],
