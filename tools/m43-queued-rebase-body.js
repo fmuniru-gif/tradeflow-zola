@@ -9,6 +9,7 @@ var M43_REBASE_KIND = 'M43_QUEUED_REBASE_R1';
 var m43RebaseBaseSave = ZEZMS.db && ZEZMS.db.save;
 if (typeof m43RebaseBaseSave === 'function') ZEZMS.db.save = function(key, database) {
   if (key === 'tradeflow_v321_zola') {
+    if (localStorage.getItem('zezms_m43_reconciliation_stage_v1') !== null) throw new Error('ZEZMS_RECONCILIATION_MAINTENANCE_HOLD');
     var raw = localStorage.getItem(APPLY_JOURNAL_KEY), pending = raw === null ? null : JSON.parse(raw);
     if (pending && pending.kind && !m43RebaseWritingDatabase) throw new Error('ZEZMS_REBASE_RECOVERY_REQUIRED');
   }
