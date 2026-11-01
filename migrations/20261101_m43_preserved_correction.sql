@@ -31,21 +31,57 @@ BEGIN
  RETURN NULL;
 END $$;
 
--- PostgreSQL's shortest float representation, formatted with JS's decimal /
--- exponent thresholds. Exact numeric comparison rejects non-JS wire values;
--- this never rounds a business value or silently accepts a competing hash.
+-- Exact IEEE-754 value -> shortest round-tripping decimal, nearest candidate,
+-- ties to even, then JS formatting. PostgreSQL float output deliberately avoids
+-- some midpoint decimals and therefore is not a JS canonicalizer.
 CREATE FUNCTION public.zezms_m43_number(n numeric) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT SET search_path='' SET extra_float_digits=3 AS $$
-DECLARE f double precision; plain text; digits text; integer_part text; fractional_part text; exponent integer; result text; sign text:='';
+LANGUAGE plpgsql IMMUTABLE STRICT SET search_path='' AS $$
+DECLARE f double precision; bytes bytea; exponent_bits integer; binary_exp integer;
+ mantissa bigint; significand bigint; exact_value numeric; digits text; plain text;
+ integer_part text; fractional_part text; exponent integer; result text; sign text:='';
+ precision_digits integer; decimal_scale integer; step numeric; low numeric; high numeric;
+ low_ok boolean; high_ok boolean; chosen numeric; i integer;
 BEGIN
  BEGIN f:=n::double precision;
  EXCEPTION WHEN numeric_value_out_of_range THEN RAISE EXCEPTION 'M43_HASH_NUMBER_UNSUPPORTED'; END;
  IF f=0 THEN IF n<>0 THEN RAISE EXCEPTION 'M43_HASH_NUMBER_UNSUPPORTED'; END IF; RETURN '0'; END IF;
- plain:=trim_scale(abs(f)::text::numeric)::text;
  IF f<0 THEN sign:='-'; END IF;
- IF abs(f)>=0.000001 AND abs(f)<1e21 THEN result:=sign||plain;
+ f:=abs(f);bytes:=float8send(f);
+ exponent_bits:=((get_byte(bytes,0)&127)<<4)|(get_byte(bytes,1)>>4);
+ mantissa:=get_byte(bytes,1)&15;
+ FOR i IN 2..7 LOOP mantissa:=mantissa*256+get_byte(bytes,i); END LOOP;
+ significand:=mantissa;binary_exp:=-1074;
+ IF exponent_bits>0 THEN significand:=significand+4503599627370496;binary_exp:=exponent_bits-1075; END IF;
+ IF binary_exp>=0 THEN exact_value:=significand::numeric*power(2::numeric,binary_exp);
  ELSE
-  integer_part:=split_part(plain,'.',1); fractional_part:=split_part(plain,'.',2);
+  -- Integer powers and decimal placement avoid rounded numeric division.
+  digits:=trim_scale(significand::numeric*power(5::numeric,-binary_exp))::text;
+  IF length(digits)>-binary_exp THEN plain:=substr(digits,1,length(digits)+binary_exp)||'.'||substr(digits,length(digits)+binary_exp+1);
+  ELSE plain:='0.'||repeat('0',-binary_exp-length(digits))||digits; END IF;
+  exact_value:=plain::numeric;
+ END IF;
+ plain:=trim_scale(exact_value)::text;integer_part:=split_part(plain,'.',1);fractional_part:=split_part(plain,'.',2);
+ IF integer_part<>'0' THEN exponent:=length(integer_part)-1;
+ ELSE exponent:=-1-(length(fractional_part)-length(ltrim(fractional_part,'0'))); END IF;
+ FOR precision_digits IN 1..17 LOOP
+  decimal_scale:=precision_digits-1-exponent;step:=('1e'||(-decimal_scale)::text)::numeric;
+  low:=trunc(exact_value,decimal_scale);high:=low+step;
+  BEGIN low_ok:=(low::double precision=f);EXCEPTION WHEN numeric_value_out_of_range THEN low_ok:=false;END;
+  BEGIN high_ok:=(high::double precision=f);EXCEPTION WHEN numeric_value_out_of_range THEN high_ok:=false;END;
+  IF low_ok OR high_ok THEN
+   IF NOT high_ok THEN chosen:=low;
+   ELSIF NOT low_ok THEN chosen:=high;
+   ELSIF exact_value-low<high-exact_value THEN chosen:=low;
+   ELSIF exact_value-low>high-exact_value THEN chosen:=high;
+   ELSIF mod(trunc(low/step),2)=0 THEN chosen:=low;ELSE chosen:=high;END IF;
+   EXIT;
+  END IF;
+ END LOOP;
+ IF chosen IS NULL THEN RAISE EXCEPTION 'M43_HASH_NUMBER_UNSUPPORTED'; END IF;
+ plain:=trim_scale(chosen)::text;
+ IF f>=0.000001 AND f<1e21 THEN result:=sign||plain;
+ ELSE
+  integer_part:=split_part(plain,'.',1);fractional_part:=split_part(plain,'.',2);
   IF integer_part<>'0' THEN exponent:=length(integer_part)-1;digits:=integer_part||fractional_part;
   ELSE exponent:=-1-(length(fractional_part)-length(ltrim(fractional_part,'0')));digits:=ltrim(fractional_part,'0'); END IF;
   digits:=rtrim(digits,'0');
