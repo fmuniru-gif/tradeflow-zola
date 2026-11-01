@@ -70,9 +70,9 @@ test('historical undo productId-only metadata is INFO while actual stock payload
 test('queued correction survives ordered remote replay/rebase and converges after its later acknowledgment',async()=>{
  const devices=[fixture(),fixture('synthetic-shop'),fixture('synthetic-camon')],s=server();devices.forEach(f=>transport(f,s));
  corrected(devices[0]);const queued=clone(devices[0].sync.getOutbox()[0]);
- const before=clone(devices[1].c.DB),after=clone(before);after.stockRows[1].rStock=133;
- const remote=clone(devices[1].sync._test.buildOperation(before,after,'synthetic-peer-stock-change'));
- s.rows.push({seq:3958,op_id:remote.opId,device_id:'synthetic-other-peer',payload:remote,kind:remote.kind,created_at:new Date().toISOString()});
+ const peer=fixture('synthetic-other-peer'),before=clone(peer.c.DB),after=clone(before);after.stockRows[1].rStock=133;
+ const remote=clone(peer.sync._test.buildOperation(before,after,'synthetic-peer-stock-change'));
+ s.rows.push({seq:3958,op_id:remote.opId,device_id:remote.deviceId,payload:remote,kind:remote.kind,created_at:new Date().toISOString()});
  let failure;try{await devices[0].sync.pullNow(true);}catch(error){failure=error;}
  if(failure){assert.match(failure.message,/^ZEZMS_IDENTITY_REQUIRED: stockRows operation has no stable collection identity/);assert.equal(total(devices[0]),134);assert.equal(devices[0].c.DB.stockCorrections.length,1);assert.deepEqual(clone(devices[0].sync.getOutbox()[0]),queued);assert.equal(devices[0].sync.getFailedOperations().length,0);assert.equal(devices[0].sync.getState().cursor,3957);console.log("CONFIRMED_REBASE_DEFECT cursor3957 queue1 failed0 total134 zero-layer-and-audit-retained");throw failure;}
  assert.equal(total(devices[0]),133);assert.equal(devices[0].c.DB.stockRows[0].rStock,0);assert.equal(devices[0].c.DB.stockCorrections.length,1);assert.deepEqual(clone(devices[0].sync.getOutbox()[0]),queued);
