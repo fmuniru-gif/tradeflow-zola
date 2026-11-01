@@ -52,6 +52,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
   // Dedicated branch-only CI file: read-only tests, no release/deploy permissions.
 
   assert.ok(changed.every(name=>[
+    "tests/m43-schema-71.cjs","tests/fixtures/m43-production-schema-71.json","tests/fixtures/m43-schema-71-helper-source.sql","tests/fixtures/m43-schema-71-permissions.sql",
     ".github/workflows/m43-reconciliation-review.yml","docs/m43-correction-reconciliation.md","diagnostics/m43-correction-reconciliation/coordinator.js","migrations/20261101_m43_preserved_correction.sql","tests/fixtures/m43-postgres-schema.sql","tests/fixtures/m43-server-export.sql","tests/m43-reconciliation-fixture.cjs","tests/m43-reconciliation-client.test.cjs","tests/m43-reconciliation.postgres.cjs",
     '.github/workflows/stock-correction-sync-fix.yml','docs/m43-stock-correction-fix.md',
     'tools/m43-inverse-identity-fix.cjs','tools/m43-queued-rebase-body.js',

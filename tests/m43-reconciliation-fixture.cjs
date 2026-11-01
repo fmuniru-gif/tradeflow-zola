@@ -2,8 +2,9 @@
 const {fixture,cloud}=require('./stock-correction-sync-fixture.cjs'),crypto=require('node:crypto');
 const copy=x=>JSON.parse(JSON.stringify(x));
 const ids={owner:'11111111-1111-4111-8111-111111111111',other:'22222222-2222-4222-8222-222222222222',business:'33333333-3333-4333-8333-333333333333',branch:'44444444-4444-4444-8444-444444444444',evidence:'55555555-5555-4555-8555-555555555555',life:'66666666-6666-4666-8666-666666666666'};
-function scenario(){
- const original=fixture(),before=copy(original.c.DB);
+function scenario(stockFields){
+ let original=fixture();if(stockFields){const db=copy(original.c.DB);Object.assign(db.stockRows[0],stockFields);original=fixture('synthetic-main',{database:db});}
+ const before=copy(original.c.DB);
  original.api.commitCorrection(original.api.preparePhysicalCount({productId:'P1',physicalCount:'0',notes:'SYNTHETIC missing delivery'}));
  const raw=Object.fromEntries(original.store),s=JSON.parse(raw.zezms_cloud_sync_m4_state);
  Object.assign(s,{syncOwnerId:ids.owner,businessId:ids.business,branchId:ids.branch,liveSyncEnabled:false,liveSyncDesired:false});

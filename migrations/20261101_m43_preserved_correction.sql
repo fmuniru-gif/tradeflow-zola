@@ -1,6 +1,12 @@
 -- REVIEW ONLY. No private identifiers/data. No automatic evidence provisioning.
 -- Requires the exact exported production RPC; migration is one transaction.
 BEGIN;
+DO $owner$
+BEGIN
+ IF current_user IS DISTINCT FROM (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.zezms_ops_push(jsonb)'::regprocedure) THEN
+  RAISE EXCEPTION 'M43_MIGRATION_RPC_OWNER_REQUIRED';
+ END IF;
+END $owner$;
 LOCK TABLE public.zezms_sync_operations IN SHARE ROW EXCLUSIVE MODE;
 
 -- JS consumes UTF-16 code units, not UTF-8 bytes.
@@ -25,8 +31,32 @@ BEGIN
  RETURN NULL;
 END $$;
 
--- Matches JSON.stringify(canonicalize(value)) on a deliberately bounded domain.
--- Unsupported numeric representations FAIL, never produce a competing hash.
+-- PostgreSQL's shortest float representation, formatted with JS's decimal /
+-- exponent thresholds. Exact numeric comparison rejects non-JS wire values;
+-- this never rounds a business value or silently accepts a competing hash.
+CREATE FUNCTION public.zezms_m43_number(n numeric) RETURNS text
+LANGUAGE plpgsql IMMUTABLE STRICT SET search_path='' SET extra_float_digits=3 AS $$
+DECLARE f double precision; plain text; digits text; integer_part text; fractional_part text; exponent integer; result text; sign text:='';
+BEGIN
+ BEGIN f:=n::double precision;
+ EXCEPTION WHEN numeric_value_out_of_range THEN RAISE EXCEPTION 'M43_HASH_NUMBER_UNSUPPORTED'; END;
+ IF f=0 THEN IF n<>0 THEN RAISE EXCEPTION 'M43_HASH_NUMBER_UNSUPPORTED'; END IF; RETURN '0'; END IF;
+ plain:=trim_scale(abs(f)::text::numeric)::text;
+ IF f<0 THEN sign:='-'; END IF;
+ IF abs(f)>=0.000001 AND abs(f)<1e21 THEN result:=sign||plain;
+ ELSE
+  integer_part:=split_part(plain,'.',1); fractional_part:=split_part(plain,'.',2);
+  IF integer_part<>'0' THEN exponent:=length(integer_part)-1;digits:=integer_part||fractional_part;
+  ELSE exponent:=-1-(length(fractional_part)-length(ltrim(fractional_part,'0')));digits:=ltrim(fractional_part,'0'); END IF;
+  digits:=rtrim(digits,'0');
+  result:=sign||substr(digits,1,1)||CASE WHEN length(digits)>1 THEN '.'||substr(digits,2) ELSE '' END||'e'||CASE WHEN exponent>=0 THEN '+' ELSE '' END||exponent::text;
+ END IF;
+ IF n IS DISTINCT FROM result::numeric THEN RAISE EXCEPTION 'M43_HASH_NUMBER_NOT_JS_WIRE'; END IF;
+ RETURN result;
+END $$;
+
+-- Matches the unmodified client's canonicalization; unsupported non-JS JSON
+-- numbers fail closed rather than being rounded or silently normalized.
 CREATE FUNCTION public.zezms_m43_canonical(v jsonb) RETURNS text
 LANGUAGE plpgsql IMMUTABLE SET search_path='' AS $$
 DECLARE t text:=jsonb_typeof(v); out text; n numeric; k text;
@@ -43,12 +73,7 @@ BEGIN
    WHERE key NOT IN ('payloadHash','outboxState','attempts','lastAttempt','lastError','_legacyPayload');
   RETURN out;
  ELSIF t='number' THEN
-  n:=v::text::numeric;
-  IF abs(n)>9007199254740991 OR (n<>trunc(n) AND
-    (abs(n)<0.000001 OR scale(trim_scale(n))>8 OR (n::double precision)::text::numeric<>n)) THEN
-   RAISE EXCEPTION 'M43_HASH_NUMBER_UNSUPPORTED';
-  END IF;
-  RETURN trim_scale(n)::text;
+  RETURN public.zezms_m43_number(v::text::numeric);
  END IF;
  RETURN v::text;
 END $$;
@@ -155,6 +180,7 @@ BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'M43_AUTH_REQUIRED'; END IF;
  SELECT * INTO e FROM public.zezms_m43_reconciliation_evidence WHERE evidence_id=p_evidence_id AND owner_id=auth.uid();
  IF NOT FOUND THEN RAISE EXCEPTION 'M43_EVIDENCE_UNAVAILABLE'; END IF;
+ IF NOT public.zezms_has_business_role(e.business_id,ARRAY['OWNER']) THEN RAISE EXCEPTION 'M43_ACTIVE_OWNER_REQUIRED'; END IF;
  SELECT * INTO scope FROM public.zezms_m5a4_resolve_device(p_operation->>'deviceId',ARRAY['ACTIVE']);
  IF scope.owner_id IS DISTINCT FROM auth.uid() OR scope.business_id IS DISTINCT FROM e.business_id
   OR scope.branch_id IS DISTINCT FROM e.branch_id OR p_operation->>'deviceId' IS DISTINCT FROM e.device_id THEN RAISE EXCEPTION 'M43_OWNER_SCOPE'; END IF;
