@@ -1,0 +1,1215 @@
+{
+  "columns": [
+    {
+      "type": "uuid",
+      "table": "zezms_branches",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_branches",
+      "column": "business_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_branches",
+      "column": "name",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_branches",
+      "column": "code",
+      "nullable": "NO"
+    },
+    {
+      "type": "boolean",
+      "table": "zezms_branches",
+      "column": "is_primary",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_branches",
+      "column": "status",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_branches",
+      "column": "address",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_branches",
+      "column": "telephone",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_branches",
+      "column": "created_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_branches",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_business_devices",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_business_devices",
+      "column": "business_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_business_devices",
+      "column": "user_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_business_devices",
+      "column": "device_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_business_devices",
+      "column": "device_name",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_business_devices",
+      "column": "platform",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_business_devices",
+      "column": "app_version",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_business_devices",
+      "column": "last_seen_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_business_devices",
+      "column": "revoked_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_business_devices",
+      "column": "revoked_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_business_devices",
+      "column": "revocation_reason",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_business_devices",
+      "column": "metadata",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_business_devices",
+      "column": "created_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_business_devices",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_access",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_access",
+      "column": "business_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_access",
+      "column": "owner_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_access",
+      "column": "branch_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_access",
+      "column": "device_user_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_access",
+      "column": "device_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_access",
+      "column": "device_name",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_access",
+      "column": "status",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_access",
+      "column": "pairing_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_access",
+      "column": "platform",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_access",
+      "column": "app_version",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_access",
+      "column": "last_seen_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_access",
+      "column": "revoked_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_access",
+      "column": "revoked_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_access",
+      "column": "revocation_reason",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_device_access",
+      "column": "metadata",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_access",
+      "column": "created_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_access",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "business_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "owner_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "branch_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "device_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "device_user_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "pairing_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "lifecycle_state",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "enrollment_mode",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "replaces_lifecycle_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "replacement_lifecycle_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "device_name",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "platform",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "app_version",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "checkpoint_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_device_lifecycle",
+      "column": "checkpoint_cursor",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "checkpoint_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_device_lifecycle",
+      "column": "cloud_head_cursor",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_device_lifecycle",
+      "column": "verified_cursor",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "operational_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "extended_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_device_lifecycle",
+      "column": "collection_fingerprints",
+      "nullable": "NO"
+    },
+    {
+      "type": "boolean",
+      "table": "zezms_device_lifecycle",
+      "column": "integrity_ok",
+      "nullable": "NO"
+    },
+    {
+      "type": "integer",
+      "table": "zezms_device_lifecycle",
+      "column": "queue_count",
+      "nullable": "NO"
+    },
+    {
+      "type": "integer",
+      "table": "zezms_device_lifecycle",
+      "column": "failed_count",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "requested_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "claimed_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "verified_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "activated_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "retired_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "revoked_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "retired_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_device_lifecycle",
+      "column": "revoked_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_device_lifecycle",
+      "column": "revocation_reason",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_device_lifecycle",
+      "column": "revision",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_device_lifecycle",
+      "column": "metadata",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "created_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_device_lifecycle",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_checkpoints",
+      "column": "owner_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_checkpoints",
+      "column": "checkpoint_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_sync_checkpoints",
+      "column": "checkpoint_cursor",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_checkpoints",
+      "column": "protocol_version",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_checkpoints",
+      "column": "rules_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_checkpoints",
+      "column": "identity_registry_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_sync_checkpoints",
+      "column": "payload",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_checkpoints",
+      "column": "payload_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_sync_checkpoints",
+      "column": "collection_fingerprints",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_checkpoints",
+      "column": "created_by_device",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_checkpoints",
+      "column": "created_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_checkpoints",
+      "column": "superseded_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_checkpoints",
+      "column": "business_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_checkpoints",
+      "column": "branch_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_checkpoints",
+      "column": "scope_type",
+      "nullable": "YES"
+    },
+    {
+      "type": "integer",
+      "table": "zezms_sync_checkpoints",
+      "column": "minimum_client_generation",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_counters",
+      "column": "owner_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_counters",
+      "column": "collection",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_counters",
+      "column": "entity_key",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_counters",
+      "column": "field_name",
+      "nullable": "NO"
+    },
+    {
+      "type": "numeric",
+      "table": "zezms_sync_counters",
+      "column": "value",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_counters",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_sync_operations",
+      "column": "seq",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_operations",
+      "column": "owner_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_operations",
+      "column": "op_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_operations",
+      "column": "device_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_sync_operations",
+      "column": "device_seq",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_operations",
+      "column": "kind",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_sync_operations",
+      "column": "payload",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_operations",
+      "column": "client_created_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_operations",
+      "column": "created_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_operations",
+      "column": "business_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_operations",
+      "column": "branch_id",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "zezms_sync_state",
+      "column": "owner_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_sync_state",
+      "column": "payload",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_sync_state",
+      "column": "revision",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_state",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_state",
+      "column": "updated_by",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_sync_state",
+      "column": "operation_cursor",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_state",
+      "column": "sync_mode",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_state",
+      "column": "protocol_version",
+      "nullable": "NO"
+    },
+    {
+      "type": "integer",
+      "table": "zezms_sync_state",
+      "column": "minimum_client_generation",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_state",
+      "column": "rules_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_state",
+      "column": "identity_registry_hash",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "zezms_sync_state",
+      "column": "capabilities",
+      "nullable": "NO"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_sync_state",
+      "column": "m43_activation_cursor",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_state",
+      "column": "m43_activated_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "bigint",
+      "table": "zezms_sync_state",
+      "column": "m44_activation_cursor",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "zezms_sync_state",
+      "column": "m44_activated_at",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "zezms_sync_state",
+      "column": "m44_activated_by",
+      "nullable": "YES"
+    }
+  ],
+  "policies": [
+    {
+      "name": "Members can read business branches",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_branches",
+      "using": "zezms_is_active_business_member(business_id)",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "Members can read registered devices",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_business_devices",
+      "using": "zezms_is_active_business_member(business_id)",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "Paired devices can read registered devices",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_business_devices",
+      "using": "(EXISTS ( SELECT 1\n   FROM (zezms_device_lifecycle l\n     JOIN zezms_device_access a ON (((a.business_id = l.business_id) AND (a.device_id = l.device_id))))\n  WHERE ((a.device_user_id = auth.uid()) AND (a.status = 'ACTIVE'::text) AND (a.revoked_at IS NULL) AND (l.lifecycle_state = 'ACTIVE'::text) AND (l.business_id = zezms_business_devices.business_id))))",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "M5A3 owners read device access",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_device_access",
+      "using": "(zezms_has_business_role(business_id, ARRAY['OWNER'::text, 'ADMIN'::text]) OR (device_user_id = auth.uid()))",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "M5A4 owners read lifecycle",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_device_lifecycle",
+      "using": "zezms_has_business_role(business_id, ARRAY['OWNER'::text, 'ADMIN'::text])",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "zezms_sync_checkpoints_owner_select",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_checkpoints",
+      "using": "(owner_id = auth.uid())",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "M5A3 paired devices read counters",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_counters",
+      "using": "((owner_id = auth.uid()) OR zezms_m5a3_is_active_device_for_owner(owner_id, ''::text))",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "ZEZMS owner can read counters",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_counters",
+      "using": "((( SELECT auth.uid() AS uid) IS NOT NULL) AND (( SELECT auth.uid() AS uid) = owner_id))",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "M5A3 paired devices read operations",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_operations",
+      "using": "((owner_id = auth.uid()) OR zezms_m5a3_is_active_device_for_owner(owner_id, ''::text))",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "ZEZMS owner can read operations",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_operations",
+      "using": "((( SELECT auth.uid() AS uid) IS NOT NULL) AND (( SELECT auth.uid() AS uid) = owner_id))",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "M5A3 paired devices read sync state",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_state",
+      "using": "((owner_id = auth.uid()) OR zezms_m5a3_is_active_device_for_owner(owner_id, ''::text))",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "ZEZMS owner can delete sync state",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_state",
+      "using": "(( SELECT auth.uid() AS uid) = owner_id)",
+      "command": "DELETE",
+      "with_check": null
+    },
+    {
+      "name": "ZEZMS owner can insert sync state",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_state",
+      "using": null,
+      "command": "INSERT",
+      "with_check": "(( SELECT auth.uid() AS uid) = owner_id)"
+    },
+    {
+      "name": "ZEZMS owner can read sync state",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_state",
+      "using": "(( SELECT auth.uid() AS uid) = owner_id)",
+      "command": "SELECT",
+      "with_check": null
+    },
+    {
+      "name": "ZEZMS owner can update sync state",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "zezms_sync_state",
+      "using": "(( SELECT auth.uid() AS uid) = owner_id)",
+      "command": "UPDATE",
+      "with_check": "(( SELECT auth.uid() AS uid) = owner_id)"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "zezms_branches_business_id_code_key",
+      "table": "zezms_branches",
+      "definition": "UNIQUE (business_id, code)"
+    },
+    {
+      "name": "zezms_branches_business_id_fkey",
+      "table": "zezms_branches",
+      "definition": "FOREIGN KEY (business_id) REFERENCES zezms_businesses(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_branches_pkey",
+      "table": "zezms_branches",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "zezms_branches_status_check",
+      "table": "zezms_branches",
+      "definition": "CHECK ((status = ANY (ARRAY['ACTIVE'::text, 'INACTIVE'::text, 'CLOSED'::text])))"
+    },
+    {
+      "name": "zezms_business_devices_business_id_device_id_key",
+      "table": "zezms_business_devices",
+      "definition": "UNIQUE (business_id, device_id)"
+    },
+    {
+      "name": "zezms_business_devices_business_id_fkey",
+      "table": "zezms_business_devices",
+      "definition": "FOREIGN KEY (business_id) REFERENCES zezms_businesses(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_business_devices_pkey",
+      "table": "zezms_business_devices",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "zezms_business_devices_revoked_by_fkey",
+      "table": "zezms_business_devices",
+      "definition": "FOREIGN KEY (revoked_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_business_devices_user_id_fkey",
+      "table": "zezms_business_devices",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_device_access_branch_id_fkey",
+      "table": "zezms_device_access",
+      "definition": "FOREIGN KEY (branch_id) REFERENCES zezms_branches(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_device_access_business_id_device_id_key",
+      "table": "zezms_device_access",
+      "definition": "UNIQUE (business_id, device_id)"
+    },
+    {
+      "name": "zezms_device_access_business_id_fkey",
+      "table": "zezms_device_access",
+      "definition": "FOREIGN KEY (business_id) REFERENCES zezms_businesses(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_device_access_device_user_id_fkey",
+      "table": "zezms_device_access",
+      "definition": "FOREIGN KEY (device_user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_device_access_device_user_id_key",
+      "table": "zezms_device_access",
+      "definition": "UNIQUE (device_user_id)"
+    },
+    {
+      "name": "zezms_device_access_owner_id_fkey",
+      "table": "zezms_device_access",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_device_access_pairing_id_fkey",
+      "table": "zezms_device_access",
+      "definition": "FOREIGN KEY (pairing_id) REFERENCES zezms_device_pairing_codes(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_device_access_pkey",
+      "table": "zezms_device_access",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "zezms_device_access_revoked_by_fkey",
+      "table": "zezms_device_access",
+      "definition": "FOREIGN KEY (revoked_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_device_access_status_check",
+      "table": "zezms_device_access",
+      "definition": "CHECK ((status = ANY (ARRAY['ACTIVE'::text, 'REVOKED'::text])))"
+    },
+    {
+      "name": "zezms_device_lifecycle_branch_id_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (branch_id) REFERENCES zezms_branches(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_device_lifecycle_business_id_device_id_key",
+      "table": "zezms_device_lifecycle",
+      "definition": "UNIQUE (business_id, device_id)"
+    },
+    {
+      "name": "zezms_device_lifecycle_business_id_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (business_id) REFERENCES zezms_businesses(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_device_lifecycle_device_user_id_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (device_user_id) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_device_lifecycle_enrollment_mode_check",
+      "table": "zezms_device_lifecycle",
+      "definition": "CHECK ((enrollment_mode = ANY (ARRAY['ADD'::text, 'REPLACEMENT'::text, 'INITIAL'::text])))"
+    },
+    {
+      "name": "zezms_device_lifecycle_lifecycle_state_check",
+      "table": "zezms_device_lifecycle",
+      "definition": "CHECK ((lifecycle_state = ANY (ARRAY['ENROLLING'::text, 'BOOTSTRAPPING'::text, 'VERIFYING'::text, 'ACTIVE'::text, 'RETIRED'::text, 'REVOKED'::text])))"
+    },
+    {
+      "name": "zezms_device_lifecycle_owner_id_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_device_lifecycle_pairing_id_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (pairing_id) REFERENCES zezms_device_pairing_codes(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_device_lifecycle_pkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "zezms_device_lifecycle_replacement_lifecycle_id_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (replacement_lifecycle_id) REFERENCES zezms_device_lifecycle(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "zezms_device_lifecycle_replaces_lifecycle_id_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (replaces_lifecycle_id) REFERENCES zezms_device_lifecycle(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "zezms_device_lifecycle_retired_by_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (retired_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_device_lifecycle_revoked_by_fkey",
+      "table": "zezms_device_lifecycle",
+      "definition": "FOREIGN KEY (revoked_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "zezms_sync_checkpoints_mb3_branch_fk",
+      "table": "zezms_sync_checkpoints",
+      "definition": "FOREIGN KEY (branch_id) REFERENCES zezms_branches(id) NOT VALID"
+    },
+    {
+      "name": "zezms_sync_checkpoints_mb3_business_fk",
+      "table": "zezms_sync_checkpoints",
+      "definition": "FOREIGN KEY (business_id) REFERENCES zezms_businesses(id) NOT VALID"
+    },
+    {
+      "name": "zezms_sync_checkpoints_pkey",
+      "table": "zezms_sync_checkpoints",
+      "definition": "PRIMARY KEY (owner_id, checkpoint_id)"
+    },
+    {
+      "name": "zezms_sync_counters_owner_id_fkey",
+      "table": "zezms_sync_counters",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_sync_counters_pkey",
+      "table": "zezms_sync_counters",
+      "definition": "PRIMARY KEY (owner_id, collection, entity_key, field_name)"
+    },
+    {
+      "name": "zezms_sync_operations_mb3_branch_fk",
+      "table": "zezms_sync_operations",
+      "definition": "FOREIGN KEY (branch_id) REFERENCES zezms_branches(id) NOT VALID"
+    },
+    {
+      "name": "zezms_sync_operations_mb3_business_fk",
+      "table": "zezms_sync_operations",
+      "definition": "FOREIGN KEY (business_id) REFERENCES zezms_businesses(id) NOT VALID"
+    },
+    {
+      "name": "zezms_sync_operations_owner_id_fkey",
+      "table": "zezms_sync_operations",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_sync_operations_owner_id_op_id_key",
+      "table": "zezms_sync_operations",
+      "definition": "UNIQUE (owner_id, op_id)"
+    },
+    {
+      "name": "zezms_sync_operations_pkey",
+      "table": "zezms_sync_operations",
+      "definition": "PRIMARY KEY (seq)"
+    },
+    {
+      "name": "zezms_sync_state_owner_id_fkey",
+      "table": "zezms_sync_state",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "zezms_sync_state_pkey",
+      "table": "zezms_sync_state",
+      "definition": "PRIMARY KEY (owner_id)"
+    }
+  ],
+  "table_security": [
+    {
+      "table": "zezms_branches",
+      "triggers": [
+        "CREATE TRIGGER zezms_branches_updated_at BEFORE UPDATE ON public.zezms_branches FOR EACH ROW EXECUTE FUNCTION zezms_set_updated_at()"
+      ],
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "table": "zezms_business_devices",
+      "triggers": [
+        "CREATE TRIGGER zezms_business_devices_updated_at BEFORE UPDATE ON public.zezms_business_devices FOR EACH ROW EXECUTE FUNCTION zezms_set_updated_at()"
+      ],
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "table": "zezms_device_access",
+      "triggers": [],
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "table": "zezms_device_lifecycle",
+      "triggers": [
+        "CREATE TRIGGER zezms_device_lifecycle_updated_at BEFORE UPDATE ON public.zezms_device_lifecycle FOR EACH ROW EXECUTE FUNCTION zezms_set_updated_at()",
+        "CREATE TRIGGER zezms_mb3_lifecycle_branch_data_plane_guard_before BEFORE INSERT OR UPDATE OF branch_id, lifecycle_state ON public.zezms_device_lifecycle FOR EACH ROW EXECUTE FUNCTION zezms_mb3_lifecycle_branch_data_plane_guard()"
+      ],
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "table": "zezms_sync_checkpoints",
+      "triggers": [],
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "table": "zezms_sync_counters",
+      "triggers": [],
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "table": "zezms_sync_operations",
+      "triggers": [],
+      "rls_forced": false,
+      "rls_enabled": true
+    },
+    {
+      "table": "zezms_sync_state",
+      "triggers": [],
+      "rls_forced": false,
+      "rls_enabled": true
+    }
+  ]
+}

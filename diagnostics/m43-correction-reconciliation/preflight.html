@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://*.supabase.co http://127.0.0.1:*; img-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<title>TradeFlow — read-only correction preflight</title><link rel="stylesheet" href="preflight.css"></head>
+<body><main><p class="label">TradeFlow · Owner review</p><h1>Read-only correction preflight</h1>
+<p>Check the preserved November 1 correction and fresh cloud evidence. This page never stages, uploads or changes records, refreshes a session, or starts synchronization.</p>
+<p class="small">It reads saved local records. It does not recover the missing original operation or create another correction; the controlled delivery coordinator must separately recheck runtime equality and atomic server gates.</p>
+<p id="mode">Review build. Not deployed. Operational hosting must be on the app’s origin <strong>outside its service-worker scope</strong>. Opening this page does not open TradeFlow.</p>
+<label for="trace">Optional existing network trace (.har): stays in this tab</label><input id="trace" type="file" accept=".har,.json,application/json"><p class="small">Used only to identify an earlier HTTP400 when browser resource timing does not expose it. Request bodies, credentials and records are never displayed or uploaded.</p>
+<button id="run" type="button">Run read-only preflight</button><p id="progress" role="status" aria-live="polite"></p>
+<section aria-labelledby="decision"><h2 id="decision">Not run</h2><ul id="blockers"></ul><ul id="http"></ul></section>
+<p class="small">GO means the evidence supports a separate Owner review of guarded delivery. It is not permission to execute it. A changing snapshot or missing independent proof returns NO-GO.</p>
+</main><script src="preflight-core.js"></script><script src="preflight-browser.js"></script><script src="preflight-page.js"></script></body></html>

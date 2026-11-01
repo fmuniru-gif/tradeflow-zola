@@ -55,12 +55,12 @@ test('assembled navigation matches reviewed source; all other shell bytes and em
   const encoded=shell.match(navPattern)[0];
   const decoded=Buffer.from([...encoded.matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(m=>m[1]).join(''),'base64').toString('utf8');
   assert.equal(decoded,read('js/navigation-v3101-r68.js'));
-  assert.equal(stripDelivery(shell).replace(navPattern,'NAVIGATION_ONLY'),prior.replace(navPattern,'NAVIGATION_ONLY'));
+  assert.equal(stripDelivery(require('../tools/m43-inverse-identity-fix.cjs').originalShell(shell)).replace(navPattern,'NAVIGATION_ONLY'),prior.replace(navPattern,'NAVIGATION_ONLY'));
 });
 
 test('all protected production files remain byte-equivalent, including Stock Balance and release lifecycle',()=>{
   const files=execFileSync('git',['ls-tree','-r','--name-only',production],{cwd:root,encoding:'utf8'}).trim().split(/\r?\n/);
-  const allowed=new Set(['index.html','js/navigation-v3101-r68.js','js/management-intelligence-v380.js','js/stock-velocity-v390.js','js/owner-maintenance-v373.js','tests/desktop-ui-performance.browser.cjs','tests/prelogin-release.test.cjs','sw.js','tests/desktop-ui-performance.test.cjs','tests/prebranch-functional-rollback.test.cjs','tests/prebranch-functional-rollback.browser.cjs','tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs']);
+  const allowed=new Set(['index.html','js/navigation-v3101-r68.js','js/management-intelligence-v380.js','js/stock-velocity-v390.js','js/owner-maintenance-v373.js','tests/desktop-ui-performance.browser.cjs','tests/prelogin-release.test.cjs','sw.js','tests/desktop-ui-performance.test.cjs','tests/prebranch-functional-rollback.test.cjs','tests/prebranch-functional-rollback.browser.cjs','tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs','tests/r70w-source-proof.cjs','tests/remaining-tabs-performance.test.cjs','tests/pr11-cache-delivery.test.cjs']);
   for(const file of files){
     if(allowed.has(file))continue;
     assert.equal(read(file),old(file),'Protected or unrelated source changed: '+file);

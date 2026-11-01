@@ -65,7 +65,7 @@ test('eligible referenced receipt rows avoid the old per-receipt whole-page spli
 });
 
 test('assembled changes are exactly the reviewed presentation edits, while every original embedded module remains intact',()=>{
-  const before=old('index.html').toString('utf8'),after=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  const before=old('index.html').toString('utf8'),after=require('../tools/m43-inverse-identity-fix.cjs').originalShell(fs.readFileSync(path.join(root,'index.html'),'utf8'));
   const embedded=source=>new Map([...source.matchAll(/const ([A-Z0-9_]+_B64)=([\s\S]*?);\s*(?=const|function|let|var|\/\/)/g)].map(m=>[m[1],m[2]]));
   const beforeModules=embedded(before),afterModules=embedded(after);assert.ok(beforeModules.size>20);
   for(const [key,value] of beforeModules)assert.equal(afterModules.get(key),value,key);

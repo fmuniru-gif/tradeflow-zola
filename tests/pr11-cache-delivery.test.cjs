@@ -8,8 +8,10 @@ const read=name=>delivery.assetBytes(name).toString('utf8');
 const old=name=>execFileSync('git',['show',base+':'+name],{cwd:root,maxBuffer:32*1024*1024});
 
 test('delivery shell changes are exactly cache identity, byte verification, metadata and coupled PR11 modules',()=>{
-  assert.equal(delivery.stripDelivery(read('index.html')),delivery.normalized(old('index.html').toString()));
-  assert.equal(read('index.html'),delivery.finishShell(delivery.applyDelivery(old('index.html').toString())));
+  const fix=require('../tools/m43-inverse-identity-fix.cjs');
+  assert.equal(delivery.stripDelivery(fix.originalShell(read('index.html'))),delivery.normalized(old('index.html').toString()));
+  const patched=old('index.html').toString().replace(/const CLOUD_B64="([A-Za-z0-9+/=]+)";/,(_all,b64)=>'const CLOUD_B64="'+Buffer.from(fix.patch(Buffer.from(b64,'base64').toString('utf8'))).toString('base64')+'";');
+  assert.equal(read('index.html'),delivery.finishShell(delivery.applyDelivery(patched)));
   assert.deepEqual(delivery.build(true).delivery,delivery.DELIVERY);
 });
 
@@ -26,7 +28,7 @@ test('coupled modules have exactly the validated standalone PR11 bytes, even und
 test('all protected application sources and validated PR11 modules remain identical to production',()=>{
   const allowed=new Set(['index.html','sw.js','tests/desktop-ui-performance.test.cjs','tests/prelogin-release.test.cjs',
     'tests/prebranch-functional-rollback.test.cjs','tests/prebranch-functional-rollback.browser.cjs',
-    'tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs','js/owner-maintenance-v373.js','tests/ui-responsiveness.browser.cjs','tests/desktop-ui-performance.browser.cjs']);
+    'tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs','js/owner-maintenance-v373.js','tests/ui-responsiveness.browser.cjs','tests/desktop-ui-performance.browser.cjs','tests/pr11-cache-delivery.test.cjs','tests/r70w-source-proof.cjs','tests/remaining-tabs-performance.test.cjs']);
   const files=execFileSync('git',['ls-tree','-r','--name-only',base],{cwd:root,encoding:'utf8'}).trim().split('\n');
   for(const file of files){
     if(allowed.has(file))continue;
