@@ -68,29 +68,30 @@ test('concurrent sessions delivering the same ID return one receipt; different I
 });
 test('concurrent unrelated operation serializes under the owner lock; stale evidence rejects without partial stock changes',async()=>{
  const s=seed(),unrelated={...copy(s.evidence.operation),opId:'unrelated-concurrent',kind:'DATABASE_CHANGE',patches:[]};unrelated.payloadHash=s.f.sync._test.deterministicHash(unrelated);
- const first=asyncSQL(as(ids.owner,`BEGIN;SELECT 1 FROM public.zezms_sync_state WHERE owner_id=${q(ids.owner)} FOR UPDATE;${ordinary(unrelated)}SELECT pg_sleep(1);COMMIT;`));
- await new Promise(r=>setTimeout(r,150));const second=asyncSQL(as(ids.owner,rpc(s.evidence)));const [a,b]=await Promise.all([first,second]);
+ const first=asyncSQL(as(ids.owner,`SET application_name='synthetic-owner-lock-holder';BEGIN;${ordinary(unrelated)}SELECT pg_sleep(2);COMMIT;`));
+ const deadline=Date.now()+5000;while(sql("SELECT count(*) FROM pg_stat_activity WHERE application_name='synthetic-owner-lock-holder' AND wait_event='PgSleep';")!=='1'){if(Date.now()>deadline)throw Error('SYNTHETIC_LOCK_BARRIER_TIMEOUT');await new Promise(r=>setTimeout(r,20));}
+ const second=asyncSQL(as(ids.owner,rpc(s.evidence)));const [a,b]=await Promise.all([first,second]);
  assert.equal(a.code,0,a.error);assert.notEqual(b.code,0);assert.match(b.error,/CLOUD_HEAD_CHANGED/);assert.equal(sql("SELECT value FROM public.zezms_sync_counters WHERE entity_key='L1';"),'2');assert.equal(sql('SELECT count(*) FROM public.zezms_m43_correction_receipts;'),'0');
 });
 test('wrong owner/staff, revoked device, wrong protocol/hash/rules and forbidden evidence writes reject',()=>{
  let s=seed();for(const user of [ids.other,'77777777-7777-4777-8777-777777777777'])assert.throws(()=>sql(as(user,rpc(s.evidence))),/EVIDENCE_UNAVAILABLE/);
  assert.throws(()=>sql(as(ids.owner,'DELETE FROM public.zezms_m43_reconciliation_evidence;')),/permission denied/);
  assert.throws(()=>sql("SET ROLE anon;SELECT * FROM public.zezms_m43_deliver_preserved_correction(NULL,NULL);"),/permission denied/);
- for(const mutation of ["UPDATE public.zezms_business_devices SET revoked_at=now()","UPDATE public.zezms_device_lifecycle SET lifecycle_state='REVOKED'","UPDATE public.zezms_sync_state SET protocol_version='M4/4'","UPDATE public.zezms_sync_state SET rules_hash='wrong'","UPDATE public.zezms_sync_state SET identity_registry_hash='wrong'"]){s=seed();sql(mutation);const before=fingerprint();assert.throws(()=>sql(as(ids.owner,rpc(s.evidence))));assert.equal(fingerprint(),before);}
+ for(const [mutation,code] of [["UPDATE public.zezms_business_devices SET revoked_at=now()",/DEVICE_NOT_ACTIVE/],["UPDATE public.zezms_device_lifecycle SET lifecycle_state='REVOKED'",/DEVICE_NOT_ACTIVE/],["UPDATE public.zezms_sync_state SET protocol_version='M4/4'",/M43_PROTOCOL/],["UPDATE public.zezms_sync_state SET rules_hash='wrong'",/BOUND_OPERATION_MISMATCH/],["UPDATE public.zezms_sync_state SET identity_registry_hash='wrong'",/BOUND_OPERATION_MISMATCH/]]){s=seed();sql(mutation);const before=fingerprint();assert.throws(()=>sql(as(ids.owner,rpc(s.evidence))),code);assert.equal(fingerprint(),before);}
 });
 test('changed head, archived coverage, checkpoint/layer/product, missing/changed counter and malformed patches reject atomically',()=>{
- for(const mutation of [
-  "UPDATE public.zezms_sync_state SET revision=1",
-  "UPDATE public.zezms_sync_checkpoints SET payload=jsonb_set(payload,'{stockRows,0,productId}','\"different\"')",
-  "UPDATE public.zezms_m43_reconciliation_evidence SET operational_month=10",
-  "UPDATE public.zezms_m43_reconciliation_evidence SET product=jsonb_set(product,'{id}','\"different\"')",
-  "UPDATE public.zezms_sync_counters SET value=1 WHERE entity_key='L1'",
-  "DELETE FROM public.zezms_sync_counters WHERE entity_key='L1'",
-  "UPDATE public.zezms_m43_reconciliation_evidence SET audit=jsonb_set(audit,'{createdAt}','\"different\"')",
-  "UPDATE public.zezms_m43_reconciliation_evidence SET operation=jsonb_set(operation,'{patches,0,changes,0,before}','1')"
- ]){const s=seed();sql(mutation);const before=fingerprint();assert.throws(()=>sql(as(ids.owner,rpc(s.evidence))));assert.equal(fingerprint(),before);}
+ for(const [mutation,code] of [
+  ["UPDATE public.zezms_sync_state SET revision=1",/CLOUD_HEAD_CHANGED/],
+  ["UPDATE public.zezms_sync_checkpoints SET payload=jsonb_set(payload,'{stockRows,0,productId}','\"different\"')",/CHECKPOINT_UNPROVEN/],
+  ["UPDATE public.zezms_m43_reconciliation_evidence SET operational_month=10",/INDEPENDENT_AUDIT_BINDING/],
+  ["UPDATE public.zezms_m43_reconciliation_evidence SET product=jsonb_set(product,'{id}','\"different\"')",/INDEPENDENT_AUDIT_BINDING/],
+  ["UPDATE public.zezms_sync_counters SET value=1 WHERE entity_key='L1'",/STOCK_BEFORE_CHANGED/],
+  ["DELETE FROM public.zezms_sync_counters WHERE entity_key='L1'",/STOCK_BEFORE_CHANGED/],
+  ["UPDATE public.zezms_m43_reconciliation_evidence SET audit=jsonb_set(audit,'{createdAt}','\"different\"')",/PATCH_SET/],
+  ["UPDATE public.zezms_m43_reconciliation_evidence SET operation=jsonb_set(operation,'{patches,0,changes,0,before}','1')",/BOUND_OPERATION_MISMATCH/]
+ ]){const s=seed();sql(mutation);const before=fingerprint();assert.throws(()=>sql(as(ids.owner,rpc(s.evidence))),code);assert.equal(fingerprint(),before);}
  const s=seed();assert.throws(()=>sql('UPDATE public.zezms_m43_reconciliation_evidence SET archived_coverage_complete=false;'),/check constraint/);
- for(const kind of ['extra','insert-layer','wrong-hash']){const op=copy(s.evidence.operation);if(kind==='extra')op.patches.push({action:'root-set',root:'cashBalances',value:{}});if(kind==='insert-layer')op.patches[0].action='insert';op.payloadHash=kind==='wrong-hash'?'wrong':s.f.sync._test.deterministicHash(op);assert.throws(()=>sql(as(ids.owner,rpc(s.evidence,op))));}
+ for(const kind of ['extra','insert-layer','wrong-hash']){const op=copy(s.evidence.operation);if(kind==='extra')op.patches.push({action:'root-set',root:'cashBalances',value:{}});if(kind==='insert-layer')op.patches[0].action='insert';op.payloadHash=kind==='wrong-hash'?'wrong':s.f.sync._test.deterministicHash(op);sql(`UPDATE public.zezms_m43_reconciliation_evidence SET operation=${j(op)};`);assert.throws(()=>sql(as(ids.owner,rpc(s.evidence,op))),kind==='wrong-hash'?/BOUND_OPERATION_MISMATCH/:/PATCH_SET/);}
 });
 test('exception after counter mutation rolls back counter, operation and receipt together',()=>{
  const s=seed();sql("CREATE FUNCTION public.synthetic_abort() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'SYNTHETIC_ABORT_AFTER_INSERT';END$$;CREATE TRIGGER synthetic_abort AFTER INSERT ON public.zezms_sync_operations FOR EACH ROW EXECUTE FUNCTION public.synthetic_abort();");
