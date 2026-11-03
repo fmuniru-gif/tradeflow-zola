@@ -33,7 +33,7 @@ test('actual shell loads the new recovery coordinator and both guards despite un
   const result=await page.evaluate(()=>({delivery:document.querySelector('meta[name="zezms-delivery"]')?.content,
    guards:[...document.querySelectorAll('script[data-zezms-recovery-module]')].map(x=>x.getAttribute('data-zezms-recovery-module')),
    bridge:['pauseForCanonicalRecovery','prepareCanonicalRecovery','inspectCanonicalRecoveryQueue'].every(k=>typeof ZEZMS.cloudSync[k]==='function')}));
-  assert.equal(result.delivery,'20261103-canonical-recovery-r1');assert.equal(result.bridge,true);
+  assert.equal(result.delivery,require('../tools/build-pr11-delivery.cjs').DELIVERY);assert.equal(result.bridge,true);
   assert.deepEqual(result.guards,['bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js']);
  }finally{await context.close();}
 });

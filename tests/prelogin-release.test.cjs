@@ -28,7 +28,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261103-canonical-recovery-r1':release)),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261103-approved-document-branding-r1':release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -61,6 +61,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'js/document-branding.js','assets/zez-logo-approved-20261103.jpg','tools/document-branding-transform.cjs','DOCUMENT_BRANDING_UPDATE.html','tests/document-branding.test.cjs','tests/document-branding.browser.cjs','docs/document-branding.md','.github/workflows/document-branding-review.yml',
     'js/canonical-restore.js','js/canonical-recovery-sync.js','js/self-service-recovery.js',
     'tests/canonical-recovery.test.cjs','tests/canonical-recovery-sync.test.cjs','tests/canonical-recovery.browser.cjs','tests/recovery-source-proof.cjs','tests/recovery-source-proof.test.cjs',
     'docs/canonical-recovery-workflow.md','RECOVERY_WORKFLOW_UPDATE.html','tools/build-canonical-recovery.cjs',
