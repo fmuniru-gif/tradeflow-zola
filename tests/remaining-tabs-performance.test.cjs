@@ -70,7 +70,7 @@ test('assembled changes are exactly the reviewed presentation edits, while every
   const embedded=source=>new Map([...source.matchAll(/const ([A-Z0-9_]+_B64)=([\s\S]*?);\s*(?=const|function|let|var|\/\/)/g)].map(m=>[m[1],m[2]]));
   const beforeModules=embedded(before),afterModules=embedded(after);assert.ok(beforeModules.size>20);
   for(const [key,value] of beforeModules)assert.equal(afterModules.get(key),value,key);
-  const original=delivery.assembledShell(before),actual=recoveryProof.withoutRecoveryGuardCoupling(delivery.assembledShell(after));
+  const original=delivery.assembledShell(before),actual=recoveryProof.withoutRecoveryGuardCoupling(delivery.assembledShell(after,{withoutDocumentBranding:true}));
   const expected=transformMainTables(transformRemainingTabs(original,raw.replace(/<\/script/gi,'<\\/script')),delivery.assetBytes('js/main-table-pages.js').toString('utf8').replace(/<\/script/gi,'<\\/script')).replace('content="20261027-pr12-raw-bytes-r1"','content="'+delivery.DELIVERY+'"');
   const owner=delivery.assetBytes('js/owner-maintenance-v373.js').toString('utf8').replace(/<\/script/gi,'<\\/script');
   const withCoupledOwner=expected.replace('<script src="js/owner-maintenance-v373.js?v=20260822-supplier-procurement-intelligence-r51"></script>',()=>'<script data-zezms-pr11-module="owner-maintenance-v373.js">\n'+owner+'\n</script>');

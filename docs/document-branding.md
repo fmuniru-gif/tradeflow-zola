@@ -1,0 +1,11 @@
+# Approved document branding — 3 November 2026
+
+The approved Zola Electronics Zone seal and **Buy the right one.** slogan now appear in receipts, invoices, waybills, quotations, purchase orders, proforma invoices, account statements and cash reports. PDFs repeat the seal and slogan on continuation pages and retain a faint, proportionate watermark. System-print documents wait for their header image to decode. Direct-print receipt/invoice/waybill HTML embeds the same approved JPEG used by its watermark, so printing does not depend on a remote logo request.
+
+The artwork comes from the previously approved `ZEZ_Approved_Website_Logo_Package.zip`, transparent seal, 930 × 930 pixels. The application asset is a white-backed JPEG encoding of that artwork, required by the existing offline PDF image encoder; its content and lettering were not redesigned. The original old-slogan watermark remains unchanged for protected historical application bundles.
+
+A shared presentation helper provides logo markup, slogan, PDF header positions, proportionate watermark placement, accurate Helvetica alignment, and spacing/wrapping for report label/value pairs. The checked delivery applies exact print-only replacements after assembling the original modules. All original embedded business/recovery modules and pre-existing standalone application scripts, images, and manifest remain byte-identical to production `4c1221ae4b1a815d5a6354a13a1c1ba01664d522`. There are no business-data migrations, backup rewrites, stock/account/cash changes, sync changes, or recovery changes.
+
+Delivery: `20261103-approved-document-branding-r1`. The four external print modules are coupled to the verified shell along with the shared helper. The approved artwork is a new immutable filename. All 81 assets have exact Git-byte digests; critical-install probes use their exact query-sensitive keys. Activation remains passive, with all prior app caches and device storage retained.
+
+Validation uses synthetic, isolated browser contexts with production access blocked. It generates all eight PDF types and a multi-page invoice offline; verifies image objects and slogans; checks that business records and queues remain unchanged; tests system/direct print HTML and embedded bridge images; and visually renders exported documents. No physical printer or live customer records are used by these checks.

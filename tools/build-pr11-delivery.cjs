@@ -4,10 +4,11 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),cryp
 const {execFileSync}=require('node:child_process');
 const {transformRemainingTabs}=require('./remaining-tabs-transform.cjs');
 const {transformMainTables}=require('./main-table-transform.cjs');
+const {edits:documentBrandingEdits,transformDocumentBranding}=require('./document-branding-transform.cjs');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261103-canonical-recovery-r1';
+const DELIVERY='20261103-approved-document-branding-r1';
 const assetMemo=new Map();
-const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
+const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js','pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js','document-branding.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
 const oldCache=`  async function cachePatched(source){
     if(!('caches' in window))return;
@@ -52,6 +53,18 @@ const versions=`    // PR11_DELIVERY_URLS_BEGIN
     }
     output=(${transformRemainingTabs.toString()})(output,safeInline(decodeBase64(DELIVERY_MODULES['remaining-tabs-presentation.js'])));
     output=(${transformMainTables.toString()})(output,safeInline(decodeBase64(DELIVERY_MODULES['main-table-pages.js'])));
+    // DOCUMENT_BRANDING_DELIVERY_BEGIN
+    const documentModules=['pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js'];
+    const documentSeen=[];
+    output=output.replace(new RegExp('<script src="([^"]+)"></'+'script>','g'),function(tag,src){
+      const file=src.split('?')[0].split('/').pop();
+      if(!documentModules.includes(file))return tag;
+      documentSeen.push(file);
+      return '<script data-zezms-document-module="'+file+'" data-document-origin="'+src+'">\\n'+safeInline(decodeBase64(DELIVERY_MODULES[file]))+'\\n</'+'script>';
+    });
+    if(documentSeen.length!==documentModules.length)throw Error('DOCUMENT_BRANDING_DELIVERY_MODULE_MISMATCH');
+    output=(${transformDocumentBranding.toString().replace(/<\/script/gi,'<\\/script')})(output,safeInline(decodeBase64(DELIVERY_MODULES['document-branding.js'])),${JSON.stringify(documentBrandingEdits())});
+    // DOCUMENT_BRANDING_DELIVERY_END
     output=output.replace('</head>','<meta name="zezms-delivery" content="'+DELIVERY+'"></head>');
     // PR11_DELIVERY_URLS_END
 `;
@@ -89,10 +102,11 @@ function applyDelivery(source){
   source=replaceOnce(source,oldCache,cache);
   return replaceOnce(source,'    return output;\n  }\n  function renderSource',versions+'    return output;\n  }\n  function renderSource');
 }
-function assembledShell(shell){
+function assembledShell(shell,options={}){
   shell=normalized(shell);
   const first=shell.indexOf('<script>')+8,last=shell.lastIndexOf('</script>');
   let script=shell.slice(first,last);
+  if(options.withoutDocumentBranding)script=script.replace(/    \/\/ DOCUMENT_BRANDING_DELIVERY_BEGIN[\s\S]*?    \/\/ DOCUMENT_BRANDING_DELIVERY_END\n/,'');
   script=replaceOnce(script,'  boot();\n}());','  globalThis.__assembled=patchBaseline(decodeBase64(VERIFIED_BASELINE_B64));\n}());');
   const context={URL,Request,Response,TextEncoder,TextDecoder,Uint8Array,atob,btoa,
     location:{origin:'https://delivery.invalid',pathname:'/index.html'},window:{},performance:{now:()=>0,mark(){},measure(){}}};
@@ -128,7 +142,7 @@ function finishWorker(worker,shell){
   const current=new Map(runtime.map(url=>[url.split('?')[0].replace(/^\.\//,''),'./'+url.replace(/^\.\//,'')]));
   for(const file of Object.keys(coupledModules))current.set('js/'+file,'./js/'+file+'?v='+DELIVERY);
   const oldAssets=[...worker.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
-  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),[...current.values()],['./MAIN_RESPONSIVENESS_UPDATE.html','./RECOVERY_WORKFLOW_UPDATE.html']))];
+  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),[...current.values()],['./MAIN_RESPONSIVENESS_UPDATE.html','./RECOVERY_WORKFLOW_UPDATE.html','./DOCUMENT_BRANDING_UPDATE.html','./assets/zez-logo-approved-20261103.jpg']))];
   worker=worker.replace(/const ASSETS = \[[\s\S]*?\];/,'const ASSETS = [\n'+assets.map(url=>"  '"+url+"',").join('\n')+'\n];');
   // Critical-install probes must use the same query-sensitive keys as precache.
   worker=worker.replace(/const CRITICAL_ASSETS = \[[\s\S]*?\];/,block=>block.replace(/'([^']+)'/g,(_match,url)=>"'"+(current.get(url.split('?')[0].replace(/^\.\//,''))||url)+"'"));
