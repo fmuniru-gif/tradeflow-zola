@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-b8a063a25d697956';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-3b2c4b3ee3898f85';
+const CACHE = 'zezms-pr11-delivery-20261026-5f278b46c68fbd8f';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-cf3d07476c753b40';
 const ASSETS = [
   './',
   './index.html',
@@ -98,8 +98,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261103-sync-resilience-performance-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "19b424a39c208cf0c283245be3a7baa05f70e3b0f33c8cbe0665f453bcbb2061",
-  "./index.html": "19b424a39c208cf0c283245be3a7baa05f70e3b0f33c8cbe0665f453bcbb2061",
+  "./": "af72da3729193d4c78afbdf20db53a7e90329674ee5dee6b39adc734d71341f0",
+  "./index.html": "af72da3729193d4c78afbdf20db53a7e90329674ee5dee6b39adc734d71341f0",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -179,7 +179,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/document-branding.js?v=20261103-sync-resilience-performance-r1": "87c41e8713fd1d5da881957bbcfe9e6c9cf36cc57fb00b479a2f7f84037c745b",
   "./DOCUMENT_BRANDING_UPDATE.html": "c0b64c75ca1d184613fac9654b052fed44f588aa56db627fa709d2f56000b9b3",
   "./assets/zez-logo-approved-20261103.jpg": "f007fadc269fa50d60c50ba3b7f08c2acec351fee1c2c3bb1f34659ba5d284d1",
-  "./js/sync-resilience.js?v=20261103-sync-resilience-performance-r1": "578e5a01aec9fddc5f3edccf97c340f90e2d16d27e841effdf94339010f25ed4",
+  "./js/sync-resilience.js?v=20261103-sync-resilience-performance-r1": "85156c7cd0413a0d25955a5542a8f2912294b2a47f1e84d4d9f19f3c29ecd779",
   "./js/desktop-presentation.js?v=20261103-sync-resilience-performance-r1": "be892864a926bed3d93a56cff9730ed869d52dc1ad59d6246a33b7fac15888cc",
   "./RESILIENCE_PERFORMANCE_UPDATE.html": "f7e9fd4e6100fbdc26d6c604b086f6a801c24cd1fb9ad892e7743574d05770dd"
 });

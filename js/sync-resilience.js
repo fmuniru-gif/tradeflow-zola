@@ -19,7 +19,13 @@
         timer = setTimeout(() => { const error = new Error('Sync request timed out; the operation remains queued until Cloud acknowledgement is verified.'); error.name = 'TimeoutError'; controller.abort(); reject(error); }, timeout);
       });
       try {
-        const response = await Promise.race([Promise.resolve().then(() => factory(controller.signal)), expired]);
+        const response = await Promise.race([Promise.resolve().then(() => {
+          const request = factory(controller.signal);
+          // The pinned SDK also retries GETs. Keep one bounded retry policy
+          // here so nested SDK/application attempts cannot multiply.
+          if (request && typeof request.retry === 'function') request.retry(false);
+          return request;
+        }), expired]);
         if (!response || typeof response !== 'object') throw new Error('ZEZMS_RESPONSE_INVALID');
         if (response.error) { const error = Object.assign(new Error(response.error.message || response.error.details || 'Cloud request failed'), response.error); error.status = response.status || error.status; throw error; }
         return response;

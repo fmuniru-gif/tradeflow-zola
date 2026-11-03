@@ -66,5 +66,9 @@ test('the pinned Supabase SDK retries an interrupted operation through the actua
     read:signal=>client.from('zezms_sync_operations').select('seq,op_id,payload,created_at').eq('owner_id','synthetic-owner').eq('op_id',operation.opId).maybeSingle().abortSignal(signal)});
    return result.server_seq;
   });assert.equal(result,21);assert.equal(posts,2);assert.equal(reads,2);assert.equal(stored.opId,'sdk-test');
+  let failedReads=0;
+  await f.context.route('**/rest/v1/bounded_read*',route=>{failedReads++;return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Synthetic unavailable'})});});
+  const message=await f.page.evaluate(async()=>{const client=supabase.createClient(location.origin,'synthetic-public-key',{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});try{await ZEZMS.syncResilience.create({sleep:async()=>{}}).read(signal=>client.from('bounded_read').select('*').abortSignal(signal));return '';}catch(error){return error.message;}});
+  assert.match(message,/unavailable/);assert.equal(failedReads,3,'SDK retries must not multiply the three-attempt application budget');
  }finally{await f.context.close();}
 });
