@@ -28,7 +28,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+release),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261103-canonical-recovery-r1':release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -61,6 +61,10 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'js/canonical-restore.js','js/canonical-recovery-sync.js','js/self-service-recovery.js',
+    'tests/canonical-recovery.test.cjs','tests/canonical-recovery-sync.test.cjs','tests/canonical-recovery.browser.cjs','tests/recovery-source-proof.cjs','tests/recovery-source-proof.test.cjs',
+    'docs/canonical-recovery-workflow.md','RECOVERY_WORKFLOW_UPDATE.html','tools/build-canonical-recovery.cjs',
+    '.github/workflows/canonical-recovery-review.yml',
     '.github/workflows/r70w-review-gates.yml',
     '.github/workflows/ui-performance-physical-count-review.yml',
     'js/shop-directory-recovery-core.js','js/shop-directory-recovery-runtime.js',
@@ -100,7 +104,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
   ].includes(name)));
   const previous=execFileSync('git',['show','origin/main:index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
   const embedded=[...previous.matchAll(/const ([A-Z0-9_]+_B64)="([^"]+)";/g)].map(match=>match[1]);
-  for(const name of embedded.filter(name=>!['PRELOGIN_VERIFIED_ACTIVATION_R70U_B64','CLOUD_B64','MANAGER_SCOPE_STAFF_LOGIN_B64','BRANCH_MANAGEMENT_R69_B64'].includes(name))){
+  for(const name of embedded.filter(name=>!['PRELOGIN_VERIFIED_ACTIVATION_R70U_B64','CLOUD_B64','MANAGER_SCOPE_STAFF_LOGIN_B64','BRANCH_MANAGEMENT_R69_B64','CANONICAL_RESTORE_B64','SELF_SERVICE_RECOVERY_R62W_B64'].includes(name))){
     const pattern=new RegExp('const '+name+'="([^"]+)";');
     assert.equal(index.match(pattern)?.[1],previous.match(pattern)?.[1],name+' changed');
   }

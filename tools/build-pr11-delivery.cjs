@@ -5,9 +5,9 @@ const {execFileSync}=require('node:child_process');
 const {transformRemainingTabs}=require('./remaining-tabs-transform.cjs');
 const {transformMainTables}=require('./main-table-transform.cjs');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261029-main-responsiveness-r1';
+const DELIVERY='20261103-canonical-recovery-r1';
 const assetMemo=new Map();
-const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
+const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
 const oldCache=`  async function cachePatched(source){
     if(!('caches' in window))return;
@@ -43,6 +43,12 @@ const versions=`    // PR11_DELIVERY_URLS_BEGIN
       const marker='<script src="'+before+'"></'+'script>';
       if(output.split(marker).length!==2)throw new Error('PR11_DELIVERY_SCRIPT_MARKER_MISMATCH: '+asset);
       output=output.replace(marker,'<script data-zezms-pr11-module="'+asset+'">\\n'+safeInline(decodeBase64(DELIVERY_MODULES[asset]))+'\\n</'+'script>');
+    }
+    for(const asset of ['bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js']){
+      const pattern=new RegExp('<script src="js/'+asset.replace(/\\./g,'\\\\.')+'\\\\?v=[^"]+"></'+'script>','g');
+      const matches=output.match(pattern)||[];
+      if(matches.length!==1)throw new Error('RECOVERY_DELIVERY_MARKER: '+asset);
+      output=output.replace(pattern,'<script data-zezms-recovery-module="'+asset+'">\\n'+safeInline(decodeBase64(DELIVERY_MODULES[asset]))+'\\n</'+'script>');
     }
     output=(${transformRemainingTabs.toString()})(output,safeInline(decodeBase64(DELIVERY_MODULES['remaining-tabs-presentation.js'])));
     output=(${transformMainTables.toString()})(output,safeInline(decodeBase64(DELIVERY_MODULES['main-table-pages.js'])));
@@ -122,8 +128,10 @@ function finishWorker(worker,shell){
   const current=new Map(runtime.map(url=>[url.split('?')[0].replace(/^\.\//,''),'./'+url.replace(/^\.\//,'')]));
   for(const file of Object.keys(coupledModules))current.set('js/'+file,'./js/'+file+'?v='+DELIVERY);
   const oldAssets=[...worker.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
-  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),[...current.values()],['./MAIN_RESPONSIVENESS_UPDATE.html']))];
+  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),[...current.values()],['./MAIN_RESPONSIVENESS_UPDATE.html','./RECOVERY_WORKFLOW_UPDATE.html']))];
   worker=worker.replace(/const ASSETS = \[[\s\S]*?\];/,'const ASSETS = [\n'+assets.map(url=>"  '"+url+"',").join('\n')+'\n];');
+  // Critical-install probes must use the same query-sensitive keys as precache.
+  worker=worker.replace(/const CRITICAL_ASSETS = \[[\s\S]*?\];/,block=>block.replace(/'([^']+)'/g,(_match,url)=>"'"+(current.get(url.split('?')[0].replace(/^\.\//,''))||url)+"'"));
   const hashes=workerHashes(worker,shell),bundle=sha(JSON.stringify(hashes));
   const hashBlock='// PR11_VERIFIED_ASSETS_BEGIN\nconst VERIFIED_ASSETS = Object.freeze('+JSON.stringify(hashes,null,2)+');\n// PR11_VERIFIED_ASSETS_END';
   return worker.replace(/const CACHE = '[^']+';/,"const CACHE = 'zezms-pr11-delivery-20261026-"+bundle.slice(0,16)+"';")

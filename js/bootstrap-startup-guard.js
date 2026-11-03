@@ -7,6 +7,11 @@
 
   function allowsEstablishedBusinessAccess() {
     try {
+      const recovery = ZEZMS.canonicalRestore;
+      if (recovery && typeof recovery.getState === 'function') {
+        const hold = recovery.getState();
+        if (hold.executing || hold.pending || hold.preparation) return false;
+      }
       const phase = ZEZMS.bootstrapPhaseA;
       if (!phase || typeof phase.inspect !== 'function' || phase.inspect().status !== 'ABSENT') return false;
       // A journal without a stage is an interrupted or inconsistent bootstrap.
