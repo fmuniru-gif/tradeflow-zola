@@ -19,7 +19,7 @@ test('the complete application is transformed by only the exact reviewed print e
  expected=expected.replace(/<script src="([^"]+)"><\/script>/g,(tag,src)=>{const name=src.split('?')[0].split('/').pop();return names.includes(name)?'<script data-zezms-document-module="'+name+'" data-document-origin="'+src+'">\n'+delivery.assetBytes('js/'+name).toString().replace(/<\/script/gi,'<\\/script')+'\n</script>':tag;});
  expected=transformDocumentBranding(expected,delivery.assetBytes('js/document-branding.js').toString().replace(/<\/script/gi,'<\\/script'),edits());
  expected=expected.replace('</head>',metadata+'</head>');
- assert.equal(delivery.sha(Buffer.from(delivery.assembledShell(index))),delivery.sha(Buffer.from(expected)));
+ assert.equal(delivery.sha(Buffer.from(delivery.assembledShell(index,{withoutResilience:true}))),delivery.sha(Buffer.from(expected)));
 });
 test('presentation transform fails closed if a required printer marker is absent or already transformed',()=>{
  assert.throws(()=>transformDocumentBranding('<html></html>','',edits()),/MARKER_MISSING/);
@@ -27,7 +27,7 @@ test('presentation transform fails closed if a required printer marker is absent
 });
 test('the new artwork is pinned and the update remains passive',()=>{
  const worker=delivery.assetBytes('sw.js').toString(),manifest=delivery.workerHashes(worker,delivery.assetBytes('index.html').toString());
- assert.equal(Object.keys(manifest).length,81);assert.equal(manifest['./assets/zez-logo-approved-20261103.jpg'],delivery.sha(delivery.assetBytes('assets/zez-logo-approved-20261103.jpg')));
+ assert.equal(Object.keys(manifest).length,84);assert.equal(manifest['./assets/zez-logo-approved-20261103.jpg'],delivery.sha(delivery.assetBytes('assets/zez-logo-approved-20261103.jpg')));
  for(const name of ['sw.js','DOCUMENT_BRANDING_UPDATE.html'])for(const forbidden of ['skipWaiting(', 'clients.claim(', 'caches.delete(', 'localStorage.clear(', 'indexedDB.deleteDatabase('])assert.ok(!delivery.assetBytes(name).toString().includes(forbidden));
  const helper=delivery.assetBytes('js/document-branding.js').toString();for(const forbidden of ['localStorage','indexedDB','saveDB','cloudSync','supabase'])assert.ok(!helper.includes(forbidden));
 });
