@@ -9,3 +9,5 @@ A shared presentation helper provides logo markup, slogan, PDF header positions,
 Delivery: `20261103-approved-document-branding-r1`. The four external print modules are coupled to the verified shell along with the shared helper. The approved artwork is a new immutable filename. All 81 assets have exact Git-byte digests; critical-install probes use their exact query-sensitive keys. Activation remains passive, with all prior app caches and device storage retained.
 
 Validation uses synthetic, isolated browser contexts with production access blocked. It generates all eight PDF types and a multi-page invoice offline; verifies image objects and slogans; checks that business records and queues remain unchanged; tests system/direct print HTML and embedded bridge images; and visually renders exported documents. No physical printer or live customer records are used by these checks.
+
+The Owner-requested follow-up changes A5 watermarks to fill the entire 148 × 210 mm page. The header seal retains its proportions, and A4 PDF watermarks retain their prior placement. See `sync-resilience-performance.md` for the subsequent delivery and validation.

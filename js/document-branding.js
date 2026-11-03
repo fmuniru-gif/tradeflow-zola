@@ -37,6 +37,8 @@
   }
   function pdfWatermark(pdf) {
     const image = pdf.watermark;
+    const dimensions = [pdf.width,pdf.height].sort((a,b)=>a-b);
+    if (Math.abs(dimensions[0]-419.53)<1 && Math.abs(dimensions[1]-595.28)<1) return 'q /GS1 gs ' + pdf.width.toFixed(2) + ' 0 0 ' + pdf.height.toFixed(2) + ' 0 0 cm /WM Do Q\n';
     let width = pdf.width * .82, height = width * image.height / image.width;
     if (height > pdf.height * .72) { height = pdf.height * .72; width = height * image.width / image.height; }
     return 'q /GS1 gs ' + width.toFixed(2) + ' 0 0 ' + height.toFixed(2) + ' ' + ((pdf.width-width)/2).toFixed(2) + ' ' + ((pdf.height-height)/2).toFixed(2) + ' cm /WM Do Q\n';

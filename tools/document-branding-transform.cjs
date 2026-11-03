@@ -4,9 +4,9 @@
 function edits() {
   return [
     ['logo asset','assets/zez-document-watermark.jpg','assets/zez-logo-approved-20261103.jpg'],
-    ['watermark proportions','background-size:100% 100%;opacity:.10','background-size:contain;opacity:.10'],
-    ['system-test proportions',' center/cover no-repeat;opacity:.10',' center/contain no-repeat;opacity:.10'],
-    ['test-page proportions','center/100% 100% no-repeat;opacity:.10','center/contain no-repeat;opacity:.10'],
+    ['A5 watermark dimensions','background-size:100% 100%;opacity:.10','background-size:100% 100%;opacity:.10'],
+    ['system-test proportions',' center/cover no-repeat;opacity:.10',' center/100% 100% no-repeat;opacity:.10'],
+    ['test-page proportions','center/100% 100% no-repeat;opacity:.10','center/100% 100% no-repeat;opacity:.10'],
     ['receipt argument','function receiptPaperHTML(source) {','function receiptPaperHTML(source, brandingLogo) {'],
     ['receipt header','<div class="receipt-business"><b>${esc(biz.name)}</b>','<div class="receipt-business">${ZEZMS.documentBranding.headerHTML(brandingLogo)}<b>${esc(biz.name)}</b>'],
     ['receipt bridge logo','${receiptPaperHTML(payload)}</body>','${receiptPaperHTML(payload, watermarkUrl)}</body>'],
