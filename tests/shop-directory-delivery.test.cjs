@@ -4,10 +4,11 @@ const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),base='3582ab43f0a3ae3911f606c2d47615db291336e4',production='a323d78da4559fe13f082cf172932ce6e7a93adb';
 const shell=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const {undoR70W}=require('./r70w-source-proof.cjs');
+const {undoRecoveryCloud}=require('./recovery-source-proof.cjs');
 const original=execFileSync('git',['show',base+':index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
 function decode(text,name){const m=text.match(new RegExp('const '+name+'=([\\s\\S]*?);\\s*(?:const|function|let|var)'));assert.ok(m,name);return Buffer.from([...m[1].matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(x=>x[1]).join(''),'base64').toString('utf8');}
 test('the exact production Shop guard remains inside the actual embedded cloud closure',()=>{
-  const current=undoR70W(decode(shell,'CLOUD_B64')),prior=decode(original,'CLOUD_B64');
+  const current=undoR70W(undoRecoveryCloud(decode(shell,'CLOUD_B64'))),prior=decode(original,'CLOUD_B64');
   assert.doesNotThrow(()=>new vm.Script(current));
   const protectedShell=execFileSync('git',['show',production+':index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});
   const insertion=current.match(/\/\* SHOP_DIRECTORY_RECOVERY_INSERT_BEGIN \*\/[\s\S]*?\/\* SHOP_DIRECTORY_RECOVERY_INSERT_END \*\/\n/);assert.ok(insertion);

@@ -1,3 +1,4 @@
+const recoveryProof=require('./recovery-source-proof.cjs');
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),base='e3e0bf654519f3d9745ec89f3d9dbc394cf53067';
@@ -6,7 +7,7 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8').replace(/\r\n/g,'\
 const owner=read('js/owner-maintenance-v373.js'),before=old('js/owner-maintenance-v373.js').toString().replace(/\r\n/g,'\n');
 test('every existing standalone source, printing path and asset stays exact except the scoped receipt UI function',()=>{
   const files=execFileSync('git',['ls-tree','-r','--name-only',base,'js','assets'],{cwd:root,encoding:'utf8'}).trim().split('\n');
-  for(const file of files)if(file!=='js/owner-maintenance-v373.js')assert.deepEqual(execFileSync('git',['show',':'+file],{cwd:root,maxBuffer:32*1024*1024}),old(file),file);
+  for(const file of files)if(file!=='js/owner-maintenance-v373.js'&&!recoveryProof.recoveryFiles.has(file))assert.deepEqual(execFileSync('git',['show',':'+file],{cwd:root,maxBuffer:32*1024*1024}),old(file),file);
   const originalStart=before.indexOf('  function installReceiptEditButtons()'),currentStart=owner.indexOf('  function receiptEditLookup()');
   const end='  /* ---------------- Purchase order document and printing';
   assert.equal(owner.slice(0,currentStart),before.slice(0,originalStart));
@@ -43,6 +44,6 @@ test('bounded tables are coupled to the verified shell and retain strict passive
   const delivery=require('../tools/build-pr11-delivery.cjs'),html=delivery.assembledShell(read('index.html'));
   assert.ok(html.includes('window.ZEZMS.tablePages=Object.freeze'));
   assert.ok(html.includes('data-zezms-pr11-module="owner-maintenance-v373.js"'));
-  assert.equal(Object.keys(delivery.workerHashes(read('sw.js'),read('index.html'))).length,77);
+  assert.equal(Object.keys(delivery.workerHashes(read('sw.js'),read('index.html'))).length,78);
   for(const file of ['sw.js','MAIN_RESPONSIVENESS_UPDATE.html'])for(const forbidden of ['skipWaiting(', 'clients.claim(', 'caches.delete(', 'localStorage.clear(', 'indexedDB.deleteDatabase('])assert.ok(!read(file).includes(forbidden));
 });

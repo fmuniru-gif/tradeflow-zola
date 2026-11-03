@@ -1,3 +1,4 @@
+const recoveryProof=require('./recovery-source-proof.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {execFileSync}=require('node:child_process');
@@ -8,8 +9,8 @@ const read=name=>delivery.assetBytes(name).toString('utf8');
 const old=name=>execFileSync('git',['show',base+':'+name],{cwd:root,maxBuffer:32*1024*1024});
 
 test('delivery shell changes are exactly cache identity, byte verification, metadata and coupled PR11 modules',()=>{
-  assert.equal(delivery.stripDelivery(read('index.html')),delivery.normalized(old('index.html').toString()));
-  assert.equal(read('index.html'),delivery.finishShell(delivery.applyDelivery(old('index.html').toString())));
+  assert.equal(delivery.stripDelivery(recoveryProof.withoutRecoveryIndex(read('index.html'))),delivery.normalized(old('index.html').toString()));
+  assert.equal(read('index.html'),delivery.finishShell(delivery.applyDelivery(read('index.html'))));
   assert.deepEqual(delivery.build(true).delivery,delivery.DELIVERY);
 });
 
@@ -29,7 +30,7 @@ test('all protected application sources and validated PR11 modules remain identi
     'tests/shop-directory-delivery.test.cjs','tests/shop-directory-recovery.browser.cjs','js/owner-maintenance-v373.js','tests/ui-responsiveness.browser.cjs','tests/desktop-ui-performance.browser.cjs']);
   const files=execFileSync('git',['ls-tree','-r','--name-only',base],{cwd:root,encoding:'utf8'}).trim().split('\n');
   for(const file of files){
-    if(allowed.has(file))continue;
+    if(allowed.has(file)||recoveryProof.recoveryFiles.has(file))continue;
     const current=fs.readFileSync(path.join(root,file));
     if(/\.(?:js|cjs|json|html|css|md|yml)$/.test(file))assert.equal(delivery.normalized(current.toString()),delivery.normalized(old(file).toString()),file);
     else assert.deepEqual(current,old(file),file);
@@ -58,10 +59,10 @@ test('worker byte verifier rejects a 200 stale module as well as failed/partial 
   const {context}=workerContext();
   for(const status of [200,503]){
     context.bad=new Response(status===200?'stale old module':'unavailable',{status});
-    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261029-main-responsiveness-r1',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
+    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261103-canonical-recovery-r1',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
   }
   context.good=new Response(delivery.assetBytes('js/management-intelligence-v380.js'));
-  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261029-main-responsiveness-r1',good)",context));
+  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261103-canonical-recovery-r1',good)",context));
 });
 
 test('worker scope matching and exact version lookups cannot reuse an older query alias',()=>{

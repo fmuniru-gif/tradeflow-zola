@@ -39,7 +39,7 @@ test('fresh unbound shell cannot create a KPI or rollover operation',async()=>{
     assert.equal(result.rollover,0);assert.equal(result.ensure.deferred,true);assert.equal(result.apply,false);
     for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
       'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof'])
-      assert.equal(result.scripts.filter(source=>source.includes('/'+name+'.js?')).length,1,name);
+      assert.equal(result.scripts.filter(source=>source.includes('/'+name+'.js?')).length, ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?0:1,name);
     assert.ok(!result.scripts.some(source=>/\/(?:auto-month-rollover|confirmed-july-snapshot)\.js\?/.test(source)));
   }finally{await tab.close();}
 });

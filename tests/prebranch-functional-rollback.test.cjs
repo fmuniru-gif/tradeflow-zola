@@ -11,8 +11,10 @@ const read=name=>normalized(fs.readFileSync(path.join(root,name),'utf8'));
 const old=name=>normalized(execFileSync('git',['show',baseline+':'+name],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024}));
 const embedded=source=>new Map([...source.matchAll(/const ([A-Z0-9_]+_B64)="([^"]+)";/g)].map(m=>[m[1],m[2]]));
 const {undoR70W}=require('./r70w-source-proof.cjs');
+const {undoRecoveryCloud}=require('./recovery-source-proof.cjs');
 function outsideShop(base64){
-  const raw=Buffer.from(base64,'base64').toString('utf8');
+  let raw=Buffer.from(base64,'base64').toString('utf8');
+  if(raw.includes('CANONICAL_RECOVERY_BRIDGE_BEGIN'))raw=undoRecoveryCloud(raw);
   const cloud=raw.includes('R70W_SHOP_CHROME_EXACT_DIRECTORY_CHAIN_REVIEW_START')?undoR70W(raw):raw;
   const begin='/* SHOP_DIRECTORY_RECOVERY_INSERT_BEGIN */',end='/* SHOP_DIRECTORY_RECOVERY_INSERT_END */';
   const a=cloud.indexOf(begin),b=cloud.indexOf(end);
@@ -28,7 +30,10 @@ test('the assembled shell removes only the r69 branch registry module',()=>{
   assert.deepEqual([...after.keys()].sort(),[...before.keys()].filter(x=>x!=='BRANCH_MANAGEMENT_R69_B64').sort());
   for(const [name,value] of after){
     if(name==='CLOUD_B64')assert.equal(outsideShop(value),outsideShop(before.get(name)),'cloud closure outside Shop insertion changed');
-    else assert.equal(value,before.get(name),name+' changed');
+    else if(['CANONICAL_RESTORE_B64','SELF_SERVICE_RECOVERY_R62W_B64'].includes(name)){
+      const file=name==='CANONICAL_RESTORE_B64'?'js/canonical-restore.js':'js/self-service-recovery.js';
+      assert.equal(Buffer.from(value,'base64').toString('utf8'),read(file));
+    } else assert.equal(value,before.get(name),name+' changed');
   }
   const shell=read('index.html');
   assert.ok(!shell.includes('branchManagementR69'));
