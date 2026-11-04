@@ -10,11 +10,12 @@ const server=http.createServer((req,res)=>{
  res.setHeader('Content-Type',name.endsWith('.html')?'text/html':name.endsWith('.js')?'application/javascript':'application/octet-stream');res.end(fs.readFileSync(file));
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
-async function fixture(){
+async function fixture(options={}){
  if(!server.listening)await new Promise(r=>server.listen(0,'127.0.0.1',r));
  if(!browser)browser=await playwright.chromium.launch({headless:true,executablePath:process.env.CHROME_PATH});
  const context=await browser.newContext(),page=await context.newPage();
  await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
+ if(options.registered)await page.addInitScript(()=>localStorage.setItem('zezms_cloud_sync_m4_state',JSON.stringify({initialized:true,deviceId:'synthetic-recovery-device',businessId:'synthetic-business',syncOwnerId:'synthetic-owner',deviceAccessMode:'OWNER',liveSyncEnabled:false,liveSyncDesired:false})));
  await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');
  await page.waitForFunction(()=>window.ZEZMS?.canonicalRestore?.build==='20261103-canonical-recovery-r1'&&window.ZEZMS?.bootstrapStartupGuard&&window.ZEZMS?.autoMonth);
  return {page,context};
@@ -56,7 +57,7 @@ for(const [name,key,value] of [
  }finally{await context.close();}
 });
 test('actual private pause persists manual-off preference and preserves the entire outbox',async()=>{
- const {page,context}=await fixture();try{
+ const {page,context}=await fixture({registered:true});try{
   const result=await page.evaluate(async()=>{
    await ZEZMS.cloudSync.waitUntilReady(10000);
    const old=ZEZMS.staffAuth.getContext;ZEZMS.staffAuth.getContext=()=>({role:'OWNER',user:{id:'synthetic-owner-staff'}});
