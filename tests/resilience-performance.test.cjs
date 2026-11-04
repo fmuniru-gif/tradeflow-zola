@@ -91,7 +91,7 @@ test('date decoration and sorted histories retain exact native formatting, inval
 test('assembled changes are exactly the reviewed transport/presentation transformation, with original business modules preserved',()=>{
  const index=delivery.assetBytes('index.html').toString(),base=delivery.assembledShell(index,{withoutResilience:true}),meta=base.match(/<meta name="zezms-delivery" content="[^"]+">/)[0];
  let expected=transformResiliencePerformance(base.replace(meta,''),delivery.assetBytes('js/sync-resilience.js').toString(),delivery.assetBytes('js/desktop-presentation.js').toString()).replace('</head>',meta+'</head>');
- assert.equal(delivery.sha(Buffer.from(delivery.assembledShell(index))),delivery.sha(Buffer.from(expected)));
+ assert.equal(delivery.sha(Buffer.from(delivery.assembledShell(index,{withoutDeviceCards:true}))),delivery.sha(Buffer.from(expected)));
  const prior=execFileSync('git',['show','5ffe6f432712efc170e86e7710806881953a50f4:index.html'],{maxBuffer:32*1024*1024}).toString();assert.equal(delivery.stripDelivery(index),delivery.stripDelivery(prior));
  assert.throws(()=>transformResiliencePerformance('<html></html>','',''),/MISSING/);
 });
