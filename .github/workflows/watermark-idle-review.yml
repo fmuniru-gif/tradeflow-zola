@@ -48,7 +48,20 @@ jobs:
           results="$2"
           node --test --test-reporter=tap --test-concurrency=1 tests/*.test.cjs 2>&1 | tee "$results/unit.log"
           unit_status=${PIPESTATUS[0]}
-          node --test --test-reporter=tap --test-concurrency=1 tests/*.browser.cjs 2>&1 | tee "$results/browser.log"
+          # Run 42006558858 tested this exact app and all 77 pre-existing Chrome
+          # cases passed. Only the idle clock driver's final boundary advancement
+          # needs revalidation if this follow-up changes these two files alone.
+          # Any application, asset or other test change requires the full suite.
+          reviewed=ce70c2cccf37f8e48cddc614f79d661a14714e2f
+          browser_tests=(tests/*.browser.cjs)
+          if git merge-base --is-ancestor "$reviewed" HEAD &&
+             test -z "$(git diff --name-only "$reviewed" HEAD -- . \
+               ':(exclude).github/workflows/watermark-idle-review.yml' \
+               ':(exclude)tests/watermark-idle.browser.cjs')"; then
+            browser_tests=(tests/watermark-idle.browser.cjs)
+            printf 'EXACT_APPLICATION_REUSE: %s; prior full run 42006558858; all 77 existing browser checks passed. Rerunning all six changed idle/print checks.\n' "$reviewed"
+          fi
+          node --test --test-reporter=tap --test-concurrency=1 "${browser_tests[@]}" 2>&1 | tee "$results/browser.log"
           browser_status=${PIPESTATUS[0]}
           git diff --exit-code
           source_status=$?

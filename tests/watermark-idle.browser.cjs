@@ -15,15 +15,17 @@ async function fixture(role='OWNER'){
  return {page,context};
 }
 async function login(page){await page.locator('#sharedLoginUser').selectOption('synthetic-idle-staff');await page.locator('#sharedLoginPassword').fill(password);await page.evaluate(()=>ZEZMS.staffAuth.signInFromLogin());await page.waitForFunction(()=>!!ZEZMS.staffAuth.getContext().user);}
+// fastForward coalesces timer callbacks. Run the final second chronologically so
+// a boundary recheck scheduled by the real elapsed-time guard also executes.
 async function signedIn(page){return page.evaluate(()=>!!ZEZMS.staffAuth.getContext().user);}
 test('Owner, Admin and Cashier are logged out after five minutes; saved transactions, device identity and queue survive',async()=>{
  for(const role of ['OWNER','ADMIN','CASHIER']){const f=await fixture(role);try{
   const before=await f.page.evaluate(()=>{DB.receipts[0].notes='Synthetic pending receipt update';saveDB();if(ZEZMS.cloudSync.getOutbox().length<1)throw Error('Synthetic pending queue missing');openModal('<button id="synthetic-sensitive-action">Privileged action</button>');session.adminMode=true;return {receipts:JSON.stringify(DB.receipts),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox()),device:ZEZMS.cloudSync.getState().deviceId};});
   await f.page.clock.fastForward(299000);assert.equal(await signedIn(f.page),true,role+' expired too soon');
   const checkpoint=await f.page.evaluate(()=>({receipts:JSON.stringify(DB.receipts),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox()),device:ZEZMS.cloudSync.getState().deviceId}));assert.equal(checkpoint.receipts,before.receipts);assert.equal(checkpoint.device,before.device);const initial=JSON.parse(before.queue),settled=JSON.parse(checkpoint.queue);assert.deepEqual(settled.slice(0,initial.length),initial);assert.ok(settled.slice(initial.length).every(op=>op.kind==='SHARED_DEVICE_DIRECTORY'),'only the existing delayed directory publication may be added before expiry');
-  await f.page.clock.fastForward(1100);await f.page.waitForFunction(()=>!ZEZMS.staffAuth.getContext().user);assert.equal(await f.page.locator('#loginScreen').isVisible(),true);assert.equal(await f.page.locator('#appShell').isVisible(),false);assert.equal(await f.page.locator('#modalBg').evaluate(e=>e.classList.contains('show')),false);assert.equal(await f.page.locator('#synthetic-sensitive-action').count(),0);
+  await f.page.clock.runFor(1100);await f.page.waitForFunction(()=>!ZEZMS.staffAuth.getContext().user);assert.equal(await f.page.locator('#loginScreen').isVisible(),true);assert.equal(await f.page.locator('#appShell').isVisible(),false);assert.equal(await f.page.locator('#modalBg').evaluate(e=>e.classList.contains('show')),false);assert.equal(await f.page.locator('#synthetic-sensitive-action').count(),0);
   assert.deepEqual(await f.page.evaluate(()=>({receipts:JSON.stringify(DB.receipts),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox()),device:ZEZMS.cloudSync.getState().deviceId})),checkpoint);assert.match(await f.page.locator('#sharedLoginStatus').textContent(),/5 minutes of inactivity/);
-  await login(f.page);assert.equal(await signedIn(f.page),true);await f.page.clock.fastForward(299000);assert.equal(await signedIn(f.page),true);await f.page.clock.fastForward(1100);assert.equal(await signedIn(f.page),false);
+  await login(f.page);assert.equal(await signedIn(f.page),true);await f.page.clock.fastForward(299000);assert.equal(await signedIn(f.page),true);await f.page.clock.runFor(1100);assert.equal(await signedIn(f.page),false);
  }finally{await f.context.close();}}
 });
 test('keyboard activity extends the deadline; synthetic events and background rendering do not',async()=>{
@@ -51,7 +53,7 @@ test('a failed staff audit write cannot retain authority or the temporary Cloud 
 test('a failed password attempt does not reset an already signed-in staff deadline',async()=>{
  const f=await fixture();try{
   await f.page.clock.fastForward(240000);await f.page.evaluate(async()=>{document.getElementById('sharedLoginPassword').value='wrong-synthetic-password';await ZEZMS.staffAuth.signInFromLogin();});assert.equal(await signedIn(f.page),true);
-  await f.page.clock.fastForward(60100);assert.equal(await signedIn(f.page),false);
+  await f.page.clock.fastForward(59000);await f.page.clock.runFor(1100);assert.equal(await signedIn(f.page),false);
  }finally{await f.context.close();}
 });
 test('real quotation and purchase-order print frames stretch faint backgrounds to each sheet',async()=>{
