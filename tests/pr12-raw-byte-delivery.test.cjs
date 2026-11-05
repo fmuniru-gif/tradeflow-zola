@@ -27,7 +27,7 @@ test('raw production Git blobs reproduce all seven original strict worker hash f
 });
 
 test('every candidate manifest entry and normal HTTP fixture preserves exact staged Git bytes',()=>{
-  const manifest=manifestAt('');assert.equal(Object.keys(manifest).length,86);
+  const manifest=manifestAt('');assert.equal(Object.keys(manifest).length,88);
   for(const [asset,expected] of Object.entries(manifest)){
     const file=asset==='./'?'index.html':asset.slice(2).split('?')[0],bytes=gitBytes('',file);
     assert.equal(expected,sha(bytes),asset);
@@ -36,7 +36,7 @@ test('every candidate manifest entry and normal HTTP fixture preserves exact sta
   }
 });
 
-test('candidate HTTP bodies match all 86 raw blobs with identity, gzip and Brotli transport',async()=>{
+test('candidate HTTP bodies match all 88 raw blobs with identity, gzip and Brotli transport',async()=>{
   let encoding='identity';const memo=new Map();
   const server=http.createServer((req,res)=>{
     const name=new URL(req.url,'http://localhost').pathname.slice('/tradeflow-zola/'.length)||'index.html';
@@ -48,7 +48,7 @@ test('candidate HTTP bodies match all 86 raw blobs with identity, gzip and Brotl
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   try{for(encoding of ['identity','gzip','br']){
     const audit=await auditHTTP({base:'http://127.0.0.1:'+server.address().port+'/tradeflow-zola/',ref:''});
-    assert.equal(audit.ok,true,JSON.stringify(audit.summary));assert.equal(audit.summary.entries,86);
+    assert.equal(audit.ok,true,JSON.stringify(audit.summary));assert.equal(audit.summary.entries,88);
     console.log('RAW_BYTE_HTTP '+JSON.stringify({encoding,...audit.summary}));
   }}finally{await new Promise(resolve=>server.close(resolve));}
 });
