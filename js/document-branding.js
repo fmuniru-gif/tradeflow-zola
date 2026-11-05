@@ -12,8 +12,8 @@
       + '<span style="font-size:11px;font-style:italic;font-weight:700;line-height:1.25;letter-spacing:0">' + slogan + '</span></div>';
   }
   function watermarkHTML() {
-    return '<style>.purchase-order-paper{position:relative}.purchase-order-paper>:not(.document-branding-watermark){position:relative;z-index:1}@media print{.purchase-order-paper .document-branding-watermark{position:fixed!important;inset:0!important}}</style>'
-      + '<div class="document-branding-watermark" aria-hidden="true" style="position:absolute;inset:0;background:url(&quot;' + escape(url) + '&quot;) center/80% auto no-repeat;opacity:.10;z-index:0;pointer-events:none"></div>';
+    return '<style>.purchase-order-paper{position:relative}.purchase-order-paper>:not(.document-branding-watermark){position:relative;z-index:1}@media print{.purchase-order-paper .document-branding-watermark{position:fixed!important;inset:-12mm!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style>'
+      + '<div class="document-branding-watermark" aria-hidden="true" style="position:absolute;inset:0;background:url(&quot;' + escape(url) + '&quot;) center/100% 100% no-repeat;opacity:.10;z-index:0;pointer-events:none"></div>';
   }
   const fontWidths = {"Helvetica":[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584],"Helvetica-Bold":[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584]};
   function pdfTextWidth(value, size, bold) {
@@ -36,12 +36,7 @@
     pdf.y = pdf.margin + 44;
   }
   function pdfWatermark(pdf) {
-    const image = pdf.watermark;
-    const dimensions = [pdf.width,pdf.height].sort((a,b)=>a-b);
-    if (Math.abs(dimensions[0]-419.53)<1 && Math.abs(dimensions[1]-595.28)<1) return 'q /GS1 gs ' + pdf.width.toFixed(2) + ' 0 0 ' + pdf.height.toFixed(2) + ' 0 0 cm /WM Do Q\n';
-    let width = pdf.width * .82, height = width * image.height / image.width;
-    if (height > pdf.height * .72) { height = pdf.height * .72; width = height * image.width / image.height; }
-    return 'q /GS1 gs ' + width.toFixed(2) + ' 0 0 ' + height.toFixed(2) + ' ' + ((pdf.width-width)/2).toFixed(2) + ' ' + ((pdf.height-height)/2).toFixed(2) + ' cm /WM Do Q\n';
+    return 'q /GS1 gs ' + pdf.width.toFixed(2) + ' 0 0 ' + pdf.height.toFixed(2) + ' 0 0 cm /WM Do Q\n';
   }
   async function ready(doc) {
     await Promise.all(Array.from(doc.querySelectorAll('img[data-zezms-approved-logo]')).map(async image => {

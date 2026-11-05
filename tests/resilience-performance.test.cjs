@@ -95,9 +95,8 @@ test('assembled changes are exactly the reviewed transport/presentation transfor
  const prior=execFileSync('git',['show','5ffe6f432712efc170e86e7710806881953a50f4:index.html'],{maxBuffer:32*1024*1024}).toString();assert.equal(delivery.stripDelivery(index),delivery.stripDelivery(prior));
  assert.throws(()=>transformResiliencePerformance('<html></html>','',''),/MISSING/);
 });
-test('A5 watermark fills both page dimensions without changing the header seal or A4 placement',()=>{
+test('A5 and A4 watermarks fill both page dimensions without changing the header seal',()=>{
  const c=fixture();c.document={baseURI:'https://fixture.invalid/'};c.URL=URL;vm.runInContext(fs.readFileSync('js/document-branding.js','utf8'),c);
- for(const [width,height]of [[419.53,595.28],[595.28,419.53]])assert.equal(c.ZEZMS.documentBranding.pdfWatermark({width,height,watermark:{width:930,height:930}}),'q /GS1 gs '+width.toFixed(2)+' 0 0 '+height.toFixed(2)+' 0 0 cm /WM Do Q\n');
- assert.ok(!c.ZEZMS.documentBranding.pdfWatermark({width:595,height:842,watermark:{width:930,height:930}}).includes('595.00 0 0 842.00'));
+ for(const [width,height]of [[419.53,595.28],[595.28,419.53],[595,842],[842,595]])assert.equal(c.ZEZMS.documentBranding.pdfWatermark({width,height,watermark:{width:930,height:930}}),'q /GS1 gs '+width.toFixed(2)+' 0 0 '+height.toFixed(2)+' 0 0 cm /WM Do Q\n');
  assert.match(c.ZEZMS.documentBranding.headerHTML(),/object-fit:contain/);
 });

@@ -51,15 +51,15 @@ test('actual offline PDF builders carry the approved logo and slogan across ever
    if(!wm)throw Error('Approved logo unavailable offline');
    const account=await ZEZMS.accountCashPdfR68E.buildAccountStatement('debtors','D1'),cash=await ZEZMS.accountCashPdfR68E.buildCashBalancesReport();
    const docs={receipt:p.buildReceiptPDF(v.receipt,wm),invoice:p.buildInvoicePDF(v.invoice,wm),waybill:p.buildWaybillPDF(v.waybill,wm),purchaseOrder:p.buildPurchaseOrderPDF(v.order,wm),proforma:await ZEZMS.proformaInvoiceR67W.buildPdf(v.proforma),account:account.bytes,cash:cash.bytes};
-   const multipage={...v.invoice,lines:Array.from({length:85},(_,i)=>({...v.invoice.lines[0],product:'SYNTHETIC-LINE-'+String(i).padStart(3,'0')}))};docs.multiplePages=p.buildInvoicePDF(multipage,wm);
+   const multipage={...v.invoice,lines:Array.from({length:85},(_,i)=>({...v.invoice.lines[0],product:'SYNTHETIC-LINE-'+String(i).padStart(3,'0')}))};docs.multiplePages=p.buildInvoicePDF(multipage,wm);docs.proformaMultiplePages=await ZEZMS.proformaInvoiceR67W.buildPdf({...v.proforma,lines:Array.from({length:85},(_,i)=>({...v.proforma.lines[0],productName:'SYNTHETIC-PROFORMA-LINE-'+i}))});docs.purchaseOrderMultiplePages=p.buildPurchaseOrderPDF({...v.order,lines:Array.from({length:85},(_,i)=>({...v.order.lines[0],product:'SYNTHETIC-ORDER-LINE-'+i}))},wm);
    return {docs:Object.fromEntries(Object.entries(docs).map(([name,bytes])=>[name,Array.from(bytes)])),before,after:{db:JSON.stringify(DB),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox())},asset:p.documentWatermarkAsset};
   });
   assert.deepEqual(result.after,result.before);assert.equal(result.asset,'assets/zez-logo-approved-20261103.jpg');
   for(const [name,bytes]of Object.entries(result.docs)){
-   const body=Buffer.from(bytes);assert.ok(body.toString('ascii').startsWith('%PDF-1.4'));assert.ok(body.includes(Buffer.from('Buy the right one.')));assert.ok(body.includes(Buffer.from('/Subtype /Image')));fs.writeFileSync(path.join(output,name+'.pdf'),body);
+   const body=Buffer.from(bytes);assert.ok(body.toString('ascii').startsWith('%PDF-1.4'));assert.ok(body.includes(Buffer.from('Buy the right one.')));assert.ok(body.includes(Buffer.from('/Subtype /Image')));const text=body.toString('latin1'),pages=[...text.matchAll(/\/Type \/Page\b/g)].length;const media=text.match(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/);assert.ok(media,name+' page size');const command='q /GS1 gs '+Number(media[1]).toFixed(2)+' 0 0 '+Number(media[2]).toFixed(2)+' 0 0 cm /WM Do Q';assert.equal(text.split(command).length-1,pages,name+' every watermark fills the page');fs.writeFileSync(path.join(output,name+'.pdf'),body);
   }
   const downloadPromise=f.page.waitForEvent('download');await f.page.evaluate(()=>ZEZMS.salesPipeline.downloadQuotationPDF('Q-SYNTHETIC'));const download=await downloadPromise;await download.saveAs(path.join(output,'quotation.pdf'));
-  const quotation=fs.readFileSync(path.join(output,'quotation.pdf'));assert.ok(quotation.includes(Buffer.from('Buy the right one.')));assert.ok(quotation.includes(Buffer.from('/Subtype /Image')));
+  const quotation=fs.readFileSync(path.join(output,'quotation.pdf'));assert.ok(quotation.includes(Buffer.from('Buy the right one.')));assert.ok(quotation.includes(Buffer.from('/Subtype /Image')));assert.equal(quotation.toString('latin1').split('q /GS1 gs 419.53 0 0 595.28 0 0 cm /WM Do Q').length-1,[...quotation.toString('latin1').matchAll(/\/Type \/Page\b/g)].length);
   assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}
 });
