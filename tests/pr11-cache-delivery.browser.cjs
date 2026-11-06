@@ -242,7 +242,7 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
     try{
       await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
-      await f.page.goto(f.origin+'/WATERMARK_IDLE_UPDATE.html');
+      await f.page.goto(f.origin+'/SYNC_RELIABILITY_UPDATE.html');
       await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified watermark and automatic logout update is ready'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
@@ -304,7 +304,7 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
-    await f.page.goto(f.origin+'/WATERMARK_IDLE_UPDATE.html');
+    await f.page.goto(f.origin+'/SYNC_RELIABILITY_UPDATE.html');
     await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('watermark and automatic logout update is verified and active'));
     assert.equal(await f.page.locator('#open').isVisible(),true);
     await f.page.goto(f.origin+'/index.html');await ready(f.page);
