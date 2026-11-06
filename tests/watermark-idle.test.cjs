@@ -13,7 +13,8 @@ test('the complete assembled change is only the reviewed watermark helper, quota
  const index=delivery.assetBytes('index.html').toString(),clean=html=>html.replace(/<meta name="zezms-delivery" content="[^"]+">/,'DELIVERY');
  assert.equal(delivery.stripDelivery(index),delivery.stripDelivery(old('index.html')));
  const previous=delivery.assembledShell(old('index.html')).replace(old('js/document-branding.js'),delivery.assetBytes('js/document-branding.js').toString());
- assert.equal(clean(delivery.assembledShell(index,{withoutWatermarkIdle:true})),clean(previous));
+ const {withoutContextQueue}=require('./sync-context-proof.cjs');
+ assert.equal(withoutContextQueue(clean(delivery.assembledShell(index,{withoutWatermarkIdle:true}))),withoutContextQueue(clean(previous)));
  assert.equal(delivery.assembledShell(index),transformWatermarkIdle(delivery.assembledShell(index,{withoutWatermarkIdle:true}),delivery.assetBytes('js/idle-session.js').toString().replace(/<\/script/gi,'<\\/script')));
  assert.throws(()=>transformWatermarkIdle('<html></html>',''),/MARKER/);
  assert.throws(()=>transformWatermarkIdle('<script data-zezms-idle-session>',''),/ALREADY_APPLIED/);

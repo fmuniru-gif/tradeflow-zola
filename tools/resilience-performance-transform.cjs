@@ -12,46 +12,62 @@ function transformResiliencePerformance(source, transport, presentation) {
     if(before===after)throw Error('RESILIENCE_SECTION_UNCHANGED: '+start);
     replace(before,after);
   }
+  const capture = "ZEZMS.syncResilience.captureContext(function () { return {client:client, session:session, state:state, ownerId:currentSyncOwnerId()}; })";
   section('  async function pushOne(operation) {','  async function publishRoot(',()=>`  async function pushOne(operation) {
     const outgoing = wireOperation(operation);
     if (!operation._legacyPayload) sealOperation(outgoing);
-    const owner = currentSyncOwnerId(), device = state.deviceId, wasLive = state.liveSyncEnabled;
+    const scope = ${capture}, owner = scope.ownerId, wasLive = state.liveSyncEnabled;
     return ZEZMS.syncResilience.transport.push({
       operation:outgoing, hash:deterministicHash,
-      contextValid:function () { return !!(session && session.user && currentSyncOwnerId()===owner && state.deviceId===device && state.initialized); },
-      allowed:function () { return !!(session && session.user && currentSyncOwnerId()===owner && state.deviceId===device && state.initialized && navigator.onLine && (!wasLive || state.liveSyncEnabled)); },
-      send:function (signal) { return client.rpc('zezms_ops_push', {p_operations:[outgoing]}).abortSignal(signal); },
-      read:function (signal) { return client.from(OPERATIONS_TABLE).select('seq,op_id,payload,created_at').eq('owner_id',owner).eq('op_id',outgoing.opId).maybeSingle().abortSignal(signal); }
+      contextValid:scope.valid,
+      allowed:function () { return !!(scope.valid() && state.initialized && navigator.onLine && (!wasLive || state.liveSyncEnabled)); },
+      send:function (signal) { return scope.client.rpc('zezms_ops_push', {p_operations:[outgoing]}).abortSignal(signal); },
+      read:function (signal) { return scope.client.from(OPERATIONS_TABLE).select('seq,op_id,payload,created_at').eq('owner_id',owner).eq('op_id',outgoing.opId).maybeSingle().abortSignal(signal); }
     });
   }
 
 `);
   section('  async function fetchOperationsAfter(cursor) {','  async function fetchAllOperationsAfter(',()=>`  async function fetchOperationsAfter(cursor) {
-    const owner=currentSyncOwnerId(), device=state.deviceId;
+    const scope = ${capture}, owner = scope.ownerId;
     const response = await ZEZMS.syncResilience.transport.read(function (signal) {
-      if(currentSyncOwnerId()!==owner || state.deviceId!==device)throw Error('ZEZMS_SYNC_CONTEXT_CHANGED');
-      return client.from(OPERATIONS_TABLE).select('seq,op_id,device_id,device_seq,kind,payload,client_created_at,created_at')
+      return scope.client.from(OPERATIONS_TABLE).select('seq,op_id,device_id,device_seq,kind,payload,client_created_at,created_at')
         .eq('owner_id',owner).gt('seq',Number(cursor)||0).order('seq',{ascending:true}).limit(PULL_PAGE_SIZE).abortSignal(signal);
-    });
-    if(currentSyncOwnerId()!==owner || state.deviceId!==device)throw Error('ZEZMS_SYNC_CONTEXT_CHANGED');
+    }, {contextValid:scope.valid});
     return ZEZMS.syncResilience.operationPage(response.data, Number(cursor)||0);
   }
 
 `);
   section('  async function fetchMaster() {','  function recordFromResult(',()=>`  async function fetchMaster() {
     requireClient();
-    const owner=currentSyncOwnerId(), device=state.deviceId;
+    const scope = ${capture}, owner = scope.ownerId;
     const response = await ZEZMS.syncResilience.transport.read(function (signal) {
-      if(currentSyncOwnerId()!==owner || state.deviceId!==device)throw Error('ZEZMS_SYNC_CONTEXT_CHANGED');
-      return client.from(SNAPSHOT_TABLE).select('owner_id,payload,revision,operation_cursor,sync_mode,updated_at,updated_by')
+      return scope.client.from(SNAPSHOT_TABLE).select('owner_id,payload,revision,operation_cursor,sync_mode,updated_at,updated_by')
         .eq('owner_id',owner).maybeSingle().abortSignal(signal);
-    });
-    if(currentSyncOwnerId()!==owner || state.deviceId!==device)throw Error('ZEZMS_SYNC_CONTEXT_CHANGED');
+    }, {contextValid:scope.valid});
     return response.data || null;
   }
 
 `);
-  replace("    const response = await client.rpc('zezms_m43_checkpoint_latest');", "    const response = await ZEZMS.syncResilience.transport.read(function (signal) { return client.rpc('zezms_m43_checkpoint_latest').abortSignal(signal); }).catch(function (error) { return {error:error}; });");
+  replace("    const response = await client.rpc('zezms_m43_checkpoint_latest');", `    const scope = ${capture};
+    const response = await ZEZMS.syncResilience.transport.read(function (signal) { return scope.client.rpc('zezms_m43_checkpoint_latest').abortSignal(signal); }, {contextValid:scope.valid}).catch(function (error) { return {error:error}; });`);
+  replace(`  function pullNow(silent) {
+    return serializeSync(function () { return pullNowCore(silent); });
+  }`, `  var resilienceQueuedPull = null;
+  function pullNow(silent) {
+    if (silent !== true) return serializeSync(function () { return pullNowCore(silent); });
+    if (resilienceQueuedPull && !resilienceQueuedPull.started && resilienceQueuedPull.scope.valid()) return resilienceQueuedPull.promise;
+    const scope = ${capture}, slot = {scope:scope, started:false, promise:null};
+    const result = serializeSync(function () {
+      slot.started = true;
+      if (!scope.valid()) throw Error('ZEZMS_SYNC_CONTEXT_CHANGED: queued background receive belongs to an earlier Cloud context.');
+      return pullNowCore(true);
+    });
+    slot.promise = result;
+    resilienceQueuedPull = slot;
+    function settled() { if (resilienceQueuedPull === slot) resilienceQueuedPull = null; }
+    result.then(settled, settled);
+    return result;
+  }`);
   // Duplicate correction IDs must identify the same immutable event. Validation
   // precedes the historical duplicate guard, including for replay/rebase.
   replace("    if (!operation || !Array.isArray(operation.patches)) return false;\n    const correctionInsert", "    if (!operation || !Array.isArray(operation.patches)) return false;\n    validateOperationIdentity(operation);\n    const correctionInsert");

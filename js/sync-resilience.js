@@ -9,6 +9,26 @@
     return transientStatus.has(Number(error.status)) || ['TimeoutError', 'AbortError'].includes(error.name)
       || /failed to fetch|fetch failed|networkerror|network request failed|load failed|connection (?:reset|closed)|timed? ?out|aborterror/i.test(message);
   }
+  // Bind a response to the Cloud identity and client that requested it. Token
+  // refresh may replace the session object; the authenticated user must match.
+  function captureContext(current) {
+    const first = current(), originalClient = first.client;
+    function signature(value) {
+      const state = value.state || {}, session = value.session;
+      return JSON.stringify([String(value.ownerId || ''), String(session && session.user && session.user.id || ''),
+        ...['deviceId','deviceAccessMode','syncOwnerId','businessId','branchId','supabaseUrl','publishableKey','deviceAccessStatus','lifecycleState'].map(key=>String(state[key] == null ? '' : state[key])),
+        !!state.initialized]);
+    }
+    const expected = signature(first);
+    return Object.freeze({client:originalClient, ownerId:String(first.ownerId || ''), valid() {
+      const next = current();
+      return !!(originalClient && next.client === originalClient && next.session && next.session.user
+        && signature(next) === expected);
+    }});
+  }
+  function requireContext(valid) {
+    if (valid && !valid()) throw new Error('ZEZMS_SYNC_CONTEXT_CHANGED: Cloud context changed; stale results were not accepted.');
+  }
   function create(options) {
     const opts = options || {}, timeout = opts.timeout || 15000;
     const sleep = opts.sleep || (ms => new Promise(resolve => setTimeout(resolve, ms)));
@@ -31,10 +51,12 @@
         return response;
       } finally { clearTimeout(timer); }
     }
-    async function read(factory) {
+    async function read(factory, options) {
+      const valid = options && options.contextValid;
       for (let attempt = 0; ; attempt++) {
-        try { return await once(factory); }
-        catch (error) { if (attempt >= 2 || !transient(error)) throw error; await sleep(500 * 2 ** attempt + Math.floor(Math.random() * 200)); }
+        requireContext(valid);
+        try { const response = await once(factory); requireContext(valid); return response; }
+        catch (error) { requireContext(valid); if (attempt >= 2 || !transient(error)) throw error; await sleep(500 * 2 ** attempt + Math.floor(Math.random() * 200)); }
       }
     }
     async function push(io) {
@@ -54,13 +76,14 @@
         return Object.assign({}, acknowledged || {}, {server_seq:Number(row.seq), created_at:row.created_at, payloadHash:actual});
       }
       for (let attempt = 0; ; attempt++) {
+        requireContext(io.contextValid);
         if (io.allowed && !io.allowed()) throw new Error('ZEZMS_RETRY_DEFERRED: sync context changed; the operation remains queued.');
         let acknowledged;
         try {
           const sent = await once(io.send);
           acknowledged = (Array.isArray(sent.data) ? sent.data[0] : sent.data) || null;
           if (!acknowledged || !Number.isSafeInteger(Number(acknowledged.server_seq)) || Number(acknowledged.server_seq) <= 0) throw new Error('ZEZMS_ACK_INVALID: Cloud did not return a durable sequence.');
-          const verified = verify(await read(io.read), acknowledged);
+          const verified = verify(await read(io.read, {contextValid:io.contextValid}), acknowledged);
           if (!verified) throw new Error('ZEZMS_ACK_NOT_DURABLE: acknowledged operation was not found.');
           return verified;
         } catch (error) {
@@ -68,7 +91,7 @@
           // immutable ID and complete payload before considering another POST.
           if (!transient(error)) throw error;
           if (acknowledged) throw error; // Read-back already used its bounded retry budget.
-          const recovered = verify(await read(io.read), acknowledged);
+          const recovered = verify(await read(io.read, {contextValid:io.contextValid}), acknowledged);
           if (recovered) return recovered;
           if (attempt >= 2) throw error;
           if (io.allowed && !io.allowed()) throw new Error('ZEZMS_RETRY_DEFERRED: sync context changed; the operation remains queued.');
@@ -100,5 +123,5 @@
     return true;
   }
   window.ZEZMS = window.ZEZMS || {};
-  ZEZMS.syncResilience = Object.freeze({build:'20261103-sync-resilience-r1', create, operationPage, sameCorrection, transient, transport:create()});
+  ZEZMS.syncResilience = Object.freeze({build:'20261106-sync-context-r1', create, captureContext, operationPage, sameCorrection, transient, transport:create()});
 }());
