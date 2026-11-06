@@ -27,7 +27,7 @@ test('presentation transform fails closed if a required printer marker is absent
 });
 test('the new artwork is pinned and the update remains passive',()=>{
  const worker=delivery.assetBytes('sw.js').toString(),manifest=delivery.workerHashes(worker,delivery.assetBytes('index.html').toString());
- assert.equal(Object.keys(manifest).length,88);assert.equal(manifest['./assets/zez-logo-approved-20261103.jpg'],delivery.sha(delivery.assetBytes('assets/zez-logo-approved-20261103.jpg')));
+ assert.equal(Object.keys(manifest).length,89);assert.equal(manifest['./assets/zez-logo-approved-20261103.jpg'],delivery.sha(delivery.assetBytes('assets/zez-logo-approved-20261103.jpg')));
  for(const name of ['sw.js','DOCUMENT_BRANDING_UPDATE.html'])for(const forbidden of ['skipWaiting(', 'clients.claim(', 'caches.delete(', 'localStorage.clear(', 'indexedDB.deleteDatabase('])assert.ok(!delivery.assetBytes(name).toString().includes(forbidden));
  const helper=delivery.assetBytes('js/document-branding.js').toString();for(const forbidden of ['localStorage','indexedDB','saveDB','cloudSync','supabase'])assert.ok(!helper.includes(forbidden));
 });
