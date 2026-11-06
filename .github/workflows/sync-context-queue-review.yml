@@ -61,6 +61,16 @@ jobs:
             browser_tests=(tests/pr11-cache-delivery.browser.cjs tests/watermark-idle.browser.cjs)
             printf 'EXACT_APPLICATION_REUSE: %s; full run 42248354455; rerunning every cached-upgrade and idle/print check.\n' "$reviewed"
           fi
+          # Run 42250289316 passed all 11 corrected cached-upgrade cases.
+          # Only the idle driver's clock setup changes in this follow-up.
+          idle_reviewed=69d21f3a08a6180885238fe89d5cf00af28828e6
+          if git merge-base --is-ancestor "$idle_reviewed" HEAD &&
+             test -z "$(git diff --name-only "$idle_reviewed" HEAD -- . \
+               ':(exclude).github/workflows/sync-context-queue-review.yml' \
+               ':(exclude)tests/watermark-idle.browser.cjs')"; then
+            browser_tests=(tests/watermark-idle.browser.cjs)
+            printf 'EXACT_APPLICATION_IDLE_REUSE: full run 42248354455 and cache run 42250289316; rerunning all six idle/print cases.\n'
+          fi
           node --test --test-reporter=tap --test-concurrency=1 "${browser_tests[@]}" 2>&1 | tee "$results/browser.log"
           browser_status=${PIPESTATUS[0]}
           git diff --exit-code

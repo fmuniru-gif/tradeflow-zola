@@ -7,11 +7,13 @@ after(async()=>{if(browser)await browser.close();if(server.listening)await new P
 async function fixture(role='OWNER'){
  if(!server.listening)await new Promise(r=>server.listen(0,'127.0.0.1',r));if(!browser)browser=await playwright.chromium.launch({headless:true,executablePath:process.env.CHROME_PATH});
  const context=await browser.newContext({serviceWorkers:'block',acceptDownloads:true}),page=await context.newPage();await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
+ // Install before application timers exist; replacing a live clock is undefined.
+ await page.clock.install();
  await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');await page.waitForFunction(()=>window.ZEZMS?.idleSession&&window.ZEZMS?.staffAuth);await page.evaluate(()=>ZEZMS.cloudSync.waitUntilReady(10000));
  const user={id:'synthetic-idle-staff',name:'Synthetic '+role,role,active:true,signatureFile:'',passwordAlgorithm:'PBKDF2-SHA256',passwordIterations:210000,passwordSalt:salt.toString('base64'),passwordHash:crypto.pbkdf2Sync(password,salt,210000,32,'sha256').toString('base64'),createdAt:'2026-11-01T00:00:00Z',updatedAt:'2026-11-01T00:00:00Z'};
  await page.evaluate(user=>{const db=JSON.parse(JSON.stringify(DB));db.sharedDeviceAuth={version:1,enabled:true,businessId:'synthetic-business',users:[user],audit:[]};db.sharedDeviceDirectory={version:1,enabled:true,businessId:'synthetic-business',users:[user]};db.receipts=[{receiptNo:'SYNTHETIC-SAVED',date:'2026-11-05',total:120,lines:[]}];localStorage.setItem(DB_KEY,JSON.stringify(db));},user);
  await page.reload();await page.waitForFunction(()=>window.ZEZMS?.idleSession&&document.getElementById('sharedLoginUser'));
- await page.clock.install();await login(page);
+ await login(page);
  return {page,context};
 }
 async function login(page){await page.locator('#sharedLoginUser').selectOption('synthetic-idle-staff');await page.locator('#sharedLoginPassword').fill(password);await page.evaluate(()=>ZEZMS.staffAuth.signInFromLogin());await page.waitForFunction(()=>!!ZEZMS.staffAuth.getContext().user);}
