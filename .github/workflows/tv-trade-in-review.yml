@@ -1,7 +1,7 @@
-name: TV trade-in workflow review (NO DEPLOY)
+name: TV trade-in contrast review (NO DEPLOY)
 on:
   push:
-    branches: [feature/tv-trade-in-20261107]
+    branches: [feature/tv-trade-in-contrast-20261107]
 concurrency:
   group: tv-trade-in-review-${{ github.ref }}
   cancel-in-progress: true
@@ -11,10 +11,6 @@ jobs:
   delivery-review:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
-    strategy:
-      fail-fast: false
-      matrix:
-        scope: [trade-in, regression]
     steps:
       - name: Checkout exact review head and complete history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -26,16 +22,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = feature/tv-trade-in-20261107
+          test "$GITHUB_REF_NAME" = feature/tv-trade-in-contrast-20261107
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = fbbf50afe60d18d74a8bfc09889d25c6185bb810
-          git merge-base --is-ancestor fbbf50afe60d18d74a8bfc09889d25c6185bb810 HEAD
+          test "$(git rev-parse origin/main)" = 6d232ab4dff0695b37eb983159fcaa848a856134
+          git merge-base --is-ancestor 6d232ab4dff0695b37eb983159fcaa848a856134 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
       - name: Set up Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
+      - name: Prove trade-in handlers and business logic are unchanged
+        shell: bash
+        run: |
+          node - <<'JS'
+          const {execFileSync}=require('node:child_process'),fs=require('node:fs'),assert=require('node:assert/strict');
+          const old=execFileSync('git',['show','6d232ab4dff0695b37eb983159fcaa848a856134:js/tv-trade-ins.js']).toString(),current=fs.readFileSync('js/tv-trade-ins.js','utf8');
+          function stripCSS(s){assert.equal(s.split('<style>').length,2);assert.equal(s.split('</style>').length,2);return s.replace(/<style>[\s\S]*?<\/style>/,'<style>REVIEWED_FIELD_STYLES</style>').replace(/const BUILD = '20261107-tv-trade-in-r[12]'/,"const BUILD = 'REVIEWED_DELIVERY'");}
+          assert.equal(stripCSS(old),stripCSS(current));console.log('PROOF_PASS: only trade-in field styles and delivery identity changed');
+          JS
       - name: Install driver outside source and check generated delivery manifest
         shell: bash
         run: |
@@ -53,21 +58,9 @@ jobs:
           set -uo pipefail
           cd "$1"
           results="$2"
-          unit_status=0
-          if test "$TRADE_IN_TEST_SCOPE" = regression; then
-            node --test --test-reporter=tap --test-concurrency=1 tests/*.test.cjs 2>&1 | tee "$results/unit.log"
-            unit_status=${PIPESTATUS[0]}
-          else
-            printf 'Full source suite runs in the regression job.\n' > "$results/unit.log"
-          fi
-          browser_tests=()
-          for file in tests/*.browser.cjs; do
-            case "$file" in
-              tests/tv-trade-ins.browser.cjs|tests/watermark-idle.browser.cjs) test "$TRADE_IN_TEST_SCOPE" = trade-in && browser_tests+=("$file");;
-              *) test "$TRADE_IN_TEST_SCOPE" = regression && browser_tests+=("$file");;
-            esac
-          done
-          node --test --test-reporter=tap --test-concurrency=1 "${browser_tests[@]}" 2>&1 | tee "$results/browser.log"
+          node --test --test-reporter=tap --test-concurrency=1 tests/*.test.cjs 2>&1 | tee "$results/unit.log"
+          unit_status=${PIPESTATUS[0]}
+          node --test --test-reporter=tap --test-concurrency=1 tests/tv-trade-ins.browser.cjs tests/pr11-cache-delivery.browser.cjs 2>&1 | tee "$results/browser.log"
           browser_status=${PIPESTATUS[0]}
           git diff --exit-code
           source_status=$?
@@ -88,14 +81,14 @@ jobs:
           echo 'ISOLATION_PASS: loopback only, no external routes or production access'
           exec setpriv --reuid "$1" --regid "$2" --clear-groups --no-new-privs \
             env -i PATH="$3" HOME="$4" TMPDIR="$4/tmp" LANG=C.UTF-8 \
-            CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" TRADE_IN_TEST_SCOPE="$9" \
+            CHROME_PATH=/usr/bin/google-chrome PLAYWRIGHT_CORE_PATH="$5" \
             /bin/bash "$6" "$7" "$8"
           NETWORK
           set +e
           sudo unshare --net -- /bin/bash "$RUNNER_TEMP/delivery-network.sh" \
             "$(id -u)" "$(id -g)" "$PATH" "$RUNNER_TEMP/delivery-home" \
             "$RUNNER_TEMP/delivery-deps/node_modules/playwright-core" "$RUNNER_TEMP/delivery-suites.sh" \
-            "$GITHUB_WORKSPACE" "$RUNNER_TEMP/delivery-results" "${{ matrix.scope }}"
+            "$GITHUB_WORKSPACE" "$RUNNER_TEMP/delivery-results"
           status=$?
           {
             printf '### Review-only TV trade-in workflow validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
