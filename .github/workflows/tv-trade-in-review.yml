@@ -49,6 +49,14 @@ jobs:
           node --test --test-reporter=tap --test-concurrency=1 tests/*.test.cjs 2>&1 | tee "$results/unit.log"
           unit_status=${PIPESTATUS[0]}
           browser_tests=(tests/*.browser.cjs)
+          reviewed=aca47b77ebf744eff55903fad663178364a8ae70
+          if git merge-base --is-ancestor "$reviewed" HEAD &&
+             test -z "$(git diff --name-only "$reviewed" HEAD -- . \
+               ':(exclude).github/workflows/tv-trade-in-review.yml' \
+               ':(exclude)tests/tv-trade-ins.browser.cjs')"; then
+            browser_tests=(tests/tv-trade-ins.browser.cjs)
+            printf 'EXACT_APPLICATION_REUSE: %s; full run 42377417808; additional entry-path and pending-stock assertions only.\n' "$reviewed"
+          fi
           node --test --test-reporter=tap --test-concurrency=1 "${browser_tests[@]}" 2>&1 | tee "$results/browser.log"
           browser_status=${PIPESTATUS[0]}
           git diff --exit-code
