@@ -16,7 +16,7 @@ async function fixture(role='OWNER'){
  await login(page);
  return {page,context};
 }
-async function login(page){await page.locator('#sharedLoginUser').selectOption('synthetic-idle-staff');await page.locator('#sharedLoginPassword').fill(password);await page.evaluate(()=>ZEZMS.staffAuth.signInFromLogin());await page.waitForFunction(()=>!!ZEZMS.staffAuth.getContext().user);}
+async function login(page){await page.locator('#sharedLoginUser').selectOption('synthetic-idle-staff');await page.locator('#sharedLoginPassword').fill(password);await page.evaluate(()=>ZEZMS.staffAuth.signInFromLogin());await page.waitForFunction(()=>!!ZEZMS.staffAuth.getContext().user);await page.clock.runFor(1000);await page.keyboard.press('Shift');}
 // fastForward coalesces timer callbacks. Run the final second chronologically so
 // a boundary recheck scheduled by the real elapsed-time guard also executes.
 async function signedIn(page){return page.evaluate(()=>!!ZEZMS.staffAuth.getContext().user);}
