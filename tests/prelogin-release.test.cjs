@@ -28,7 +28,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261106-sync-context-r1':release)),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261107-tv-trade-in-r1':release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -61,6 +61,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'js/tv-trade-ins.js','tools/tv-trade-in-transform.cjs','TV_TRADE_IN_UPDATE.html','tests/tv-trade-ins.test.cjs','tests/tv-trade-ins.browser.cjs','docs/tv-trade-ins.md','.github/workflows/tv-trade-in-review.yml',
     'SYNC_RELIABILITY_UPDATE.html','tests/sync-context-proof.cjs','tests/sync-context-queue.test.cjs','tests/sync-context-queue.browser.cjs','docs/sync-context-queue.md','.github/workflows/sync-context-queue-review.yml',
     'js/idle-session.js','tools/watermark-idle-transform.cjs','WATERMARK_IDLE_UPDATE.html','tests/watermark-idle.test.cjs','tests/watermark-idle.browser.cjs','docs/watermark-idle.md','.github/workflows/watermark-idle-review.yml','js/document-branding.js','js/sync-resilience.js','js/desktop-presentation.js','js/device-cards.js','tools/device-cards-transform.cjs','DEVICE_CARDS_UPDATE.html','tests/device-cards.test.cjs','tests/device-cards.browser.cjs','docs/device-cards.md','.github/workflows/device-cards-review.yml','tools/resilience-performance-transform.cjs','RESILIENCE_PERFORMANCE_UPDATE.html','tests/resilience-performance.test.cjs','tests/resilience-performance.browser.cjs','tests/resilience-performance.benchmark.cjs','docs/sync-resilience-performance.md','.github/workflows/resilience-performance-review.yml','assets/zez-logo-approved-20261103.jpg','tools/document-branding-transform.cjs','DOCUMENT_BRANDING_UPDATE.html','tests/document-branding.test.cjs','tests/document-branding.browser.cjs','docs/document-branding.md','.github/workflows/document-branding-review.yml',
     'js/canonical-restore.js','js/canonical-recovery-sync.js','js/self-service-recovery.js',
