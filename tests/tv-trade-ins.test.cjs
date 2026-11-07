@@ -94,3 +94,8 @@ test('competing device payloads for the same trade-in claim cannot receive a fal
  await assert.rejects(b.c.ZEZMS.syncResilience.transport.push({operation:op2,hash,send:async()=>({data:[{server_seq:12}]}),read:async()=>({data:{seq:12,op_id:op1.opId,payload:op1}})}),/PAYLOAD_CONFLICT/);
  assert.ok(assembled().includes("operation.kind === 'STOCK_IN' && operation.patches.some"));
 });
+
+test('background renders preserve the inspection form; a different staff role gets a new form',()=>{
+ const f=fixture(),root={html:'',writes:0,get innerHTML(){return this.html;},set innerHTML(value){this.html=value;this.writes++;},querySelector(){return this.html.includes('id="tvTradeIns"')?{}:null;}};
+ f.c.currentView='pos';f.c.document.getElementById=id=>id==='viewRoot'?root:null;f.api.open();assert.equal(root.writes,1);for(let i=0;i<10;i++)f.c.render();assert.equal(root.writes,1);f.setRole('ADMIN');f.c.render();assert.equal(root.writes,2);
+});

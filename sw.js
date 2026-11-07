@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-be55995dffa5fbec';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-5880568e036b62b9';
+const CACHE = 'zezms-pr11-delivery-20261026-b58521ba9d97379e';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-590d8aa7706d3e56';
 const ASSETS = [
   './',
   './index.html',
@@ -105,8 +105,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261107-tv-trade-in-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "28e6af045a9152f5f36f4168fc16c82785bf0e82467850617ec65981c5148a65",
-  "./index.html": "28e6af045a9152f5f36f4168fc16c82785bf0e82467850617ec65981c5148a65",
+  "./": "fe51974ec9b97f41a751637f6ad149a14013f83aaba6c43d1121d86e1c3a6c62",
+  "./index.html": "fe51974ec9b97f41a751637f6ad149a14013f83aaba6c43d1121d86e1c3a6c62",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -194,7 +194,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/idle-session.js?v=20261107-tv-trade-in-r1": "740a2f6c01a4560b8dbb8f6c1b8b612194970998648460aeca8d00060e9f269f",
   "./WATERMARK_IDLE_UPDATE.html": "864d9b84498c9cb018e89a41a70b3b24a0ff259e3f54a4db201718a4c5b8dffd",
   "./SYNC_RELIABILITY_UPDATE.html": "45d12bb05f9ae9c364363a44f1d0d592ec6d4a3eba482c253ccf29545ba58112",
-  "./js/tv-trade-ins.js?v=20261107-tv-trade-in-r1": "95e05357c5b89a50194d97d8da603382ef8cd1f93c73a50a36669b3018db60ad",
+  "./js/tv-trade-ins.js?v=20261107-tv-trade-in-r1": "904c6a6b29e13891488fd5ae5e4c3a12a64fbbcbcf6cc8fd682da71d924435de",
   "./TV_TRADE_IN_UPDATE.html": "496b9b43c690892f38dc4fcc0c85b1208809c438c84c372855df288dcdcf2586"
 });
 // PR11_VERIFIED_ASSETS_END

@@ -4,7 +4,7 @@
   window.ZEZMS = window.ZEZMS || {};
   const BUILD = '20261107-tv-trade-in-r1', SUBTYPE = 'TV_TRADE_IN';
   const CHECKS = ['picture', 'sound', 'inputs', 'controls', 'screen', 'power'];
-  let preview = null, busy = false, searchRows = [], selectedSource = null;
+  let preview = null, busy = false, searchRows = [], selectedSource = null, forcePaint = false, mountedIdentity = '';
   const list = value => Array.isArray(value) ? value : [];
   const copy = value => JSON.parse(JSON.stringify(value));
   const clean = value => String(value == null ? '' : value).trim();
@@ -238,16 +238,28 @@
   }
   async function acceptFromUI() {
     const button=document.getElementById('tiAccept');
-    try {assert(preview,'Preview the trade-in first.');assert(document.getElementById('tiApprove').checked,'Confirm approval, customer agreement and actual payment.');assert(JSON.stringify(formInput())===JSON.stringify(preview.input),'The form changed after preview. Preview it again.');if(button)button.disabled=true;status('Checking current Cloud state and completing the linked transaction…');const result=await accept(preview);render();status(result.pending || result.syncError ? 'Saved locally. Await Cloud confirmation before handover or resale; do not repeat this trade-in. '+result.syncError : 'Trade-in completed and uploaded. The accepted television is now separate used stock.');}
+    try {assert(preview,'Preview the trade-in first.');assert(document.getElementById('tiApprove').checked,'Confirm approval, customer agreement and actual payment.');assert(JSON.stringify(formInput())===JSON.stringify(preview.input),'The form changed after preview. Preview it again.');if(button)button.disabled=true;status('Checking current Cloud state and completing the linked transaction…');const result=await accept(preview);forcePaint=true;render();status(result.pending || result.syncError ? 'Saved locally. Await Cloud confirmation before handover or resale; do not repeat this trade-in. '+result.syncError : 'Trade-in completed and uploaded. The accepted television is now separate used stock.');}
     catch(error){status(error.message,true);}finally{if(button)button.disabled=false;}
   }
-  function open() {actor();preview=null;selectedSource=null;currentView='tv-trade-ins';render();}
+  function open() {actor();preview=null;selectedSource=null;forcePaint=true;currentView='tv-trade-ins';render();}
   function install() {
     for(const name of ['undoInventoryTransaction','editStoredReceipt']) { const base=window[name]; if(typeof base==='function')window[name]=function(id){try{blockPartial(id);}catch(error){status(error.message,true);return false;}return base.apply(this,arguments);}; }
     const cashUndo=window.undoCashTransaction;if(typeof cashUndo==='function')window.undoCashTransaction=function(id){try{blockCash(id);}catch(error){status(error.message,true);return false;}return cashUndo.apply(this,arguments);};
     if(typeof render!=='function')return;
     const inherited=render;
-    render=function(){if(currentView!=='tv-trade-ins')return inherited.apply(this,arguments);try{actor();if(typeof updatePeriodUI==='function')updatePeriodUI();if(typeof applyRoleUI==='function')applyRoleUI();document.getElementById('viewRoot').innerHTML=viewHTML();}catch(error){currentView='pos';inherited();status(error.message,true);}};
+    render=function(){
+      if(currentView!=='tv-trade-ins')return inherited.apply(this,arguments);
+      try{
+        const staff=actor(),identity=staff.id+'|'+staff.role,root=document.getElementById('viewRoot');
+        if(typeof updatePeriodUI==='function')updatePeriodUI();if(typeof applyRoleUI==='function')applyRoleUI();
+        const title=document.getElementById('viewTitle');if(title)title.textContent='TV Trade-ins';
+        // Background clock/Sync renders must not replace a form being inspected.
+        // A fresh preview and Cloud receive still validate every value at commit.
+        if(!forcePaint && mountedIdentity===identity && root.querySelector('#tvTradeIns'))return true;
+        if(mountedIdentity!==identity){preview=null;selectedSource=null;searchRows=[];}
+        forcePaint=false;mountedIdentity=identity;root.innerHTML=viewHTML();return true;
+      }catch(error){preview=null;selectedSource=null;forcePaint=false;mountedIdentity='';currentView='pos';inherited();status(error.message,true);}
+    };
     // Existing role rules still decide who can open Sales Records. Add a scoped entry there.
     const originalReceipts=window.viewReceipts;
     if(typeof originalReceipts==='function')window.viewReceipts=function(){const html=originalReceipts.apply(this,arguments);try{actor();return '<div class="row" style="margin-bottom:12px"><button class="btn" onclick="ZEZMS.tvTradeIns.open()">TV Trade-ins</button></div>'+html;}catch(_){return html;}};
