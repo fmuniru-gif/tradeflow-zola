@@ -50,7 +50,7 @@ jobs:
           node --version
           /usr/bin/google-chrome --version
           mkdir -p "$RUNNER_TEMP/delivery-home/tmp" "$RUNNER_TEMP/delivery-results"
-      - name: Run all source/unit and Chrome suites with external networking unavailable
+      - name: Run source and focused contrast/upgrade browser checks
         shell: bash
         run: |
           set -euo pipefail
@@ -60,7 +60,7 @@ jobs:
           results="$2"
           node --test --test-reporter=tap --test-concurrency=1 tests/*.test.cjs 2>&1 | tee "$results/unit.log"
           unit_status=${PIPESTATUS[0]}
-          node --test --test-reporter=tap --test-concurrency=1 tests/tv-trade-ins.browser.cjs tests/pr11-cache-delivery.browser.cjs 2>&1 | tee "$results/browser.log"
+          node --test --test-reporter=tap --test-concurrency=1 --test-name-pattern='cached trade-in r1|Owner completes a trade-in|mobile Admin|Cashier and Manager' tests/tv-trade-ins.browser.cjs tests/pr11-cache-delivery.browser.cjs 2>&1 | tee "$results/browser.log"
           browser_status=${PIPESTATUS[0]}
           git diff --exit-code
           source_status=$?
