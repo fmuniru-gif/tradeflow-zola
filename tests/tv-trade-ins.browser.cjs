@@ -21,11 +21,19 @@ async function fixture(role='OWNER',width=1280){
  });
  return {page,context};
 }
+async function assertReadable(page){
+ const colors=await page.locator('#tvTradeIns input:not([type=checkbox]),#tvTradeIns select,#tvTradeIns textarea,#tvTradeIns select option').evaluateAll(elements=>elements.map(el=>{const style=getComputedStyle(el);return {id:el.id||el.tagName,foreground:style.color,background:style.backgroundColor,caret:style.caretColor,placeholder:el.hasAttribute('placeholder')?getComputedStyle(el,'::placeholder').color:null};}));
+ function luminance(color){const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;}
+ function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+ assert.ok(colors.length>0);for(const c of colors){assert.ok(contrast(c.foreground,c.background)>=4.5,c.id+' entered/selected text contrast');if(c.placeholder)assert.ok(contrast(c.placeholder,c.background)>=4.5,c.id+' placeholder contrast');assert.notEqual(c.caret,c.background,c.id+' caret contrast');}
+}
 async function fill(page){
- await page.evaluate(()=>nav('receipts'));await page.getByRole('button',{name:'TV Trade-ins',exact:true}).click();await page.locator('#tiSearch').fill('SYN-ORIGINAL');await page.getByRole('button',{name:'Find purchase',exact:true}).click();await page.locator('#tiResults button').first().click();
+ await page.evaluate(()=>nav('receipts'));await page.getByRole('button',{name:'TV Trade-ins',exact:true}).click();await page.locator('#tiSearch').fill('SYN-ORIGINAL');await assertReadable(page);await page.getByRole('button',{name:'Find purchase',exact:true}).click();await page.locator('#tiResults button').first().click();
  for(const [id,value]of Object.entries({tiSerial:'SYN-SERIAL-1234',tiOriginalScreen:'32',tiNewScreen:'55',tiVerification:'Original receipt and physical serial checked with customer.',tiCondition:'Fully working with minor cosmetic wear.',tiCredit:'500',tiResale:'800',tiVat:'0',tiWithholding:'0',tiCash:'2500'}))await page.locator('#'+id).fill(value);
  await page.evaluate(()=>{for(let i=0;i<10;i++)render();});assert.equal(await page.locator('#tiSerial').inputValue(),'SYN-SERIAL-1234');
  await page.locator('#tiNewProduct').selectOption('SYN-NEW');await page.locator('#tiPrice').fill('3000');await page.locator('#tiWallet').selectOption('Cash in Hand');await page.locator('#tiPurchase').check();for(const check of ['picture','sound','inputs','controls','screen','power'])await page.locator('#tiCheck-'+check).check();
+ await assertReadable(page);for(const id of ['tiSerial','tiCredit','tiCondition','tiNewProduct']){await page.locator('#'+id).focus();await assertReadable(page);}
+ await page.locator('#tiSerial').evaluate(el=>el.readOnly=true);await page.locator('#tiWallet').evaluate(el=>el.disabled=true);await assertReadable(page);await page.locator('#tiSerial').evaluate(el=>el.readOnly=false);await page.locator('#tiWallet').evaluate(el=>el.disabled=false);
 }
 test('Owner completes a trade-in through the real UI, with one linked durable operation and correct cash/stock',async()=>{
  const f=await fixture();try{await fill(f.page);await f.page.getByRole('button',{name:'Preview trade-in',exact:true}).click();await f.page.waitForSelector('#tiApprove');assert.match(await f.page.locator('#tiPreview').innerText(),/2,500.00/);await f.page.locator('#tiApprove').check();await f.page.locator('#tiAccept').click();await f.page.waitForFunction(()=>DB.inventoryTxns.some(t=>t.subtype==='TV_TRADE_IN'));

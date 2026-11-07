@@ -7,6 +7,7 @@ const delivery=require('../tools/build-pr11-delivery.cjs'),{fixtureAsset}=requir
 const root=path.resolve(__dirname,'..'),before='1241e0ea2a02d05d68e976d16f51164ad72c216b',production='f810940762809e89a35f982a8577a9f32dcabf4e';
 const brokenProduction='d2a91205e0c8974ad298b56b3b744a8588d32319';
 const currentProduction='e3e0bf654519f3d9745ec89f3d9dbc394cf53067';
+const tradeInR1='6d232ab4dff0695b37eb983159fcaa848a856134';
 const memo=new Map();
 function committed(ref,name){const key=ref+':'+name;if(!memo.has(key))memo.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:32*1024*1024}));return memo.get(key);}
 let mode='before',fault='',browser;
@@ -22,7 +23,7 @@ const server=http.createServer((req,res)=>{
   if(mode==='corrected'&&fault==='stale-shell'&&file==='index.html')return res.end(committed(before,file));
   if(mode==='corrected'&&fault==='missing-main-pages'&&file==='js/main-table-pages.js'){res.writeHead(503);return res.end('synthetic interrupted paging download');}
   if(mode==='corrected'&&fault==='stale-owner-maintenance'&&file==='js/owner-maintenance-v373.js')return res.end(committed(currentProduction,file));
-  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
+  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='trade-in-r1'?tradeInR1:mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 async function ready(page){await page.waitForFunction(()=>!!window.ZEZMS?.navigationV3101&&!!window.ZEZMS?.managementIntelligence&&!!window.ZEZMS?.stockVelocity,null,{timeout:20000});}
@@ -86,7 +87,7 @@ async function baseline(initial='before'){
   context.on('response',r=>{if(r.request().isNavigationRequest())navigations.push(r.body().then(body=>({url:r.url(),worker:r.fromServiceWorker(),sha:delivery.sha(body)})).catch(()=>({url:r.url(),unavailable:true})));});
   let page=await context.newPage();await page.goto(origin+'/index.html');await ready(page);
   await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js?v=20261024-ui-stock-review-r1');await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('synthetic worker startup timeout')),30000))]);});
-  if(initial==='corrected'||initial==='current-production'){
+  if(initial==='corrected'||initial==='current-production'||initial==='trade-in-r1'){
     await page.reload();await ready(page);
     return {context,page,origin,errors,external,navigations};
   }
@@ -316,4 +317,16 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
     await f.context.setOffline(true);await f.page.reload();await ready(f.page);
     assert.deepEqual(await apis(f.page),good);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
   }finally{await f.context.close();}
+});
+
+test('cached trade-in r1 uses the versioned update link to receive r2 without stale helper HTML or data loss',async()=>{
+ const f=await baseline('trade-in-r1');try{
+  assert.equal((await workerProof(f.page)).delivery,'20261107-tv-trade-in-r1');
+  const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./TV_TRADE_IN_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261107-tv-trade-in-r1'/);
+  const saved=await seed(f,'ContrastMain','synthetic-contrast-main','OWNER');mode='corrected';
+  await f.page.goto(f.origin+'/TV_TRADE_IN_UPDATE.html?delivery='+delivery.DELIVERY);
+  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified TV trade-in workflow update is ready'));
+  assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
+  await activateNaturally(f);assert.equal(await f.page.evaluate(()=>ZEZMS.tvTradeIns.build),'20261107-tv-trade-in-r2');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
+ }finally{await f.context.close();}
 });
