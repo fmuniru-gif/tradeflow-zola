@@ -161,13 +161,14 @@ const server = http.createServer((request, response) => {
     }
     assert.deepEqual(changedRoots,[],'Navigation changed database roots');
     assert.equal(await page.evaluate(()=>JSON.stringify(ZEZMS.cloudSync.getOutbox())),queueBefore,'Navigation changed the outbox');
+    await page.evaluate(()=>{window.__paginationRenderTrace=[];const render=window.render;window.render=function(){if(currentView==='receipts'&&ZEZMS.tablePages.inspect('receipts').page>0)__paginationRenderTrace.push(new Error().stack);return render.apply(this,arguments);};});
     await require('./table-page-fixture.cjs').installProbe(page);
     result.functional=await page.evaluate(async()=>{
       const check=(value,message)=>{if(!value)throw new Error(message);};
       const settle=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,60))));
       nav('receipts');await settle();
       const rows=()=>Array.from(document.querySelectorAll('#salesRecordsBody .sales-record-row'));
-      const complete=await __tableProbe.collect('receipts','#salesRecordsBody .sales-record-row');
+      const complete=await __tableProbe.collect('receipts','#salesRecordsBody .sales-record-row').catch(error=>{console.log('PAGINATION_RENDER_DIAGNOSTIC '+JSON.stringify({state:ZEZMS.tablePages.inspect('receipts'),trace:__paginationRenderTrace.slice(-6)}));throw error;});
       check(complete.length===1350,'Sales records were omitted');
       document.getElementById('receiptNameSearch').value='Synthetic Customer 899';filterSalesRecordsByName();
       check(rows().filter(row=>row.style.display!=='none').length===1,'Customer search did not find last receipt');

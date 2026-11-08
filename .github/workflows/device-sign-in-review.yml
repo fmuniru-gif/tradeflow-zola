@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scope: [source, passkeys, delivery, operations, integrity]
+        scope: [desktop]
     steps:
       - name: Checkout exact review head and complete history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -29,6 +29,10 @@ jobs:
           git merge-base --is-ancestor 34ec1e4de3fa398d5325e8d1dd9aedf4bbf6d630 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
+          reviewed=808385b26064fec264369808af45af1d5804d136
+          git merge-base --is-ancestor "$reviewed" HEAD
+          test -z "$(git diff --name-only "$reviewed" HEAD -- . ':(exclude)tests/desktop-ui-performance.browser.cjs' ':(exclude).github/workflows/device-sign-in-review.yml')"
+          echo 'EXACT_APPLICATION_REUSE: source, passkeys, integrity, delivery and other operations checks in run 42525118737 cover identical application bytes. This job repeats the desktop fixture with render diagnostics and unchanged assertions.'
       - name: Set up Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -60,6 +64,7 @@ jobs:
           browser_tests=()
           for file in tests/*.browser.cjs; do
             case "$file" in
+              tests/desktop-ui-performance.browser.cjs) bucket=desktop;;
               tests/device-sign-in.browser.cjs) bucket=passkeys;;
               tests/pr11-cache-delivery.browser.cjs|tests/prelogin-activation.browser.cjs|tests/prebranch-functional-rollback.browser.cjs|tests/r70v-diagnostic.browser.cjs) bucket=delivery;;
               tests/daily-barcodes.browser.cjs|tests/desktop-ui-performance.browser.cjs|tests/document-branding.browser.cjs|tests/main-responsiveness.browser.cjs|tests/remaining-tabs-performance.browser.cjs|tests/resilience-performance.browser.cjs|tests/tv-trade-ins.browser.cjs|tests/ui-responsiveness.browser.cjs) bucket=operations;;
