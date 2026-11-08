@@ -40,3 +40,16 @@ test('scans select through the existing entry handlers without adding quantity o
 test('apart from the new tile/provider export and helper, every assembled production byte remains exact',()=>{
  const old=execFileSync('git',['show','b762cbda924cb135de43b6f388f323bb007e164e:index.html'],{maxBuffer:32*1024*1024}).toString(),strip=s=>s.replace(/<meta name="zezms-delivery" content="[^"]+">/,'DELIVERY');assert.equal(strip(require('../tools/daily-barcode-transform.cjs').withoutDailyBarcodes(html())),strip(delivery.assembledShell(old)));
 });
+test('new-product barcode stays a draft until the native Stock In save and remains distinct from Product ID',()=>{
+ const f=fixture(),before=JSON.stringify(f.db);f.elements['barcodeInput-siNewName']={value:'0000693213513488'};
+ assert.equal(f.api.prepareNewStockIn('','New appliance','NEW-1'),'0000693213513488');assert.equal(JSON.stringify(f.db),before);assert.equal(f.saves(),0);
+ const p=f.api.newProductRecord({id:'NEW-1',name:'New appliance',uPrice:150},'0000693213513488');assert.equal(p.id,'NEW-1');assert.deepEqual(Array.from(p.barcodes),['0000693213513488']);assert.equal(f.saves(),0);assert.equal(JSON.stringify(f.db),before);
+});
+test('new product barcode rejects an existing alias/ID, existing name, mixed selection, invalid data and unauthorized staff before mutation',()=>{
+ const f=fixture(),before=JSON.stringify(f.db);f.elements['barcodeInput-siNewName']={value:'001234'};assert.throws(()=>f.api.prepareNewStockIn('','New','N1'),/already belongs/);
+ f.elements['barcodeInput-siNewName'].value='p1';assert.throws(()=>f.api.prepareNewStockIn('','New','N1'),/already belongs/);
+ f.elements['barcodeInput-siNewName'].value='NEWCODE';assert.throws(()=>f.api.prepareNewStockIn('Synthetic TV','New','N1'),/Clear Existing/);assert.throws(()=>f.api.prepareNewStockIn('','Synthetic TV','N1'),/name already exists/);assert.throws(()=>f.api.prepareNewStockIn('','','N1'),/Enter the new product name/);assert.throws(()=>f.api.prepareNewStockIn('','New','001234'),/already belongs/);assert.throws(()=>f.api.newProductRecord({id:'001234',name:'New'},'NEWCODE'),/already belongs/);
+ f.elements['barcodeInput-siNewName'].value='x'.repeat(129);assert.throws(()=>f.api.prepareNewStockIn('','New','N1'),/valid barcode/);assert.equal(JSON.stringify(f.db),before);assert.equal(f.saves(),0);
+ const staff=fixture('CASHIER');staff.elements['barcodeInput-siNewName']={value:'NEWCODE'};assert.throws(()=>staff.api.prepareNewStockIn('','New','N1'),/Only Owner/);
+ f.elements['barcodeInput-siNewName'].value='';assert.equal(f.api.prepareNewStockIn('Synthetic TV','',''),'');assert.equal(f.api.newProductRecord({id:'N1'},'').id,'N1');
+});

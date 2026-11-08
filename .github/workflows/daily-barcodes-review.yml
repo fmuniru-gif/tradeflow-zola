@@ -1,7 +1,7 @@
-name: Daily profit and barcode review (NO DEPLOY)
+name: New product barcode review (NO DEPLOY)
 on:
   push:
-    branches: [feature/daily-profit-barcodes-20261108]
+    branches: [fix/new-product-barcode-20261108]
 permissions:
   contents: read
 jobs:
@@ -23,16 +23,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = feature/daily-profit-barcodes-20261108
+          test "$GITHUB_REF_NAME" = fix/new-product-barcode-20261108
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = b762cbda924cb135de43b6f388f323bb007e164e
-          git merge-base --is-ancestor b762cbda924cb135de43b6f388f323bb007e164e HEAD
+          test "$(git rev-parse origin/main)" = e0fd7fba5e5f246c53644a2d79f420c219394d50
+          git merge-base --is-ancestor e0fd7fba5e5f246c53644a2d79f420c219394d50 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
-          reviewed=56434bfe5511abc9190b70d4eea159891b7f910f
-          git merge-base --is-ancestor "$reviewed" HEAD
-          test -z "$(git diff --name-only "$reviewed" HEAD -- . ':(exclude)tests/daily-barcodes.browser.cjs' ':(exclude)tests/watermark-idle.browser.cjs' ':(exclude).github/workflows/daily-barcodes-review.yml')"
-          echo 'EXACT_APPLICATION_REUSE: 88 passing regression cases in run 42462566918 cover identical application bytes; the complete idle suite and feature suite run again here with chronological timer-boundary and camera-frame drivers.'
       - name: Set up Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -46,7 +42,7 @@ jobs:
           node --version
           /usr/bin/google-chrome --version
           mkdir -p "$RUNNER_TEMP/delivery-home/tmp" "$RUNNER_TEMP/delivery-results"
-      - name: Run source, barcode and complete inactivity browser checks
+      - name: Run source, product scanning, inactivity and update browser checks
         shell: bash
         run: |
           set -euo pipefail
@@ -64,7 +60,7 @@ jobs:
           browser_tests=()
           for file in tests/*.browser.cjs; do
             case "$file" in
-              tests/daily-barcodes.browser.cjs|tests/watermark-idle.browser.cjs) test "$TEST_SCOPE" = feature && browser_tests+=("$file");;
+              tests/daily-barcodes.browser.cjs|tests/watermark-idle.browser.cjs|tests/pr11-cache-delivery.browser.cjs|tests/sync-context-queue.browser.cjs) test "$TEST_SCOPE" = feature && browser_tests+=("$file");;
               *) test "$TEST_SCOPE" = regression && browser_tests+=("$file");;
             esac
           done

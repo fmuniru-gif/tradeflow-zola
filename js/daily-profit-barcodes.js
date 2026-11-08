@@ -2,8 +2,8 @@
 (function(){
  'use strict';
  window.ZEZMS=window.ZEZMS||{};
- const BUILD='20261108-daily-profit-barcodes-r1',VENDOR='vendor/zxing-browser-0.1.5.min.js';
- const TARGETS={posProduct:{name:'Sale Out',permission:'SALE_OUT'},siProduct:{name:'Stock In',permission:'STOCK_IN'},invProduct:{name:'Invoice',permission:'MANAGE_DOCUMENTS'},wbProduct:{name:'Waybill',permission:'MANAGE_DOCUMENTS'},quoteProductSearch:{name:'Quotation',permission:'MANAGE_DOCUMENTS'},pfiProductId:{name:'Proforma invoice',permission:'MANAGE_DOCUMENTS'},poProduct:{name:'Purchase order',permission:'STOCK_IN'},scProduct:{name:'Stock correction',owner:true},tiNewProduct:{name:'TV upgrade',owner:true}};
+ const BUILD='20261108-daily-profit-barcodes-r2',VENDOR='vendor/zxing-browser-0.1.5.min.js';
+ const TARGETS={posProduct:{name:'Sale Out',permission:'SALE_OUT'},siProduct:{name:'Stock In',permission:'STOCK_IN'},siNewName:{name:'New product',permission:'STOCK_IN',owner:true},invProduct:{name:'Invoice',permission:'MANAGE_DOCUMENTS'},wbProduct:{name:'Waybill',permission:'MANAGE_DOCUMENTS'},quoteProductSearch:{name:'Quotation',permission:'MANAGE_DOCUMENTS'},pfiProductId:{name:'Proforma invoice',permission:'MANAGE_DOCUMENTS'},poProduct:{name:'Purchase order',permission:'STOCK_IN'},scProduct:{name:'Stock correction',owner:true},tiNewProduct:{name:'TV upgrade',owner:true}};
  let camera=null,decoderPromise=null,mountQueued=false;
  const list=x=>Array.isArray(x)?x:[],clean=x=>String(x==null?'':x).trim(),clone=x=>JSON.parse(JSON.stringify(x));
  const esc=x=>clean(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -28,6 +28,22 @@
   }
   return next;
  }
+ function unassigned(value){const text=code(value);assert(!list(database().products).some(p=>aliases(p).includes(text)||clean(p.id).toLowerCase()===text.toLowerCase()),'This barcode or Product ID already belongs to an existing product. Select that product instead.');return text;}
+ function prepareNewStockIn(selectedName,enteredName,requestedId){
+  const input=document.getElementById('barcodeInput-siNewName'),value=clean(input&&input.value);if(!value)return '';
+  assert(allowed('siNewName'),'Only Owner/Admin with Stock In access can link a new product barcode.');
+  assert(!clean(selectedName),'Clear Existing product before creating a new product with this barcode.');
+  assert(clean(enteredName),'Enter the new product name before recording this barcode.');
+  assert(!list(database().products).some(p=>clean(p.name).toLowerCase()===clean(enteredName).toLowerCase()),'That product name already exists. Select the existing product and manage its barcode in Products.');
+  if(clean(requestedId))unassigned(requestedId);return unassigned(value);
+ }
+ function newProductRecord(product,barcode){if(!barcode)return product;assert(allowed('siNewName'),'Only Owner/Admin with Stock In access can link a new product barcode.');unassigned(product.id);return Object.assign(product,{barcodes:[unassigned(barcode)]});}
+ function stageNewBarcode(value){
+  assert(allowed('siNewName'),'Only Owner/Admin with Stock In access can link a new product barcode.');
+  const selected=document.getElementById('siProduct');assert(!clean(selected&&selected.value),'Clear Existing product before scanning a new product barcode.');
+  const text=unassigned(value),input=document.getElementById('barcodeInput-siNewName');assert(input&&input.isConnected,'The new product form has closed.');input.value=text;input.focus();input.select();
+  message('siNewName','Barcode ready. Enter the product details, then Record Stock In to save the product and barcode together.',false);return text;
+ }
  function daily(reference){
   const data=database(),date=reference instanceof Date?reference:new Date(reference||Date.now()),selection=ZEZMS.dashboardRestoration&&ZEZMS.dashboardRestoration.getSelection();
   if(!Number.isFinite(date.getTime())||!isOpenMonth()||Number(data.selectedYear)!==date.getFullYear()||Number(data.selectedMonth)!==date.getMonth()+1||(selection&&selection.kind&&selection.kind!=='NORMAL'))return {value:null,note:'Live-day KPI · select the current open month',count:0,missing:0};
@@ -48,7 +64,7 @@
  function message(id,text,bad){const el=document.getElementById('barcodeStatus-'+id);if(el){el.textContent=text;el.style.color=bad?'#fda4af':'#99f6e4';}}
  function choice(id,value){const el=document.getElementById(id);assert(el,'The entry form has closed. Reopen it before scanning.');assert(Array.from(el.options||[]).some(o=>o.value===value),'This product is not eligible in the current entry/month.');el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));return el;}
  function select(value,id){
-  assert(allowed(id),'Sign in with access to this entry form before scanning.');const product=resolve(value),target=document.getElementById(id);assert(target&&target.isConnected,'The entry form has closed.');
+  assert(allowed(id),'Sign in with access to this entry form before scanning.');if(id==='siNewName')return stageNewBarcode(value);const product=resolve(value),target=document.getElementById(id);assert(target&&target.isConnected,'The entry form has closed.');
   if(id==='posProduct')pickProduct(product.name);
   else if(id==='siProduct')choice(id,product.name);
   else if(id==='invProduct'||id==='wbProduct')pickCommercialProduct(id==='invProduct'?'inv':'wb',encodeURIComponent(product.name));
@@ -87,6 +103,9 @@
    const box=document.createElement('div');box.className='tf-barcode-entry';box.dataset.barcodeTarget=id;box.innerHTML='<label for="barcodeInput-'+id+'">Barcode / Product ID · '+esc(TARGETS[id].name)+'</label><div class="tf-barcode-row"><input id="barcodeInput-'+id+'" autocomplete="off" spellcheck="false" maxlength="128" placeholder="Scan here, then Enter"><button type="button" class="btn ghost" data-action="find">Find</button><button type="button" class="btn ghost" data-action="camera">Camera</button></div><p id="barcodeStatus-'+id+'" role="status">Scan selects a product. Quantity and posting remain under your control. F8 focuses scanning.</p>';
    target.closest('.field')?target.closest('.field').insertAdjacentElement('afterend',box):target.insertAdjacentElement('afterend',box);
    box.querySelector('input').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();event.stopPropagation();scan(id);}});box.querySelector('[data-action=find]').onclick=()=>scan(id);box.querySelector('[data-action=camera]').onclick=()=>openCamera(id);
+   if(id==='siNewName'){box.querySelector('label').textContent='New product barcode (optional)';box.querySelector('input').maxLength=1024;box.querySelector('[data-action=find]').textContent='Check barcode';box.querySelector('p').textContent='Scan or type the barcode, then enter the product details and Record Stock In. Nothing is saved by scanning.';}
+   if(id==='siProduct'&&allowed('siNewName')){const button=document.createElement('button');button.type='button';button.className='btn ghost';button.textContent='Use for new product';button.dataset.action='new';button.onclick=()=>{try{stageNewBarcode(box.querySelector('input').value);}catch(error){message(id,error.message,true);}};box.querySelector('.tf-barcode-row').appendChild(button);}
+
   });
   if(typeof currentView!=='undefined'&&currentView==='products'&&owner()&&!document.getElementById('barcodeMappingCard')){
    const root=document.getElementById('viewRoot');if(!root)return;const card=document.createElement('section');card.id='barcodeMappingCard';card.className='card tf-barcode-mapping';card.innerHTML='<h3>Product barcodes</h3><p>Owner/Admin: link a manufacturer barcode to an existing product. Product IDs can already be scanned without a mapping.</p><label for="barcodeMapProduct">Product</label><select id="barcodeMapProduct"><option value="">Select product</option>'+list(database().products).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.id+' · '+p.name)+'</option>').join('')+'</select><label for="barcodeMapCode">Barcode (leading zeros are preserved)</label><input id="barcodeMapCode" maxlength="128" placeholder="Scan or type the barcode"><div class="row"><button type="button" class="btn" data-map="add">Link barcode</button><button type="button" class="btn ghost" data-map="remove">Remove link</button></div><p id="barcodeMapStatus" role="status"></p>';root.appendChild(card);
@@ -100,5 +119,5 @@
  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});document.addEventListener('zezms-staff-auth-changed',()=>{stopCamera();schedule();});
  const observer=new MutationObserver(schedule);observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});schedule();
  ZEZMS.dailyProfit=Object.freeze({build:BUILD,calculate:daily,tile:profitTile});
- ZEZMS.barcodes=Object.freeze({build:BUILD,resolve,setBarcode,select,scan,openCamera,stopCamera,mount,_test:{code,aliases,allowed,scope}});
+ ZEZMS.barcodes=Object.freeze({build:BUILD,resolve,setBarcode,prepareNewStockIn,newProductRecord,select,scan,openCamera,stopCamera,mount,_test:{code,aliases,allowed,scope}});
 }());

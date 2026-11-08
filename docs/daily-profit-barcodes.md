@@ -1,4 +1,4 @@
-# Daily gross profit and barcode entry — 20261108-daily-profit-barcodes-r1
+# Daily gross profit and barcode entry — 20261108-daily-profit-barcodes-r2
 
 Daily Gross Profit is a small Dashboard tile alongside daily sales and quantity. It is read-only, calculated from active canonical sales/identified Quick Sales and recorded sale-time costs/FIFO evidence. Receipt register copies are not counted again. Revenue is after discounts, before VAT and expenses; withholding/payment timing is not profit. Reversed/void transactions do not count. Incomplete/missing cost or an unmatched active receipt produces Unavailable, never an assumed catalogue margin. The local calendar day follows the existing Daily Sales KPI and resets at midnight. Historical/closed Dashboard selections do not fabricate a live-day amount. No duplicate daily aggregate is persisted.
 
@@ -14,4 +14,8 @@ This release does not enable fingerprint login or change any authentication boun
 
 Windows Hello and compatible phones may provide fingerprint, face or a device PIN; web applications cannot promise which method the device chooses. Raw fingerprints should never be collected or stored by TradeFlow. No sensor availability has been observed on the physical Main/Shop/Camon devices. Standards: https://www.w3.org/TR/webauthn-3/ ; scanner API/implementation: https://developer.chrome.com/docs/capabilities/shape-detection and https://github.com/zxing-js/browser .
 
-Update existing browser profiles through DAILY_BARCODE_UPDATE.html?delivery=20261108-daily-profit-barcodes-r1. Delivery activation remains passive and preserves business records, queues, site data, enrollment and Live Sync preferences. Automated testing uses synthetic business records, loopback-only networking and no production transactions or server schema changes.
+Update existing browser profiles through DAILY_BARCODE_UPDATE.html?delivery=20261108-daily-profit-barcodes-r2. Delivery activation remains passive and preserves business records, queues, site data, enrollment and Live Sync preferences. Automated testing uses synthetic business records, loopback-only networking and no production transactions or server schema changes.
+
+## New-product Stock In barcode capture (r2)
+
+Owner/Admin can scan or type an optional barcode inside Create a new product. The existing-product lookup also has Use for new product to transfer an unknown code without rescanning. Scanning only keeps a draft value; Record Stock In validates the new name/ID and unclaimed barcode, then includes barcodes in the new product object before the existing single native save. Product, stock and barcode therefore use the same native operation. Blank barcode retains ordinary Stock In behavior. Existing aliases/Product IDs, conflicting names/IDs, mixed existing/new entry, invalid values and unauthorized staff are rejected before product/stock mutation. Entering/scanning a barcode does not generate a name, change cost/price/quantity or save anything. The existing local camera lifecycle also applies to the new field.
