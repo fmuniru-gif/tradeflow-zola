@@ -15,7 +15,7 @@ test('the complete assembled change is only the reviewed watermark helper, quota
  const previous=delivery.assembledShell(old('index.html')).replace(old('js/document-branding.js'),delivery.assetBytes('js/document-branding.js').toString());
  const {withoutContextQueue}=require('./sync-context-proof.cjs');
  assert.equal(withoutContextQueue(clean(delivery.assembledShell(index,{withoutWatermarkIdle:true}))),withoutContextQueue(clean(previous)));
- assert.equal(delivery.assembledShell(index,{withoutTradeIns:true,withoutDailyBarcodes:true}),transformWatermarkIdle(delivery.assembledShell(index,{withoutWatermarkIdle:true}),delivery.assetBytes('js/idle-session.js').toString().replace(/<\/script/gi,'<\\/script')));
+ assert.equal(delivery.assembledShell(index,{withoutTradeIns:true,withoutDailyBarcodes:true,withoutDeviceSignIn:true}),transformWatermarkIdle(delivery.assembledShell(index,{withoutWatermarkIdle:true}),delivery.assetBytes('js/idle-session.js').toString().replace(/<\/script/gi,'<\\/script')));
  assert.throws(()=>transformWatermarkIdle('<html></html>',''),/MARKER/);
  assert.throws(()=>transformWatermarkIdle('<script data-zezms-idle-session>',''),/ALREADY_APPLIED/);
  for(const name of ['pdf-export.js','proforma-invoice-r67w.js','sales-pipeline-r67v.js','owner-maintenance-v373.js','cloud-sync.js'])assert.equal(delivery.assetBytes('js/'+name).toString(),old('js/'+name),name);
