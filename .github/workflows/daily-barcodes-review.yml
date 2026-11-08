@@ -31,8 +31,8 @@ jobs:
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
           reviewed=56434bfe5511abc9190b70d4eea159891b7f910f
           git merge-base --is-ancestor "$reviewed" HEAD
-          test -z "$(git diff --name-only "$reviewed" HEAD -- . ':(exclude)tests/daily-barcodes.browser.cjs' ':(exclude).github/workflows/daily-barcodes-review.yml')"
-          echo 'EXACT_APPLICATION_REUSE: full regression job in run 42462566918 covers identical application bytes; only the camera fixture/driver changes.'
+          test -z "$(git diff --name-only "$reviewed" HEAD -- . ':(exclude)tests/daily-barcodes.browser.cjs' ':(exclude)tests/watermark-idle.browser.cjs' ':(exclude).github/workflows/daily-barcodes-review.yml')"
+          echo 'EXACT_APPLICATION_REUSE: 88 passing regression cases in run 42462566918 cover identical application bytes; the complete idle suite and feature suite run again here with chronological timer-boundary and camera-frame drivers.'
       - name: Set up Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -46,7 +46,7 @@ jobs:
           node --version
           /usr/bin/google-chrome --version
           mkdir -p "$RUNNER_TEMP/delivery-home/tmp" "$RUNNER_TEMP/delivery-results"
-      - name: Run source and focused contrast/upgrade browser checks
+      - name: Run source, barcode and complete inactivity browser checks
         shell: bash
         run: |
           set -euo pipefail
@@ -64,7 +64,7 @@ jobs:
           browser_tests=()
           for file in tests/*.browser.cjs; do
             case "$file" in
-              tests/daily-barcodes.browser.cjs) test "$TEST_SCOPE" = feature && browser_tests+=("$file");;
+              tests/daily-barcodes.browser.cjs|tests/watermark-idle.browser.cjs) test "$TEST_SCOPE" = feature && browser_tests+=("$file");;
               *) test "$TEST_SCOPE" = regression && browser_tests+=("$file");;
             esac
           done
@@ -99,7 +99,7 @@ jobs:
             "$GITHUB_WORKSPACE" "$RUNNER_TEMP/delivery-results" "${{ matrix.scope }}"
           status=$?
           {
-            printf '### Review-only TV trade-in workflow validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
+            printf '### Review-only daily profit, barcode and inactivity validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
             for suite in unit browser; do
               printf '**%s**\n\n```text\n' "$suite"
               grep -E '^# (tests|pass|fail|cancelled|skipped|todo|duration_ms) ' "$RUNNER_TEMP/delivery-results/$suite.log" || true
