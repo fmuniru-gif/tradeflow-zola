@@ -34,7 +34,8 @@ test('keyboard activity extends the deadline; synthetic events and background re
  const f=await fixture();try{
   await f.page.clock.fastForward(240000);await f.page.keyboard.press('Shift');await f.page.clock.fastForward(60000);assert.equal(await signedIn(f.page),true);
   await f.page.evaluate(()=>{for(let i=0;i<20;i++){document.dispatchEvent(new KeyboardEvent('keydown',{key:'a',bubbles:true}));render();}window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});
-  await f.page.clock.fastForward(240000);assert.equal(await signedIn(f.page),false);
+  // Let the final boundary recheck run chronologically, as in the five-minute expiry test.
+  await f.page.clock.fastForward(239000);await f.page.clock.runFor(1100);assert.equal(await signedIn(f.page),false);
  }finally{await f.context.close();}
 });
 test('first interaction after suspension checks expiry before a stale privileged modal can act',async()=>{

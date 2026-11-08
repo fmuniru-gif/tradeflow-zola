@@ -243,8 +243,8 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
     try{
       await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
-      await f.page.goto(f.origin+'/TV_TRADE_IN_UPDATE.html');
-      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified TV trade-in workflow update is ready'));
+      await f.page.goto(f.origin+'/DAILY_BARCODE_UPDATE.html');
+      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified daily profit and barcode update is ready'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
       assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1','old active worker was replaced before its clients closed');
@@ -305,8 +305,8 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
-    await f.page.goto(f.origin+'/TV_TRADE_IN_UPDATE.html');
-    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('TV trade-in workflow update is verified and active'));
+    await f.page.goto(f.origin+'/DAILY_BARCODE_UPDATE.html');
+    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('daily profit and barcode update is verified and active'));
     assert.equal(await f.page.locator('#open').isVisible(),true);
     await f.page.goto(f.origin+'/index.html');await ready(f.page);
     await f.page.evaluate(async()=>{
@@ -319,13 +319,13 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   }finally{await f.context.close();}
 });
 
-test('cached trade-in r1 uses the versioned update link to receive r2 without stale helper HTML or data loss',async()=>{
+test('cached trade-in r1 uses the versioned update link to receive the current delivery without stale helper HTML or data loss',async()=>{
  const f=await baseline('trade-in-r1');try{
   assert.equal((await workerProof(f.page)).delivery,'20261107-tv-trade-in-r1');
   const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./TV_TRADE_IN_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261107-tv-trade-in-r1'/);
   const saved=await seed(f,'ContrastMain','synthetic-contrast-main','OWNER');mode='corrected';
-  await f.page.goto(f.origin+'/TV_TRADE_IN_UPDATE.html?delivery='+delivery.DELIVERY);
-  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified TV trade-in workflow update is ready'));
+  await f.page.goto(f.origin+'/DAILY_BARCODE_UPDATE.html?delivery='+delivery.DELIVERY);
+  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified daily profit and barcode update is ready'));
   assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
   await activateNaturally(f);assert.equal(await f.page.evaluate(()=>ZEZMS.tvTradeIns.build),'20261107-tv-trade-in-r2');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}
