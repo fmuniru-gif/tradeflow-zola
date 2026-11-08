@@ -29,6 +29,10 @@ jobs:
           git merge-base --is-ancestor e0fd7fba5e5f246c53644a2d79f420c219394d50 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
+          reviewed=8d2d139887a53402320036b640821dbffe8d3326
+          git merge-base --is-ancestor "$reviewed" HEAD
+          test -z "$(git diff --name-only "$reviewed" HEAD -- . ':(exclude)tests/daily-barcodes.browser.cjs' ':(exclude).github/workflows/daily-barcodes-review.yml')"
+          echo 'EXACT_APPLICATION_REUSE: run 42504579714 reviews identical application bytes; this follow-up corrects the synthetic established-device seed only and reruns scanning plus real bootstrap/trading guards.'
       - name: Set up Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -42,7 +46,7 @@ jobs:
           node --version
           /usr/bin/google-chrome --version
           mkdir -p "$RUNNER_TEMP/delivery-home/tmp" "$RUNNER_TEMP/delivery-results"
-      - name: Run source, product scanning, inactivity and update browser checks
+      - name: Run source, product scanning and real established-device guard checks
         shell: bash
         run: |
           set -euo pipefail
@@ -60,7 +64,7 @@ jobs:
           browser_tests=()
           for file in tests/*.browser.cjs; do
             case "$file" in
-              tests/daily-barcodes.browser.cjs|tests/watermark-idle.browser.cjs|tests/pr11-cache-delivery.browser.cjs|tests/sync-context-queue.browser.cjs) test "$TEST_SCOPE" = feature && browser_tests+=("$file");;
+              tests/daily-barcodes.browser.cjs|tests/shop-chrome-bootstrap.browser.cjs) test "$TEST_SCOPE" = feature && browser_tests+=("$file");;
               *) test "$TEST_SCOPE" = regression && browser_tests+=("$file");;
             esac
           done
