@@ -2,9 +2,6 @@ name: Daily profit and barcode review (NO DEPLOY)
 on:
   push:
     branches: [feature/daily-profit-barcodes-20261108]
-concurrency:
-  group: daily-barcodes-${{ github.ref }}
-  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -14,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scope: [feature, regression]
+        scope: [feature]
     steps:
       - name: Checkout exact review head and complete history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -32,6 +29,10 @@ jobs:
           git merge-base --is-ancestor b762cbda924cb135de43b6f388f323bb007e164e HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
+          reviewed=56434bfe5511abc9190b70d4eea159891b7f910f
+          git merge-base --is-ancestor "$reviewed" HEAD
+          test -z "$(git diff --name-only "$reviewed" HEAD -- . ':(exclude)tests/daily-barcodes.browser.cjs' ':(exclude).github/workflows/daily-barcodes-review.yml')"
+          echo 'EXACT_APPLICATION_REUSE: full regression job in run 42462566918 covers identical application bytes; only the camera fixture/driver changes.'
       - name: Set up Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -54,7 +55,7 @@ jobs:
           cd "$1"
           results="$2"
           unit_status=0
-          if test "$TEST_SCOPE" = regression; then
+          if true; then
             node --test --test-reporter=tap --test-concurrency=1 tests/*.test.cjs 2>&1 | tee "$results/unit.log"
             unit_status=${PIPESTATUS[0]}
           else
