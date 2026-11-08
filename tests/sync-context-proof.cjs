@@ -2,6 +2,7 @@
 // Whole-output equality then protects every other assembled application byte.
 const assert=require('node:assert/strict');
 function withoutContextQueue(html){
+ html=require('../tools/device-sign-in-transform.cjs').withoutDeviceSignIn(html);
  html=require('../tools/daily-barcode-transform.cjs').withoutDailyBarcodes(html);
  html=require('../tools/tv-trade-in-transform.cjs').withoutTradeIns(html);
  function section(start,end){assert.equal(html.split(start).length,2,start);const a=html.indexOf(start),b=html.indexOf(end,a+start.length);assert.ok(b>a,end);html=html.slice(0,a)+'SYNC-CONTEXT-REVIEWED-SECTION\n'+html.slice(b);}

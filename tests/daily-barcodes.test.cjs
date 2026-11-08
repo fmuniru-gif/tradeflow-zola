@@ -38,7 +38,7 @@ test('scans select through the existing entry handlers without adding quantity o
  f.elements.siProduct.options=[];assert.throws(()=>f.api.select('001234','siProduct'),/not eligible/);
 });
 test('apart from the new tile/provider export and helper, every assembled production byte remains exact',()=>{
- const old=execFileSync('git',['show','b762cbda924cb135de43b6f388f323bb007e164e:index.html'],{maxBuffer:32*1024*1024}).toString(),strip=s=>s.replace(/<meta name="zezms-delivery" content="[^"]+">/,'DELIVERY');assert.equal(strip(require('../tools/daily-barcode-transform.cjs').withoutDailyBarcodes(html())),strip(delivery.assembledShell(old)));
+ const old=execFileSync('git',['show','b762cbda924cb135de43b6f388f323bb007e164e:index.html'],{maxBuffer:32*1024*1024}).toString(),strip=s=>s.replace(/<meta name="zezms-delivery" content="[^"]+">/,'DELIVERY');assert.equal(strip(require('../tools/daily-barcode-transform.cjs').withoutDailyBarcodes(require('../tools/device-sign-in-transform.cjs').withoutDeviceSignIn(html()))),strip(delivery.assembledShell(old)));
 });
 test('new-product barcode stays a draft until the native Stock In save and remains distinct from Product ID',()=>{
  const f=fixture(),before=JSON.stringify(f.db);f.elements['barcodeInput-siNewName']={value:'0000693213513488'};
