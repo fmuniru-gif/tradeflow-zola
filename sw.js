@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-d761d9b609f5d88a';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-759b4a39a451ed70';
+const CACHE = 'zezms-pr11-delivery-20261026-0c8575d55ab95ad7';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-fc5011cbc1e11414';
 const ASSETS = [
   './',
   './index.html',
@@ -110,8 +110,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261108-device-sign-in-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "118b8df0b40fda585807c28bdef3371dfb145926bf337231aacd555093d0ab25",
-  "./index.html": "118b8df0b40fda585807c28bdef3371dfb145926bf337231aacd555093d0ab25",
+  "./": "614617c140a5170675ba9ffed6eb3468ce9cbc6139e4865bcfc3b9bafbbad70e",
+  "./index.html": "614617c140a5170675ba9ffed6eb3468ce9cbc6139e4865bcfc3b9bafbbad70e",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -204,7 +204,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/daily-profit-barcodes.js?v=20261108-device-sign-in-r1": "78635123e181fd43baaebcefcda54fe0449542341aa92e571f53a9402bd64c30",
   "./DAILY_BARCODE_UPDATE.html": "22ef38f7f0e335aab235109358a88474479e3cda7079d8264017f0b17bb4364d",
   "./vendor/zxing-browser-0.1.5.min.js": "b5ad3df920738ca7adcb74508d7e6b6a5b9024993fb9a0c702da1ad8964eca07",
-  "./js/device-sign-in.js?v=20261108-device-sign-in-r1": "f0df456e51a4a7976b9b85514c5e05ae1344944e2f3c67acf136bacaf5a1855d",
+  "./js/device-sign-in.js?v=20261108-device-sign-in-r1": "324c4f6c1a90c8e21e02a222c715c3c317327929a66a8b2b3b558958de7911cc",
   "./DEVICE_SIGN_IN_UPDATE.html": "1aa83b5920ffade5b4947a8d58977187143c338ffb713d14eac915f19edec05d"
 });
 // PR11_VERIFIED_ASSETS_END
