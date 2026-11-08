@@ -44,6 +44,6 @@ test('bounded tables are coupled to the verified shell and retain strict passive
   const delivery=require('../tools/build-pr11-delivery.cjs'),html=delivery.assembledShell(read('index.html'));
   assert.ok(html.includes('window.ZEZMS.tablePages=Object.freeze'));
   assert.ok(html.includes('data-zezms-pr11-module="owner-maintenance-v373.js"'));
-  assert.equal(Object.keys(delivery.workerHashes(read('sw.js'),read('index.html'))).length,91);
+  assert.equal(Object.keys(delivery.workerHashes(read('sw.js'),read('index.html'))).length,94);
   for(const file of ['sw.js','MAIN_RESPONSIVENESS_UPDATE.html'])for(const forbidden of ['skipWaiting(', 'clients.claim(', 'caches.delete(', 'localStorage.clear(', 'indexedDB.deleteDatabase('])assert.ok(!read(file).includes(forbidden));
 });
