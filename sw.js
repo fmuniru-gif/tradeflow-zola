@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-6936ed7685799a15';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-c20772f69930ff5a';
+const CACHE = 'zezms-pr11-delivery-20261026-d761d9b609f5d88a';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-759b4a39a451ed70';
 const ASSETS = [
   './',
   './index.html',
@@ -110,8 +110,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261108-device-sign-in-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "737509be40bb2b51537d0c9c616daef17b246bfac34bcbaf4bdf2a10eae57d19",
-  "./index.html": "737509be40bb2b51537d0c9c616daef17b246bfac34bcbaf4bdf2a10eae57d19",
+  "./": "118b8df0b40fda585807c28bdef3371dfb145926bf337231aacd555093d0ab25",
+  "./index.html": "118b8df0b40fda585807c28bdef3371dfb145926bf337231aacd555093d0ab25",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
