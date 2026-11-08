@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-11295ed5c6dfabab';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-05ac57364ff97897';
+const CACHE = 'zezms-pr11-delivery-20261026-a0bf9ab55ad1de86';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-50b54392acda412e';
 const ASSETS = [
   './',
   './index.html',
@@ -108,8 +108,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261108-daily-profit-barcodes-r2';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "254057ba5389165c93e32b527b9788964163f0df97729fb6a08377dca29808b8",
-  "./index.html": "254057ba5389165c93e32b527b9788964163f0df97729fb6a08377dca29808b8",
+  "./": "2bc8687e810dd3f2dbb7a679b613bf815bd45c949c8a8a4463711b84e15d9251",
+  "./index.html": "2bc8687e810dd3f2dbb7a679b613bf815bd45c949c8a8a4463711b84e15d9251",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -199,7 +199,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./SYNC_RELIABILITY_UPDATE.html": "45d12bb05f9ae9c364363a44f1d0d592ec6d4a3eba482c253ccf29545ba58112",
   "./js/tv-trade-ins.js?v=20261108-daily-profit-barcodes-r2": "b3c2934c7b569061e21f570535e66f911d7aaa608a89ad022f483d7b8d51e3bf",
   "./TV_TRADE_IN_UPDATE.html": "7a34f5b5823a4dc154c7df6e87424e3fb9d04cb3134934be5b1b09f257e5c5bd",
-  "./js/daily-profit-barcodes.js?v=20261108-daily-profit-barcodes-r2": "d8012be4dc2e61330c8de29ac654c91b5f12aeb592892b8e9c7d5f23932c9ee9",
+  "./js/daily-profit-barcodes.js?v=20261108-daily-profit-barcodes-r2": "78635123e181fd43baaebcefcda54fe0449542341aa92e571f53a9402bd64c30",
   "./DAILY_BARCODE_UPDATE.html": "22ef38f7f0e335aab235109358a88474479e3cda7079d8264017f0b17bb4364d",
   "./vendor/zxing-browser-0.1.5.min.js": "b5ad3df920738ca7adcb74508d7e6b6a5b9024993fb9a0c702da1ad8964eca07"
 });
