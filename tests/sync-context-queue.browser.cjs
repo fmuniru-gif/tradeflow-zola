@@ -11,7 +11,7 @@ for(const changed of [true,false])test(changed?'a late SDK response from a repla
   await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');await page.waitForFunction(()=>window.ZEZMS?.syncResilience?.captureContext&&window.ZEZMS?.cloudSync);
   await page.evaluate(()=>ZEZMS.cloudSync.waitUntilReady(10000));
-  await page.addScriptTag({path:path.join(root,'diagnostics/r70t-owner-check/supabase-js-2.112.1.js')});
+  assert.equal(await page.evaluate(()=>typeof window.supabase?.createClient),'function','SDK must come from the actual verified shell, without a test-injected replacement');
   let resolveSeen,release,requests=0;const seen=new Promise(r=>resolveSeen=r),response=new Promise(r=>release=r);
   await context.route('**/rest/v1/**',async route=>{requests++;resolveSeen();await response;await route.fulfill({contentType:'application/json',body:JSON.stringify([{seq:21,op_id:'synthetic-op'}])});});
   const result=page.evaluate(async()=>{
