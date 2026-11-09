@@ -28,7 +28,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261108-device-sign-in-r1':release)),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261109-verified-cloud-sdk-r1':release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -61,6 +61,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'js/supabase-js-2.112.1.js','vendor/supabase-js-2.112.1.LICENSE','tools/cloud-sdk-transform.cjs','CLOUD_SYNC_LIBRARY_UPDATE.html','tests/cloud-sdk.test.cjs','tests/cloud-sdk.browser.cjs','docs/verified-cloud-sdk.md','.github/workflows/cloud-sdk-review.yml',
     'js/device-sign-in.js','tools/device-sign-in-transform.cjs','DEVICE_SIGN_IN_UPDATE.html','tests/device-sign-in.test.cjs','tests/device-sign-in.browser.cjs','docs/device-sign-in.md','.github/workflows/device-sign-in-review.yml',
     'js/daily-profit-barcodes.js','tools/daily-barcode-transform.cjs','DAILY_BARCODE_UPDATE.html','vendor/zxing-browser-0.1.5.min.js','vendor/zxing-browser-0.1.5.LICENSE','vendor/zxing-library.LICENSE','tests/fixtures/ean13-5901234123457.png','tests/daily-barcodes.test.cjs','tests/daily-barcodes.browser.cjs','.github/workflows/daily-barcodes-review.yml','docs/daily-profit-barcodes.md',
     'js/tv-trade-ins.js','tools/tv-trade-in-transform.cjs','TV_TRADE_IN_UPDATE.html','tests/tv-trade-ins.test.cjs','tests/tv-trade-ins.browser.cjs','docs/tv-trade-ins.md','.github/workflows/tv-trade-in-review.yml',

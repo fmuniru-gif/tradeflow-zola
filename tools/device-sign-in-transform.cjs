@@ -34,6 +34,7 @@ ZEZMS.deviceSignIn=deviceSignIn;delete ZEZMS.createDeviceSignIn;
  return html.slice(0,tagEnd)+'\n</script><script data-zezms-device-sign-in>\n'+helper+'\n</script><script>'+html.slice(tagEnd);
 }
 function withoutDeviceSignIn(html){
+ html=require('./cloud-sdk-transform.cjs').withoutCloudSdk(html);
  if(!html.includes('<script data-zezms-device-sign-in>'))return html;
  html=html.replace(/\n<\/script><script data-zezms-device-sign-in>[\s\S]*?<\/script><script>/,'');
  html=html.replace(/\/\* DEVICE_SIGN_IN_NATIVE_BEGIN \*\/[\s\S]*?\/\* DEVICE_SIGN_IN_NATIVE_END \*\/\n/,'').replace('signInFromLogin:login,signInWithDevice:deviceSignIn.signIn,signOut:logout,','signInFromLogin:login,signOut:logout,');
