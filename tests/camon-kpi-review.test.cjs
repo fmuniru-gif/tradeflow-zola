@@ -10,6 +10,8 @@ function comparisonFixture(change=()=>{}){
  const stage={deviceId:device,lifecycleId:lifecycle,cursor:3498,attestedAt:'2026-10-15T12:13:30.233Z',candidate:{kpiHistory:[structuredClone(value)]},fingerprint:{synthetic:true}},journal={deviceId:device,lifecycleId:lifecycle,stage:'VERIFYING'};
  const fixture={state,db,queue,stage,journal,values,verified:true,failed:[],material:0};change(fixture);
  const storage=new Map(Object.entries({zezms_cloud_sync_m4_queue:JSON.stringify(queue),zezms_cloud_sync_m4_failed_v2:JSON.stringify(fixture.failed),zezms_m5a4_safe_bootstrap_stage_v1:JSON.stringify(stage),zezms_m5a4_safe_bootstrap_journal_v2:JSON.stringify(journal),zezms_cloud_sync_m4_state:JSON.stringify(state)}));
+ if('failedRaw' in fixture){if(fixture.failedRaw===null)storage.delete('zezms_cloud_sync_m4_failed_v2');else storage.set('zezms_cloud_sync_m4_failed_v2',fixture.failedRaw);}
+ if('queueRaw' in fixture){if(fixture.queueRaw===null)storage.delete('zezms_cloud_sync_m4_queue');else storage.set('zezms_cloud_sync_m4_queue',fixture.queueRaw);}
  const sync={getState:()=>structuredClone(state),getOutbox:()=>structuredClone(queue),getFailedOperations:()=>structuredClone(fixture.failed),inspectM5a4BootstrapOutbox:()=>({localBusinessRecordCount:fixture.material}),_test:{deterministicHash:()=> 'synthetic-valid'}};
  const window={TextEncoder,ZEZMS:{cloudSync:sync,managedDevices:{hasVerifiedPendingStage:()=>fixture.verified}},ZEZMSConfirmedJulySnapshot:{build:'20261008-r70q-phase-a-review',values},addEventListener(){}};
  const context={window,ZEZMS:window.ZEZMS,DB:db,crypto:webcrypto,TextEncoder,document:{getElementById:()=>null},localStorage:{getItem:k=>storage.get(k)||null,setItem(){throw Error('No writes permitted');},removeItem(){throw Error('No removal permitted');}}};
@@ -20,6 +22,31 @@ test('local comparison reports exact full equality without changing any supplied
  const result=await comparisonFixture().inspect();assert.equal(result.status,'EXACT_EQUALITY');
  assert.equal(result.comparison.candidateExact,true);assert.equal(result.checks.operationPayloadHash,true);
  assert.doesNotMatch(JSON.stringify(result),/synthetic-kpi|User-confirmed July/);
+});
+test('an absent failed-operation key uses the native empty default without creating storage',async()=>{
+ const result=await comparisonFixture(f=>f.failedRaw=null).inspect();
+ assert.equal(result.status,'EXACT_EQUALITY');assert.equal(result.checks.activeQueueMatchesStorage,true);
+ assert.equal(result.checks.failedOperationsMatchStorage,true);assert.equal(result.persistence.failedKeyPresent,false);
+ assert.equal(result.persistence.failedListSource,'ABSENT');
+});
+for(const raw of ['not-json','null','{}','""','[{}]'])test('invalid or differing persisted failed list remains blocked: '+raw,async()=>{
+ const result=await comparisonFixture(f=>f.failedRaw=raw).inspect();
+ assert.equal(result.status,'NOT_VERIFIABLE');assert.equal(result.checks.activeQueueMatchesStorage,true);
+ assert.equal(result.checks.failedOperationsMatchStorage,false);assert.ok(result.reasons.includes('DURABLE_FAILED_LIST_INVALID'));
+});
+test('an absent failed key cannot hide an active failed operation',async()=>{
+ const result=await comparisonFixture(f=>{f.failedRaw=null;f.failed=[{opId:'synthetic-failed'}];}).inspect();
+ assert.notEqual(result.status,'EXACT_EQUALITY');assert.equal(result.checks.failedOperationsMatchStorage,false);
+});
+test('a missing or different persisted active queue still blocks even with an absent empty failed list',async()=>{
+ for(const raw of [null,'[]']){const result=await comparisonFixture(f=>{f.failedRaw=null;f.queueRaw=raw;}).inspect();
+ assert.equal(result.status,'NOT_VERIFIABLE');assert.equal(result.checks.activeQueueMatchesStorage,false);
+ assert.equal(result.checks.failedOperationsMatchStorage,true);assert.ok(result.reasons.includes('DURABLE_ACTIVE_QUEUE_MISMATCH'));}
+});
+test('queue mismatch details expose field categories without weakening exact persisted equality',async()=>{
+ const result=await comparisonFixture(f=>{const stored=structuredClone(f.queue);stored[0].attempts=0;stored[0]['synthetic-private-field']='synthetic-private-value';f.queueRaw=JSON.stringify(stored);}).inspect();
+ assert.equal(result.status,'NOT_VERIFIABLE');assert.deepEqual(result.persistence.queueDifferenceFields,['UNRECOGNIZED_FIELD','attempts']);
+ assert.doesNotMatch(JSON.stringify(result),/synthetic-private/);
 });
 for(const [name,change] of Object.entries({
  'different queued value':f=>f.queue[0].patches[0].value.debt++,
@@ -46,5 +73,5 @@ test('the scoped verifier cannot mutate storage, send Cloud requests or call act
  assert.doesNotMatch(code,/\.(?:rpc|pushNow|pullNow|finish|activateVerifiedBootstrapR70M)\s*\(/);
  assert.doesNotMatch(code,/\bfetch\s*\(/);
  const helper=fs.readFileSync('CAMON_KPI_REVIEW_UPDATE.html','utf8');
- assert.match(helper,/20261110-camon-kpi-review-r1/);assert.doesNotMatch(helper,/skipWaiting|clients\.claim|localStorage\./);
+ assert.match(helper,/20261110-camon-kpi-review-r2/);assert.doesNotMatch(helper,/skipWaiting|clients\.claim|localStorage\./);
 });

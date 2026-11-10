@@ -1,5 +1,7 @@
 # Camon 17P KPI review
 
+The verifier follows the native M4 empty failed-list default: an absent storage key is equivalent to an empty native failed-operation list. It preserves that absence. Present malformed, non-array or differing failed-list storage remains blocked. Active-queue persistence is still compared in full, and the report now identifies the active-queue and failed-list checks separately with sanitized difference categories. This corrects a verifier assumption; it does not establish which subcheck failed in a report from the earlier delivery.
+
 This is a read-only diagnostic. It cannot reconcile the queue or activate Camon. The genuine phone report is required before any separate recovery action.
 
 Validation pins 103 delivery assets to exact staged Git bytes over identity, gzip and Brotli transport. Full source, native-browser and cached-upgrade checks must pass on the published review head before production delivery. The synthetic checks do not establish actual phone equality. Keep Camon offline and its activation untouched until the verified update procedure is provided.
@@ -10,6 +12,6 @@ This delivery adds the existing narrowly scoped local verifier to the current ap
 
 The old r70M classifier and activation path remain unchanged. Exact equality is evidence of local duplication only; it does not establish the latest Cloud lifecycle or authorize deleting the operation. No queue reconciliation or activation is included. Retain the original operation, stage, journal, identity and previously preserved evidence.
 
-After live delivery verification, use CAMON_KPI_REVIEW_UPDATE.html?delivery=20261110-camon-kpi-review-r1 in Camon's existing Chrome profile. The helper checks application files, preserves storage and waits for normal passive worker activation. Close every TradeFlow tab/window when instructed, disconnect the phone from the internet, and reopen normally. Select **Verify Camon 17P KPI outbox (read only)**, then **Download sanitized KPI review report**. Send that new report for review. Keep **Complete verified activation**, staff reconnection and Live Sync untouched during this review.
+After live delivery verification, use CAMON_KPI_REVIEW_UPDATE.html?delivery=20261110-camon-kpi-review-r2 in Camon's existing Chrome profile. The helper checks application files, preserves storage and waits for normal passive worker activation. Close every TradeFlow tab/window when instructed, disconnect the phone from the internet, and reopen normally. Select **Verify Camon 17P KPI outbox (read only)**, then **Download sanitized KPI review report**. Send that new report for review. Keep **Complete verified activation**, staff reconnection and Live Sync untouched during this review.
 
 The automated checks use synthetic browser data and isolated network responses. They do not inspect the physical phone or certify actual queue equality. The genuine phone report is the next evidence required.
