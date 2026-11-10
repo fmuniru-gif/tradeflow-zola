@@ -61,6 +61,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'diagnostics/main-cash-record-review/index.html','diagnostics/main-cash-record-review/core.js','diagnostics/main-cash-record-review/page.js','diagnostics/main-cash-record-review/README.md','tests/main-single-cash-review.test.cjs','tests/main-single-cash-review.browser.cjs','.github/workflows/main-single-cash-review.yml',
     'js/paired-directory-review-core.js','js/paired-directory-review-runtime.js','tools/paired-directory-transform.cjs','PAIRED_DIRECTORY_UPDATE.html','tests/paired-directory-review.test.cjs','tests/paired-directory-review.browser.cjs','docs/paired-directory-review.md','.github/workflows/paired-directory-review.yml',
     'js/camon17p-kpi-review-r70w.js','tools/camon-kpi-transform.cjs','CAMON_KPI_REVIEW_UPDATE.html','tests/camon-kpi-review.test.cjs','tests/camon-kpi-review.browser.cjs','docs/camon-kpi-review.md','.github/workflows/camon-kpi-review.yml',
     'js/staff-directory-review-core.js','js/staff-directory-review-runtime.js','tools/staff-directory-transform.cjs','STAFF_DIRECTORY_UPDATE.html','tests/staff-directory-review.test.cjs','tests/staff-directory-review.browser.cjs','docs/staff-directory-timestamps.md','.github/workflows/staff-directory-review.yml',

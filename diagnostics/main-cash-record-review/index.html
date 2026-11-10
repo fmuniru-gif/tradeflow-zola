@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://ruadyqcsutfprrxdaahi.supabase.co; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TradeFlow — Main cash-record review</title>
+<link rel="stylesheet" href="../main-cash-input-compare/style.css">
+<main>
+<h1>Main cash-record review</h1>
+<p>Checks the one cash-log entry reported missing on Main, its original cloud history, wallet balances and orphan references. This page reads saved data and Cloud; it cannot repair records, post cash or run synchronization.</p>
+<p>Use Main's usual Chrome profile while its Owner cloud session is signed in. Close other TradeFlow tabs/windows first. The downloaded report contains cash-entry details and wallet amounts; keep it private.</p>
+<button id="run" type="button">Check missing cash entry (read only)</button>
+<p id="status" role="status">Ready. Nothing has changed.</p>
+<section id="result" hidden><h2>Review result</h2><p id="summary"></p><pre id="report"></pre><button id="download" type="button">Download cash review report</button></section>
+</main>
+<script src="../main-cash-input-compare/integrity-r60o.js" integrity="sha256-HRC2GeVsCRA74y+5gmhuux0wn9eiMbSteOwdHGEHHnw="></script>
+<script src="../main-cash-repair/repair-core-r3.js" integrity="sha256-7QgW90bcdgY324BPAYWb3OB/NvGRz1oSIY9WtO5Yasw="></script>
+<script src="core.js?v=20261110-r1" integrity="sha256-MOmFdNKw+VoaVJbWFZyewLa3y0kmChphaQPsLN4qLxo="></script>
+<script src="page.js?v=20261110-r1" integrity="sha256-Mp++JP1mGxcKmKcDj1Lkf+ZUaN1Gz5K9XgUjzklAI58="></script>
+</html>
