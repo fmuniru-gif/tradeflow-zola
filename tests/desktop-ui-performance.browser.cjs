@@ -38,6 +38,7 @@ const server = http.createServer((request, response) => {
     const blocked=[];
     await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : (blocked.push(route.request().url()),route.abort()));
     const page = await context.newPage();
+    page.on('console',message=>{if(message.text().includes('PAGINATION_RENDER_DIAGNOSTIC'))console.error(message.text());});
     await page.goto(origin + '/index.html');
     console.error('Shell loaded');
     await page.waitForFunction(() => !!window.ZEZMS?.navigationV3101 && typeof window.nav === 'function', null, {timeout:20000});
