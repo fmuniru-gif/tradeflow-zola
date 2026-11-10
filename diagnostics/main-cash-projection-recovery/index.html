@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://ruadyqcsutfprrxdaahi.supabase.co; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>TradeFlow — Main cash projection recovery</title>
+<link rel="stylesheet" href="../main-cash-input-compare/style.css">
+<main><h1>Main cash recovery preview</h1><p>Checks the original cash entry and wallet effect against your reviewed report and fresh Cloud history. Recovery applies locally on Main after you review and confirm it offline. It sends no new cash transaction to Cloud.</p>
+<p>Use Main's usual Chrome profile and signed-in Owner cloud session. Close all other TradeFlow app windows, tabs and review pages.</p>
+<label for="reviewFile">Select the same cash review JSON report you supplied for review</label><input id="reviewFile" type="file" accept=".json,application/json">
+<button id="check" type="button">Preview verified cash recovery</button><p id="status" role="status">Nothing has changed.</p>
+<section id="preview" hidden><h2>Verified recovery details</h2><div id="effectSummary"></div><details><summary>Verification details</summary><pre id="details"></pre></details>
+<p>Recovery preserves an exact rollback copy in this browser before changing the database. Keep this browser's data and the downloaded receipt.</p>
+<label for="owner">Local Owner staff account</label><select id="owner"></select>
+<label for="password">Your local Owner password / secure PIN</label><input id="password" type="password" autocomplete="current-password">
+<label><input id="ack" type="checkbox">I reviewed the original entry and wallet values and authorize these local recovery effects.</label>
+<button id="restore" type="button" disabled>Restore verified effects (offline)</button></section>
+<button id="receipt" type="button" disabled>Download recovery receipt</button></main>
+<script src="../main-cash-input-compare/integrity-r60o.js" integrity="sha256-HRC2GeVsCRA74y+5gmhuux0wn9eiMbSteOwdHGEHHnw="></script>
+<script src="../main-cash-repair/repair-core-r3.js" integrity="sha256-7QgW90bcdgY324BPAYWb3OB/NvGRz1oSIY9WtO5Yasw="></script>
+<script src="../main-cash-record-review/core.js?v=20261110-r2" integrity="sha256-WoJYN2sCFblbqPE3ZwnRURmOP++TypCfo6t3urCgPoo="></script>
+<script src="core.js?v=20261110-r1" integrity="sha256-yYg/Ap3HX+p+S6co6bGEgyMtRZ7+mrvWhd0vLzld5NE="></script><script src="runtime.js?v=20261110-r1" integrity="sha256-gZ/PpwbRdhXyoJZvcQby268qapKY5s0wQF8bjhLJZLg="></script><script src="entry.js?v=20261110-r1" integrity="sha256-QY5PfiCm7LTomCXgMpOTYYk606JTmJsZ7s/xHnhWz9k="></script>
+</html>
