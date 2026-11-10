@@ -41,7 +41,7 @@ async function apis(page){return page.evaluate(async()=>{
   return {navigation:[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join(''),
     management:typeof ZEZMS.managementIntelligence.viewHTML==='function'&&typeof ZEZMS.managementIntelligence.viewDashboardHTML==='function',
     velocity:typeof ZEZMS.stockVelocity.clearPlanningSnapshot==='function',delivery:document.querySelector('meta[name="zezms-delivery"]')?.content||null,
-    cloudSdk:typeof window.supabase?.createClient==='function',tablePages:ZEZMS.tablePages?.size===50,receiptLookup:typeof ZEZMS.ownerMaintenance?.receiptEditLookup==='function'};
+    cloudSdk:typeof window.supabase?.createClient==='function',staffReview:typeof window.ZEZMS?.cloudSync?.staffDirectoryReview?.action==='function',tablePages:ZEZMS.tablePages?.size===50,receiptLookup:typeof ZEZMS.ownerMaintenance?.receiptEditLookup==='function'};
 });}
 async function workerProof(page,which='active'){return page.evaluate(which=>new Promise(async(resolve,reject)=>{
   const r=await navigator.serviceWorker.getRegistration(),worker=which==='controller'?navigator.serviceWorker.controller:r?.[which];
@@ -231,7 +231,7 @@ test('a corrected outer shell controlled by the old worker still executes all th
     const current=await apis(f.page);
     console.log('DELIVERY_TRANSITION_STATE '+JSON.stringify({current,navigations:await Promise.all(f.navigations),errors:f.errors,caches:await f.page.evaluate(()=>caches.keys())}));
     assert.equal(current.navigation,'7556cedf8c66af19c98bbb01ef19f10ec23442211a6413decdf7243fd006fa7b');
-    assert.equal(current.cloudSdk,true);assert.equal(current.management,true);assert.equal(current.velocity,true);assert.equal(current.delivery,delivery.DELIVERY);
+    assert.equal(current.cloudSdk,true);assert.equal(current.staffReview,true);assert.equal(current.management,true);assert.equal(current.velocity,true);assert.equal(current.delivery,delivery.DELIVERY);
     await proveDirectNavigation(f.page);
     console.log('DELIVERY_OLD_CONTROLLER '+JSON.stringify({allThreePR11Modules:true,oldWorkerStillControls:true,noMixedBundle:true}));
   }finally{await f.context.close();}
@@ -243,15 +243,15 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
     try{
       await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
-      await f.page.goto(f.origin+'/CLOUD_SYNC_LIBRARY_UPDATE.html');
-      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified Cloud library update is ready'));
+      await f.page.goto(f.origin+'/STAFF_DIRECTORY_UPDATE.html');
+      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified staff directory update is ready'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
       assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1','old active worker was replaced before its clients closed');
       assert.deepEqual(await snapshot(f.page),saved);
       await activateNaturally(f);
       const current=await apis(f.page);
-      assert.equal(current.navigation,'7556cedf8c66af19c98bbb01ef19f10ec23442211a6413decdf7243fd006fa7b');assert.equal(current.cloudSdk,true);assert.equal(current.management,true);assert.equal(current.velocity,true);assert.equal(current.delivery,delivery.DELIVERY);
+      assert.equal(current.navigation,'7556cedf8c66af19c98bbb01ef19f10ec23442211a6413decdf7243fd006fa7b');assert.equal(current.cloudSdk,true);assert.equal(current.staffReview,true);assert.equal(current.management,true);assert.equal(current.velocity,true);assert.equal(current.delivery,delivery.DELIVERY);
       await proveDirectNavigation(f.page);
       assert.deepEqual(await snapshot(f.page),saved);
       await f.context.setOffline(true);await f.page.reload();await ready(f.page);
@@ -305,8 +305,8 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
-    await f.page.goto(f.origin+'/CLOUD_SYNC_LIBRARY_UPDATE.html');
-    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('Cloud library update is verified and active'));
+    await f.page.goto(f.origin+'/STAFF_DIRECTORY_UPDATE.html');
+    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('staff directory update is verified and active'));
     assert.equal(await f.page.locator('#open').isVisible(),true);
     await f.page.goto(f.origin+'/index.html');await ready(f.page);
     await f.page.evaluate(async()=>{
@@ -324,8 +324,8 @@ test('cached trade-in r1 uses the versioned update link to receive the current d
   assert.equal((await workerProof(f.page)).delivery,'20261107-tv-trade-in-r1');
   const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./TV_TRADE_IN_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261107-tv-trade-in-r1'/);
   const saved=await seed(f,'ContrastMain','synthetic-contrast-main','OWNER');mode='corrected';
-  await f.page.goto(f.origin+'/CLOUD_SYNC_LIBRARY_UPDATE.html?delivery='+delivery.DELIVERY);
-  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified Cloud library update is ready'));
+  await f.page.goto(f.origin+'/STAFF_DIRECTORY_UPDATE.html?delivery='+delivery.DELIVERY);
+  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified staff directory update is ready'));
   assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
   await activateNaturally(f);assert.equal(await f.page.evaluate(()=>ZEZMS.tvTradeIns.build),'20261107-tv-trade-in-r2');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}

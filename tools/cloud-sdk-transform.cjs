@@ -6,6 +6,7 @@ function transformCloudSdk(html,sdk){
  return html.replace(tag,'<script data-zezms-verified-cloud-sdk>\n'+sdk+'\n</script>');
 }
 function withoutCloudSdk(html){
+ html=require('./staff-directory-transform.cjs').withoutStaffDirectory(html);
  return html.replace(/<script data-zezms-verified-cloud-sdk>[\s\S]*?<\/script>/,'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.1"></script>');
 }
 module.exports={transformCloudSdk,withoutCloudSdk};
