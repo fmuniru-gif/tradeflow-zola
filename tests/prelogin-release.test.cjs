@@ -28,7 +28,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261110-staff-directory-timestamps-r1':release)),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261110-camon-kpi-review-r1':release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -61,6 +61,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
+    'js/camon17p-kpi-review-r70w.js','tools/camon-kpi-transform.cjs','CAMON_KPI_REVIEW_UPDATE.html','tests/camon-kpi-review.test.cjs','tests/camon-kpi-review.browser.cjs','docs/camon-kpi-review.md','.github/workflows/camon-kpi-review.yml',
     'js/staff-directory-review-core.js','js/staff-directory-review-runtime.js','tools/staff-directory-transform.cjs','STAFF_DIRECTORY_UPDATE.html','tests/staff-directory-review.test.cjs','tests/staff-directory-review.browser.cjs','docs/staff-directory-timestamps.md','.github/workflows/staff-directory-review.yml',
     'js/supabase-js-2.112.1.js','vendor/supabase-js-2.112.1.LICENSE','tools/cloud-sdk-transform.cjs','CLOUD_SYNC_LIBRARY_UPDATE.html','tests/cloud-sdk.test.cjs','tests/cloud-sdk.browser.cjs','docs/verified-cloud-sdk.md','.github/workflows/cloud-sdk-review.yml',
     'js/device-sign-in.js','tools/device-sign-in-transform.cjs','DEVICE_SIGN_IN_UPDATE.html','tests/device-sign-in.test.cjs','tests/device-sign-in.browser.cjs','docs/device-sign-in.md','.github/workflows/device-sign-in-review.yml',

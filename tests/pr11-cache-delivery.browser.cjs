@@ -244,7 +244,7 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
       await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
       await f.page.goto(f.origin+'/STAFF_DIRECTORY_UPDATE.html');
-      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified staff directory update is ready'));
+      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified Camon KPI review update is ready'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
       assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1','old active worker was replaced before its clients closed');
@@ -324,8 +324,8 @@ test('cached trade-in r1 uses the versioned update link to receive the current d
   assert.equal((await workerProof(f.page)).delivery,'20261107-tv-trade-in-r1');
   const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./TV_TRADE_IN_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261107-tv-trade-in-r1'/);
   const saved=await seed(f,'ContrastMain','synthetic-contrast-main','OWNER');mode='corrected';
-  await f.page.goto(f.origin+'/STAFF_DIRECTORY_UPDATE.html?delivery='+delivery.DELIVERY);
-  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified staff directory update is ready'));
+  await f.page.goto(f.origin+'/CAMON_KPI_REVIEW_UPDATE.html?delivery='+delivery.DELIVERY);
+  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified Camon KPI review update is ready'));
   assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
   await activateNaturally(f);assert.equal(await f.page.evaluate(()=>ZEZMS.tvTradeIns.build),'20261107-tv-trade-in-r2');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}
