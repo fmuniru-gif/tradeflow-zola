@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-e63c7615b494fdbe';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-009bfd5c6562e8ec';
+const CACHE = 'zezms-pr11-delivery-20261026-c79a44b244ab1239';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-1342b391511f62a8';
 const ASSETS = [
   './',
   './index.html',
@@ -115,8 +115,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261110-staff-directory-timestamps-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "5fb8f22dcaea89644869703d9bc7d54d1947fa77bb0342010b65039115f9b27c",
-  "./index.html": "5fb8f22dcaea89644869703d9bc7d54d1947fa77bb0342010b65039115f9b27c",
+  "./": "2f682b3050e0b794c0a345130c2f2a779a4c06405a7454fa3b422c0fbfdc9117",
+  "./index.html": "2f682b3050e0b794c0a345130c2f2a779a4c06405a7454fa3b422c0fbfdc9117",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -214,7 +214,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/supabase-js-2.112.1.js?v=20261110-staff-directory-timestamps-r1": "ed01c1c20daec4e06a08dbbf4fdc7d4a613091f7032a408faee2d6df45acad58",
   "./CLOUD_SYNC_LIBRARY_UPDATE.html": "1e2c4fe28647ff9159a9f59f4de9e8bb32a4449eb7494a655ec3be514c9b36ae",
   "./js/staff-directory-review-core.js?v=20261110-staff-directory-timestamps-r1": "8630caea2d12cf955625b81e7e8699d36a07a6cf861e9e7cfce3141e624253e3",
-  "./js/staff-directory-review-runtime.js?v=20261110-staff-directory-timestamps-r1": "eec535a7f10abdb023fbbba7ffa6573646c7c54e53cb51c916d92ec15432defb",
+  "./js/staff-directory-review-runtime.js?v=20261110-staff-directory-timestamps-r1": "d4c277910ba91d03e9a4547312ddcdbb2964103216ff3dca8b96e7931f1fdcbb",
   "./STAFF_DIRECTORY_UPDATE.html": "224af4644ad39bb4118b9d5b6ed2e137c3237dc0fb9af9e80307e51b03960219"
 });
 // PR11_VERIFIED_ASSETS_END
