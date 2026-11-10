@@ -59,10 +59,10 @@ test('worker byte verifier rejects a 200 stale module as well as failed/partial 
   const {context}=workerContext();
   for(const status of [200,503]){
     context.bad=new Response(status===200?'stale old module':'unavailable',{status});
-    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261110-camon-kpi-review-r1',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
+    await assert.rejects(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261110-camon-kpi-review-r2',bad)",context),/ZEZMS_DELIVERY_(HASH_MISMATCH|HTTP_FAILURE)/);
   }
   context.good=new Response(delivery.assetBytes('js/management-intelligence-v380.js'));
-  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261110-camon-kpi-review-r1',good)",context));
+  await assert.doesNotReject(vm.runInContext("verifyDelivery('./js/management-intelligence-v380.js?v=20261110-camon-kpi-review-r2',good)",context));
 });
 
 test('worker scope matching and exact version lookups cannot reuse an older query alias',()=>{

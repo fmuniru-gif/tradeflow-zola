@@ -15,7 +15,7 @@ const {transformCloudSdk}=require('./cloud-sdk-transform.cjs');
 const {transformStaffDirectory}=require('./staff-directory-transform.cjs');
 const {transformCamonKpi}=require('./camon-kpi-transform.cjs');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261110-camon-kpi-review-r1';
+const DELIVERY='20261110-camon-kpi-review-r2';
 const assetMemo=new Map();
 const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js','pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js','document-branding.js','sync-resilience.js','desktop-presentation.js','commercial-foundation.js','device-cards.js','idle-session.js','tv-trade-ins.js','daily-profit-barcodes.js','device-sign-in.js','supabase-js-2.112.1.js','staff-directory-review-core.js','staff-directory-review-runtime.js','camon17p-kpi-review-r70w.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';

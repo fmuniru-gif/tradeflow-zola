@@ -106,6 +106,7 @@ async function prepare(tab){
   await tab.waitForFunction(()=>window.ZEZMS?.camon17pKpiReview&&ZEZMS.cloudSync.getOutbox().length===1,null,{timeout:18000});
 }
 async function snapshot(tab){return tab.evaluate(async()=>({queue:localStorage.getItem('zezms_cloud_sync_m4_queue'),
+  failed:localStorage.getItem('zezms_cloud_sync_m4_failed_v2'),
   stage:localStorage.getItem('zezms_m5a4_safe_bootstrap_stage_v1'),
   journal:localStorage.getItem('zezms_m5a4_safe_bootstrap_journal_v2'),
   state:localStorage.getItem('zezms_cloud_sync_m4_state'),db:JSON.stringify(DB),
@@ -129,7 +130,7 @@ test('new service worker installs the matching shell, manifest and verifier asse
       const registration=await navigator.serviceWorker.register('./sw.js?v=20261017-r70w-camon17p-kpi-review');
       await navigator.serviceWorker.ready;
       const cache=await caches.open(cacheName);
-      const names=['./','./index.html','./manifest.json','./js/camon17p-kpi-review-r70w.js?v=20261110-camon-kpi-review-r1'];
+      const names=['./','./index.html','./manifest.json','./js/camon17p-kpi-review-r70w.js?v=20261110-camon-kpi-review-r2'];
       const matches=await Promise.all(names.map(async name=>!!(await cache.match(new URL(name,registration.scope).href))));
       return {active:!!registration.active,matches};
     },require('../tools/build-pr11-delivery.cjs').assetBytes('sw.js').toString().match(/const CACHE = '([^']+)'/)[1]);
@@ -211,6 +212,27 @@ test('one exact candidate-equivalent KPI insert is reported without reconciliati
     const changed=JSON.parse(fs.readFileSync(await (await changedDownload).path(),'utf8'));
     assert.equal(changed.report.status,'NOT_VERIFIABLE','download must not reuse a stale exact report');
   }finally{await tab.close();}
+});
+test('native startup accepts an absent empty failed list and read-only inspection preserves its absence',async()=>{
+ const tab=await page();try{
+  await prepare(tab);await tab.evaluate(()=>localStorage.removeItem('zezms_cloud_sync_m4_failed_v2'));
+  await tab.reload({waitUntil:'domcontentloaded'});
+  await tab.waitForFunction(()=>window.ZEZMS?.camon17pKpiReview&&window.ZEZMS?.cloudSync);
+  assert.equal((await snapshot(tab)).failed,null);
+  const result=await inspect(tab);assert.equal(result.status,'EXACT_EQUALITY',JSON.stringify(result));
+  assert.equal(result.checks.activeQueueMatchesStorage,true);assert.equal(result.checks.failedOperationsMatchStorage,true);
+  assert.equal(result.persistence.failedListSource,'ABSENT');assert.equal((await snapshot(tab)).failed,null);
+ }finally{await tab.close();}
+});
+test('malformed or non-array failed-list storage is diagnosed separately and never passes equality',async()=>{
+ const tab=await page();try{
+  await prepare(tab);for(const value of ['not-json','null','{}']){
+   await tab.evaluate(value=>localStorage.setItem('zezms_cloud_sync_m4_failed_v2',value),value);
+   const result=await inspect(tab);assert.equal(result.status,'NOT_VERIFIABLE');
+   assert.equal(result.checks.activeQueueMatchesStorage,true);assert.equal(result.checks.failedOperationsMatchStorage,false);
+   assert.equal(result.persistence.failedListSource,'INVALID_STORED_VALUE');assert.ok(result.reasons.includes('DURABLE_FAILED_LIST_INVALID'));
+  }
+ }finally{await tab.close();}
 });
 for(const [name,mutate,expectedStatus] of [
   ['different KPI value',"queue[0].patches[0].value.debt+=1; queue[0].payloadHash=ZEZMS.cloudSync._test.deterministicHash(queue[0]);",'MISMATCH'],

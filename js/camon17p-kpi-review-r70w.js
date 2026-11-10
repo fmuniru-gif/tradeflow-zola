@@ -26,6 +26,19 @@
     return result;
   }
   function same(a, b) { return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b)); }
+  function queueDifferences(stored,active) {
+    if (!Array.isArray(stored) || !Array.isArray(active)) return ['ARRAY_TYPE'];
+    if (stored.length !== active.length) return ['COUNT'];
+    const allowed=['opId','deviceId','originDeviceId','deviceSeq','protocolVersion','appVersion','createdAt','reason','kind','patches','payloadHash','outboxState','attempts','lastError','nextAttemptAt','lastAttemptAt','attemptId','lastAttemptId','inFlightAt','preparedAt','ackRecovered','requiresReview'];
+    const fields=new Set();
+    stored.slice(0,10).forEach((row,index)=>{
+      if (!record(row) || !record(active[index])) { fields.add('RECORD_TYPE'); return; }
+      new Set([...Object.keys(row),...Object.keys(active[index])]).forEach(key=>{
+        if (!same(row[key],active[index][key])) fields.add(allowed.includes(key)?key:'UNRECOGNIZED_FIELD');
+      });
+    });
+    return [...fields].sort();
+  }
   function readRaw() { return Object.fromEntries(KEYS.map(key => [key, localStorage.getItem(key)])); }
   function parsed(raw) { try { return JSON.parse(raw); } catch (_) { return null; } }
   function shape(value, keys) { return record(value) && same(Object.keys(value).sort(), keys.slice().sort()); }
@@ -59,11 +72,14 @@
       inspectedAt:new Date().toISOString(), status:'NOT_VERIFIABLE', reasons:[],
       queueCount:null, failedCount:null, localMaterialBusinessCount:null, localKpiRecordCount:null,
       deviceId:null, lifecycleId:null, cursor:null, operationId:null,
-      checks:{ verifiedStage:false, fingerprint:false, durableQueue:false, operationBeforeAttestation:false,
+      checks:{ verifiedStage:false, fingerprint:false, durableQueue:false,
+        activeQueueMatchesStorage:false, failedOperationsMatchStorage:false, operationBeforeAttestation:false,
         completePatchShape:false, noUnrelatedQueuedOperations:false, noUnrelatedMaterialBusinessRecords:false,
         operationPayloadHash:false, localKpiExact:false },
       comparison:{ expectedFieldsEqual:false, expectedExact:false, candidateFieldsEqual:false,
         candidateExact:false, candidateRecordCount:0, candidateKeyMatchCount:0 },
+      persistence:{queueKeyPresent:null,failedKeyPresent:null,failedListSource:null,
+        storedQueueCount:null,storedFailedCount:null,queueDifferenceFields:[]},
       hashes:{ operation:null, patch:null, expectedRecord:null, candidateRecord:null, stageFingerprint:null } };
     const fail = code => { if (!result.reasons.includes(code)) result.reasons.push(code); };
     let before;
@@ -97,9 +113,24 @@
       if (!Array.isArray(queue) || queue.length !== 1 || !Array.isArray(failed) || failed.length !== 0)
         fail('QUEUE_OR_FAILED_COUNT_MISMATCH');
       result.checks.noUnrelatedQueuedOperations = Array.isArray(queue) && queue.length === 1;
-      result.checks.durableQueue = Array.isArray(storedQueue) && same(storedQueue, queue) &&
-        Array.isArray(storedFailed) && same(storedFailed, failed);
+      result.persistence.queueKeyPresent = before[QUEUE_KEY] !== null;
+      result.persistence.failedKeyPresent = before[FAILED_KEY] !== null;
+      result.persistence.failedListSource = before[FAILED_KEY] === null ? 'ABSENT' :
+        Array.isArray(storedFailed) ? 'STORED_ARRAY' : 'INVALID_STORED_VALUE';
+      result.persistence.storedQueueCount = Array.isArray(storedQueue) ? storedQueue.length : null;
+      result.persistence.storedFailedCount = Array.isArray(storedFailed) ? storedFailed.length : null;
+      result.persistence.queueDifferenceFields = queueDifferences(storedQueue,queue);
+      result.checks.activeQueueMatchesStorage = Array.isArray(storedQueue) && same(storedQueue, queue);
+      // Native M4 loads an absent failed-operation key as []. Read that exact
+      // default without writing it back; malformed or non-array data still fails.
+      result.checks.failedOperationsMatchStorage = Array.isArray(failed) &&
+        (before[FAILED_KEY] === null ? failed.length === 0 :
+          Array.isArray(storedFailed) && same(storedFailed, failed));
+      result.checks.durableQueue = result.checks.activeQueueMatchesStorage &&
+        result.checks.failedOperationsMatchStorage;
       if (!result.checks.durableQueue) fail('DURABLE_OUTBOX_INVALID');
+      if (!result.checks.activeQueueMatchesStorage) fail('DURABLE_ACTIVE_QUEUE_MISMATCH');
+      if (!result.checks.failedOperationsMatchStorage) fail('DURABLE_FAILED_LIST_INVALID');
       result.checks.noUnrelatedMaterialBusinessRecords = result.localMaterialBusinessCount === 0;
       if (!result.checks.noUnrelatedMaterialBusinessRecords) fail('LOCAL_BUSINESS_DATA_MISMATCH');
       result.checks.verifiedStage = !!(managed && managed.hasVerifiedPendingStage && managed.hasVerifiedPendingStage());
