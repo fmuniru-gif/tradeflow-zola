@@ -1,7 +1,7 @@
 name: Main single cash-record review (NO DEPLOY)
 on:
   push:
-    branches: [fix/main-cash-record-review-20261110]
+    branches: [fix/main-cash-record-identity-20261110]
 permissions:
   contents: read
 jobs:
@@ -23,10 +23,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = fix/main-cash-record-review-20261110
+          test "$GITHUB_REF_NAME" = fix/main-cash-record-identity-20261110
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = 8b2ee4ba68651b6acc3cc98a4331eec652ed4c7f
-          git merge-base --is-ancestor 8b2ee4ba68651b6acc3cc98a4331eec652ed4c7f HEAD
+          test "$(git rev-parse origin/main)" = a2c148031f63bc285642ea8ac8a74b185815cce1
+          git merge-base --is-ancestor a2c148031f63bc285642ea8ac8a74b185815cce1 HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
       - name: Set up Node.js 22
