@@ -1,8 +1,8 @@
 # Camon 17P KPI review
 
-Status: prepared locally. Browser integration checks and publication are pending. Keep Camon offline and its activation untouched.
+This is a read-only diagnostic. It cannot reconcile the queue or activate Camon. The genuine phone report is required before any separate recovery action.
 
-Local validation: 352/352 source checks passed, with no failures, skips or cancellations. The 103-asset delivery manifest matches the staged Git bytes over identity, gzip and Brotli transport. The full native browser integration suite remains pending: the local browser launcher is restricted, and automatic approval review blocked pushing this new update to run the existing isolated GitHub jobs. No review-branch or production publication has been completed.
+Validation pins 103 delivery assets to exact staged Git bytes over identity, gzip and Brotli transport. Full source, native-browser and cached-upgrade checks must pass on the published review head before production delivery. The synthetic checks do not establish actual phone equality. Keep Camon offline and its activation untouched until the verified update procedure is provided.
 
 The supplied 9 November diagnostic identifies one queued KPI-history insert, zero failed operations and zero material local business records. It deliberately omits the full KPI value, so it cannot establish whether that insert duplicates the verified staged recovery copy.
 
