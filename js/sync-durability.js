@@ -40,6 +40,9 @@
     }
     function clear(){write(JOURNAL,null);}
     function validate(j){
+      if(!j || typeof j.checksum!=='string')fail('the interrupted-save journal has no integrity proof.');
+      const proof=Object.assign({},j);delete proof.checksum;
+      if(digest(JSON.stringify(proof))!==j.checksum)fail('the interrupted-save journal checksum differs.');
       if(!j || j.version!==1 || !['receive','local-save'].includes(j.kind) || !j.beforeDB || !j.afterDB
         || typeof j.binding!=='string' || !j.before || !j.after
         || Object.keys(j.before).sort().join('|')!==KEYS.slice().sort().join('|')
@@ -72,6 +75,7 @@
       if(storage.getItem(DB)!==beforeDB)fail('another window changed the database; reopen this window.');
       const before=Object.fromEntries(KEYS.map(k=>[k,digest(storage.getItem(k))]));
       const j={version:1,kind,binding:binding(storage.getItem(STATE)),beforeDB:digest(beforeDB),afterDB:digest(afterDB),before,after,at:new Date().toISOString()};
+      j.checksum=digest(JSON.stringify(j));
       validate(j);
       const encoded=JSON.stringify(j);write(JOURNAL,encoded);
       // The complete database is the commit decision. Temporary inverse/rebase

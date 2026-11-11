@@ -68,3 +68,8 @@ test('an exact after-image from another legacy journal binding cannot advance th
  const c={readApplyJournal:()=>({opId:'cash-op',seq:21,beforeHash:'before',afterHash:JSON.stringify(database),durabilityContext:JSON.stringify(['other-device','owner','','','OWNER'])}),deterministicHash:JSON.stringify,cleanSnapshot:x=>x,appliedOperations:{},state:{deviceId:'current-device',syncOwnerId:'owner',deviceAccessMode:'OWNER',cursor:20},persistAppliedOperations(){throw Error('must not persist');},persistState(){throw Error('must not persist');},clearApplyJournal(){throw Error('must retain');}};
  vm.createContext(c);vm.runInContext(source,c);assert.throws(()=>c.recoverInterruptedApply(database),/binding changed/);assert.equal(c.state.cursor,20);assert.deepEqual(c.appliedOperations,{});
 });
+test('a valid-JSON edit to an interrupted journal cannot forge a later cursor or outbox',()=>{
+ const f=fixture();f.fault(2);assert.throws(()=>f.api.commit('receive',f.before,f.after,f.next));f.clearFault();
+ const journal=JSON.parse(f.memory.get(C.JOURNAL));journal.after[C.STATE]=JSON.stringify({...f.state,cursor:999});f.memory.set(C.JOURNAL,JSON.stringify(journal));
+ const before=new Map(f.memory);assert.throws(()=>f.api.recover(),/checksum differs/);assert.deepEqual(f.memory,before);assert.equal(JSON.parse(f.memory.get(C.STATE)).cursor,20);
+});
