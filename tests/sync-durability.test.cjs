@@ -73,3 +73,9 @@ test('a valid-JSON edit to an interrupted journal cannot forge a later cursor or
  const journal=JSON.parse(f.memory.get(C.JOURNAL));journal.after[C.STATE]=JSON.stringify({...f.state,cursor:999});f.memory.set(C.JOURNAL,JSON.stringify(journal));
  const before=new Map(f.memory);assert.throws(()=>f.api.recover(),/checksum differs/);assert.deepEqual(f.memory,before);assert.equal(JSON.parse(f.memory.get(C.STATE)).cursor,20);
 });
+test('post-commit notifications retain native patch scope and do not run unrelated follow-up workflows for cash receives',()=>{
+ const events=[],c={window:{dispatchEvent:e=>events.push(e.type)},CustomEvent:class{constructor(type){this.type=type;}}};vm.createContext(c);vm.runInContext(fs.readFileSync('js/sync-durability-runtime.js','utf8'),c);
+ c.syncDurabilityNotify([{payload:{patches:[{collection:'cashLog'},{root:'cashBalances'}]}}]);assert.deepEqual(events,[]);
+ c.syncDurabilityNotify([{payload:{patches:[{collection:'customers'},{collection:'customers'}]}}]);assert.deepEqual(events,['zezms-customer-master-updated']);events.length=0;
+ c.syncDurabilityNotify([{payload:{patches:[{action:'root-set',root:'sharedDeviceDirectory'},{collection:'customerFollowups'},{collection:'warranties'}]}}]);assert.deepEqual(events,['zezms-shared-device-directory-updated','zezms-customer-followups-updated','zezms-stage6a-records-updated']);
+});

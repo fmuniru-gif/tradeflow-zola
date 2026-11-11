@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-637fa283ae7afe9d';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-18d6ce99ab5c0daa';
+const CACHE = 'zezms-pr11-delivery-20261026-10b48e3ffd575333';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-dd572b2a8cbe0153';
 const ASSETS = [
   './',
   './index.html',
@@ -123,8 +123,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261111-sync-durability-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "88ecb6e3a187f22c302a333536d0bf3e50510277b41631bd4c46a6a7d46d9d8f",
-  "./index.html": "88ecb6e3a187f22c302a333536d0bf3e50510277b41631bd4c46a6a7d46d9d8f",
+  "./": "64a670b66b1b5ffb78e8a2568d55d4c24caf7f48db6673cae95f9e3ae079c98c",
+  "./index.html": "64a670b66b1b5ffb78e8a2568d55d4c24caf7f48db6673cae95f9e3ae079c98c",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -230,7 +230,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/paired-directory-review-runtime.js?v=20261111-sync-durability-r1": "556093acc39555d92415cc89f3abdda232f62783698d4d7a9d9b6e38d966dc2e",
   "./PAIRED_DIRECTORY_UPDATE.html": "0b0bed7c70f2b2a6b2ab658a994a9e4a4eae86961ef29ad219efb6cbe00dde69",
   "./js/sync-durability.js?v=20261111-sync-durability-r1": "bf17b026acf1bfa7127c0cb803c5eeaf126ecb809385d85d33bb9acd1df0778e",
-  "./js/sync-durability-runtime.js?v=20261111-sync-durability-r1": "7314e3b002fb2088b32362b7ba4fd2f13edfb2bc1f7b066c02f5925a2d6ca3a3",
+  "./js/sync-durability-runtime.js?v=20261111-sync-durability-r1": "2921237a33bd3452f5ab88e3e5e150e6c213a5941ac2406186a601c207c776dc",
   "./SYNC_DURABILITY_UPDATE.html": "e4d5054e48d479adfc0e42df7e3411dd83b92d78b8366f5212df2900c318e5dd"
 });
 // PR11_VERIFIED_ASSETS_END

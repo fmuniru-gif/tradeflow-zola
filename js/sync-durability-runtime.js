@@ -1,6 +1,16 @@
 /* Injected inside the existing Cloud closure. No transport or financial rule
  * is replaced: existing patches are staged, then committed once as a unit. */
 var syncDurabilityStaging = false;
+function syncDurabilityNotify(rows) {
+  const patches=[];
+  rows.forEach(function(row){if(row && row.payload && Array.isArray(row.payload.patches))patches.push.apply(patches,row.payload.patches);});
+  const events=[];
+  if(patches.some(function(p){return p.action==='root-set' && p.root==='sharedDeviceDirectory';}))events.push('zezms-shared-device-directory-updated');
+  if(patches.some(function(p){return p.collection==='customers';}))events.push('zezms-customer-master-updated');
+  if(patches.some(function(p){return p.collection==='customerFollowups';}))events.push('zezms-customer-followups-updated');
+  if(patches.some(function(p){return ['salesOpportunities','quotations','stockCorrections','warranties','warrantyClaims'].indexOf(p.collection)>=0 || p.action==='root-set' && p.root==='warrantySettings';}))events.push('zezms-stage6a-records-updated');
+  events.forEach(function(name){try{window.dispatchEvent(new CustomEvent(name));}catch(_){}});
+}
 function syncDurabilityRun(kind, work) {
   if (syncDurabilityStaging) throw Error('ZEZMS_SYNC_DURABILITY_NESTED_COMMIT');
   const service=ZEZMS.syncDurability;

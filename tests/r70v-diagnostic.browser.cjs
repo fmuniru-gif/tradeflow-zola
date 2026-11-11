@@ -54,6 +54,10 @@ async function stage(tab,kind){
   },kind);
   await tab.reload({waitUntil:'domcontentloaded'});
   await tab.waitForFunction(()=>window.ZEZMS?.managedDevices?.hasVerifiedPendingStage()&&document.getElementById('r70vInspectBootstrapOutbox'),null,{timeout:15000});
+  // Wait for independent commercial startup refreshes before establishing the
+  // diagnostic baseline; preservation assertions during inspection stay exact.
+  await tab.waitForFunction(()=>Date.parse(ZEZMS.commercialFoundation?.getState().lastCheckedAt||'')>=performance.timeOrigin);
+  await tab.waitForTimeout(2000);
   return before;
 }
 async function snapshot(tab){

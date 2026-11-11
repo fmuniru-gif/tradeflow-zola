@@ -12,7 +12,7 @@ function undoRecoveryCloud(cloud){
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),baseline='a3d30228cfcf2c1577209d779534164bc72452f9';
 const baselineIndex=execFileSync('git',['show',baseline+':index.html'],{cwd:root,maxBuffer:32*1024*1024}).toString();
-const recoveryFiles=new Set(['js/dbservice.js','index.html','sw.js','js/bootstrap-startup-guard.js','tools/build-pr11-delivery.cjs','tests/prelogin-release.test.cjs','tests/prebranch-functional-rollback.test.cjs','tests/shop-directory-delivery.test.cjs','tests/shop-chrome-bootstrap.browser.cjs','tests/desktop-ui-performance.test.cjs','tests/main-responsiveness.test.cjs','tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs','tests/pr12-raw-byte-delivery.test.cjs','tests/remaining-tabs-performance.test.cjs']);
+const recoveryFiles=new Set(['js/dbservice.js','tests/r70v-diagnostic.browser.cjs','index.html','sw.js','js/bootstrap-startup-guard.js','tools/build-pr11-delivery.cjs','tests/prelogin-release.test.cjs','tests/prebranch-functional-rollback.test.cjs','tests/shop-directory-delivery.test.cjs','tests/shop-chrome-bootstrap.browser.cjs','tests/desktop-ui-performance.test.cjs','tests/main-responsiveness.test.cjs','tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs','tests/pr12-raw-byte-delivery.test.cjs','tests/remaining-tabs-performance.test.cjs']);
 function withoutRecoveryIndex(index){
  for(const [name,file] of [['CLOUD',null],['CANONICAL_RESTORE','js/canonical-restore.js'],['SELF_SERVICE_RECOVERY_R62W','js/self-service-recovery.js']]){
   const pattern=new RegExp('const '+name+'_B64="([^\"]+)";');
