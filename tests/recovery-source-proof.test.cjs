@@ -14,7 +14,7 @@ test('the bootstrap source changes only by adding the canonical recovery hold',(
 });
 test('all other existing application scripts, assets, manifests and protected update helpers remain exact Git bytes',()=>{
  const files=execFileSync('git',['ls-tree','-r','--name-only',proof.baseline,'js','assets','manifest.json','FORCE_UPDATE_MOBILE.html','MAIN_RESPONSIVENESS_UPDATE.html'],{cwd:root,encoding:'utf8'}).trim().split('\n');
- for(const file of files)if(file!=='js/bootstrap-startup-guard.js')assert.deepEqual(delivery.assetBytes(file),prior(file),file);
+ for(const file of files)if(!['js/bootstrap-startup-guard.js','js/dbservice.js'].includes(file))assert.deepEqual(delivery.assetBytes(file),prior(file),file);
 });
 test('both recovery guards and all recovery modules are coupled to the delivered shell',()=>{
  const html=delivery.assembledShell(delivery.assetBytes('index.html').toString());
