@@ -1,6 +1,6 @@
 /* A compact write-ahead journal for the local database and sync bookkeeping.
- * It stores exact post-commit metadata, never credentials or another database
- * copy. An ambiguous state is preserved for review, never guessed or replayed. */
+ * It stores exact post-commit sync metadata, with no auth-session tokens or
+ * second database copy. Ambiguous state is retained, never guessed or replayed. */
 (function (root, factory) {
   'use strict';
   const api = factory();

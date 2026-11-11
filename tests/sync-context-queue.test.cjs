@@ -6,7 +6,7 @@ function fixture(){
  const c={window:null,console,AbortController,setTimeout,clearTimeout,Promise,Math,
   state:{initialized:true,deviceId:'synthetic-device',deviceAccessMode:'PAIRED',syncOwnerId:'synthetic-owner',businessId:'synthetic-business',branchId:'synthetic-branch',supabaseUrl:'https://synthetic.invalid',publishableKey:'synthetic-key',deviceAccessStatus:'ACTIVE'},
   session:{user:{id:'synthetic-paired-user'}},client:{},requireClient(){},currentSyncOwnerId(){return c.state.syncOwnerId;},PULL_PAGE_SIZE:100,OPERATIONS_TABLE:'synthetic_ops',SNAPSHOT_TABLE:'synthetic_master'};
- c.window=c;vm.createContext(c);vm.runInContext(fs.readFileSync('js/sync-resilience.js','utf8'),c);return c;
+ c.window=c;vm.createContext(c);vm.runInContext(fs.readFileSync('js/sync-resilience.js','utf8'),c);c.ZEZMS.syncDurability={pending:()=>false};return c;
 }
 function scope(c){return c.ZEZMS.syncResilience.captureContext(()=>({client:c.client,session:c.session,state:c.state,ownerId:c.currentSyncOwnerId()}));}
 const tick=()=>new Promise(setImmediate);

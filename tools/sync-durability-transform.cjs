@@ -20,7 +20,9 @@ function transformSyncDurability(html,core,runtime,dbservice,edits){
  section('  function persistAppliedOperations() {','  function readApplyJournal() {',block=>block
   .replace("    try { localStorage.setItem(APPLIED_KEY, JSON.stringify(appliedOperations)); } catch (error) {\n      console.warn('M4 applied-operation register could not be saved', error);\n    }",'    if (!syncDurabilityStaging) ZEZMS.syncDurability.writeJSON(APPLIED_KEY,appliedOperations);')
   .replace("    try { localStorage.setItem(FAILED_KEY, JSON.stringify(failedOperations)); } catch (_) {}",'    if (!syncDurabilityStaging) ZEZMS.syncDurability.writeJSON(FAILED_KEY,failedOperations);'));
- replace('  function writeApplyJournal(row, operation) {','  function writeApplyJournal(row, operation) {\n    if (syncDurabilityStaging) return null;\n    if (readApplyJournal()) throw Error("ZEZMS_INTERRUPTED_APPLY_REVIEW_REQUIRED");');
+ section('  function writeApplyJournal(row, operation) {','  function clearApplyJournal() {',block=>block
+  .replace('  function writeApplyJournal(row, operation) {','  function writeApplyJournal(row, operation) {\n    if (syncDurabilityStaging) return null;\n    if (readApplyJournal()) throw Error("ZEZMS_INTERRUPTED_APPLY_REVIEW_REQUIRED");')
+  .replace('      startedAt: new Date().toISOString()',"      durabilityContext: JSON.stringify(['deviceId','syncOwnerId','businessId','branchId','deviceAccessMode'].map(function(k){return String(state[k]||'');})),\n      startedAt: new Date().toISOString()"));
  replace('  function clearApplyJournal() {\n    try { localStorage.removeItem(APPLY_JOURNAL_KEY); } catch (_) {}\n  }',`  function clearApplyJournal() {
     if (syncDurabilityStaging) return;
     localStorage.removeItem(APPLY_JOURNAL_KEY);
@@ -31,8 +33,11 @@ function transformSyncDurability(html,core,runtime,dbservice,edits){
     if (!journal) return false;
     if (!journal.opId || !Number.isSafeInteger(Number(journal.seq)) || Number(journal.seq)<=0)
       throw Error('ZEZMS_INTERRUPTED_APPLY_REVIEW_REQUIRED: invalid journal retained.');
+    const context=JSON.stringify(['deviceId','syncOwnerId','businessId','branchId','deviceAccessMode'].map(function(k){return String(state[k]||'');}));
+    if (journal.durabilityContext && journal.durabilityContext!==context)
+      throw Error('ZEZMS_INTERRUPTED_APPLY_REVIEW_REQUIRED: device binding changed; journal retained.');
     const currentHash = deterministicHash(cleanSnapshot(database));
-    if (journal.afterHash && journal.afterHash !== journal.beforeHash && currentHash === journal.afterHash) {
+    if (journal.durabilityContext===context && journal.afterHash && journal.afterHash !== journal.beforeHash && currentHash === journal.afterHash) {
       appliedOperations[String(journal.opId)] = Number(journal.seq);
       persistAppliedOperations();
       state.cursor = Math.max(Number(state.cursor)||0,Number(journal.seq));
@@ -65,6 +70,13 @@ function transformSyncDurability(html,core,runtime,dbservice,edits){
  replace('function loadDB(){\n',"function loadDB(){\n  if(ZEZMS.syncDurability.pending()){const raw=ZEZMS.db.load(DB_KEY);if(!raw)throw Error('ZEZMS_SYNC_DURABILITY_DATABASE_MISSING');DB=typeof raw==='string'?JSON.parse(raw):raw;return;}\n");
  replace('      const recovery = ZEZMS.canonicalRestore;','      if (ZEZMS.syncDurability && ZEZMS.syncDurability.pending()) return false;\n      const recovery = ZEZMS.canonicalRestore;');
  replace('  async function initCore() {\n',"  async function initCore() {\n    if(ZEZMS.syncDurability.pending())throw Error(ZEZMS.syncDurability.startupError || 'ZEZMS_SYNC_DURABILITY_REVIEW_REQUIRED');\n");
+ section('function shopReloadRuntime(){','async function shopWorkerReadiness(){',block=>block
+  .replace('  var saved=JSON.parse(localStorage.getItem(DB_KEY));','  var savedRaw=localStorage.getItem(DB_KEY),saved=JSON.parse(savedRaw);')
+  .replace('  shopObservedBusiness=shopBusinessText(getDatabase()||{});',"  if(localStorage.getItem(DB_KEY)!==savedRaw)throw Error('ZEZMS_DATABASE_CHANGED_IN_ANOTHER_WINDOW');\n  if(ZEZMS.db.acceptCommittedRaw)ZEZMS.db.acceptCommittedRaw(DB_KEY,savedRaw);\n  shopObservedBusiness=shopBusinessText(getDatabase()||{});"));
+ for(const name of ['pullNowCore(silent)','flushQueueCore(showNotice)'])replace('  async function '+name+' {','  async function '+name+" {\n    if(ZEZMS.syncDurability.pending())throw Error('ZEZMS_SYNC_DURABILITY_REVIEW_REQUIRED: reopen to verify the interrupted save.');");
+ replace('  function isReadyForLocalOperations() {','  function isReadyForLocalOperations() {\n    if(ZEZMS.syncDurability.pending())return false;');
+ replace('  function statusLabel() {',"  function statusLabel() {\n    if(ZEZMS.syncDurability.pending())return 'Interrupted save requires review';");
+ replace("        if (status === 'SUBSCRIBED') setState({ status: 'live', lastError: '' });", "        if (ZEZMS.syncDurability.pending()) return;\n        if (status === 'SUBSCRIBED') setState({ status: 'live', lastError: '' });");
  return html;
 }
 function withoutSyncDurability(html){

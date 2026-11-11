@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto'),{execFileSync}=require('node:child_process');
 const delivery=require('../tools/build-pr11-delivery.cjs'),{transformResiliencePerformance}=require('../tools/resilience-performance-transform.cjs');
-function fixture(){const c={window:null,Intl,Date,AbortController,Promise,setTimeout,clearTimeout,Math,console};c.window=c;vm.createContext(c);for(const f of ['sync-resilience','desktop-presentation'])vm.runInContext(fs.readFileSync('js/'+f+'.js','utf8'),c);return c;}
+function fixture(){const c={window:null,Intl,Date,AbortController,Promise,setTimeout,clearTimeout,Math,console};c.window=c;vm.createContext(c);for(const f of ['sync-resilience','desktop-presentation'])vm.runInContext(fs.readFileSync('js/'+f+'.js','utf8'),c);c.ZEZMS.syncDurability={pending:()=>false};return c;}
 const hash=o=>crypto.createHash('sha256').update(JSON.stringify(o,(k,v)=>k==='payloadHash'?undefined:v)).digest('hex');
 const operation={opId:'synthetic-operation',kind:'STOCK_CORRECTION_UPSERT',patches:[{action:'insert',collection:'stockCorrections',key:'SC1',value:{correctionId:'SC1',quantity:2}}]};
 function row(op=operation){return {seq:21,op_id:op.opId,payload:structuredClone(op),created_at:'2026-11-03T00:00:00Z'};}

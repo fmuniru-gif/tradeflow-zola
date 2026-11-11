@@ -52,7 +52,7 @@ function part(html,a,b){const x=html.indexOf(a),y=html.indexOf(b,x+1);assert.ok(
 test('legacy recovery no longer mistakes unrelated changes or an unproven rollback for a committed operation',()=>{
  const html=native(),source=part(html,'  function recoverInterruptedApply(database) {','  function recordFailedOperation('),before={cashLog:[],cashBalances:{Cash:100}},after={cashLog:[{id:'cash'}],cashBalances:{Cash:75}};
  for(const mode of ['legacy-change','rollback','exact-after','exact-before']){
-  const j={opId:'cash-op',seq:21,beforeHash:JSON.stringify(before)};if(mode==='rollback')j.afterHash=j.beforeHash;if(mode==='exact-after')j.afterHash=JSON.stringify(after);
+  const j={opId:'cash-op',seq:21,beforeHash:JSON.stringify(before),durabilityContext:JSON.stringify(['','','','',''])};if(mode==='rollback')j.afterHash=j.beforeHash;if(mode==='exact-after')j.afterHash=JSON.stringify(after);
   const c={readApplyJournal:()=>j,deterministicHash:JSON.stringify,cleanSnapshot:x=>x,appliedOperations:{},state:{cursor:20},persistAppliedOperations(){},persistState(){},clearApplyJournal(){c.cleared=true;}};vm.createContext(c);vm.runInContext(source,c);
   if(mode==='legacy-change'){assert.throws(()=>c.recoverInterruptedApply(mode==='rollback'?before:{...before,unrelated:true}),/REVIEW_REQUIRED/);assert.equal(c.state.cursor,20);assert.deepEqual(c.appliedOperations,{});assert.equal(c.cleared,undefined);}else{assert.equal(c.recoverInterruptedApply(mode==='exact-after'?after:before),mode==='exact-after');assert.equal(c.state.cursor,mode==='exact-after'?21:20);assert.equal(c.cleared,true);}
  }
@@ -62,4 +62,9 @@ test('assembled application changes reverse exactly to the production baseline o
  const before=execFileSync('git',['show','505e1d8d76aefe87692dbafbd4efb4103988729f:index.html'],{maxBuffer:32e6}).toString();
  const strip=s=>s.replace(/<meta name="zezms-delivery" content="[^"]+">/,'DELIVERY');
  assert.equal(strip(t.withoutSyncDurability(native())),strip(d.assembledShell(before)));
+});
+test('an exact after-image from another legacy journal binding cannot advance this device',()=>{
+ const source=part(native(),'  function recoverInterruptedApply(database) {','  function recordFailedOperation('),database={cashLog:[{id:'cash'}],cashBalances:{Cash:75}};
+ const c={readApplyJournal:()=>({opId:'cash-op',seq:21,beforeHash:'before',afterHash:JSON.stringify(database),durabilityContext:JSON.stringify(['other-device','owner','','','OWNER'])}),deterministicHash:JSON.stringify,cleanSnapshot:x=>x,appliedOperations:{},state:{deviceId:'current-device',syncOwnerId:'owner',deviceAccessMode:'OWNER',cursor:20},persistAppliedOperations(){throw Error('must not persist');},persistState(){throw Error('must not persist');},clearApplyJournal(){throw Error('must retain');}};
+ vm.createContext(c);vm.runInContext(source,c);assert.throws(()=>c.recoverInterruptedApply(database),/binding changed/);assert.equal(c.state.cursor,20);assert.deepEqual(c.appliedOperations,{});
 });
