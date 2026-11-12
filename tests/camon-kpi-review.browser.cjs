@@ -130,7 +130,7 @@ test('new service worker installs the matching shell, manifest and verifier asse
       const registration=await navigator.serviceWorker.register('./sw.js?v=20261017-r70w-camon17p-kpi-review');
       await navigator.serviceWorker.ready;
       const cache=await caches.open(cacheName);
-      const names=['./','./index.html','./manifest.json','./js/camon17p-kpi-review-r70w.js?v=20261110-paired-directory-review-r1'];
+      const names=['./','./index.html','./manifest.json','./js/camon17p-kpi-review-r70w.js?v=20261111-sync-durability-r1'];
       const matches=await Promise.all(names.map(async name=>!!(await cache.match(new URL(name,registration.scope).href))));
       return {active:!!registration.active,matches};
     },require('../tools/build-pr11-delivery.cjs').assetBytes('sw.js').toString().match(/const CACHE = '([^']+)'/)[1]);

@@ -28,7 +28,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261110-paired-directory-review-r1':release)),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261111-sync-durability-r1':release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -52,6 +52,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
   // Dedicated branch-only CI file: read-only tests, no release/deploy permissions.
 
   assert.ok(changed.every(name=>[
+    'js/dbservice.js','js/sync-durability.js','js/sync-durability-runtime.js','tools/sync-durability-transform.cjs','SYNC_DURABILITY_UPDATE.html','tests/sync-durability.test.cjs','tests/sync-durability.browser.cjs','docs/sync-durability.md','.github/workflows/sync-durability-review.yml',
     'js/navigation-v3101-r68.js','js/management-intelligence-v380.js',
     'js/stock-velocity-v390.js',
     'tests/desktop-ui-performance.test.cjs','tests/desktop-ui-performance.browser.cjs',

@@ -54,6 +54,10 @@ async function stage(tab,kind){
   },kind);
   await tab.reload({waitUntil:'domcontentloaded'});
   await tab.waitForFunction(()=>window.ZEZMS?.managedDevices?.hasVerifiedPendingStage()&&document.getElementById('r70vInspectBootstrapOutbox'),null,{timeout:15000});
+  // Wait for independent commercial startup refreshes before establishing the
+  // diagnostic baseline; preservation assertions during inspection stay exact.
+  await tab.waitForFunction(()=>Date.parse(ZEZMS.commercialFoundation?.getState().lastCheckedAt||'')>=performance.timeOrigin);
+  await tab.waitForTimeout(2000);
   return before;
 }
 async function snapshot(tab){
@@ -169,9 +173,12 @@ for(const kind of ['startup','safe','business','unknown'])test('read-only assemb
     }
     assert.ok(!JSON.stringify(envelope).includes('secret-password'));
     assert.ok(!JSON.stringify(envelope).includes('secret-token'));
-    const downloadPromise=tab.waitForEvent('download');
-    await tab.locator('#r70vDownloadBootstrapOutbox').click();
-    const download=await downloadPromise;
+    // Keyboard activation exercises the real button and download handler
+    // without a pointer target moving as the variable-height report lays out.
+    const [download]=await Promise.all([
+      tab.waitForEvent('download'),
+      tab.locator('#r70vDownloadBootstrapOutbox').press('Enter')
+    ]);
     assert.match(download.suggestedFilename(),/^ZEZMS_Bootstrap_Outbox_Diagnostic_\d{4}-\d\d-\d\d\.json$/);
     assert.deepEqual(JSON.parse(fs.readFileSync(await download.path(),'utf8')),envelope);
     const afterSnapshot=await snapshot(tab);
