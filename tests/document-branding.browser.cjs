@@ -102,13 +102,15 @@ test('actual browser print pages and both A5 test documents place a scannable we
    return docs;
   },directSource);
   for(const [name,html]of Object.entries(docs)){
-   const p=await f.context.newPage();await p.setViewportSize({width:name==='purchaseOrder'?704:468,height:780});await p.setContent(html.replace('<head>','<head><base href="http://127.0.0.1:'+server.address().port+'/">'));await p.emulateMedia({media:'print'});
+   const p=await f.context.newPage();
+   // Test pages auto-open the system dialog; PDF capture supplies the print operation here.
+   await p.evaluate(()=>{window.print=()=>{};window.close=()=>{};});console.log('WEBSITE_PRINT_CAPTURE '+name);await p.setViewportSize({width:name==='purchaseOrder'?704:468,height:780});await p.setContent(html.replace('<head>','<head><base href="http://127.0.0.1:'+server.address().port+'/">'));await p.emulateMedia({media:'print'});
    await p.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
    const bounds=await p.evaluate(()=>{const h=document.querySelector('[data-zezms-website-header]'),q=document.querySelector('[data-zezms-website-qr]'),r=q.getBoundingClientRect(),a=h.getBoundingClientRect(),next=h.nextElementSibling?.getBoundingClientRect();return {right:r.right,headerRight:a.right,top:r.top,headerTop:a.top,bottom:r.bottom,nextTop:next?.top,width:r.width,height:r.height};});
    assert.ok(Math.abs(bounds.right-bounds.headerRight)<1,name+' QR at header right');assert.ok(Math.abs(bounds.top-bounds.headerTop)<1,name+' QR at header top');assert.equal(bounds.width,bounds.height);assert.ok(bounds.nextTop>=bounds.bottom,name+' details below QR');
    await p.addScriptTag({path:path.join(root,'vendor/zxing-browser-0.1.5.min.js')});const decoded=await p.evaluate(async()=>{const q=document.querySelector('[data-zezms-website-qr]');const decoder=new ZXingBrowser.BrowserQRCodeReader();return (await decoder.decodeFromImageElement(q)).getText();});
    assert.equal(decoded,'https://zolaelectronicszone.com/',name+' QR destination');
-   await p.pdf({path:path.join(output,'browser-'+name+'.pdf'),preferCSSPageSize:true,printBackground:true});await p.screenshot({path:path.join(output,'browser-'+name+'.png'),fullPage:true});await p.close();
+   try{await p.pdf({path:path.join(output,'browser-'+name+'.pdf'),preferCSSPageSize:true,printBackground:true});}catch(error){throw Error(name+' print capture: '+error.message);}await p.screenshot({path:path.join(output,'browser-'+name+'.png'),fullPage:true});await p.close();
   }
  }finally{await f.context.close();}
 });
