@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scope: [source, sdk, passkeys, delivery, operations, integrity, print]
+        scope: [source, sdk, passkeys, delivery, operations, integrity, print, durability]
     steps:
       - name: Checkout exact review head and complete history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -62,7 +62,8 @@ jobs:
           for file in tests/*.browser.cjs; do
             case "$file" in
               tests/document-branding.browser.cjs) bucket=print;;
-              tests/sync-durability.browser.cjs|tests/main-cash-projection.browser.cjs|tests/main-single-cash-review.browser.cjs|tests/paired-directory-review.browser.cjs|tests/cloud-sdk.browser.cjs|tests/staff-directory-review.browser.cjs|tests/camon-kpi-review.browser.cjs) bucket=sdk;;
+              tests/sync-durability.browser.cjs) bucket=durability;;
+              tests/main-cash-projection.browser.cjs|tests/main-single-cash-review.browser.cjs|tests/paired-directory-review.browser.cjs|tests/cloud-sdk.browser.cjs|tests/staff-directory-review.browser.cjs|tests/camon-kpi-review.browser.cjs) bucket=sdk;;
               tests/device-sign-in.browser.cjs) bucket=passkeys;;
               tests/pr11-cache-delivery.browser.cjs|tests/prelogin-activation.browser.cjs|tests/prebranch-functional-rollback.browser.cjs|tests/r70v-diagnostic.browser.cjs) bucket=delivery;;
               tests/daily-barcodes.browser.cjs|tests/desktop-ui-performance.browser.cjs|tests/main-responsiveness.browser.cjs|tests/remaining-tabs-performance.browser.cjs|tests/resilience-performance.browser.cjs|tests/tv-trade-ins.browser.cjs|tests/ui-responsiveness.browser.cjs) bucket=operations;;

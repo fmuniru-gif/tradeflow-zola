@@ -9,7 +9,8 @@ function edits(){return [
  ['system test',"+ '<header><b>ZEZMS</b><span>Zola Electronics Zone</span></header>'","+ ZEZMS.documentBranding.headerHTML() + '<header><b>ZEZMS</b><span>Zola Electronics Zone</span></header>'"],
  ['system test spacing','section{margin-top:24mm}','section{margin-top:4mm}'],
  ['bridge test','<div class="content"><header><b>ZEZMS - Zola Electronics Zone</b></header>','<div class="content">\' + ZEZMS.documentBranding.headerHTML(watermark) + \'<header><b>ZEZMS - Zola Electronics Zone</b></header>'],
- ['bridge test spacing','h1{margin:28mm 0 4mm;font-size:28pt}','h1{margin:4mm 0 4mm;font-size:28pt}']
+ ['bridge test spacing','h1{margin:28mm 0 4mm;font-size:28pt}','h1{margin:4mm 0 4mm;font-size:28pt}'],
+ ['bridge test footer','footer{position:absolute;left:14mm;right:14mm;bottom:12mm;','footer{position:fixed;z-index:2;left:14mm;right:14mm;bottom:12mm;']
 ];}
 function transformPrintWebsiteQR(html,helper,patches){
  if(html.includes('<script data-zezms-print-website-qr>'))throw Error('PRINT_WEBSITE_QR_ALREADY_APPLIED');

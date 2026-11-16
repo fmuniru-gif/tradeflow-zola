@@ -110,6 +110,7 @@ test('actual browser print pages and both A5 test documents place a scannable we
    assert.ok(Math.abs(bounds.right-bounds.headerRight)<1,name+' QR at header right');assert.ok(Math.abs(bounds.top-bounds.headerTop)<1,name+' QR at header top');assert.equal(bounds.width,bounds.height);assert.ok(bounds.nextTop>=bounds.bottom,name+' details below QR');
    await p.addScriptTag({path:path.join(root,'vendor/zxing-browser-0.1.5.min.js')});const decoded=await p.evaluate(async()=>{const q=document.querySelector('[data-zezms-website-qr]');const decoder=new ZXingBrowser.BrowserQRCodeReader();return (await decoder.decodeFromImageElement(q)).getText();});
    assert.equal(decoded,'https://zolaelectronicszone.com/',name+' QR destination');
+   if(name==='directTest'){const clear=await p.evaluate(()=>{const footer=document.querySelector('footer').getBoundingClientRect();return [...document.querySelectorAll('.content>p')].every(p=>p.getBoundingClientRect().bottom<footer.top);});assert.equal(clear,true,'direct test footer clears all sample text');}
    try{await p.pdf({path:path.join(output,'browser-'+name+'.pdf'),preferCSSPageSize:true,printBackground:true});}catch(error){throw Error(name+' print capture: '+error.message);}await p.screenshot({path:path.join(output,'browser-'+name+'.png'),fullPage:true});await p.close();
   }
  }finally{await f.context.close();}
