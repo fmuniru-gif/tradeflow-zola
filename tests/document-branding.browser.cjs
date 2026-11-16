@@ -98,7 +98,7 @@ test('actual browser print pages and both A5 test documents place a scannable we
     if(!frame)throw Error(name+' print frame missing');frame.contentWindow.print=()=>{};docs[name]='<!doctype html>'+frame.contentDocument.documentElement.outerHTML;
    }
    const original=window.open;try{window.open=()=>({document:{open(){},write(html){docs.systemTest=html;},close(){}}});ZEZPrint.openPrintTest();}finally{window.open=original;}
-   docs.directTest=new Function('watermark',"const esc=String,VERSION='QA',BUILD='QA';"+directSource+';return directTestHtml(watermark);')(logo);
+   docs.directTest=new Function('watermark',"const esc=String,VERSION='3.12.1',BUILD='20260816-direct-print-bridge-r46';"+directSource+';return directTestHtml(watermark);')(logo);
    return docs;
   },directSource);
   for(const [name,html]of Object.entries(docs)){

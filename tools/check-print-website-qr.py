@@ -28,18 +28,18 @@ for file in sorted(folder.glob("*.pdf")):
         assert code.position.top_right.x > rendered.width * 0.70, (file.name, index, "QR is not on the right")
         assert code.position.top_right.y < rendered.height * 0.25, (file.name, index, "QR is not at the top")
         if not index:
-            crop = rendered.crop((0, 0, rendered.width, min(rendered.height, 520)))
-            crop.thumbnail((350, 280))
+            crop = rendered.copy()
+            crop.thumbnail((350, 500))
             previews.append((file.stem, crop.copy()))
         page_count += 1
     document.close()
 assert len(previews) >= 18, (len(previews), "Missing document coverage")
 for group in range(0, len(previews), 8):
     batch = previews[group:group + 8]
-    sheet = Image.new("RGB", (720, 4 * 310), "#dbe1e8")
+    sheet = Image.new("RGB", (720, 4 * 535), "#dbe1e8")
     draw = ImageDraw.Draw(sheet)
     for index, (name, preview) in enumerate(batch):
-        x, y = (index % 2) * 360, (index // 2) * 310
+        x, y = (index % 2) * 360, (index // 2) * 535
         draw.text((x + 8, y + 5), name, fill="black")
         sheet.paste(preview, (x + 5, y + 25))
     target = folder / ("contact-" + str(group // 8) + ".png")
