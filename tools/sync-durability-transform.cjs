@@ -80,6 +80,7 @@ function transformSyncDurability(html,core,runtime,dbservice,edits){
  return html;
 }
 function withoutSyncDurability(html){
+ html=require('./print-website-qr-transform.cjs').withoutPrintWebsiteQR(html);
  if(!html.includes('<script data-zezms-sync-durability>'))return html;
  const fs=require('node:fs'),{execFileSync}=require('node:child_process'),delivery=require('./build-pr11-delivery.cjs');
  const before=execFileSync('git',['show','505e1d8d76aefe87692dbafbd4efb4103988729f:index.html'],{maxBuffer:32*1024*1024}).toString(),edits=[];

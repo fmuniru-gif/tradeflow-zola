@@ -5,6 +5,7 @@ const {execFileSync}=require('node:child_process');
 const {transformRemainingTabs}=require('./remaining-tabs-transform.cjs');
 const {transformMainTables}=require('./main-table-transform.cjs');
 const {edits:documentBrandingEdits,transformDocumentBranding}=require('./document-branding-transform.cjs');
+const {edits:printWebsiteQREdits,transformPrintWebsiteQR}=require('./print-website-qr-transform.cjs');
 const {transformResiliencePerformance}=require('./resilience-performance-transform.cjs');
 const {transformDeviceCards}=require('./device-cards-transform.cjs');
 const {transformWatermarkIdle}=require('./watermark-idle-transform.cjs');
@@ -17,9 +18,9 @@ const {transformPairedDirectory}=require('./paired-directory-transform.cjs');
 const {transformCamonKpi}=require('./camon-kpi-transform.cjs');
 const {transformSyncDurability}=require('./sync-durability-transform.cjs');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261111-sync-durability-r1';
+const DELIVERY='20261116-print-website-qr-r1';
 const assetMemo=new Map();
-const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js','pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js','document-branding.js','sync-resilience.js','desktop-presentation.js','commercial-foundation.js','device-cards.js','idle-session.js','tv-trade-ins.js','daily-profit-barcodes.js','device-sign-in.js','supabase-js-2.112.1.js','staff-directory-review-core.js','staff-directory-review-runtime.js','camon17p-kpi-review-r70w.js','paired-directory-review-core.js','paired-directory-review-runtime.js','sync-durability.js','sync-durability-runtime.js','dbservice.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
+const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js','pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js','document-branding.js','print-website-qr.js','sync-resilience.js','desktop-presentation.js','commercial-foundation.js','device-cards.js','idle-session.js','tv-trade-ins.js','daily-profit-barcodes.js','device-sign-in.js','supabase-js-2.112.1.js','staff-directory-review-core.js','staff-directory-review-runtime.js','camon17p-kpi-review-r70w.js','paired-directory-review-core.js','paired-directory-review-runtime.js','sync-durability.js','sync-durability-runtime.js','dbservice.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
 const oldCache=`  async function cachePatched(source){
     if(!('caches' in window))return;
@@ -112,6 +113,9 @@ const versions=`    // PR11_DELIVERY_URLS_BEGIN
     // SYNC_DURABILITY_DELIVERY_BEGIN
     output=(${transformSyncDurability.toString().replace(/<\/script/gi,'<\\/script')})(output,safeInline(decodeBase64(DELIVERY_MODULES['sync-durability.js'])),safeInline(decodeBase64(DELIVERY_MODULES['sync-durability-runtime.js'])),safeInline(decodeBase64(DELIVERY_MODULES['dbservice.js'])));
     // SYNC_DURABILITY_DELIVERY_END
+    // PRINT_WEBSITE_QR_DELIVERY_BEGIN
+    output=(${transformPrintWebsiteQR.toString().replace(/<\/script/gi,'<\\/script')})(output,safeInline(decodeBase64(DELIVERY_MODULES['print-website-qr.js'])),${JSON.stringify(printWebsiteQREdits())});
+    // PRINT_WEBSITE_QR_DELIVERY_END
     output=output.replace('</head>','<meta name="zezms-delivery" content="'+DELIVERY+'"></head>');
     // PR11_DELIVERY_URLS_END
 `;
@@ -153,6 +157,7 @@ function assembledShell(shell,options={}){
   shell=normalized(shell);
   const first=shell.indexOf('<script>')+8,last=shell.lastIndexOf('</script>');
   let script=shell.slice(first,last);
+  if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ PRINT_WEBSITE_QR_DELIVERY_BEGIN[\s\S]*?    \/\/ PRINT_WEBSITE_QR_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ SYNC_DURABILITY_DELIVERY_BEGIN[\s\S]*?    \/\/ SYNC_DURABILITY_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ PAIRED_DIRECTORY_DELIVERY_BEGIN[\s\S]*?    \/\/ PAIRED_DIRECTORY_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&key!=='withoutPairedDirectory'&&options[key]))script=script.replace(/    \/\/ CAMON_KPI_DELIVERY_BEGIN[\s\S]*?    \/\/ CAMON_KPI_DELIVERY_END\n/,'');

@@ -56,10 +56,10 @@ test('actual offline PDF builders carry the approved logo and slogan across ever
   });
   assert.deepEqual(result.after,result.before);assert.equal(result.asset,'assets/zez-logo-approved-20261103.jpg');
   for(const [name,bytes]of Object.entries(result.docs)){
-   const body=Buffer.from(bytes);assert.ok(body.toString('ascii').startsWith('%PDF-1.4'));assert.ok(body.includes(Buffer.from('Buy the right one.')));assert.ok(body.includes(Buffer.from('/Subtype /Image')));const text=body.toString('latin1'),pages=[...text.matchAll(/\/Type \/Page\b/g)].length;const media=text.match(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/);assert.ok(media,name+' page size');const command='q /GS1 gs '+Number(media[1]).toFixed(2)+' 0 0 '+Number(media[2]).toFixed(2)+' 0 0 cm /WM Do Q';assert.equal(text.split(command).length-1,pages,name+' every watermark fills the page');fs.writeFileSync(path.join(output,name+'.pdf'),body);
+   const body=Buffer.from(bytes);assert.ok(body.toString('ascii').startsWith('%PDF-1.4'));assert.ok(body.includes(Buffer.from('Buy the right one.')));assert.ok(body.includes(Buffer.from('/Subtype /Image')));const text=body.toString('latin1'),pages=[...text.matchAll(/\/Type \/Page\b/g)].length;assert.equal(text.split('(zolaelectronicszone.com)').length-1,pages,name+' website on every page');const media=text.match(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/);assert.ok(media,name+' page size');const command='q /GS1 gs '+Number(media[1]).toFixed(2)+' 0 0 '+Number(media[2]).toFixed(2)+' 0 0 cm /WM Do Q';assert.equal(text.split(command).length-1,pages,name+' every watermark fills the page');fs.writeFileSync(path.join(output,name+'.pdf'),body);
   }
   const downloadPromise=f.page.waitForEvent('download');await f.page.evaluate(()=>ZEZMS.salesPipeline.downloadQuotationPDF('Q-SYNTHETIC'));const download=await downloadPromise;await download.saveAs(path.join(output,'quotation.pdf'));
-  const quotation=fs.readFileSync(path.join(output,'quotation.pdf'));assert.ok(quotation.includes(Buffer.from('Buy the right one.')));assert.ok(quotation.includes(Buffer.from('/Subtype /Image')));assert.equal(quotation.toString('latin1').split('q /GS1 gs 419.53 0 0 595.28 0 0 cm /WM Do Q').length-1,[...quotation.toString('latin1').matchAll(/\/Type \/Page\b/g)].length);
+  const quotation=fs.readFileSync(path.join(output,'quotation.pdf'));assert.ok(quotation.includes(Buffer.from('Buy the right one.')));assert.ok(quotation.includes(Buffer.from('zolaelectronicszone.com')));assert.ok(quotation.includes(Buffer.from('/Subtype /Image')));assert.equal(quotation.toString('latin1').split('q /GS1 gs 419.53 0 0 595.28 0 0 cm /WM Do Q').length-1,[...quotation.toString('latin1').matchAll(/\/Type \/Page\b/g)].length);
   assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}
 });
@@ -74,7 +74,7 @@ test('system-print and direct-print HTML use the same undistorted artwork, embed
   });
   assert.equal(result.before,result.after);
   for(const [name,html]of Object.entries(result.docs)){
-   assert.ok(html.includes('Buy the right one.'),name);assert.ok(html.includes('data-zezms-approved-logo'),name);assert.ok(!html.includes('zez-document-watermark.jpg'),name);
+   assert.ok(html.includes('Buy the right one.'),name);assert.ok(html.includes('data-zezms-website-qr'),name);assert.ok(html.includes('zolaelectronicszone.com'),name);assert.ok(html.includes('data-zezms-approved-logo'),name);assert.ok(!html.includes('zez-document-watermark.jpg'),name);
    if(['receipt','invoice','waybill'].includes(name))assert.ok(/data-zezms-approved-logo src="data:image\/jpeg;base64,/.test(html),name+' bridge image must be self-contained');
    fs.writeFileSync(path.join(output,name+'.html'),html);
    const preview=await f.context.newPage();await preview.setContent(html);await preview.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
@@ -82,5 +82,36 @@ test('system-print and direct-print HTML use the same undistorted artwork, embed
    assert.equal(image.loaded,true);assert.equal(image.width,image.height);await preview.screenshot({path:path.join(output,name+'.png'),fullPage:true});await preview.close();
   }
   assert.equal(f.errors.length,0,JSON.stringify(f.errors));
+ }finally{await f.context.close();}
+});
+
+test('actual browser print pages and both A5 test documents place a scannable website QR above all document details',async()=>{
+ const f=await fixture();try{
+  await seed(f.page);
+  const assembled=require('../tools/build-pr11-delivery.cjs').assembledShell(fs.readFileSync(path.join(root,'index.html'),'utf8'));
+  const directSource=assembled.slice(assembled.indexOf('  function directTestHtml(watermark) {'),assembled.indexOf('  function directPrintTest()'));
+  const docs=await f.page.evaluate(async directSource=>{
+   const v=__brandingFixtures,logo=await ZEZPrint.getEmbeddedWatermark(),b=ZEZMS.documentBranding;
+   const docs={receipt:ZEZMS.operationsUpdate.buildReceiptPrintDocument(v.receipt,logo),invoice:ZEZMS.commercialDocuments.buildCommercialPrintDocument('invoice',v.invoice,logo),waybill:ZEZMS.commercialDocuments.buildCommercialPrintDocument('waybill',v.waybill,logo)};
+   for(const [name,run] of [['quotation',()=>ZEZMS.salesPipeline.printQuotation('Q-SYNTHETIC')],['purchaseOrder',()=>printPurchaseOrder('PO1')]]){
+    const before=new Set(document.querySelectorAll('iframe'));run();const frame=[...document.querySelectorAll('iframe')].find(frame=>!before.has(frame));
+    if(!frame)throw Error(name+' print frame missing');frame.contentWindow.print=()=>{};docs[name]='<!doctype html>'+frame.contentDocument.documentElement.outerHTML;
+   }
+   const original=window.open;try{window.open=()=>({document:{open(){},write(html){docs.systemTest=html;},close(){}}});ZEZPrint.openPrintTest();}finally{window.open=original;}
+   docs.directTest=new Function('watermark',"const esc=String,VERSION='3.12.1',BUILD='20260816-direct-print-bridge-r46';"+directSource+';return directTestHtml(watermark);')(logo);
+   return docs;
+  },directSource);
+  for(const [name,html]of Object.entries(docs)){
+   const p=await f.context.newPage();
+   // Test pages auto-open the system dialog; PDF capture supplies the print operation here.
+   await p.evaluate(()=>{window.print=()=>{};window.close=()=>{};});console.log('WEBSITE_PRINT_CAPTURE '+name);await p.setViewportSize({width:name==='purchaseOrder'?704:468,height:780});await p.setContent(html.replace('<head>','<head><base href="http://127.0.0.1:'+server.address().port+'/">'));await p.emulateMedia({media:'print'});
+   await p.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
+   const bounds=await p.evaluate(()=>{const h=document.querySelector('[data-zezms-website-header]'),q=document.querySelector('[data-zezms-website-qr]'),r=q.getBoundingClientRect(),a=h.getBoundingClientRect(),next=h.nextElementSibling?.getBoundingClientRect();return {right:r.right,headerRight:a.right,top:r.top,headerTop:a.top,bottom:r.bottom,nextTop:next?.top,width:r.width,height:r.height};});
+   assert.ok(Math.abs(bounds.right-bounds.headerRight)<1,name+' QR at header right');assert.ok(Math.abs(bounds.top-bounds.headerTop)<1,name+' QR at header top');assert.equal(bounds.width,bounds.height);assert.ok(bounds.nextTop>=bounds.bottom,name+' details below QR');
+   await p.addScriptTag({path:path.join(root,'vendor/zxing-browser-0.1.5.min.js')});const decoded=await p.evaluate(async()=>{const q=document.querySelector('[data-zezms-website-qr]');const decoder=new ZXingBrowser.BrowserQRCodeReader();return (await decoder.decodeFromImageElement(q)).getText();});
+   assert.equal(decoded,'https://zolaelectronicszone.com/',name+' QR destination');
+   if(name==='directTest'){const clear=await p.evaluate(()=>{const footer=document.querySelector('footer').getBoundingClientRect();return [...document.querySelectorAll('.content>p')].every(p=>p.getBoundingClientRect().bottom<footer.top);});assert.equal(clear,true,'direct test footer clears all sample text');}
+   try{await p.pdf({path:path.join(output,'browser-'+name+'.pdf'),preferCSSPageSize:true,printBackground:true});}catch(error){throw Error(name+' print capture: '+error.message);}await p.screenshot({path:path.join(output,'browser-'+name+'.png'),fullPage:true});await p.close();
+  }
  }finally{await f.context.close();}
 });
