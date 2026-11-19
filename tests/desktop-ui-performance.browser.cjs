@@ -83,7 +83,13 @@ const server = http.createServer((request, response) => {
     // Let the existing asynchronous sign-in directory publication settle before
     // taking the immutable business-data snapshot. No auth code is changed.
     await page.waitForTimeout(1000);
-    console.error('Synthetic Owner signed in');
+    // This offline fixture has no Cloud configuration. Wait for the production
+    // Fleet Health startup refresh (scheduled at 3.5 s) to render its expected
+    // configuration failure before measuring navigation or collecting pages.
+    // Otherwise that unrelated background render resets a page mid-probe.
+    await page.waitForFunction(()=>{const s=ZEZMS.convergence&&ZEZMS.convergence.getState();return s&&!s.busy&&s.fleet&&s.fleet.code==='FINGERPRINT_PUBLISH_FAILED';},null,{timeout:10000});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    console.error('Synthetic Owner signed in; offline Fleet Health startup settled');
     const cdp=await context.newCDPSession(page);
     await cdp.send('Performance.enable');
     await cdp.send('Emulation.setCPUThrottlingRate',{rate:profile.cpu});
