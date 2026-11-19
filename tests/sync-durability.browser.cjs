@@ -46,6 +46,12 @@ test('another window cannot overwrite a newer business save even after reading i
   // This establishes the intended save ordering without two simultaneous bootstrap migrations.
   const background=await f.context.newCDPSession(f.page);await background.send('Page.setWebLifecycleState',{state:'frozen'});
   const b=await f.context.newPage();await b.goto(f.url);await b.waitForFunction(()=>window.ZEZMS?.cloudSync);await b.evaluate(()=>ZEZMS.cloudSync.waitUntilReady(10000));
+  // Startup may finish an earlier migration while the second window opens.
+  // Reopen the foreground window from the final stored image, as the real guard
+  // instructs. Keep its native fence and save path intact; the frozen original
+  // must still fail after the foreground window's actual business save.
+  await b.reload();await b.waitForFunction(()=>window.ZEZMS?.cloudSync);await b.evaluate(()=>ZEZMS.cloudSync.waitUntilReady(10000));
+  await b.evaluate(()=>ZEZMS.db.assertCurrent(DB_KEY));
   await save(b);await background.send('Page.setWebLifecycleState',{state:'active'});
   const result=await f.page.evaluate(()=>{ZEZMS.db.load(DB_KEY);DB.cashBalances.Cash=12;let message='';try{saveDB();}catch(e){message=e.message;}return {message,wallet:JSON.parse(localStorage.getItem(DB_KEY)).cashBalances.Cash};});assert.match(result.message,/ANOTHER_WINDOW/);assert.equal(result.wallet,75);
  }finally{await f.context.close();}
