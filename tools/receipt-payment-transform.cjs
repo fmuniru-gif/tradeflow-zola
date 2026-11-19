@@ -5,7 +5,21 @@ function edits(){return [
  ['payment operation identity','    const operationId = tradeInOperationId || (rolloverPatch', '    const receiptPaymentId = ZEZMS.receiptPaymentCore.operationId(patches);\n    const operationId = receiptPaymentId || tradeInOperationId || (rolloverPatch'],
  ['receive payment validation','    const correctionInsert = operation.patches.find(function (patch) {','    if (ZEZMS.receiptPaymentCore.validate(operation,state) && ZEZMS.receiptPaymentCore.materialized(getDatabase(),operation)) return true;\n    const correctionInsert = operation.patches.find(function (patch) {'],
  ['concurrent payment claim','          .filter(function (row) { return row.device_id === state.deviceId && queuedIds.has(row.op_id); })','          .filter(function (row) { return queuedIds.has(row.op_id) && (row.device_id === state.deviceId || ZEZMS.receiptPaymentCore.collision(row,originalQueue.find(function(op){return op.opId===row.op_id;}),state,deterministicHash)); })'],
- ['conflict receive','          if (isStockConflict(error) || (operation.kind === \'STOCK_IN\'',"          if (/^RCPAY(?:UNDO)?-/.test(String(operation.opId||'')) && /ZEZMS_OPERATION_PAYLOAD_CONFLICT/.test(String(error.message||error))) {\n            await pullNowCore(true);\n            if (queue.some(function(op){return op.opId===operation.opId;})) throw error;\n            continue;\n          }\n          if (/^RCPAY(?:UNDO)?-/.test(String(operation.opId||'')) && isStockConflict(error)) {\n            syncDurabilityRun('local-save',function(){\n              applyInverseOperation(operation);\n              queue=queue.filter(function(op){return op.opId!==operation.opId;});\n              recordFailedOperation(operation,'upload-conflict',error);\n            });\n            await pullNowCore(true);\n            continue;\n          }\n          if (isStockConflict(error) || (operation.kind === 'STOCK_IN'"],
+ ['conflict receive','          if (isStockConflict(failure)) {',`          if (/^RCPAY(?:UNDO)?-/.test(String(operation.opId||'')) && /ZEZMS_OPERATION_PAYLOAD_CONFLICT/.test(String(failure.message||failure))) {
+            await pullNowCore(true);
+            if (queue.some(function(op){return op.opId===operation.opId;})) throw failure;
+            continue;
+          }
+          if (/^RCPAY(?:UNDO)?-/.test(String(operation.opId||'')) && isStockConflict(failure)) {
+            syncDurabilityRun('local-save',function(){
+              applyInverseOperation(operation);
+              queue=queue.filter(function(op){return op.opId!==operation.opId;});
+              recordFailedOperation(operation,'upload-conflict',failure);
+            });
+            await pullNowCore(true);
+            continue;
+          }
+          if (isStockConflict(failure)) {`],
  ['linked reversal',"    if (txn.status === UNDONE) throw new Error('This account transaction has already been undone.');", "    if (txn.status === UNDONE) throw new Error('This account transaction has already been undone.');\n    if (ZEZMS.receiptPaymentCore.isPayment(txn)) return ZEZMS.receiptPayments.undoNative(transactionId,reason);"],
  ['native atomic payment commit','  function onLocalSave(reason) {',`  function commitReceiptPayment(next,expectedId) {
     ZEZMS.receiptPayments.authorize(expectedId);
