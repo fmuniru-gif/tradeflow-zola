@@ -18,6 +18,7 @@ function transformPrintWebsiteQR(html,helper,patches){
  return html.replace('</head>','<script data-zezms-print-website-qr>\n'+helper+'\n</script></head>');
 }
 function withoutPrintWebsiteQR(html){
+ html=require('./receipt-payment-transform.cjs').withoutReceiptPayment(html);
  if(!html.includes('<script data-zezms-print-website-qr>'))return html;
  html=html.replace(/<script data-zezms-print-website-qr>[\s\S]*?<\/script>/,'');
  for(const [,before,after]of edits().reverse())html=html.split(after).join(before);
