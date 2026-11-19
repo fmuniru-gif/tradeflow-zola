@@ -8,11 +8,38 @@ let busy=false,draft=null;
 function check(ok,message){if(!ok)throw Error(message);}
 function actor(undo){const a=ZEZMS.staffAuth,context=a&&a.getContext(),user=context&&context.user;check(a&&a.can('MANAGE_ACCOUNTS')&&user&&user.id&&user.active!==false,'Sign in with account-management permission to record receipt payments.');if(undo)check(a.can('UNDO_TRANSACTION'),'Transaction-undo permission is required.');return {id:clean(user.id),name:clean(user.name),role:clean(context.role)};}
 function sync(){return ZEZMS.cloudSync;}
-function ready(undo){actor(undo);const s=sync(),state=s&&s.getState();check(s&&state&&state.initialized&&clean(state.deviceAccessStatus).toUpperCase()==='ACTIVE','An active registered Cloud device is required.');check(navigator.onLine&&state.signedInEmail,'Connect to Cloud before recording or reversing a receipt payment.');check(s.isReadyForLocalOperations()&&!s.isApplyingRemote()&&!ZEZMS.syncDurability.pending(),'Resolve the current device or interrupted-save hold first.');check(!state.integrityWarning&&!state.oldClientDetected&&!list(s.getFailedOperations()).length&&!list(s.getOutbox()).length,'Wait for pending transactions to sync and resolve any failed operations before continuing.');return state;}
+function ready(undo){
+  actor(undo);
+  const s=sync(),state=s&&s.getState();
+  check(s&&state&&state.initialized&&clean(state.deviceId),'Wait for this registered device to finish Cloud initialization.');
+  const mode=clean(state.deviceAccessMode||'OWNER').toUpperCase();
+  const states=[state.deviceLifecycleState,state.lifecycleState,state.lifecycle_state,state.deviceAccessStatus].map(value=>clean(value).toUpperCase());
+  // Established Owner devices may have no cached lifecycle label. Paired devices
+  // must have ACTIVE lifecycle evidence; any explicit blocked label wins.
+  check(['OWNER','PAIRED'].includes(mode)&&states.every(value=>!value||value==='ACTIVE')&&(mode!=='PAIRED'||states.includes('ACTIVE')),'This device is not active for receipt payments. Review its existing Cloud connection.');
+  const session=s.getSession(),user=session&&session.user,owner=clean(s.currentSyncOwnerId());
+  check(navigator.onLine&&s.getClient()&&user&&clean(user.id),'Connect to Cloud before recording or reversing a receipt payment.');
+  // A paired device has an anonymous authenticated identity, normally no email.
+  // Owner sessions must belong to the sync owner and must not be anonymous.
+  check(owner&&owner===clean(state.syncOwnerId)&&(mode==='PAIRED'||(clean(user.id)===owner&&!user.is_anonymous&&!(user.app_metadata&&user.app_metadata.provider==='anonymous'))),'The Cloud identity does not match this device. Review its existing connection.');
+  check(s.isReadyForLocalOperations()&&!s.isApplyingRemote()&&!ZEZMS.syncDurability.pending(),'Resolve the current device or interrupted-save hold first.');
+  check(!state.integrityWarning&&!state.oldClientDetected&&!list(s.getFailedOperations()).length&&!list(s.getOutbox()).length,'Wait for pending transactions to sync and resolve any failed operations before continuing.');
+  return state;
+}
 function authorize(id){return ready(String(id).startsWith('RCPAYUNDO-'));}
 async function hash(value){check(crypto&&crypto.subtle,'Secure receipt identity hashing is unavailable.');const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 function capture(undo){const a=JSON.stringify(actor(undo)),service=sync(),binding=ZEZMS.syncResilience.captureContext(()=>({client:service.getClient(),session:service.getSession(),state:service.getState(),ownerId:service.currentSyncOwnerId()}));return ()=>binding.valid()&&JSON.stringify(actor(undo))===a;}
-async function refresh(undo){ready(undo);const valid=capture(undo);await sync().pullNow(false);ready(undo);check(valid(),'The signed-in staff member or device changed. Open the payment again.');return valid;}
+async function refresh(undo){
+  const state=ready(undo),valid=capture(undo),service=sync();
+  if(clean(state.deviceAccessMode).toUpperCase()==='PAIRED'){
+    const context=await service.validatePairedAccess();
+    check(valid()&&context&&clean(context.device_status).toUpperCase()==='ACTIVE'&&clean(context.owner_id)===clean(state.syncOwnerId)&&clean(context.business_id)===clean(state.businessId)&&clean(context.branch_id)===clean(state.branchId)&&(!context.device_id||clean(context.device_id)===clean(state.deviceId)),'The paired Cloud identity changed. Open the payment again after reviewing Sync.');
+  }
+  await service.pullNow(false);
+  ready(undo);
+  check(valid(),'The signed-in staff member or device changed. Open the payment again.');
+  return valid;
+}
 function wallet(key){const w=ZEZMS.cashWallets,keyValue=w&&w.keyFromSelection(key);check(keyValue&&w.isActive(keyValue)&&Object.hasOwn(DB.cashBalances||{},keyValue),'Choose an active receiving cash wallet.');return keyValue;}
 async function prepare(id){const s=ready(false),before=core.proof(DB,id),seed=core.seed(DB,id,s),valid=capture(false),operationId='RCPAY-'+await hash(seed);ready(false);check(valid()&&before===core.proof(DB,id),'The receipt or debtor changed. Open Paid again.');return {receiptNo:core.inspect(DB,id).receiptNo,operationId,proof:before,scope:core.scope(s),actor:actor(false)};}
 function saved(id){return list(DB.accountTxns).find(t=>t.id===id&&core.isPayment(t));}
@@ -28,7 +55,7 @@ function status(message,error){const el=document.getElementById('receiptPaymentS
 async function open(id){if(busy)return;draft=null;openModal('<h3>Record full receipt payment</h3><p id="receiptPaymentStatus" role="status">Checking the latest receipt and debtor balance…</p>');try{await refresh(false);draft=await prepare(id);const x=core.inspect(DB,draft.receiptNo),wallets=ZEZMS.cashWallets.active();if(!document.getElementById('receiptPaymentStatus')){draft=null;return;}openModal('<section id="receiptPaymentForm"><h3>Record full receipt payment</h3><p><b>'+esc(x.receipt.receiptRef||x.receiptNo)+'</b><br>'+esc(x.receipt.customerName||x.sale.customer)+'</p><div class="statline"><span>Linked debtor</span><b>'+esc(x.debtor.name)+'</b></div><p class="muted">Account: '+esc(x.debtor.id)+'</p><div class="statline"><span>Remaining receipt amount</span><b>'+esc(money(x.due/100))+'</b></div><div class="statline"><span>Debtor balance after payment</span><b>'+esc(money((core.cents(x.debtor.balance)-x.due)/100))+'</b></div><div class="field"><label for="receiptPaymentWallet">Money received into</label><select id="receiptPaymentWallet"><option value="">Choose receiving wallet</option>'+wallets.map(w=>'<option value="'+esc(w.balanceKey)+'">'+esc(w.displayName||ZEZMS.cashWallets.label(w.balanceKey))+'</option>').join('')+'</select></div><label style="display:flex;align-items:flex-start;gap:8px;margin:14px 0"><input type="checkbox" id="receiptPaymentConfirmed" style="width:auto;margin-top:3px"><span>I received this full amount now, and this payment has not already been entered in Accounts.</span></label><p id="receiptPaymentStatus" role="status"></p><div class="row"><button id="receiptPaymentSave" class="btn" onclick="ZEZMS.receiptPayments.saveFromUI()">Record payment &amp; mark Paid</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div></section>');}catch(error){status(error.message,true);}}
 async function saveFromUI(){const b=document.getElementById('receiptPaymentSave');if(b)b.disabled=true;try{check(draft,'Open Paid from the receipt first.');const selection=document.getElementById('receiptPaymentWallet'),confirmed=document.getElementById('receiptPaymentConfirmed');status('Saving the linked payment and checking Cloud acknowledgement…');const result=await accept(draft,{wallet:selection&&selection.value,confirmed:!!(confirmed&&confirmed.checked)});draft=null;closeModal();render();toast(result.pending||result.syncError?'Payment saved locally and queued for sync. Do not enter it again. '+result.syncError:'Receipt paid; debtor and cash payment synchronized.',result.pending||result.syncError?'warn':'ok');}catch(error){status(error.message,true);if(error.receiptPaymentSaved){draft=null;if(b)b.disabled=true;return;}}finally{if(b&&draft)b.disabled=false;}}
 function undoNative(id,reason){return undo(id,reason).then(result=>{render();toast(result.pending||result.syncError?'Payment reversal saved locally and queued for sync. Do not repeat it.':'Payment reversed; receipt credit, debtor and cash restored.',result.pending||result.syncError?'warn':'ok');}).catch(error=>toast(error.message,'err'));}
-ZEZMS.receiptPayments=Object.freeze({build:'20261119-receipt-payment-r1',authorize,prepare,accept,undo,undoNative,open,saveFromUI,button,blockPartial,blockCash});
+ZEZMS.receiptPayments=Object.freeze({build:'20261119-receipt-payment-r2',authorize,prepare,accept,undo,undoNative,open,saveFromUI,button,blockPartial,blockCash});
 for(const name of ['r67pEditCashEntry','r67pApplyCashEdit','r67pEditAccountEntry','r67pApplyAccountEdit']){const base=window[name];if(typeof base==='function')window[name]=function(id){try{if(name.includes('Account')&&list(DB.accountTxns).some(t=>t.id===id&&core.isPayment(t)))throw Error('Use Accounts Undo to reverse the linked receipt payment before making a correction.');if(name.includes('Cash'))blockCash(id);}catch(error){toast(error.message,'err');return false;}return base.apply(this,arguments);};}
 // Keep status searches based on the receipt, excluding the new payment action label.
 const pages=ZEZMS.tablePages;check(pages&&pages.filterSales,'The sales search service is unavailable.');ZEZMS.tablePages=Object.freeze(Object.assign({},pages,{filterSales(records,renderRow,receipts){return pages.filterSales(records,record=>renderRow(record).replace(/<button\b[^>]*\bdata-receipt-paid\b[^>]*>[\s\S]*?<\/button>/g,''),receipts);}}));

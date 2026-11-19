@@ -1,7 +1,7 @@
 name: Receipt payment review (NO DEPLOY)
 on:
   push:
-    branches: [feature/receipt-paid-20261119]
+    branches: [fix/receipt-payment-device-auth-20261119]
 permissions:
   contents: read
 jobs:
@@ -23,10 +23,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = feature/receipt-paid-20261119
+          test "$GITHUB_REF_NAME" = fix/receipt-payment-device-auth-20261119
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = 1a12ff9d46b98ee16e04ad6fb289731cda9c485f
-          git merge-base --is-ancestor 1a12ff9d46b98ee16e04ad6fb289731cda9c485f HEAD
+          test "$(git rev-parse origin/main)" = 5d7dc873a06d17a2eda1c483f7aa593b1489f2bd
+          git merge-base --is-ancestor 5d7dc873a06d17a2eda1c483f7aa593b1489f2bd HEAD
           test "$(git rev-parse --is-shallow-repository)" = false
           printf 'Exact reviewed delivery commit: %s\n' "$GITHUB_SHA"
       - name: Set up Node.js 22
