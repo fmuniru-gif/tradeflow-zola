@@ -24,6 +24,7 @@ test('operation identity is shared across devices and wallet choices; duplicate 
  const row={op_id:oa.opId,device_id:oa.deviceId,payload:oa};assert.equal(core.collision(row,ob,state,hash),true);assert.equal(core.materialized(pa.database,oa),true);assert.throws(()=>core.materialized(pa.database,ob),/different payment|after-state is unproven/);
  assert.throws(()=>core.collision({...row,payload:{...oa,payloadHash:'wrong'}},ob,state,hash),/integrity/);assert.throws(()=>core.validate(oa,{...state,syncOwnerId:'OTHER'}),/different owner/);
  for(const mutate of [o=>o.patches.push({action:'insert',collection:'expenses',key:'bad',value:{id:'bad'}}),o=>o.patches.find(p=>p.root==='cashBalances').value++,o=>o.patches.find(p=>p.collection==='debtors').changes.find(c=>c.field==='balance').mode='set']){const bad=structuredClone(oa);mutate(bad);assert.throws(()=>core.validate(bad,state));}
+ for(const mutate of [d=>d.cashBalances['Cash in Hand']++,d=>d.debtors[0].balance++,d=>d.receipts[0].balance=1,d=>d.cashLog=[]]){const incomplete=structuredClone(pa.database);mutate(incomplete);assert.throws(()=>core.materialized(incomplete,oa),/unproven|missing/);}
  assert.equal(core.descriptor({opId:'ordinary-operation',patches:[]}),null);
 });
 test('every native durable-write interruption recovers to one complete receipt/debtor/cash result and its one immutable outbox item',()=>{

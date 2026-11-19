@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scope: [source, payments]
+        scope: [source, sdk, passkeys, delivery, operations, integrity, print, durability, payments]
     steps:
       - name: Checkout exact review head and complete history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

@@ -1,6 +1,7 @@
 'use strict';
 function edits(){return [
- ['Paid button','<div class="receipt-actions">\n            <button class="btn sm ghost" onclick="showStoredReceipt', '<div class="receipt-actions">\n            ${ZEZMS.receiptPayments ? ZEZMS.receiptPayments.button(record) : \'\'}\n            <button class="btn sm ghost" onclick="showStoredReceipt'],
+ ['Paid button',`<button class="btn sm ghost" onclick="showStoredReceipt('\${escAttr(record.id)}')">View</button>`, `<button class="btn sm ghost" onclick="showStoredReceipt('\${escAttr(record.id)}')">View</button>
+            \${ZEZMS.receiptPayments ? ZEZMS.receiptPayments.button(record) : ''}`],
  ['payment operation identity','    const operationId = tradeInOperationId || (rolloverPatch', '    const receiptPaymentId = ZEZMS.receiptPaymentCore.operationId(patches);\n    const operationId = receiptPaymentId || tradeInOperationId || (rolloverPatch'],
  ['receive payment validation','    const correctionInsert = operation.patches.find(function (patch) {','    if (ZEZMS.receiptPaymentCore.validate(operation,state) && ZEZMS.receiptPaymentCore.materialized(getDatabase(),operation)) return true;\n    const correctionInsert = operation.patches.find(function (patch) {'],
  ['concurrent payment claim','          .filter(function (row) { return row.device_id === state.deviceId && queuedIds.has(row.op_id); })','          .filter(function (row) { return queuedIds.has(row.op_id) && (row.device_id === state.deviceId || ZEZMS.receiptPaymentCore.collision(row,originalQueue.find(function(op){return op.opId===row.op_id;}),state,deterministicHash)); })'],
