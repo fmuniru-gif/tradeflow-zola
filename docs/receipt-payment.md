@@ -1,8 +1,12 @@
 # Receipt-specific full payment
 
-Delivery `20261119-receipt-payment-r1` adds **Paid** to credit receipt rows for staff with account-management permission. The panel names the debtor identified by the original credit ledger entry, shows the full remaining amount and the resulting debtor balance, and requires an active receiving wallet plus confirmation that this is new money actually received, not already entered in Accounts. It does not guess accounts from names or clear historical debt in bulk. Missing/ambiguous links, inconsistent receipt/sale balances, a smaller debtor balance and reversed receipts stop before posting.
+Delivery `20261119-receipt-payment-r2` adds **Paid** to credit receipt rows for staff with account-management permission. The panel names the debtor identified by the original credit ledger entry, shows the full remaining amount and the resulting debtor balance, and requires an active receiving wallet plus confirmation that this is new money actually received, not already entered in Accounts. It does not guess accounts from names or clear historical debt in bulk. Missing/ambiguous links, inconsistent receipt/sale balances, a smaller debtor balance and reversed receipts stop before posting.
 
 The receipt and matching sale become paid; one linked negative SETTLE entry reduces the existing debtor balance and one positive cash entry credits the selected wallet. Original sale dates, prices, tax, FIFO allocation, stock and profit remain unchanged. Partial amounts paid at sale are retained. Gross/net withholding-tax amounts remain distinct. This action settles the remainder in full; it does not allocate earlier generic Accounts collections.
+
+## Device authentication
+
+Owner-mode devices follow the existing Cloud lifecycle policy: a missing cached ACTIVE label is valid, while any explicit inactive lifecycle label blocks payment. Paired devices require ACTIVE evidence and their authenticated anonymous session user ID; an email is not required. The existing paired-device context validation runs again before the normal download and commit, checking device, owner, business and branch. No device is re-enrolled and no cached lifecycle flag is rewritten to bypass validation.
 
 ## Durability and duplicate prevention
 
@@ -22,4 +26,4 @@ Synthetic tests cover original partial payments, withholding tax, exact debtor i
 
 No real receipt, account balance, cash wallet, device identity or cloud history is changed during development or deployment. This feature does not migrate historical receipts or rewrite generic Accounts settlements. Concurrent unrelated legacy edits are not turned into blind payment overwrites; conflicting evidence remains reviewable. Passing synthetic checks does not certify every physical device's current state or remove all distributed-system failure possibilities.
 
-Update using `RECEIPT_PAYMENT_UPDATE.html?delivery=20261119-receipt-payment-r1`, close all TradeFlow windows after verification, then reopen normally.
+Update using `RECEIPT_PAYMENT_UPDATE.html?delivery=20261119-receipt-payment-r2`, close all TradeFlow windows after verification, then reopen normally.
