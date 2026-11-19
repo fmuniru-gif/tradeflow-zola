@@ -4,6 +4,30 @@ function edits(){return [
             \${ZEZMS.receiptPayments ? ZEZMS.receiptPayments.button(record) : ''}`],
  ['payment operation identity','    const operationId = tradeInOperationId || (rolloverPatch', '    const receiptPaymentId = ZEZMS.receiptPaymentCore.operationId(patches);\n    const operationId = receiptPaymentId || tradeInOperationId || (rolloverPatch'],
  ['receive payment validation','    const correctionInsert = operation.patches.find(function (patch) {','    if (ZEZMS.receiptPaymentCore.validate(operation,state) && ZEZMS.receiptPaymentCore.materialized(getDatabase(),operation)) return true;\n    const correctionInsert = operation.patches.find(function (patch) {'],
+ ['payment inverse identity',`  function applyInverseOperation(operation) {
+    const inverse = clone(operation);
+    inverse.opId = 'REBASE-' + operation.opId;
+    inverse.kind = 'LOCAL_REBASE_ROLLBACK';
+    inverse.patches = operation.patches.slice().reverse().map(inversePatch).filter(Boolean);`,`  function applyInverseOperation(operation) {
+    const inverse = clone(operation);
+    inverse.opId = 'REBASE-' + operation.opId;
+    inverse.kind = 'LOCAL_REBASE_ROLLBACK';
+    inverse.patches = operation.patches.slice().reverse().map(inversePatch).filter(Boolean);
+    if (/^RCPAY(?:UNDO)?-/.test(String(operation.opId||''))) {
+      ZEZMS.receiptPaymentCore.validate(operation,state);
+      inverse.patches.forEach(function(patch){
+        if(patch.action!=='update')return;
+        const original=operation.patches.find(function(p){return p.action==='update'&&p.collection===patch.collection&&p.key===patch.key;});
+        const found=findEntity(patch.collection,patch.key,original.fallback);
+        if(!found.item)throw Error('Receipt payment inverse requires its existing linked record.');
+        patch.fallback=clone(found.item);
+        patch.changes.forEach(function(change){
+          if(change.mode==='delta')patch.fallback[change.field]=(Number(patch.fallback[change.field])||0)+(Number(change.value)||0);
+          else if(change.value===undefined)delete patch.fallback[change.field];
+          else patch.fallback[change.field]=clone(change.value);
+        });
+      });
+    }`],
  ['concurrent payment claim','          .filter(function (row) { return row.device_id === state.deviceId && queuedIds.has(row.op_id); })','          .filter(function (row) { return queuedIds.has(row.op_id) && (row.device_id === state.deviceId || ZEZMS.receiptPaymentCore.collision(row,originalQueue.find(function(op){return op.opId===row.op_id;}),state,deterministicHash)); })'],
  ['conflict receive','          if (isStockConflict(failure)) {',`          if (/^RCPAY(?:UNDO)?-/.test(String(operation.opId||'')) && /ZEZMS_OPERATION_PAYLOAD_CONFLICT/.test(String(failure.message||failure))) {
             await pullNowCore(true);
