@@ -12,7 +12,12 @@ async function installProbe(page){
         pages++;
         if(!api||api.inspect(key).page+1>=Math.max(1,Math.ceil(api.inspect(key).total/api.size)))break;
         const previous=api.inspect(key).page;
-        api.move(key,1);await settle();
+        // Match a real page-control click: focus leaves the search input before
+        // the register rerenders. A direct internal move while input stays
+        // focused also exercises focus-restoration callbacks, a different action.
+        const next=Array.from(document.querySelectorAll('[data-page-key][data-page-step]')).find(button=>button.dataset.pageKey===key&&button.dataset.pageStep==='1');
+        if(!next||next.disabled)throw Error('Missing enabled Next page control for '+key);
+        next.focus({preventScroll:true});next.click();await settle();
         if(api.inspect(key).page!==previous+1)throw Error('Page did not advance for '+key+': '+previous+' -> '+api.inspect(key).page);
       }while(pages<10000);
       if(api&&api.inspect(key).page)api.move(key,-api.inspect(key).page);
