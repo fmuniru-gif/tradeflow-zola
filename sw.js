@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-82be1ddb3c7a2f26';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-87931f91fc0e8bb2';
+const CACHE = 'zezms-pr11-delivery-20261026-c9b9d26fb7cd6f9b';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-8779f6e399b1595b';
 const ASSETS = [
   './',
   './index.html',
@@ -127,8 +127,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261119-receipt-payment-r1';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "dd1822f8c664bbd7ffea80edf56654426d7e7c88ca12c83f1063f31a26d7a5c6",
-  "./index.html": "dd1822f8c664bbd7ffea80edf56654426d7e7c88ca12c83f1063f31a26d7a5c6",
+  "./": "bdae1a370267383f7f83670a656ffefa3b4b1f811536bac85283ea8e4a10750e",
+  "./index.html": "bdae1a370267383f7f83670a656ffefa3b4b1f811536bac85283ea8e4a10750e",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -237,8 +237,8 @@ const VERIFIED_ASSETS = Object.freeze({
   "./js/sync-durability-runtime.js?v=20261119-receipt-payment-r1": "2921237a33bd3452f5ab88e3e5e150e6c213a5941ac2406186a601c207c776dc",
   "./SYNC_DURABILITY_UPDATE.html": "e4d5054e48d479adfc0e42df7e3411dd83b92d78b8366f5212df2900c318e5dd",
   "./js/print-website-qr.js?v=20261119-receipt-payment-r1": "7568dd8510bca5286a2a2b5905913b049b6f2d58feea71e0bdeb833e471aaff1",
-  "./js/receipt-payment-core.js?v=20261119-receipt-payment-r1": "fd088aebecfb08265f1b3314927b20d29325ffa31cdc3027e3313bacfd9434e8",
-  "./js/receipt-payments.js?v=20261119-receipt-payment-r1": "e7b69a1dd16dd8148355cf138e0c223257d212dbcf246d9abff630dfe8723214",
+  "./js/receipt-payment-core.js?v=20261119-receipt-payment-r1": "90e614d826fab007faec8d67b2f9837800e439a46ac10fe0dfc331dfb98096cf",
+  "./js/receipt-payments.js?v=20261119-receipt-payment-r1": "dbdd0f1083b9acf2e8d3c5cfd9e81b023e3e0a6afbe7ba71beb700d238d8edc5",
   "./RECEIPT_PAYMENT_UPDATE.html": "8ed990919d10d21a155dbcf908b6fe2b28b80036223a9b7f20084b7a186992d5"
 });
 // PR11_VERIFIED_ASSETS_END

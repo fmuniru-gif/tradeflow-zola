@@ -1,7 +1,7 @@
 /* Receipt-specific full settlements. Pure planning and operation validation. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else{root.ZEZMS=root.ZEZMS||{};root.ZEZMS.receiptPaymentCore=api;}})(typeof window!=='undefined'?window:globalThis,function(){
 'use strict';
-const SOURCE='RECEIPT_SETTLEMENT',list=x=>Array.isArray(x)?x:[],copy=x=>JSON.parse(JSON.stringify(x)),text=x=>String(x==null?'':x),active=x=>x&&!x.voided&&!['VOID','UNDONE','CANCELLED','REJECTED'].includes(text(x.status).toUpperCase());
+const SOURCE='RECEIPT_SETTLEMENT',list=x=>Array.isArray(x)?x:[],copy=x=>JSON.parse(JSON.stringify(x)),text=x=>String(x==null?'':x),active=x=>x&&!x.voided&&!['VOID','VOIDED','UNDONE','REVERSED','CANCELLED','CANCELED','REJECTED'].includes(text(x.status).toUpperCase());
 function check(ok,message){if(!ok)throw Error('Receipt payment: '+message);}
 function cents(value){const n=Number(value);check(Number.isFinite(n)&&Math.abs(n)<=1e9,'invalid monetary amount.');const c=Math.round(n*100);check(Math.abs(n*100-c)<0.00001,'amounts must use at most two decimal places.');return c;}
 const money=c=>c/100;
@@ -57,7 +57,7 @@ function applyUndo(database,input){
  check(input.operationId==='RCPAYUNDO-'+m.paymentOperationId.slice(6),'invalid payment reversal identity.');
  const r=unique(db.receipts,r=>r.receiptNo===m.receiptNo,'Receipt'),s=unique(db.sales,s=>text(s.receiptNo||s.id)===m.receiptNo,'Matching sale'),d=unique(db.debtors,d=>d.id===txn.accountID,'Debtor'),cash=unique(db.cashLog,c=>c.id===m.cashLogId,'Payment cash entry');
  check(active(r)&&active(s)&&r.settlementId===txn.id&&s.settlementId===txn.id&&r.lastSettlementId===txn.id,'receipt payment history changed; a partial reversal is blocked.');
- const amount=cents(m.cashAmount);check(amount>0&&cents(txn.amount)===-amount&&active(cash)&&cents(cash.amount)===amount&&cash.cashType===m.wallet,'the linked debtor and cash payment do not match.');
+ const amount=cents(m.cashAmount);check(amount>0&&cents(txn.amount)===-amount&&active(cash)&&cents(cash.amount)===amount&&cash.cashType===m.wallet&&cash.meta&&cash.meta.accountTxnId===txn.id,'the linked debtor and cash payment do not match.');
  const current=cents(db.cashBalances[m.wallet]);check(m.wallet==='Others'||current>=amount,'the receiving wallet no longer contains enough money to reverse this payment.');
  d.balance=money(cents(d.balance)+amount);d.date=input.at;db.cashBalances[m.wallet]=money(current-amount);
  for(const entry of [txn,cash])Object.assign(entry,{status:'UNDONE',undoneAt:input.at,undoneBy:input.actor.name,undoReason:text(input.reason)});
@@ -99,11 +99,11 @@ function validate(operation,state){
 function collision(row,local,state,hash){
  if(!row||!local||row.op_id!==local.opId||!/^RCPAY(?:UNDO)?-/.test(text(local.opId)))return false;
  const incoming=row.payload;check(incoming&&incoming.opId===row.op_id&&incoming.deviceId===row.device_id&&incoming.payloadHash&&hash(incoming)===incoming.payloadHash,'Cloud payment response integrity failed.');
- const a=validate(local,state),b=validate(incoming,state);check(a&&b&&a.undo===b.undo&&a.receiptNo===b.receiptNo&&a.id===b.id&&sameScope(a.scope,b.scope),'Cloud contains a different logical payment.');return true;
+ const a=validate(local,state),b=validate(incoming,state);check(a&&b&&a.undo===b.undo&&a.receiptNo===b.receiptNo&&a.id===b.id&&text(a.accountId)===text(b.accountId)&&a.amount===b.amount&&a.meta.creditTxnId===b.meta.creditTxnId&&(!a.undo||a.wallet===b.wallet)&&sameScope(a.scope,b.scope),'Cloud contains a different logical payment.');return true;
 }
 function materialized(db,operation){
  const d=descriptor(operation);if(!d)return false;const t=list(db.accountTxns).find(t=>t.id===d.id),p=operation.patches;
- if(!t){check(!d.undo,'the original payment is missing.');const x=inspect(db,d.receiptNo);check(x.due===d.amount&&x.paid===cents(d.meta.beforeAmountPaid)&&x.credit.id===d.meta.creditTxnId,'the credit receipt changed before this payment could be applied.');return false;}
+ if(!t){check(!d.undo,'the original payment is missing.');const x=inspect(db,d.receiptNo);check(x.due===d.amount&&x.paid===cents(d.meta.beforeAmountPaid)&&x.credit.id===d.meta.creditTxnId&&text(x.debtor.id)===text(d.accountId),'the credit receipt changed before this payment could be applied.');return false;}
  if(d.undo&&t.status==='ACTIVE'){
   const r=unique(db.receipts,r=>r.receiptNo===d.receiptNo,'Receipt'),c=unique(db.cashLog,c=>c.id===d.meta.cashLogId,'Cash payment');
   check(r.settlementId===d.id&&active(c)&&cents(c.amount)===d.amount&&t.meta.paymentOperationId===d.meta.paymentOperationId,'the payment reversal has an incomplete before-state.');return false;
