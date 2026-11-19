@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-622949ad5035d172';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-563a2f822ce44d8d';
+const CACHE = 'zezms-pr11-delivery-20261026-c58c374a8e3b58a0';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-f3a9ad7c93d1246e';
 const ASSETS = [
   './',
   './index.html',
@@ -127,8 +127,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261119-receipt-payment-r2';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "ae1cfdc9c0b6795eba8a1b129c1d4736615d4a3b1577e73fd661eb1d1df0c963",
-  "./index.html": "ae1cfdc9c0b6795eba8a1b129c1d4736615d4a3b1577e73fd661eb1d1df0c963",
+  "./": "365cebe3a9e0f7eecadc1f56192a4b0259a715fb4653fea3fe0993bd168dbbf7",
+  "./index.html": "365cebe3a9e0f7eecadc1f56192a4b0259a715fb4653fea3fe0993bd168dbbf7",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -238,7 +238,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./SYNC_DURABILITY_UPDATE.html": "e4d5054e48d479adfc0e42df7e3411dd83b92d78b8366f5212df2900c318e5dd",
   "./js/print-website-qr.js?v=20261119-receipt-payment-r2": "7568dd8510bca5286a2a2b5905913b049b6f2d58feea71e0bdeb833e471aaff1",
   "./js/receipt-payment-core.js?v=20261119-receipt-payment-r2": "90e614d826fab007faec8d67b2f9837800e439a46ac10fe0dfc331dfb98096cf",
-  "./js/receipt-payments.js?v=20261119-receipt-payment-r2": "7cc247da3cf2fbe998d7dd8e76be145c2600af25aab68ef46fd4cd4ff249ede7",
+  "./js/receipt-payments.js?v=20261119-receipt-payment-r2": "bbaaac7d0083a6eefc077c9470ddefce9c3d12e210682a194a3c46a7176146af",
   "./RECEIPT_PAYMENT_UPDATE.html": "da3b0d5f672b5e845df393b40511eb0c02e18a83e92308e7c199421a94aca7d0"
 });
 // PR11_VERIFIED_ASSETS_END

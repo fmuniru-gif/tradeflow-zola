@@ -32,8 +32,10 @@ function capture(undo){const a=JSON.stringify(actor(undo)),service=sync(),bindin
 async function refresh(undo){
   const state=ready(undo),valid=capture(undo),service=sync();
   if(clean(state.deviceAccessMode).toUpperCase()==='PAIRED'){
+    // The native validator authenticates the requested device and retains its
+    // verified scope when older context responses omit repeated scope fields.
     const context=await service.validatePairedAccess();
-    check(valid()&&context&&clean(context.device_status).toUpperCase()==='ACTIVE'&&clean(context.owner_id)===clean(state.syncOwnerId)&&clean(context.business_id)===clean(state.businessId)&&clean(context.branch_id)===clean(state.branchId)&&(!context.device_id||clean(context.device_id)===clean(state.deviceId)),'The paired Cloud identity changed. Open the payment again after reviewing Sync.');
+    check(valid()&&context&&clean(context.device_status).toUpperCase()==='ACTIVE'&&(!context.owner_id||clean(context.owner_id)===clean(state.syncOwnerId))&&(!context.business_id||clean(context.business_id)===clean(state.businessId))&&(!context.branch_id||clean(context.branch_id)===clean(state.branchId))&&(!context.device_id||clean(context.device_id)===clean(state.deviceId)),'The paired Cloud identity changed. Open the payment again after reviewing Sync.');
   }
   await service.pullNow(false);
   ready(undo);
