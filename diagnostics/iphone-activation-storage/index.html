@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>TradeFlow activation storage check</title>
+<style>
+  body { max-width: 42rem; margin: 2rem auto; padding: 0 1rem; font: 16px/1.5 system-ui, sans-serif; background: #101827; color: #eef4fc; }
+  h1 { font-size: 1.5rem; }
+  label { display: block; margin-top: 1rem; }
+  textarea { box-sizing: border-box; display: block; width: 100%; margin: .5rem 0 1rem; padding: .75rem; font-size: 16px; color: inherit; background: #1c293b; border: 1px solid #526582; border-radius: .5rem; }
+  button { min-height: 44px; padding: .5rem 1rem; background: #126c65; color: white; border: 0; border-radius: .5rem; font: inherit; }
+</style>
+<h1>TradeFlow activation storage check</h1>
+<p>Open this in a new Safari tab on the iPhone that shows the activation error. Keep the TradeFlow setup tab open.</p>
+<p>This check reads sizes and setup status. The report contains no records, names, passwords, or keys.</p>
+<label for="report">Storage report</label>
+<textarea id="report" rows="11" readonly>Reading local storage…</textarea>
+<button id="copy" type="button">Copy report</button>
+<p id="status" role="status"></p>
+<script>
+(() => {
+  'use strict';
+  const stageKey = 'zezms_m5a4_safe_bootstrap_stage_v1';
+  const databaseKey = 'tradeflow_v321_zola';
+  const stateKey = 'zezms_cloud_sync_m4_state';
+  const queueKey = 'zezms_cloud_sync_m4_queue';
+  const failedKey = 'zezms_cloud_sync_m4_failed_v2';
+  const durableJournalKey = 'zezms_sync_durable_commit_v1';
+  const applyJournalKey = 'zezms_cloud_sync_m4_apply_journal_v2';
+  const report = document.getElementById('report');
+  const status = document.getElementById('status');
+
+  function captureSizes(storage) {
+    const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index));
+    if (keys.some(key => key === null) || new Set(keys).size !== keys.length) throw new Error('changed');
+    const sizes = new Map();
+    for (const key of keys.sort()) {
+      const raw = storage.getItem(key);
+      if (raw === null) throw new Error('changed');
+      sizes.set(key, key.length + raw.length);
+    }
+    if (storage.length !== keys.length) throw new Error('changed');
+    return sizes;
+  }
+
+  function parse(raw) {
+    try { return JSON.parse(raw); } catch (_) { return null; }
+  }
+
+  function countList(raw) {
+    if (raw === null) return 'Unavailable';
+    const value = parse(raw);
+    return Array.isArray(value) ? value.length : 'Unreadable';
+  }
+
+  try {
+    const storage = window.localStorage;
+    const sizes = captureSizes(storage);
+    const trackedKeys = [stageKey, databaseKey, stateKey, queueKey, failedKey, durableJournalKey, applyJournalKey];
+    const tracked = new Map(trackedKeys.map(key => [key, storage.getItem(key)]));
+    const finalSizes = captureSizes(storage);
+    if (sizes.size !== finalSizes.size || [...sizes].some(([key, size]) => finalSizes.get(key) !== size) ||
+        trackedKeys.some(key => storage.getItem(key) !== tracked.get(key))) throw new Error('changed');
+
+    const stage = parse(tracked.get(stageKey));
+    const state = parse(tracked.get(stateKey));
+    const candidate = stage && stage.version === 1 && stage.candidate;
+    const usable = candidate && typeof candidate === 'object' && !Array.isArray(candidate);
+    const stageSize = sizes.get(stageKey) || 0;
+    const databaseSize = sizes.get(databaseKey) || 0;
+    const total = [...sizes.values()].reduce((sum, size) => sum + size, 0);
+    const candidateSize = usable ? JSON.stringify(candidate).length : null;
+    const withCandidate = usable ? total - databaseSize + databaseKey.length + candidateSize : null;
+    const withoutStage = usable ? withCandidate - stageSize : null;
+    const matchingDevice = !!(stage && state && stage.deviceId && stage.deviceId === state.deviceId && state.deviceAccessMode === 'PAIRED');
+    const stageStatus = usable ? (matchingDevice ? 'Present, matches paired device' : 'Present, device binding differs') : stageSize ? 'Unreadable' : 'Absent';
+    const pendingJournal = tracked.get(durableJournalKey) !== null || tracked.get(applyJournalKey) !== null;
+    const number = value => value === null ? 'Unavailable' : value.toLocaleString('en-US');
+    report.value = [
+      'TradeFlow activation storage check v1',
+      'Staged setup: ' + stageStatus,
+      'Pending outbox: ' + countList(tracked.get(queueKey)),
+      'Failed operations: ' + countList(tracked.get(failedKey)),
+      'Interrupted save journal: ' + (pendingJournal ? 'Present' : 'Absent'),
+      'Sizes in localStorage string units (not a quota measurement)',
+      'Current origin total: ' + number(total),
+      'Current database entry: ' + number(databaseSize),
+      'Staging entry: ' + number(stageSize),
+      'Estimated total at activation before sync: ' + number(withCandidate),
+      'Estimated total with stage removed after success: ' + number(withoutStage)
+    ].join('\n');
+  } catch (error) {
+    report.value = error.message === 'changed'
+      ? 'Storage changed during the check. Refresh this report tab once.'
+      : 'Safari did not allow the storage check in this tab.';
+  }
+
+  document.getElementById('copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(report.value);
+      status.textContent = 'Report copied.';
+    } catch (_) {
+      report.focus();
+      report.select();
+      status.textContent = 'Use Safari’s Copy command to copy the selected report.';
+    }
+  });
+})();
+</script>
+</html>
