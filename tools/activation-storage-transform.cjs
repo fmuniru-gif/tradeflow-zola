@@ -39,6 +39,7 @@ function transformActivationStorage(html, changes) {
 }
 
 function withoutActivationStorage(html) {
+  html = require('./direct-print-compatibility-transform.cjs').withoutDirectPrintCompatibility(html);
   if (!html.includes("const archiveName = 'zezms-verified-activation';")) return html;
   const fs = require('node:fs');
   const path = require('node:path');
