@@ -23,6 +23,7 @@ function transformDeviceApproval(source,changes){
  return source;
 }
 function withoutDeviceApproval(source){
+ source=require('./activation-storage-transform.cjs').withoutActivationStorage(source);
  if(!source.includes('  function ownerLifecycleFallbackHtml() {'))return source;
  for(const [name,before,after]of edits().reverse()){if(source.split(after).length!==2)throw Error('DEVICE_APPROVAL_REVERSE_MARKER: '+name);source=source.replace(after,()=>before);}
  return source;
