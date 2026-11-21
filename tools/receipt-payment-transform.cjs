@@ -68,6 +68,7 @@ function transformReceiptPayment(html,core,runtime,changes){
  return html.slice(0,end)+'<script data-zezms-receipt-payments>\n'+runtime+'\n</script>'+html.slice(end);
 }
 function withoutReceiptPayment(html){
+ html=require('./device-approval-transform.cjs').withoutDeviceApproval(html);
  if(!html.includes('<script data-zezms-receipt-payment-core>'))return html;
  html=html.replace(/<script data-zezms-receipt-payment-core>[\s\S]*?<\/script>/,'').replace(/<script data-zezms-receipt-payments>[\s\S]*?<\/script>/,'');
  for(const [name,before,after]of edits().reverse()){if(html.split(after).length!==2)throw Error('RECEIPT_PAYMENT_REVERSE_MARKER: '+name);html=html.replace(after,()=>before);}

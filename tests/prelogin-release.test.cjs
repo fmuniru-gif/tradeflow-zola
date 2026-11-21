@@ -28,7 +28,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261119-receipt-payment-r2':release)),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261121-device-approval-r1':release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -61,6 +61,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'REMAINING_TABS_UPDATE.html','js/remaining-tabs-presentation.js','tools/remaining-tabs-transform.cjs','tests/remaining-tabs-performance.test.cjs','tests/remaining-tabs-performance.browser.cjs','docs/remaining-tabs-performance-review.md','PR11_DELIVERY_UPDATE.html','PR12_RAW_BYTE_UPDATE.html','tools/verify-delivery-http.cjs','tests/pr12-raw-byte-delivery.test.cjs','docs/pr12-raw-byte-review.md','tools/build-pr11-delivery.cjs','tests/delivery-fixture.cjs',
     'tests/pr11-cache-delivery.test.cjs','tests/pr11-cache-delivery.browser.cjs',
     '.github/workflows/pr11-cache-delivery-review.yml','docs/pr11-cache-delivery-review.md',
+    'tools/device-approval-transform.cjs','DEVICE_APPROVAL_UPDATE.html','tests/device-approval.test.cjs','tests/device-approval.browser.cjs','.github/workflows/device-approval-review.yml','docs/device-approval.md',
     'index.html','sw.js','manifest.json','FORCE_UPDATE_MOBILE.html',
     'diagnostics/main-cash-projection-recovery/index.html','diagnostics/main-cash-projection-recovery/core.js','diagnostics/main-cash-projection-recovery/runtime.js','diagnostics/main-cash-projection-recovery/entry.js','diagnostics/main-cash-projection-recovery/README.md','tests/main-cash-projection-fixture.cjs','tests/main-cash-projection.test.cjs','tests/main-cash-projection.browser.cjs','.github/workflows/main-cash-projection-recovery.yml',
     'diagnostics/main-cash-record-review/index.html','diagnostics/main-cash-record-review/core.js','diagnostics/main-cash-record-review/page.js','diagnostics/main-cash-record-review/README.md','tests/main-single-cash-review.test.cjs','tests/main-single-cash-review.browser.cjs','.github/workflows/main-single-cash-review.yml',
