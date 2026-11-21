@@ -1,6 +1,23 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),cp=require('node:child_process'),vm=require('node:vm');
 const d=require('../tools/build-pr11-delivery.cjs'),t=require('../tools/print-website-qr-transform.cjs');
+test('the bridge fix changes only the website label and document rejection feedback', () => {
+ const transform=require('../tools/direct-print-compatibility-transform.cjs');
+ const baseline=cp.execFileSync('git',['show','26d09ef63b1b88a34114b15141488b99c3692fbc:index.html'],{maxBuffer:32e6}).toString();
+ const strip=s=>s.replace(/<meta name="zezms-delivery" content="[^"]+">/,'DELIVERY');
+ const html=d.assembledShell(d.assetBytes('index.html').toString());
+ assert.equal(strip(transform.withoutDirectPrintCompatibility(html)),strip(d.assembledShell(baseline)));
+ const branding=html.match(/<script data-zezms-print-website-qr>\n([\s\S]*?)\n<\/script>/)[1];
+ const c={window:null,ZEZMS:{},document:{baseURI:'https://print.invalid/'},URL};c.window=c;vm.createContext(c);
+ vm.runInContext(d.assetBytes('js/document-branding.js').toString(),c);
+ vm.runInContext(branding,c);
+ const helper=c.ZEZMS.documentBranding;
+ const direct=helper.headerHTML('data:image/jpeg;base64,AA==');
+ assert.match(direct,/<span data-zezms-website [^>]+>zolaelectronicszone\.com<\/span>/);
+ assert.match(direct,/data-zezms-website-qr src="data:image\/png;base64,/);
+ assert.doesNotMatch(direct,/https?:\/\//i);
+ assert.match(helper.headerHTML('https://print.invalid/logo.jpg'),/<a data-zezms-website href="https:\/\/zolaelectronicszone\.com\//);
+});
 test('website print changes reverse exactly to production, including every sync, account and business function',()=>{
  const prior=cp.execFileSync('git',['show','bee87558848cf45ae3b78d8a46c04cdc954ef818:index.html'],{maxBuffer:32e6}).toString();
  const strip=s=>s.replace(/<meta name="zezms-delivery" content="[^"]+">/,'DELIVERY');

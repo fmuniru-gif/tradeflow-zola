@@ -115,3 +115,87 @@ test('actual browser print pages and both A5 test documents place a scannable we
   }
  }finally{await f.context.close();}
 });
+
+test('Direct Print submits self-contained receipts, invoices, waybills and the A5 test to the bridge', async () => {
+ const f = await fixture();
+ try {
+  await seed(f.page);
+  // Mirror the content checks in the Windows bridge v1.0.5 rc2 and rc4.
+  // Reject the released header's remote link, even though its QR is embedded.
+  const forbidden = [
+   '<script', '<iframe', '<object', '<embed', '<applet', '<base', '<link',
+   'javascript:', 'vbscript:', 'file:', 'ftp:', 'http://', 'https://',
+   'window.chrome', 'webview.postmessage', 'ms-appx:', 'shell:'
+  ];
+  const result = await f.page.evaluate(async forbidden => {
+   const bridge = 'http://127.0.0.1:43127';
+   localStorage.setItem(ZEZPrint.storageKey, JSON.stringify({bridgeUrl:bridge,token:'synthetic-test-token',mode:'local-bridge'}));
+   const previousFetch = window.fetch;
+   const jobs = new Map();
+   const requests = [];
+   const ok = data => Response.json(data);
+   const health = { protocolVersion:'ZEZPRINT/1', ready:true, printerConfigured:true, printerReady:true, printerName:'Synthetic printer' };
+   window.fetch = async (url, options) => {
+    if (!String(url).startsWith(bridge+'/')) return previousFetch(url, options);
+    const pathname = new URL(url).pathname;
+    if (pathname === '/health' || pathname === '/status') return ok(health);
+    if (pathname === '/print') {
+     const payload = JSON.parse(options.body);
+     const html = payload.html;
+     const css = [...html.matchAll(/url\(\s*([^\)]+)\s*\)/gi)];
+     const blocked = forbidden.some(token => html.toLowerCase().includes(token)) ||
+       /\son[a-z]+\s*=/i.test(html) || /<meta[^>]+http-equiv\s*=/i.test(html) ||
+       css.some(([, value]) => !value.trim().replace(/^['"]|['"]$/g,'').toLowerCase().startsWith('data:image/'));
+     requests.push({ documentType:payload.documentType, blocked,
+       hasPrintedAddress:html.includes('<span data-zezms-website ') && html.includes('zolaelectronicszone.com</span>'),
+       hasEmbeddedQR:html.includes('data-zezms-website-qr src="data:image/png;base64,'),
+       page:payload.page });
+     if (blocked) return Response.json({code:'unsafe-html',message:'Printable HTML contains a forbidden active or remote-content construct.'},{status:400});
+     jobs.set(payload.jobId, {status:'printed'});
+     return ok({jobId:payload.jobId});
+    }
+    if (pathname.startsWith('/job/')) return ok(jobs.get(pathname.slice('/job/'.length)));
+    throw Error('Unexpected synthetic bridge endpoint');
+   };
+   try {
+    await ZEZPrint.testConnection();
+    const fixture = window.__brandingFixtures;
+    const before = {db:JSON.stringify(DB),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox())};
+    const statuses = [];
+    statuses.push((await ZEZMS.operationsUpdate.printReceiptDocument(fixture.receipt, {isReprint:true})).status);
+    statuses.push((await ZEZMS.commercialDocuments.printCommercialDocument('invoice', fixture.invoice)).status);
+    statuses.push((await ZEZMS.commercialDocuments.printCommercialDocument('waybill', fixture.waybill)).status);
+    statuses.push((await ZEZPrint.directPrintTest()).status);
+
+    const systemPreview = ZEZMS.documentBranding.headerHTML();
+    const refused = await ZEZPrint.printDocument({
+     documentType:'test', documentId:'synthetic-remote-link',
+     html:'<main><a href="https://example.invalid/">External example</a></main>',
+     systemPrint:() => { window.__usedSystemPrint = true; }
+    });
+    return {statuses,requests,refused,systemPreview,before,bridgeStatus:ZEZPrint.diagnostics(),
+     after:{db:JSON.stringify(DB),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox())}};
+   } finally { window.fetch = previousFetch; }
+  }, forbidden);
+  assert.deepEqual(result.statuses, ['printed','printed','printed','printed']);
+  assert.deepEqual(result.requests.slice(0,4).map(request => request.documentType), ['receipt','invoice','waybill','test']);
+  for (const request of result.requests.slice(0,4)) {
+   assert.equal(request.blocked, false, request.documentType);
+   assert.equal(request.hasPrintedAddress, true, request.documentType);
+   assert.equal(request.hasEmbeddedQR, true, request.documentType);
+   assert.deepEqual(request.page, { size:'A5', orientation:'portrait' });
+  }
+  assert.equal(result.requests.length, 5);
+  assert.equal(result.requests[4].blocked, true);
+  assert.equal(result.refused.status, 'failed');
+  assert.match(result.systemPreview, /<a data-zezms-website href="https:\/\/zolaelectronicszone\.com\//);
+  assert.equal(result.bridgeStatus.connection, 'Connected');
+  assert.equal(result.bridgeStatus.printerReady, true);
+  assert.deepEqual(result.after, result.before);
+  assert.equal(await f.page.getByRole('heading', {name:'Print Bridge rejected this document.'}).count(), 1);
+  assert.equal(await f.page.getByRole('button', {name:'Retry',exact:true}).count(), 0);
+  await f.page.getByRole('button', {name:'Use System Print',exact:true}).click();
+  assert.equal(await f.page.evaluate(() => window.__usedSystemPrint), true);
+  assert.deepEqual(f.errors, []);
+ } finally { await f.context.close(); }
+});
