@@ -115,7 +115,7 @@ jobs:
             "$GITHUB_WORKSPACE" "$RUNNER_TEMP/delivery-results" "${{ matrix.scope }}" "$RUNNER_TEMP/print-qa-deps"
           status=$?
           {
-            printf '### Receipt payment validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
+            printf '### Device approval validation\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
             for suite in unit browser; do
               printf '**%s**\n\n```text\n' "$suite"
               grep -E '^# (tests|pass|fail|cancelled|skipped|todo|duration_ms) ' "$RUNNER_TEMP/delivery-results/$suite.log" || true
