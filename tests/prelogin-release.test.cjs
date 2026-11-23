@@ -10,6 +10,7 @@ const worker = read('sw.js');
 const manifest = JSON.parse(read('manifest.json'));
 const helper = read('FORCE_UPDATE_MOBILE.html');
 const release = '20261024-ui-stock-review-r1';
+const { DELIVERY } = require('../tools/build-pr11-delivery.cjs');
 
 test('the deployed shell, worker, manifest and update helper name one release',()=>{
   assert.match(index,new RegExp('const RELEASE="'+release+'";'));
@@ -28,7 +29,7 @@ test('the deployed shell, worker, manifest and update helper name one release',(
 test('bootstrap guard assets are critical and worker upgrade remains passive',()=>{
   for(const name of ['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard',
     'confirmed-july-snapshot-bootstrap-guard','shop-chrome-bootstrap-proof']){
-    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?'20261121-direct-print-r1':release)),name);
+    assert.ok(worker.includes('./js/'+name+'.js?v='+(['bootstrap-startup-guard','auto-month-rollover-bootstrap-guard'].includes(name)?DELIVERY:release)),name);
     assert.ok(index.includes('js/'+name+'.js?v='),name);
   }
   assert.ok(!/\bskipWaiting\s*\(|\bclients\.claim\s*\(|\bcaches\.delete\s*\(/.test(worker));
@@ -100,6 +101,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'diagnostics/financial-audit/capture.js','tools/financial-audit/analyze.cjs',
     'tests/financial-audit.browser.cjs','docs/financial-cash-divergence-audit.md',
     'diagnostics/iphone-activation-storage/index.html',
+    'CREDITOR_WALLET_UPDATE.html','tools/creditor-wallet-settlement-transform.cjs','tests/creditor-wallet-settlement.test.cjs',
     'DIRECT_PRINT_UPDATE.html','tools/direct-print-compatibility-transform.cjs','.github/workflows/direct-print-compatibility-review.yml',
     'IPHONE_ACTIVATION_UPDATE.html','js/activation-stage-storage.js','tools/activation-storage-transform.cjs','tests/activation-storage.browser.cjs','tests/activation-storage.test.cjs','.github/workflows/activation-storage-review.yml',
     'diagnostics/main-cash-repair/index.html','diagnostics/main-cash-repair/style.css',

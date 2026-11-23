@@ -38,6 +38,7 @@ function transformDirectPrintCompatibility(html, changes) {
 }
 
 function withoutDirectPrintCompatibility(html) {
+  html = require('./creditor-wallet-settlement-transform.cjs').withoutCreditorWalletSettlement(html);
   if (!html.includes("var title = rejectedDocument ? 'Print Bridge rejected this document.'")) return html;
   const reverse = edits().reverse().map(([name, before, after]) => [name, after, before]);
   return transformDirectPrintCompatibility(html, reverse);
