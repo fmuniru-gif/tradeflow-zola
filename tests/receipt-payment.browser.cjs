@@ -36,6 +36,52 @@ async function fixture(backend,device='MAIN',role='OWNER'){
 async function snapshot(page){return page.evaluate(()=>({receipt:DB.receipts[0],sale:DB.sales[0],debtor:DB.debtors[0],cash:DB.cashBalances,txns:DB.accountTxns,log:DB.cashLog,outbox:ZEZMS.cloudSync.getOutbox(),failed:ZEZMS.cloudSync.getFailedOperations(),journal:ZEZMS.syncDurability.pending()}));}
 async function prepare(page){return page.evaluate(()=>ZEZMS.receiptPayments.prepare('SR-SYNTHETIC'));}
 async function accept(page,p,wallet='Cash in Hand'){return page.evaluate(({p,wallet})=>ZEZMS.receiptPayments.accept(p,{wallet,confirmed:true}),{p,wallet});}
+test('Settle reverses a legacy creditor increase and reposts with a linked Cash in Hand receipt', async () => {
+ const cloud=backend(),f=await fixture(cloud);
+ try {
+  await f.page.evaluate(()=>{
+   DB.creditors=[{id:'C-CREDITOR',name:'Synthetic creditor',balance:4135}];
+   DB.cashBalances['Cash in Hand']=16240;
+   DB.accountTxns.push({id:'ATX-LEGACY-INCREASE',accountID:'C-CREDITOR',accountType:'CREDITOR',name:'Synthetic creditor',txnType:'INCREASE',amount:5000,balanceAfter:4135,status:'ACTIVE',meta:{kind:'creditors',source:'ACCOUNT_ADJUSTMENT',beforeBalance:-865,afterBalance:4135,wallet:'Cash in Hand',cashAction:'',cashAmount:0,cashLogId:''}});
+   ZEZMS.cloudSync._test.ensureSyncIds(DB);ZEZMS.db.save(DB_KEY,DB);
+   ZEZMS.cloudSync._test.configureReceiptPaymentTest('MAIN',false);
+   window.promptPIN=(_label,_pin,complete)=>complete();
+   window.confirm=()=>true;
+   window.prompt=()=> 'Synthetic correction';
+   window.undoAccountTransaction('ATX-LEGACY-INCREASE');
+  });
+  const read=()=>f.page.evaluate(()=>({balance:DB.creditors[0].balance,cash:DB.cashBalances['Cash in Hand'],txns:DB.accountTxns.filter(txn=>txn.accountID==='C-CREDITOR'),log:DB.cashLog,sale:DB.sales[0],receipt:DB.receipts[0]}));
+  const reset=await read();
+  assert.equal(reset.balance,-865);
+  assert.equal(reset.cash,16240);
+  assert.equal(reset.txns[0].status,'UNDONE');
+  assert.equal(reset.log.length,0);
+
+  await f.page.evaluate(()=>window.openSettle('creditors','C-CREDITOR'));
+  await f.page.locator('#stAmt').fill('5000');
+  await f.page.locator('#stDir').selectOption('INCREASE');
+  await f.page.locator('#stWallet').selectOption('Cash in Hand');
+  await f.page.getByRole('button',{name:'Apply',exact:true}).click();
+  const posted=await read(),txn=posted.txns[1],cash=posted.log[0];
+  assert.equal(posted.balance,4135);
+  assert.equal(posted.cash,21240);
+  assert.equal(posted.log.length,1);
+  assert.equal(txn.meta.cashAction,'Add');
+  assert.equal(txn.meta.cashAmount,5000);
+  assert.equal(txn.meta.cashLogId,cash.id);
+  assert.equal(cash.meta.accountTxnId,txn.id);
+  assert.equal(cash.cashType,'Cash in Hand');
+  assert.deepEqual(posted.sale,reset.sale);
+  assert.deepEqual(posted.receipt,reset.receipt);
+
+  await f.page.evaluate(id=>window.undoAccountTransaction(id),txn.id);
+  const undone=await read();
+  assert.equal(undone.balance,-865);
+  assert.equal(undone.cash,16240);
+  assert.equal(undone.txns[1].status,'UNDONE');
+  assert.equal(undone.log[0].status,'UNDONE');
+ } finally { await f.context.close(); }
+});
 test('Paid button records one actual native linked payment and updates reprint/PDF amounts without changing FIFO or sales totals',async()=>{
  const cloud=backend(),f=await fixture(cloud);try{
   await f.page.evaluate(()=>{currentView='receipts';document.getElementById('viewRoot').innerHTML=viewReceipts();ZEZMS.pdfExport.installRegisterButtons();});assert.equal(await f.page.locator('.receipt-actions button').first().textContent(),'View');assert.equal(await f.page.evaluate(()=>{const pages=ZEZMS.tablePages,row=document.querySelector('tr.sales-record-row').outerHTML;pages.setSalesQuery('PAID');const count=pages.filterSales([{id:'R-SYNTHETIC'}],()=>row,DB.receipts).length;pages.setSalesQuery('');return count;}),0);await f.page.locator('[data-receipt-paid]').click();await f.page.waitForSelector('#receiptPaymentWallet');
