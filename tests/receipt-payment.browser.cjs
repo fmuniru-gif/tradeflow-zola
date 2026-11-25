@@ -45,8 +45,25 @@ async function fixture(backend,device='MAIN',role='OWNER'){
 async function snapshot(page){return page.evaluate(()=>({receipt:DB.receipts[0],sale:DB.sales[0],debtor:DB.debtors[0],cash:DB.cashBalances,txns:DB.accountTxns,log:DB.cashLog,outbox:ZEZMS.cloudSync.getOutbox(),failed:ZEZMS.cloudSync.getFailedOperations(),journal:ZEZMS.syncDurability.pending()}));}
 async function prepare(page){return page.evaluate(()=>ZEZMS.receiptPayments.prepare('SR-SYNTHETIC'));}
 async function accept(page,p,wallet='Cash in Hand'){return page.evaluate(({p,wallet})=>ZEZMS.receiptPayments.accept(p,{wallet,confirmed:true}),{p,wallet});}
-test('unit cost corrections converge by server order and rebase a pending edit across a remote stock quantity change', async () => {
- const cloud = backend(), a = await fixture(cloud,'MAIN'), b = await fixture(cloud,'SHOP');
+test('unit cost corrections replay with reordered cloud JSON and converge across concurrent stock changes', async () => {
+ const cloud = backend(), read = cloud.read;
+ cloud.read = async input => {
+  const response = await read(input);
+  if (!response.data) return response;
+  const rows = Array.isArray(response.data) ? response.data : [structuredClone(response.data)];
+  for (const row of rows) {
+   const audit = row.payload.patches.find(p => p.collection === 'stockCorrections' && p.value?.costAdjustment);
+   if (audit) {
+    // PostgreSQL JSONB can return keys in a different order from the local audit.
+    audit.value = JSON.parse(JSON.stringify(audit.value), (_, value) =>
+     value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(Object.keys(value).sort().map(key => [key,value[key]]))
+      : value);
+   }
+  }
+  return {...response,data:input.single ? rows[0] : rows};
+ };
+ const a = await fixture(cloud,'MAIN'), b = await fixture(cloud,'SHOP');
  const sync = (page, method) => page.evaluate(name => ZEZMS.cloudSync[name](false),method);
  const costs = page => page.evaluate(() => ({row:DB.stockRows[0], audit:DB.stockCorrections.length, queue:ZEZMS.cloudSync.getOutbox().length}));
  const adjust = (page, next) => page.evaluate(unitCost => {
@@ -76,7 +93,9 @@ test('unit cost corrections converge by server order and rebase a pending edit a
    assert.equal(value.row.rStock,12);
    assert.equal(value.audit,2);
    assert.equal(value.queue,0);
+   assert.equal(await page.evaluate(() => ZEZMS.cloudSync.getState().cursor),22);
   }
+  assert.equal(cloud.calls.length,2);
 
   await adjust(a.page,7);
   await b.page.evaluate(() => {

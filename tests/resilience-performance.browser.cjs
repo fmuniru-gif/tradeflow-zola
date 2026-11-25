@@ -70,11 +70,20 @@ test('Adjust Unit Cost posts one durable audit and preserves quantities on anoth
    ZEZMS.cloudSync._test.applyOperation(op,{silent:true});
    const {uCost,rStock,qtyOut} = DB.stockRows[0];
    const events = DB.stockCorrections.length;
+   const beforeConflict = JSON.stringify(DB);
+   const conflict = structuredClone(op);
+   conflict.patches.find(p => p.collection === 'stockCorrections').value.costAdjustment.afterUnitCost = 50;
+   let conflictMessage = '';
+   try { ZEZMS.cloudSync._test.applyOperation(conflict,{silent:true,orderedStockCost:true}); }
+   catch (error) { conflictMessage = error.message; }
+   const conflictPreservedState = JSON.stringify(DB) === beforeConflict;
    DB.stockRows = []; DB.stockCorrections = [];
    ZEZMS.cloudSync._test.applyOperation(op,{silent:true});
-   return {uCost,rStock,qtyOut,events,deletedRows:DB.stockRows.length};
+   return {uCost,rStock,qtyOut,events,deletedRows:DB.stockRows.length,conflictMessage,conflictPreservedState};
   }, operation);
-  assert.deepEqual(result,{uCost:8.5,rStock:10,qtyOut:2,events:1,deletedRows:0});
+  assert.match(result.conflictMessage,/ZEZMS_STOCK_CORRECTION_ID_CONFLICT/);
+  const {conflictMessage,...state} = result;
+  assert.deepEqual(state,{uCost:8.5,rStock:10,qtyOut:2,events:1,deletedRows:0,conflictPreservedState:true});
  } finally { await a.context.close(); await b.context.close(); }
 });
 test('receipt, invoice and waybill system/direct HTML stretch only the watermark over the A5 page',async()=>{
