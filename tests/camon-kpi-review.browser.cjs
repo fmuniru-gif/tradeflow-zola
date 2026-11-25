@@ -126,14 +126,15 @@ async function inspect(tab){
 test('new service worker installs the matching shell, manifest and verifier asset',async()=>{
   const tab=await page();
   try{
-    const proof=await tab.evaluate(async cacheName=>{
+    const delivery=require('../tools/build-pr11-delivery.cjs');
+    const proof=await tab.evaluate(async ({cacheName,version})=>{
       const registration=await navigator.serviceWorker.register('./sw.js?v=20261017-r70w-camon17p-kpi-review');
       await navigator.serviceWorker.ready;
       const cache=await caches.open(cacheName);
-      const names=['./','./index.html','./manifest.json','./js/camon17p-kpi-review-r70w.js?v=20261125-stock-unit-cost-r2'];
+      const names=['./','./index.html','./manifest.json','./js/camon17p-kpi-review-r70w.js?v='+version];
       const matches=await Promise.all(names.map(async name=>!!(await cache.match(new URL(name,registration.scope).href))));
       return {active:!!registration.active,matches};
-    },require('../tools/build-pr11-delivery.cjs').assetBytes('sw.js').toString().match(/const CACHE = '([^']+)'/)[1]);
+    },{cacheName:delivery.assetBytes('sw.js').toString().match(/const CACHE = '([^']+)'/)[1],version:delivery.DELIVERY});
     assert.equal(proof.active,true);
     assert.deepEqual(proof.matches,[true,true,true,true]);
   }finally{await tab.close();}

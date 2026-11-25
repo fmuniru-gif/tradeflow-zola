@@ -45,6 +45,89 @@ async function fixture(backend,device='MAIN',role='OWNER'){
 async function snapshot(page){return page.evaluate(()=>({receipt:DB.receipts[0],sale:DB.sales[0],debtor:DB.debtors[0],cash:DB.cashBalances,txns:DB.accountTxns,log:DB.cashLog,outbox:ZEZMS.cloudSync.getOutbox(),failed:ZEZMS.cloudSync.getFailedOperations(),journal:ZEZMS.syncDurability.pending()}));}
 async function prepare(page){return page.evaluate(()=>ZEZMS.receiptPayments.prepare('SR-SYNTHETIC'));}
 async function accept(page,p,wallet='Cash in Hand'){return page.evaluate(({p,wallet})=>ZEZMS.receiptPayments.accept(p,{wallet,confirmed:true}),{p,wallet});}
+test('an explicit Products selling price is used by new sales and documents after native sync', async () => {
+ const cloud = backend(), main = await fixture(cloud,'MAIN'), shop = await fixture(cloud,'SHOP');
+ const name = 'Synthetic cooler';
+ const legacy = 'Legacy cooler';
+ const salePrice = (page, product) => page.evaluate(product => {
+  nav('pos');
+  pickProduct(product);
+  return Number($('posUPrice').value);
+ },product);
+ const business = page => page.evaluate(() => structuredClone({
+  stock:DB.stockRows, sales:DB.sales, receipts:DB.receipts, cash:DB.cashBalances, inventory:DB.inventoryTxns
+ }));
+ const openProduct = async (page, product) => {
+  await page.evaluate(() => nav('products'));
+  await page.locator('#productCatalogBody tr').filter({hasText:product}).getByRole('button',{name:'Edit',exact:true}).click();
+ };
+ const saveProduct = page => page.locator('#modalBody').getByRole('button',{name:'Save',exact:true}).click();
+ const receive = async () => {
+  await main.page.evaluate(() => ZEZMS.cloudSync.pushNow(false));
+  await shop.page.evaluate(() => ZEZMS.cloudSync.pullNow(false));
+ };
+ try {
+  for (const [page,device] of [[main.page,'MAIN'],[shop.page,'SHOP']]) {
+   await page.evaluate(({device,name,legacy}) => {
+    const p = getLatestMonth();
+    DB.products.push({id:'COOLER',name,category:'Cooling',uPrice:4400},{id:'LEGACY-COOLER',name:legacy,category:'Cooling',uPrice:120});
+    DB.stockRows = [
+     {id:'COOLER-BATCH',productId:'COOLER',productName:name,year:p.year,month:p.month,qtyIn:3,qtyOut:1,rStock:2,uCost:3950,uPrice:4950,tSales:4950,profit:1000},
+     {id:'LEGACY-BATCH',productId:'LEGACY-COOLER',productName:legacy,year:p.year,month:p.month,qtyIn:2,qtyOut:0,rStock:2,uCost:100,uPrice:160}
+    ];
+    DB.cashBalances['Bank Savings'] = 0;
+    DB.cashBalances.Others = 0;
+    ZEZMS.cloudSync._test.ensureSyncIds(DB);
+    ZEZMS.db.save(DB_KEY,DB);
+    ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,false);
+   },{device,name,legacy});
+  }
+  const mainBefore = await business(main.page), shopBefore = await business(shop.page);
+  assert.equal(await salePrice(main.page,name),4950);
+  await openProduct(main.page,name);
+  await main.page.locator('#epPrice').fill('4300.25');
+  await saveProduct(main.page);
+  assert.equal(await salePrice(main.page,name),4300.25);
+  assert.equal(await salePrice(shop.page,name),4950);
+  await receive();
+  assert.equal(await salePrice(shop.page,name),4300.25);
+  assert.equal(cloud.calls.length,1);
+  assert.deepEqual(cloud.calls[0].patches.map(p => [p.action,p.collection,p.key]),[['update','products','COOLER']]);
+  assert.deepEqual(await business(main.page),mainBefore);
+  assert.deepEqual(await business(shop.page),shopBefore);
+
+  const documentPrices = await shop.page.evaluate(name => {
+   nav('invoices');
+   pickCommercialProduct('inv',encodeURIComponent(name));
+   const invoice = Number($('invUPrice').value);
+   ZEZMS.salesPipeline.openQuotationForm();
+   $('quoteProductSearch').value = 'COOLER';
+   ZEZMS.salesPipeline.addDraftProduct();
+   const quotation = Number($('quoteDraftLines').querySelector('input[aria-label="Unit price"]').value);
+   closeModal();
+   nav('proforma-invoices');
+   ZEZMS.proformaInvoiceR67W.newDraft();
+   $('pfiProductId').value = 'COOLER';
+   ZEZMS.proformaInvoiceR67W.productFromId();
+   return {invoice, quotation, proforma:Number($('pfiBaseUnitPrice').value)};
+  },name);
+  assert.deepEqual(documentPrices,{invoice:4300.25,quotation:4300.25,proforma:4300.25});
+  assert.equal(await shop.page.evaluate(name => ZEZMS.cashBucketPriceListR67R.priceListModel().rows.find(p => p.name === name).unitPrice,name),4300.25);
+
+  await openProduct(main.page,legacy);
+  await main.page.locator('#epCat').fill('Appliances');
+  await saveProduct(main.page);
+  assert.equal(await salePrice(main.page,legacy),160);
+  await openProduct(main.page,legacy);
+  await main.page.getByRole('checkbox',{name:'Use this price for new sales and documents'}).check();
+  await saveProduct(main.page);
+  await receive();
+  assert.equal(await salePrice(shop.page,legacy),120);
+  assert.equal(await shop.page.evaluate(() => ZEZMS.cloudSync.getState().cursor),23);
+  assert.equal(await main.page.evaluate(() => ZEZMS.cloudSync.getOutbox().length),0);
+  assert.deepEqual(await business(shop.page),shopBefore);
+ } finally { await main.context.close(); await shop.context.close(); }
+});
 test('unit cost corrections replay with reordered cloud JSON and converge across concurrent stock changes', async () => {
  const cloud = backend(), read = cloud.read;
  cloud.read = async input => {
