@@ -96,16 +96,22 @@ test('an explicit Products selling price is used by new sales and documents afte
   assert.deepEqual(await business(main.page),mainBefore);
   assert.deepEqual(await business(shop.page),shopBefore);
 
-  await shop.page.evaluate(name => { nav('invoices'); pickCommercialProduct('inv',encodeURIComponent(name)); },name);
-  assert.equal(Number(await shop.page.locator('#invUPrice').inputValue()),4300.25);
-  await shop.page.evaluate(() => ZEZMS.salesPipeline.openQuotationForm());
-  await shop.page.locator('#quoteProductSearch').fill('COOLER');
-  await shop.page.evaluate(() => ZEZMS.salesPipeline.addDraftProduct());
-  assert.equal(Number(await shop.page.locator('#quoteDraftLines').getByRole('spinbutton',{name:'Unit price'}).inputValue()),4300.25);
-  await shop.page.evaluate(() => { closeModal(); nav('proforma-invoices'); ZEZMS.proformaInvoiceR67W.newDraft(); });
-  await shop.page.locator('#pfiProductId').fill('COOLER');
-  await shop.page.evaluate(() => ZEZMS.proformaInvoiceR67W.productFromId());
-  assert.equal(Number(await shop.page.locator('#pfiBaseUnitPrice').inputValue()),4300.25);
+  const documentPrices = await shop.page.evaluate(name => {
+   nav('invoices');
+   pickCommercialProduct('inv',encodeURIComponent(name));
+   const invoice = Number($('invUPrice').value);
+   ZEZMS.salesPipeline.openQuotationForm();
+   $('quoteProductSearch').value = 'COOLER';
+   ZEZMS.salesPipeline.addDraftProduct();
+   const quotation = Number($('quoteDraftLines').querySelector('input[aria-label="Unit price"]').value);
+   closeModal();
+   nav('proforma-invoices');
+   ZEZMS.proformaInvoiceR67W.newDraft();
+   $('pfiProductId').value = 'COOLER';
+   ZEZMS.proformaInvoiceR67W.productFromId();
+   return {invoice, quotation, proforma:Number($('pfiBaseUnitPrice').value)};
+  },name);
+  assert.deepEqual(documentPrices,{invoice:4300.25,quotation:4300.25,proforma:4300.25});
   assert.equal(await shop.page.evaluate(name => ZEZMS.cashBucketPriceListR67R.priceListModel().rows.find(p => p.name === name).unitPrice,name),4300.25);
 
   await openProduct(main.page,legacy);
