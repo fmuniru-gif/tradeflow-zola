@@ -50,6 +50,7 @@ function edits() {
     }`;
   const missing = "      if (!found.item) {\n        if (!patch.fallback) throw new Error('Missing record ' + patch.collection + '/' + patch.key);";
   const inverse = "        fallback: null,\n        changes: patch.changes.map(function (change) {";
+  const correctionLookup = "    if (correctionInsert) {\n      const database = getDatabase();";
   const duplicate = "        observedSnapshot = cleanSnapshot(database);\n        return true;\n      }\n    }\n    const durableDatabase = getDatabase();";
   const patches = '      operation.patches.forEach(function (patch) { applyPatch(patch, operation); });';
   const pull = '              if (bootstrapReplayPlan.shouldApply) {\n                writeApplyJournal(row, bootstrapReplayPlan.operation);\n                applyJournalWritten = true;\n                applyOperation(bootstrapReplayPlan.operation, { silent: true });';
@@ -63,8 +64,26 @@ function edits() {
     [find, helpers + find],
     [missing, "      if (stockUnitCostPatch(patch)) {\n        if (!found.item) return;\n        if (Number(found.item.year) !== patch.before.year || Number(found.item.month) !== patch.before.month) {\n          throw Error('ZEZMS_STOCK_CONFLICT: unit cost batch period does not match.');\n        }\n      }\n" + missing],
     [inverse, "        fallback: null,\n        ...(stockUnitCostPatch(patch) ? { before:clone(patch.before) } : {}),\n        changes: patch.changes.map(function (change) {"],
-    [duplicate, "        if (!(options && options.orderedStockCost)) {\n          observedSnapshot = cleanSnapshot(database);\n          return true;\n        }\n      }\n    }\n    const durableDatabase = getDatabase();"],
-    [patches, "      operation.patches.forEach(function (patch) {\n        if (!(options && options.orderedStockCost) || stockUnitCostPatch(patch) || patch === correctionInsert) applyPatch(patch, operation);\n      });\n      if (options && options.orderedStockCost && correctionInsert) {\n        // A locally saved adjustment takes its authoritative place on acknowledgement.\n        const found = findEntity('stockCorrections', correctionInsert.key, correctionInsert.value);\n        if (found.index >= 0) found.list.push(found.list.splice(found.index, 1)[0]);\n      }"],
+    [correctionLookup, "    const orderedStockCost = options && options.orderedStockCost;\n    let verifiedLocalCorrection = false;\n" + correctionLookup],
+    [duplicate, `        if (!orderedStockCost) {
+          observedSnapshot = cleanSnapshot(database);
+          return true;
+        }
+        verifiedLocalCorrection = true;
+      }
+    }
+    const durableDatabase = getDatabase();`],
+    [patches, `      operation.patches.forEach(function (patch) {
+        // Keep the local audit after sameCorrection verifies its event data.
+        if (!orderedStockCost || stockUnitCostPatch(patch) || (patch === correctionInsert && !verifiedLocalCorrection)) {
+          applyPatch(patch, operation);
+        }
+      });
+      if (orderedStockCost && correctionInsert) {
+        // A locally saved adjustment takes its authoritative place on acknowledgement.
+        const found = findEntity('stockCorrections', correctionInsert.key, correctionInsert.value);
+        if (found.index >= 0) found.list.push(found.list.splice(found.index, 1)[0]);
+      }`],
     [pull, "              const orderedStockCost = !bootstrapReplayPlan.active && !alreadyApplied && !!stockUnitCostEvent(operation);\n              if (bootstrapReplayPlan.shouldApply || orderedStockCost) {\n                writeApplyJournal(row, bootstrapReplayPlan.operation);\n                applyJournalWritten = true;\n                applyOperation(bootstrapReplayPlan.operation, { silent:true, orderedStockCost:orderedStockCost });"],
     inverseEdit('LOCAL_REBASE_ROLLBACK'),
     inverseEdit('LOCAL_ROLLBACK')
