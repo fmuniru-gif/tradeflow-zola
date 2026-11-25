@@ -12,6 +12,7 @@ const {edits:activationStorageEdits,transformActivationStorage}=require('./activ
 const {edits:directPrintCompatibilityEdits,transformDirectPrintCompatibility}=require('./direct-print-compatibility-transform.cjs');
 const {edits:creditorWalletSettlementEdits,transformCreditorWalletSettlement}=require('./creditor-wallet-settlement-transform.cjs');
 const {edits:stockUnitCostEdits,transformStockUnitCost}=require('./stock-unit-cost-transform.cjs');
+const {edits:productSellingPriceEdits,transformProductSellingPrice}=require('./product-selling-price-transform.cjs');
 const {transformResiliencePerformance}=require('./resilience-performance-transform.cjs');
 const {transformDeviceCards}=require('./device-cards-transform.cjs');
 const {transformWatermarkIdle}=require('./watermark-idle-transform.cjs');
@@ -24,7 +25,7 @@ const {transformPairedDirectory}=require('./paired-directory-transform.cjs');
 const {transformCamonKpi}=require('./camon-kpi-transform.cjs');
 const {transformSyncDurability}=require('./sync-durability-transform.cjs');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261125-stock-unit-cost-r2';
+const DELIVERY='20261125-product-selling-price-r1';
 const assetMemo=new Map();
 const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js','pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js','document-branding.js','print-website-qr.js','receipt-payment-core.js','receipt-payments.js','sync-resilience.js','desktop-presentation.js','commercial-foundation.js','device-cards.js','idle-session.js','tv-trade-ins.js','daily-profit-barcodes.js','device-sign-in.js','supabase-js-2.112.1.js','staff-directory-review-core.js','staff-directory-review-runtime.js','camon17p-kpi-review-r70w.js','paired-directory-review-core.js','paired-directory-review-runtime.js','sync-durability.js','sync-durability-runtime.js','dbservice.js','stock-corrections-v3150.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
@@ -140,6 +141,9 @@ const versions=`    // PR11_DELIVERY_URLS_BEGIN
     // STOCK_UNIT_COST_DELIVERY_BEGIN
     output=(${transformStockUnitCost.toString().replace(/<\/script/gi,'<\\/script')})(output,${JSON.stringify(stockUnitCostEdits())},safeInline(decodeBase64(DELIVERY_MODULES['stock-corrections-v3150.js'])));
     // STOCK_UNIT_COST_DELIVERY_END
+    // PRODUCT_SELLING_PRICE_DELIVERY_BEGIN
+    output=(${transformProductSellingPrice.toString()})(output,${JSON.stringify(productSellingPriceEdits())});
+    // PRODUCT_SELLING_PRICE_DELIVERY_END
     output=output.replace('</head>','<meta name="zezms-delivery" content="'+DELIVERY+'"></head>');
     // PR11_DELIVERY_URLS_END
 `;
@@ -181,6 +185,7 @@ function assembledShell(shell,options={}){
   shell=normalized(shell);
   const first=shell.indexOf('<script>')+8,last=shell.lastIndexOf('</script>');
   let script=shell.slice(first,last);
+  if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ PRODUCT_SELLING_PRICE_DELIVERY_BEGIN[\s\S]*?    \/\/ PRODUCT_SELLING_PRICE_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ STOCK_UNIT_COST_DELIVERY_BEGIN[\s\S]*?    \/\/ STOCK_UNIT_COST_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ CREDITOR_WALLET_SETTLEMENT_DELIVERY_BEGIN[\s\S]*?    \/\/ CREDITOR_WALLET_SETTLEMENT_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ DIRECT_PRINT_COMPATIBILITY_DELIVERY_BEGIN[\s\S]*?    \/\/ DIRECT_PRINT_COMPATIBILITY_DELIVERY_END\n/,'');
@@ -235,7 +240,7 @@ function finishWorker(worker,shell){
   const current=new Map(runtime.map(url=>[url.split('?')[0].replace(/^\.\//,''),'./'+url.replace(/^\.\//,'')]));
   for(const file of Object.keys(coupledModules))current.set('js/'+file,'./js/'+file+'?v='+DELIVERY);
   const oldAssets=[...worker.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1]);
-  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),[...current.values()],['./MAIN_RESPONSIVENESS_UPDATE.html','./RECOVERY_WORKFLOW_UPDATE.html','./DOCUMENT_BRANDING_UPDATE.html','./RESILIENCE_PERFORMANCE_UPDATE.html','./DEVICE_CARDS_UPDATE.html','./WATERMARK_IDLE_UPDATE.html','./SYNC_RELIABILITY_UPDATE.html','./TV_TRADE_IN_UPDATE.html','./DAILY_BARCODE_UPDATE.html','./DEVICE_SIGN_IN_UPDATE.html','./CLOUD_SYNC_LIBRARY_UPDATE.html','./STAFF_DIRECTORY_UPDATE.html','./CAMON_KPI_REVIEW_UPDATE.html','./PAIRED_DIRECTORY_UPDATE.html','./SYNC_DURABILITY_UPDATE.html','./RECEIPT_PAYMENT_UPDATE.html','./DEVICE_APPROVAL_UPDATE.html','./IPHONE_ACTIVATION_UPDATE.html','./DIRECT_PRINT_UPDATE.html','./CREDITOR_WALLET_UPDATE.html','./STOCK_UNIT_COST_UPDATE.html','./vendor/zxing-browser-0.1.5.min.js','./assets/zez-logo-approved-20261103.jpg']))];
+  const assets=[...new Set(oldAssets.map(url=>current.get(url.split('?')[0].replace(/^\.\//,''))||url).concat(runtime.map(url=>'./'+url.replace(/^\.\//,'')),[...current.values()],['./MAIN_RESPONSIVENESS_UPDATE.html','./RECOVERY_WORKFLOW_UPDATE.html','./DOCUMENT_BRANDING_UPDATE.html','./RESILIENCE_PERFORMANCE_UPDATE.html','./DEVICE_CARDS_UPDATE.html','./WATERMARK_IDLE_UPDATE.html','./SYNC_RELIABILITY_UPDATE.html','./TV_TRADE_IN_UPDATE.html','./DAILY_BARCODE_UPDATE.html','./DEVICE_SIGN_IN_UPDATE.html','./CLOUD_SYNC_LIBRARY_UPDATE.html','./STAFF_DIRECTORY_UPDATE.html','./CAMON_KPI_REVIEW_UPDATE.html','./PAIRED_DIRECTORY_UPDATE.html','./SYNC_DURABILITY_UPDATE.html','./RECEIPT_PAYMENT_UPDATE.html','./DEVICE_APPROVAL_UPDATE.html','./IPHONE_ACTIVATION_UPDATE.html','./DIRECT_PRINT_UPDATE.html','./CREDITOR_WALLET_UPDATE.html','./STOCK_UNIT_COST_UPDATE.html','./PRODUCT_PRICE_UPDATE.html','./vendor/zxing-browser-0.1.5.min.js','./assets/zez-logo-approved-20261103.jpg']))];
   worker=worker.replace(/const ASSETS = \[[\s\S]*?\];/,'const ASSETS = [\n'+assets.map(url=>"  '"+url+"',").join('\n')+'\n];');
   // Critical-install probes must use the same query-sensitive keys as precache.
   worker=worker.replace(/const CRITICAL_ASSETS = \[[\s\S]*?\];/,block=>block.replace(/'([^']+)'/g,(_match,url)=>"'"+(current.get(url.split('?')[0].replace(/^\.\//,''))||url)+"'"));

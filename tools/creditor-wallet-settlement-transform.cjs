@@ -14,6 +14,7 @@ function transformCreditorWalletSettlement(html, before, after) {
 }
 
 function withoutCreditorWalletSettlement(html) {
+  html = require('./product-selling-price-transform.cjs').withoutProductSellingPrice(html);
   html = require('./stock-unit-cost-transform.cjs').withoutStockUnitCost(html);
   if (!html.includes("cashNote = 'Creditor funds received ' + account.name")) return html;
   const [before, after] = edits();

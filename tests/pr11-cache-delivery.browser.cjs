@@ -7,7 +7,7 @@ const delivery=require('../tools/build-pr11-delivery.cjs'),{fixtureAsset}=requir
 const root=path.resolve(__dirname,'..'),before='1241e0ea2a02d05d68e976d16f51164ad72c216b',production='f810940762809e89a35f982a8577a9f32dcabf4e';
 const brokenProduction='d2a91205e0c8974ad298b56b3b744a8588d32319';
 const currentProduction='e3e0bf654519f3d9745ec89f3d9dbc394cf53067';
-const stockCostR1='b4cfbf6bc84f287634e0a6d8013c63060a593a75';
+const stockCostR2='1e1855a758f962dbf13ec2134ad98627322b4b76';
 const memo=new Map();
 function committed(ref,name){const key=ref+':'+name;if(!memo.has(key))memo.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:32*1024*1024}));return memo.get(key);}
 let mode='before',fault='',browser;
@@ -23,7 +23,7 @@ const server=http.createServer((req,res)=>{
   if(mode==='corrected'&&fault==='stale-shell'&&file==='index.html')return res.end(committed(before,file));
   if(mode==='corrected'&&fault==='missing-main-pages'&&file==='js/main-table-pages.js'){res.writeHead(503);return res.end('synthetic interrupted paging download');}
   if(mode==='corrected'&&fault==='stale-owner-maintenance'&&file==='js/owner-maintenance-v373.js')return res.end(committed(currentProduction,file));
-  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='stock-cost-r1'?stockCostR1:mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
+  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='stock-cost-r2'?stockCostR2:mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 async function ready(page){await page.waitForFunction(()=>!!window.ZEZMS?.navigationV3101&&!!window.ZEZMS?.managementIntelligence&&!!window.ZEZMS?.stockVelocity,null,{timeout:20000});}
@@ -87,7 +87,7 @@ async function baseline(initial='before'){
   context.on('response',r=>{if(r.request().isNavigationRequest())navigations.push(r.body().then(body=>({url:r.url(),worker:r.fromServiceWorker(),sha:delivery.sha(body)})).catch(()=>({url:r.url(),unavailable:true})));});
   let page=await context.newPage();await page.goto(origin+'/index.html');await ready(page);
   await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js?v=20261024-ui-stock-review-r1');await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('synthetic worker startup timeout')),30000))]);});
-  if(initial==='corrected'||initial==='current-production'||initial==='stock-cost-r1'){
+  if(initial==='corrected'||initial==='current-production'||initial==='stock-cost-r2'){
     await page.reload();await ready(page);
     return {context,page,origin,errors,external,navigations};
   }
@@ -243,8 +243,8 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
     try{
       await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
-      await f.page.goto(f.origin+'/STOCK_UNIT_COST_UPDATE.html?delivery='+delivery.DELIVERY);
-      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified stock unit cost update is ready'));
+      await f.page.goto(f.origin+'/PRODUCT_PRICE_UPDATE.html?delivery='+delivery.DELIVERY);
+      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified selling price update is ready'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
       assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1','old active worker was replaced before its clients closed');
@@ -305,8 +305,8 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
-    await f.page.goto(f.origin+'/STOCK_UNIT_COST_UPDATE.html?delivery='+delivery.DELIVERY);
-    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('stock unit cost update is verified and active'));
+    await f.page.goto(f.origin+'/PRODUCT_PRICE_UPDATE.html?delivery='+delivery.DELIVERY);
+    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('selling price update is verified and active'));
     assert.equal(await f.page.locator('#open').isVisible(),true);
     await f.page.goto(f.origin+'/index.html');await ready(f.page);
     await f.page.evaluate(async()=>{
@@ -319,13 +319,13 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   }finally{await f.context.close();}
 });
 
-test('cached stock unit cost r1 uses the versioned update link and preserves Main storage',async()=>{
- const f=await baseline('stock-cost-r1');try{
-  assert.equal((await workerProof(f.page)).delivery,'20261125-stock-unit-cost-r1');
-  const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./STOCK_UNIT_COST_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261125-stock-unit-cost-r1'/);
+test('cached stock unit cost r2 uses the versioned update link and preserves Main storage',async()=>{
+ const f=await baseline('stock-cost-r2');try{
+  assert.equal((await workerProof(f.page)).delivery,'20261125-stock-unit-cost-r2');
+  const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./STOCK_UNIT_COST_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261125-stock-unit-cost-r2'/);
   const saved=await seed(f,'Main','synthetic-stock-cost-main','OWNER');mode='corrected';
-  await f.page.goto(f.origin+'/STOCK_UNIT_COST_UPDATE.html?delivery='+delivery.DELIVERY);
-  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified stock unit cost update is ready'));
+  await f.page.goto(f.origin+'/PRODUCT_PRICE_UPDATE.html?delivery='+delivery.DELIVERY);
+  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified selling price update is ready'));
   assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
   await activateNaturally(f);assert.equal(await f.page.evaluate(()=>typeof ZEZMS.stockCorrections?.prepareCorrection),'function');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}
