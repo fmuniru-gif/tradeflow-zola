@@ -14,6 +14,7 @@ function transformCreditorWalletSettlement(html, before, after) {
 }
 
 function withoutCreditorWalletSettlement(html) {
+  html = require('./stock-unit-cost-transform.cjs').withoutStockUnitCost(html);
   if (!html.includes("cashNote = 'Creditor funds received ' + account.name")) return html;
   const [before, after] = edits();
   return transformCreditorWalletSettlement(html, after, before);

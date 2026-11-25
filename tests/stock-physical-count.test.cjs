@@ -97,3 +97,41 @@ test('existing positive-delta increase/decrease entry points remain valid',()=>{
   assert.equal(p.quantity,2);assert.equal(f.api.commitCorrection(p).afterQty,10);
   assert.equal(f.db.stockRows[0].qtyIn,12);assert.equal(f.db.stockRows[0].qtyOut,0);
 });
+
+test('open-month batch unit cost can rise or fall without changing stock quantities or sale evidence', () => {
+  const f = fixture();
+  Object.assign(f.db.stockRows[0], {qtyIn:12,qtyOut:4,rStock:8,profit:80,uPrice:25});
+  const older = {...f.db.stockRows[0],id:'OLDER',month:9};
+  const second = {...f.db.stockRows[0],id:'R2',uCost:9};
+  f.db.stockRows.push(older,second);
+  f.db.sales = [{id:'S1',profit:80,lines:[{fifo:[{stockRowId:'R1',qty:4,uCost:5}]}]}];
+  const before = JSON.parse(JSON.stringify(f.db));
+  const prepare = unitCost => f.api.prepareCorrection({productId:'P1',correctionType:'Adjust Unit Cost',stockRowId:'R1',unitCost});
+  const increase = f.api.commitCorrection(prepare('8.25'));
+  assert.equal(increase.referenceValueImpact,26);
+  assert.equal(increase.costAdjustment.beforeUnitCost,5);
+  assert.equal(increase.costAdjustment.afterUnitCost,8.25);
+  assert.equal(increase.beforeQty,increase.afterQty);
+  assert.deepEqual(f.db.stockRows[0],{...before.stockRows[0],uCost:8.25});
+  const decrease = f.api.commitCorrection(prepare('4.25'));
+  assert.equal(decrease.referenceValueImpact,-32);
+  assert.deepEqual(f.db.stockRows[0],{...before.stockRows[0],uCost:4.25});
+  assert.deepEqual(f.db.stockRows.slice(1),before.stockRows.slice(1));
+  assert.deepEqual(f.db.sales,before.sales);
+  assert.deepEqual(f.db.products,before.products);
+});
+
+test('batch cost adjustment rejects invalid costs, stale previews, closed batches and missing historical costs', () => {
+  const f = fixture(), input = {productId:'P1',stockRowId:'R1',correctionType:'Adjust Unit Cost',unitCost:'8'};
+  for (const unitCost of ['', '-1', '1.234', '1e3', 'Infinity', '5'])
+    assert.throws(() => f.api.prepareCorrection({...input,unitCost}), /unit cost/i);
+  const preview = f.api.prepareCorrection(input);
+  f.db.stockRows[0].uCost = 6;
+  assert.throws(() => f.api.commitCorrection(preview), /changed after preview/);
+  f.db.stockRows[0].qtyOut = 1;
+  f.db.receipts = [{lines:[{fifo:[{stockRowId:'R1',qty:1}]}]}];
+  assert.throws(() => f.api.prepareCorrection(input), /historical sale/);
+  f.db.selectedMonth = 11;
+  assert.throws(() => f.api.prepareCorrection(input), /open month/);
+  assert.equal(f.saves(),0);
+});

@@ -29,13 +29,90 @@ async function fixture(backend,device='MAIN',role='OWNER'){
  const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();context.setDefaultTimeout(15000);await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
  await page.exposeFunction('syntheticPaymentRead',x=>backend.read(x));await page.exposeFunction('syntheticPaymentPush',x=>backend.push(x));
  const url='http://127.0.0.1:'+server.address().port+'/payment-test.html';await page.goto(url);await page.waitForFunction(()=>window.ZEZMS?.receiptPayments);await page.evaluate(()=>ZEZMS.cloudSync.waitUntilReady(10000));
- await page.evaluate(({data,device})=>{for(const [key,value]of Object.entries(data))DB[key]=value;ZEZMS.cloudSync._test.ensureSyncIds(DB);ZEZMS.db.save(DB_KEY,DB);ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,false);},{data:F.fixture(),device});
+ await page.evaluate(({data,device})=>{
+  for(const [key,value]of Object.entries(data))DB[key]=value;
+  ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,false);
+  // An established device already has the confirmed historical KPI at its sync baseline.
+  // Materialize that startup record before testing the contents of the financial outbox.
+  window.ZEZMSConfirmedJulySnapshot.apply();
+  ZEZMS.cloudSync._test.ensureSyncIds(DB);
+  ZEZMS.db.save(DB_KEY,DB);
+  ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,false);
+ },{data:F.fixture(),device});
  async function configure(preserve=true){await page.evaluate(({device,role,preserve})=>{window.__paymentRole=role;Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});DB.sharedDeviceAuth={version:1,enabled:true,businessId:'BUSINESS-1',users:[{id:'STAFF-'+device,name:'Synthetic '+device,role,active:true,tel:''}],audit:[]};Object.assign(session,{sharedUserId:'STAFF-'+device,cashier:'Synthetic '+device,commercialRole:role,role:'ADMIN',isCashier2:false,businessId:'BUSINESS-1'});document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';ZEZMS.db.save(DB_KEY,DB);const a=ZEZMS.staffAuth;ZEZMS.staffAuth={...a,isActive:()=>true,can:action=>['OWNER','ADMIN','MANAGER'].includes(__paymentRole)||action==='VIEW_RECEIPTS',getContext:()=>({role:__paymentRole,user:{id:'STAFF-'+device,name:'Synthetic '+device,active:true}})};ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,preserve);}, {device,role,preserve});}
  await configure();return {page,context,url,configure};
 }
 async function snapshot(page){return page.evaluate(()=>({receipt:DB.receipts[0],sale:DB.sales[0],debtor:DB.debtors[0],cash:DB.cashBalances,txns:DB.accountTxns,log:DB.cashLog,outbox:ZEZMS.cloudSync.getOutbox(),failed:ZEZMS.cloudSync.getFailedOperations(),journal:ZEZMS.syncDurability.pending()}));}
 async function prepare(page){return page.evaluate(()=>ZEZMS.receiptPayments.prepare('SR-SYNTHETIC'));}
 async function accept(page,p,wallet='Cash in Hand'){return page.evaluate(({p,wallet})=>ZEZMS.receiptPayments.accept(p,{wallet,confirmed:true}),{p,wallet});}
+test('unit cost corrections converge by server order and rebase a pending edit across a remote stock quantity change', async () => {
+ const cloud = backend(), a = await fixture(cloud,'MAIN'), b = await fixture(cloud,'SHOP');
+ const sync = (page, method) => page.evaluate(name => ZEZMS.cloudSync[name](false),method);
+ const costs = page => page.evaluate(() => ({row:DB.stockRows[0], audit:DB.stockCorrections.length, queue:ZEZMS.cloudSync.getOutbox().length}));
+ const adjust = (page, next) => page.evaluate(unitCost => {
+  const api = ZEZMS.stockCorrections;
+  return api.commitCorrection(api.prepareCorrection({productId:'PC',stockRowId:'RC',correctionType:'Adjust Unit Cost',unitCost}));
+ },next);
+ try {
+  for (const [device,page] of [['MAIN',a.page],['SHOP',b.page]]) {
+   await page.evaluate(device => {
+    const p = getLatestMonth();
+    DB.products.push({id:'PC',name:'Synthetic cost item',uPrice:25});
+    DB.stockRows = [{id:'RC',productId:'PC',productName:'Synthetic cost item',year:p.year,month:p.month,qtyIn:12,qtyOut:0,rStock:12,uCost:5,uPrice:25}];
+    DB.stockCorrections = [];
+    ZEZMS.cloudSync._test.ensureSyncIds(DB);
+    ZEZMS.db.save(DB_KEY,DB);
+    ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,false);
+   },device);
+  }
+  await adjust(a.page,8);
+  await adjust(b.page,11);
+  await sync(a.page,'pushNow');
+  await sync(b.page,'pushNow');
+  await sync(a.page,'pullNow');
+  for (const page of [a.page,b.page]) {
+   const value = await costs(page);
+   assert.equal(value.row.uCost,11);
+   assert.equal(value.row.rStock,12);
+   assert.equal(value.audit,2);
+   assert.equal(value.queue,0);
+  }
+
+  await adjust(a.page,7);
+  await b.page.evaluate(() => {
+   DB.stockRows[0].rStock = 9;
+   DB.stockRows[0].qtyOut = 3;
+   saveDB();
+  });
+  await sync(b.page,'pushNow');
+  await sync(a.page,'pullNow');
+  const pending = await costs(a.page);
+  assert.equal(pending.row.uCost,7);
+  assert.equal(pending.row.rStock,9);
+  assert.equal(pending.queue,1);
+  await sync(a.page,'pushNow');
+  await sync(b.page,'pullNow');
+  assert.deepEqual(await costs(a.page),await costs(b.page));
+  const final = await costs(a.page);
+  assert.equal(final.row.uCost,7);
+  assert.equal(final.row.qtyOut,3);
+  assert.equal(final.row.uPrice,25);
+  assert.equal(final.audit,3);
+
+  await adjust(a.page,14);
+  await adjust(b.page,9);
+  await sync(b.page,'pushNow');
+  await sync(a.page,'pullNow');
+  assert.equal((await costs(a.page)).row.uCost,14);
+  cloud.mode.reject = true;
+  await sync(a.page,'pushNow');
+  const rejected = await costs(a.page);
+  assert.equal(rejected.row.uCost,9);
+  assert.equal(rejected.row.rStock,9);
+  assert.equal(rejected.audit,4);
+  assert.equal(rejected.queue,0);
+ } finally { await a.context.close(); await b.context.close(); }
+});
 test('Settle reverses a legacy creditor increase and reposts with a linked Cash in Hand receipt', async () => {
  const cloud=backend(),f=await fixture(cloud);
  try {
