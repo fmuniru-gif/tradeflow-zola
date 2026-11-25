@@ -8,6 +8,7 @@
   var BUILD = '20260821-stage6a-ui-integration-fix-r50';
   var TYPES = Object.freeze(['Quantity Increase', 'Quantity Decrease']);
   var REASONS = Object.freeze(['Physical Count Adjustment', 'Damaged Stock', 'Lost/Missing Stock', 'Found Stock', 'Data Entry Correction', 'Stock-In Omission', 'Other']);
+  var COST_ADJUSTMENT = 'Adjust Unit Cost';
   var pendingCorrection = null;
 
   function esc(value) {
@@ -105,6 +106,7 @@
     requireOwnerAdmin();
     ensureModel();
     var input = data || {};
+    if (input.correctionType === COST_ADJUSTMENT) return prepareUnitCostAdjustment(input);
     var product = productByIdentity(input.productId, input.productName);
     if (!product) throw new Error('Select a valid Product Catalog record.');
     var type = String(input.correctionType || '');
@@ -147,6 +149,71 @@
       rows:currentRows(product).map(function (row) {
       return [row.id, row.productId, row.productName, row.qtyIn, row.qtyOut, row.rStock, row.uCost];
     }) });
+  }
+  function prepareUnitCostAdjustment(input) {
+    var product = productById(input.productId);
+    if (!product) throw new Error('Select a valid Product Catalog record.');
+    var row = currentRows(product).find(function (item) { return item.id && String(item.id) === String(input.stockRowId) && remaining(item) > 0; });
+    if (!row || DB.stockRows.filter(function (item) { return String(item.id) === String(row.id); }).length !== 1) {
+      throw new Error('Select one identifiable batch with remaining stock in the open month.');
+    }
+    var raw = String(input.unitCost == null ? '' : input.unitCost).trim();
+    var next = Number(raw), previous = Number(row.uCost), quantity = currentQuantity(product);
+    var impact = remaining(row) * (next - previous);
+    if (!/^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/.test(raw) || !Number.isFinite(next) || next * 100 > Number.MAX_SAFE_INTEGER
+      || !Number.isFinite(impact) || Math.abs(impact) * 100 > Number.MAX_SAFE_INTEGER) {
+      throw new Error('Enter a non-negative New Unit Cost with at most two decimal places.');
+    }
+    if (row.uCost == null || row.uCost === '' || !Number.isFinite(previous) || previous < 0) {
+      throw new Error('The selected batch has an invalid original unit cost.');
+    }
+    if (previous === next) throw new Error('This batch already uses that unit cost.');
+    // Historical reversals must be able to use the cost captured when the sale posted.
+    if (Number(row.qtyOut) > 0) {
+      var saleRecords = (DB.receipts || []).concat(DB.sales || [], DB.inventoryTxns || []);
+      var missingCost = saleRecords.some(function (record) {
+        if (!record || record.status === 'UNDONE' || record.status === 'VOID') return false;
+        var lines = record.lines || (record.details || {}).lines;
+        return Array.isArray(lines) && lines.some(function (line) {
+          return line && Array.isArray(line.fifo) && line.fifo.some(function (part) {
+            return part && String(part.stockRowId) === String(row.id)
+              && (part.uCost == null || part.uCost === '' || !Number.isFinite(Number(part.uCost)));
+          });
+        });
+      });
+      if (missingCost) throw new Error('A historical sale on this batch has no saved unit cost for reversal.');
+    }
+    return {
+      correctionType:COST_ADJUSTMENT, productId:String(product.id), productName:product.name, stockRowId:String(row.id),
+      quantity:0, beforeQty:quantity, afterQty:quantity, batchQty:remaining(row), unitCost:next, beforeUnitCost:previous,
+      year:Number(row.year), month:Number(row.month), notes:String(input.notes || '').trim().slice(0, 2000),
+      referenceValueImpact:round2(impact), stockSnapshot:stockSnapshot(product)
+    };
+  }
+  function commitUnitCostAdjustment(input) {
+    var fresh = prepareUnitCostAdjustment(input);
+    if (fresh.stockSnapshot !== input.stockSnapshot) {
+      throw new Error('Stock or cost changed after preview. Re-open the adjustment and review the batch.');
+    }
+    var database = DB, row = database.stockRows.find(function (item) { return String(item.id) === fresh.stockRowId; });
+    var previous = row.uCost;
+    var record = {
+      correctionId:uid('SC-'), productId:fresh.productId, productNameSnapshot:fresh.productName,
+      correctionType:COST_ADJUSTMENT, quantity:0, beforeQty:fresh.beforeQty, afterQty:fresh.afterQty,
+      unitCost:fresh.unitCost, reason:'Unit Cost Adjustment', notes:fresh.notes, referenceValueImpact:fresh.referenceValueImpact,
+      costAdjustment:{ stockRowId:fresh.stockRowId, year:fresh.year, month:fresh.month, quantity:fresh.batchQty,
+        beforeUnitCost:fresh.beforeUnitCost, afterUnitCost:fresh.unitCost },
+      createdAt:isoNow(), createdBy:currentUser(), status:'Cost Adjusted', reversalOf:'', adjustmentTxnIds:[row.id], allocations:[]
+    };
+    row.uCost = fresh.unitCost;
+    database.stockCorrections.push(record);
+    try { save(); }
+    catch (error) {
+      if (DB === database) { row.uCost = previous; database.stockCorrections.pop(); }
+      throw error;
+    }
+    pendingCorrection = null;
+    return record;
   }
   function preparePhysicalCount(data) {
     requireOwnerAdmin();
@@ -214,6 +281,7 @@
     ensureModel();
     var input = clone(prepared || pendingCorrection);
     if (!input) throw new Error('Correction preview is unavailable.');
+    if (input.correctionType === COST_ADJUSTMENT) return commitUnitCostAdjustment(input);
     if (input.noAdjustmentRequired) throw new Error('No adjustment required; no correction was created.');
     if (Object.prototype.hasOwnProperty.call(input, 'physicalCountTarget')) {
       var refreshed = preparePhysicalCount({ productId:input.productId,
@@ -332,12 +400,13 @@
   function correctionForm(productId) {
     var product = productById(productId);
     var guide = product ? weightedCost(product) : 0;
-    return '<div id="stockCorrectionModal"><h3>Correct Stock</h3><p class="muted">Owner/Admin audited correction. This is not a sale, purchase order, supplier payment or direct lot-cost editor.</p>'
+    return '<div id="stockCorrectionModal"><h3>Correct Stock</h3>'
       + '<div class="grid g2"><div class="field"><label>Search Product Name</label><input id="stockCorrectionSearchName" type="search" autocomplete="off" placeholder="Partial, case-insensitive" oninput="ZEZMS.stockCorrections.filterProducts()"></div><div class="field"><label>Search Product ID</label><input id="stockCorrectionSearchId" type="search" autocomplete="off" placeholder="Partial or exact Product ID" oninput="ZEZMS.stockCorrections.filterProducts()"></div></div>'
       + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn sm ghost" onclick="ZEZMS.stockCorrections.clearProductSearch()">Clear Search</button><span id="stockCorrectionSearchCount" class="pill">' + (DB.products || []).length + ' products</span></div>'
       + '<div class="field"><label>Product</label><select id="scProduct" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + productOptions(productId) + '</select></div>'
-      + '<div class="grid g2"><div class="field"><label>Correction Type</label><select id="scType" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(TYPES.concat(['Set Physical Count']), 'Quantity Increase') + '</select></div><div class="field"><label id="scQtyLabel">Correction Qty</label><input id="scQty" type="number" min="0.01" step="0.01" placeholder="Enter actual discrepancy" oninput="ZEZMS.stockCorrections.refreshCorrectionForm()"></div></div>'
-      + '<div id="scCostWrap" class="field"><label>Actual Unit Cost</label><input id="scCost" type="number" min="0.01" step="0.01" placeholder="Required; enter actual cost basis"><small class="muted">Reference weighted cost only: <span id="scWeightedCost">' + money(guide) + '</span>. It is not inserted into the textbox.</small></div>'
+      + '<div class="grid g2"><div class="field"><label>Correction Type</label><select id="scType" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(TYPES.concat(['Set Physical Count', COST_ADJUSTMENT]), 'Quantity Increase') + '</select></div><div id="scQtyWrap" class="field"><label id="scQtyLabel">Correction Qty</label><input id="scQty" type="number" min="0.01" step="0.01" placeholder="Enter actual discrepancy" oninput="ZEZMS.stockCorrections.refreshCorrectionForm()"></div></div>'
+      + '<div id="scBatchWrap" class="field" hidden><label for="scBatch">Current Stock Batch</label><select id="scBatch"></select><small class="muted">Applies to remaining stock in the selected batch. Quantities and recorded sales stay as entered.</small></div>'
+      + '<div id="scCostWrap" class="field"><label id="scCostLabel" for="scCost">Actual Unit Cost</label><input id="scCost" type="number" min="0.01" step="0.01" placeholder="Enter actual cost basis"><small class="muted">Reference weighted cost: <span id="scWeightedCost">' + money(guide) + '</span></small></div>'
       + '<div id="scReasonWrap" class="field"><label>Reason</label><select id="scReason" onchange="ZEZMS.stockCorrections.refreshCorrectionForm()">' + optionList(REASONS, 'Physical Count Adjustment') + '</select></div>'
       + '<div id="scOtherWrap" class="field" hidden><label>Other reason detail</label><input id="scOther" maxlength="250"></div>'
       + '<div class="field"><label>Notes</label><textarea id="scNotes" rows="3"></textarea></div>'
@@ -352,14 +421,30 @@
     var type = String((document.getElementById('scType') || {}).value || '');
     var reason = String((document.getElementById('scReason') || {}).value || '');
     var physical = type === 'Set Physical Count';
+    var adjustingCost = type === COST_ADJUSTMENT;
+    var quantityWrap = document.getElementById('scQtyWrap'); if (quantityWrap) quantityWrap.hidden = adjustingCost;
+    var batchWrap = document.getElementById('scBatchWrap'); if (batchWrap) batchWrap.hidden = !adjustingCost;
+    var batch = document.getElementById('scBatch');
+    if (adjustingCost && batch) {
+      var selected = batch.value;
+      var batches = product ? currentRows(product).filter(function (row) { return row.id && remaining(row) > 0; }) : [];
+      batch.innerHTML = '<option value="">' + (batches.length ? 'Select stock batch' : 'No stock available in the open month') + '</option>'
+        + batches.map(function (row) {
+          return '<option value="' + attr(row.id) + '">' + money(row.uCost) + ' · ' + number(remaining(row)) + ' on hand · ' + esc(row.id) + '</option>';
+        }).join('');
+      if (batches.length === 1) batch.value = batches[0].id;
+      else batch.value = batches.some(function (row) { return String(row.id) === selected; }) ? selected : '';
+    }
     var quantity = document.getElementById('scQty');
     var label = document.getElementById('scQtyLabel');
     if (label) label.textContent = physical ? 'Physical Count (target quantity; zero allowed)' : 'Correction Qty';
     if (quantity) { quantity.min = physical ? '0' : '0.01'; quantity.placeholder = physical ? 'Enter counted stock, including 0' : 'Enter actual discrepancy'; }
-    var reasonWrap = document.getElementById('scReasonWrap'); if (reasonWrap) reasonWrap.hidden = physical;
-    var needsCost = type === 'Quantity Increase' || (physical && product && quantity && quantity.value !== '' && Number(quantity.value) > currentQuantity(product));
+    var reasonWrap = document.getElementById('scReasonWrap'); if (reasonWrap) reasonWrap.hidden = physical || adjustingCost;
+    var needsCost = adjustingCost || type === 'Quantity Increase' || (physical && product && quantity && quantity.value !== '' && Number(quantity.value) > currentQuantity(product));
     var cost = document.getElementById('scCostWrap'); if (cost) cost.hidden = !needsCost;
-    var other = document.getElementById('scOtherWrap'); if (other) other.hidden = physical || reason !== 'Other';
+    var costLabel = document.getElementById('scCostLabel'); if (costLabel) costLabel.textContent = adjustingCost ? 'New Unit Cost' : 'Actual Unit Cost';
+    var costInput = document.getElementById('scCost'); if (costInput) costInput.min = adjustingCost ? '0' : '0.01';
+    var other = document.getElementById('scOtherWrap'); if (other) other.hidden = physical || adjustingCost || reason !== 'Other';
     var guide = document.getElementById('scWeightedCost'); if (guide) guide.textContent = money(product ? weightedCost(product) : 0);
   }
   function filterProducts() {
@@ -387,6 +472,7 @@
       var fields = {
         productId:(document.getElementById('scProduct') || {}).value,
         correctionType:(document.getElementById('scType') || {}).value,
+        stockRowId:(document.getElementById('scBatch') || {}).value,
         quantity:(document.getElementById('scQty') || {}).value,
         unitCost:(document.getElementById('scCost') || {}).value,
         reason:(document.getElementById('scReason') || {}).value,
@@ -397,6 +483,15 @@
         ? preparePhysicalCount({ productId:fields.productId, physicalCount:fields.quantity, unitCost:fields.unitCost, notes:fields.notes })
         : prepareCorrection(fields);
       var item = pendingCorrection;
+      if (item.correctionType === COST_ADJUSTMENT) {
+        openModal('<h3>Confirm Unit Cost Adjustment</h3><p>' + esc(item.productName) + ' · ' + esc(item.stockRowId) + '</p>'
+          + '<div class="statline"><span>Units on hand in batch</span><b>' + number(item.batchQty) + '</b></div>'
+          + '<div class="statline"><span>Unit Cost Before</span><b>' + money(item.beforeUnitCost) + '</b></div>'
+          + '<div class="statline"><span>New Unit Cost</span><b>' + money(item.unitCost) + '</b></div>'
+          + '<div class="statline"><span>Inventory Value Change</span><b>' + money(item.referenceValueImpact) + '</b></div>'
+          + '<div class="row" style="margin-top:14px"><button class="btn warn" onclick="ZEZMS.stockCorrections.confirmCorrection()">Confirm and Commit</button><button class="btn ghost" onclick="closeModal()">Cancel</button></div>');
+        return;
+      }
       if (item.noAdjustmentRequired) {
         openModal('<h3>No adjustment required</h3><p>The physical count already equals current stock. No audit event or stock change will be created.</p>'
           + '<div class="statline"><span>Product</span><b>' + esc(item.productName) + '</b></div>'
@@ -436,10 +531,12 @@
     ensureModel();
     var rows = DB.stockCorrections.slice().sort(function (a, b) { return Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0); }).map(function (item) {
       var action = item.status === 'Completed' && !item.reversalOf ? '<button class="btn sm warn" onclick="ZEZMS.stockCorrections.reverseFromUI(\'' + attr(item.correctionId) + '\')">Reverse Correction</button>' : '—';
-      return '<tr><td class="mono">' + esc(item.correctionId) + (item.reversalOf ? '<br><small>Reversal of ' + esc(item.reversalOf) + '</small>' : '') + '</td><td>' + new Date(item.createdAt).toLocaleString('en-GB') + '</td><td>' + esc(item.productNameSnapshot) + '<br><small class="mono">' + esc(item.productId) + '</small></td><td>' + esc(item.correctionType) + '</td><td class="right mono">' + number(item.quantity) + '</td><td class="right mono">' + number(item.beforeQty) + '</td><td class="right mono">' + number(item.afterQty) + '</td><td class="right mono">' + money(item.referenceValueImpact) + '</td><td>' + esc(item.reason + (item.reasonDetail ? ' — ' + item.reasonDetail : '')) + '</td><td>' + esc(item.createdBy) + '</td><td>' + esc(item.status) + '</td><td>' + action + '</td></tr>';
+      var cost = item.costAdjustment;
+      var costDetail = cost ? '<br><small>' + money(cost.beforeUnitCost) + ' → ' + money(cost.afterUnitCost) + '<br>' + esc(cost.stockRowId) + '</small>' : '';
+      return '<tr><td class="mono">' + esc(item.correctionId) + (item.reversalOf ? '<br><small>Reversal of ' + esc(item.reversalOf) + '</small>' : '') + '</td><td>' + new Date(item.createdAt).toLocaleString('en-GB') + '</td><td>' + esc(item.productNameSnapshot) + '<br><small class="mono">' + esc(item.productId) + '</small></td><td>' + esc(item.correctionType) + costDetail + '</td><td class="right mono">' + number(item.quantity) + '</td><td class="right mono">' + number(item.beforeQty) + '</td><td class="right mono">' + number(item.afterQty) + '</td><td class="right mono">' + money(item.referenceValueImpact) + '</td><td>' + esc(item.reason + (item.reasonDetail ? ' — ' + item.reasonDetail : '')) + '</td><td>' + esc(item.createdBy) + '</td><td>' + esc(item.status) + '</td><td>' + action + '</td></tr>';
     }).join('') || '<tr><td colspan="12" class="empty">No stock corrections recorded.</td></tr>';
     return '<div data-stock-corrections="' + VERSION + '"><div class="row" style="justify-content:space-between;margin-bottom:10px"><div><h3 style="margin:0">Stock Correction History</h3><p class="muted" style="margin:4px 0">Permanent audited non-sale adjustments. Completed records cannot be deleted.</p></div><button class="btn warn" onclick="ZEZMS.stockCorrections.openCorrection()">New Stock Correction</button></div>'
-      + '<div class="card" style="margin-bottom:12px"><b>Protected fields</b><p class="muted">Product ID, Qty In, Qty Out, remaining quantity, FIFO allocations, transaction IDs, lot dates and historical Unit Cost are not directly editable. Edit Product reuses the verified Product Catalog editor for Name, Category and Listed Selling Price only.</p></div>'
+      + '<div class="card" style="margin-bottom:12px"><b>Cost adjustments</b><p class="muted">Use Adjust Unit Cost for a batch with remaining stock in the open month. To restore a previous cost, record another adjustment for that batch.</p></div>'
       + '<div class="table-wrap"><table><thead><tr><th>Correction ID</th><th>Date</th><th>Product</th><th>Type</th><th class="right">Quantity</th><th class="right">Before Qty</th><th class="right">After Qty</th><th class="right">Value Impact</th><th>Reason</th><th>User</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   }
   function installRender() {
@@ -457,7 +554,8 @@
     if (document.getElementById('stockCorrectionsV3151Styles')) return;
     var style = document.createElement('style');
     style.id = 'stockCorrectionsV3151Styles';
-    style.textContent = '#stockCorrectionModal input,#stockCorrectionModal select,#stockCorrectionModal textarea{background:#081221;color:#f8fafc;border:1px solid #475569;caret-color:#f8fafc}#stockCorrectionModal input::placeholder,#stockCorrectionModal textarea::placeholder{color:#94a3b8;opacity:1}#stockCorrectionModal input:focus,#stockCorrectionModal select:focus,#stockCorrectionModal textarea:focus{color:#fff;border-color:var(--teal2);outline:2px solid rgba(45,212,191,.35);outline-offset:1px}#stockCorrectionModal input[readonly],#stockCorrectionModal input:disabled,#stockCorrectionModal select:disabled{background:#111c2f;color:#cbd5e1;opacity:1}#stockCorrectionModal option{background:#081221;color:#f8fafc}@media(max-width:600px){#stockCorrectionModal .grid.g2{grid-template-columns:1fr}}';
+    style.textContent = '#stockCorrectionModal [hidden]{display:none}';
+    style.textContent += '#stockCorrectionModal input,#stockCorrectionModal select,#stockCorrectionModal textarea{background:#081221;color:#f8fafc;border:1px solid #475569;caret-color:#f8fafc}#stockCorrectionModal input::placeholder,#stockCorrectionModal textarea::placeholder{color:#94a3b8;opacity:1}#stockCorrectionModal input:focus,#stockCorrectionModal select:focus,#stockCorrectionModal textarea:focus{color:#fff;border-color:var(--teal2);outline:2px solid rgba(45,212,191,.35);outline-offset:1px}#stockCorrectionModal input[readonly],#stockCorrectionModal input:disabled,#stockCorrectionModal select:disabled{background:#111c2f;color:#cbd5e1;opacity:1}#stockCorrectionModal option{background:#081221;color:#f8fafc}@media(max-width:600px){#stockCorrectionModal .grid.g2{grid-template-columns:1fr}}';
     document.head.appendChild(style);
   }
   ensureModel(); installStyles(); installRender();

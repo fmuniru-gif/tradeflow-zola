@@ -37,6 +37,46 @@ test('actual stock corrections synchronize once, retain subsequent stock movemen
   assert.deepEqual(final,{qty:11,corrections:2,reversed:'Reversed',unchanged:true});
  }finally{await a.context.close();await b.context.close();}
 });
+test('Adjust Unit Cost posts one durable audit and preserves quantities on another device', async () => {
+ const a = await device(), b = await device();
+ try {
+  await seed(a.page); await seed(b.page);
+  await a.page.evaluate(() => ZEZMS.stockCorrections.openCorrection('P1'));
+  await a.page.locator('#scType').selectOption('Adjust Unit Cost');
+  assert.equal(await a.page.locator('#scBatch').inputValue(),'R1');
+  assert.equal(await a.page.locator('#scQty').isVisible(),false);
+  await a.page.locator('#scCost').fill('8.50');
+  await a.page.getByRole('button',{name:'Preview Correction'}).click();
+  assert.match(await a.page.locator('#modalBody').innerText(),/Inventory Value Change[\s\S]*42\.00/);
+  await a.page.getByRole('button',{name:'Confirm and Commit'}).click();
+  const sent = await a.page.evaluate(() => ({
+   record:DB.stockCorrections[0], row:DB.stockRows[0], operations:ZEZMS.cloudSync.getOutbox()
+  }));
+  assert.equal(sent.row.uCost,8.5);
+  assert.equal(sent.row.rStock,12);
+  assert.equal(sent.operations.length,1);
+  const [operation] = sent.operations;
+  assert.equal(operation.kind,'STOCK_CORRECTION_UPSERT');
+  assert.equal(operation.patches.length,2);
+  const patch = operation.patches.find(p => p.collection === 'stockRows');
+  assert.deepEqual(patch.changes,[{field:'uCost',mode:'set',before:5,value:8.5}]);
+  assert.equal(patch.fallback,undefined);
+  assert.equal(patch.before.id,'R1');
+
+  const result = await b.page.evaluate(op => {
+   DB.stockRows[0].rStock = 10;
+   DB.stockRows[0].qtyOut = 2;
+   ZEZMS.cloudSync._test.applyOperation(op,{silent:true});
+   ZEZMS.cloudSync._test.applyOperation(op,{silent:true});
+   const {uCost,rStock,qtyOut} = DB.stockRows[0];
+   const events = DB.stockCorrections.length;
+   DB.stockRows = []; DB.stockCorrections = [];
+   ZEZMS.cloudSync._test.applyOperation(op,{silent:true});
+   return {uCost,rStock,qtyOut,events,deletedRows:DB.stockRows.length};
+  }, operation);
+  assert.deepEqual(result,{uCost:8.5,rStock:10,qtyOut:2,events:1,deletedRows:0});
+ } finally { await a.context.close(); await b.context.close(); }
+});
 test('receipt, invoice and waybill system/direct HTML stretch only the watermark over the A5 page',async()=>{
  const f=await device();try{
   const docs=await f.page.evaluate(async()=>{
