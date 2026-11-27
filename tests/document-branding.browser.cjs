@@ -34,8 +34,9 @@ async function seed(page){
   const order={id:'PO1',poNo:'PO-SYNTHETIC',date:'2026-11-03',supplierName:'Synthetic Supplier',supplierContact:'0550000000',cashier:'Synthetic Owner',lines:[{productId:'P1',product:'Synthetic appliance',qty:2,unitCost:60,total:120}],total:120,amountPaid:20,outstanding:100,status:'OPEN'};
   const quote={quotationId:'Q-SYNTHETIC',customerId:'C1',quotationDate:'2026-11-03',validUntil:'2026-12-03',status:'DRAFT',vatRate:5,lineItems:[{productId:'P1',productName:'Synthetic appliance',quantity:2,unitPrice:100,discount:5,lineTotal:195}]};
   const proforma={id:'PF1',proformaNo:'PF-SYNTHETIC',date:'2026-11-03',customerName:'Synthetic Customer',telephone:'0550000000',location:'Tamale',vatRate:5,lines:[{productId:'P1',productName:'Synthetic appliance',quantity:2,baseUnitPrice:100,priceAdjustment:0,effectiveUnitPrice:100}]};
+  const deposit={id:'DEPOSIT-FIXTURE',receiptNo:'DR-SYNTHETIC',date:receipt.date,name:'Synthetic Customer',cashier:receipt.cashier,amount:250.75,status:'ACTIVE',meta:{kind:'depositors',source:'SALES_DEPOSIT',depositContact:'0550000000',depositPurpose:'TV reservation',walletLabelSnapshot:'Cash in Hand'}};
   DB.purchaseOrders=[order];DB.invoices=[invoice];DB.waybills=[waybill];DB.quotations=[quote];
-  window.__brandingFixtures={receipt,invoice,waybill,order,quote,proforma};
+  window.__brandingFixtures={receipt,invoice,waybill,order,quote,proforma,deposit};
   // Only report authorization is synthetic; the production report builders run unchanged.
   ZEZMS.staffAuth.canView=()=>true;
  });
@@ -93,6 +94,13 @@ test('actual browser print pages and both A5 test documents place a scannable we
   const docs=await f.page.evaluate(async directSource=>{
    const v=__brandingFixtures,logo=await ZEZPrint.getEmbeddedWatermark(),b=ZEZMS.documentBranding;
    const docs={receipt:ZEZMS.operationsUpdate.buildReceiptPrintDocument(v.receipt,logo),invoice:ZEZMS.commercialDocuments.buildCommercialPrintDocument('invoice',v.invoice,logo),waybill:ZEZMS.commercialDocuments.buildCommercialPrintDocument('waybill',v.waybill,logo)};
+   DB.accountTxns.push(v.deposit);
+   ZEZMS.staffAuth={...ZEZMS.staffAuth,isActive:()=>true,can:permission=>permission==='VIEW_ACCOUNTS'};
+   const originalOpen=window.open;
+   try {
+    window.open=()=>({document:{open(){},write(html){docs.deposit=html;},close(){}}});
+    await ZEZMS.deposits.print(v.deposit.id);
+   } finally { window.open=originalOpen; }
    for(const [name,run] of [['quotation',()=>ZEZMS.salesPipeline.printQuotation('Q-SYNTHETIC')],['purchaseOrder',()=>printPurchaseOrder('PO1')]]){
     const before=new Set(document.querySelectorAll('iframe'));run();const frame=[...document.querySelectorAll('iframe')].find(frame=>!before.has(frame));
     if(!frame)throw Error(name+' print frame missing');frame.contentWindow.print=()=>{};docs[name]='<!doctype html>'+frame.contentDocument.documentElement.outerHTML;
@@ -106,6 +114,11 @@ test('actual browser print pages and both A5 test documents place a scannable we
    // Test pages auto-open the system dialog; PDF capture supplies the print operation here.
    await p.evaluate(()=>{window.print=()=>{};window.close=()=>{};});console.log('WEBSITE_PRINT_CAPTURE '+name);await p.setViewportSize({width:name==='purchaseOrder'?704:468,height:780});await p.setContent(html.replace('<head>','<head><base href="http://127.0.0.1:'+server.address().port+'/">'));await p.emulateMedia({media:'print'});
    await p.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
+   if(name==='deposit'){
+    assert.match(await p.locator('.deposit-receipt').innerText(),/APPROVED/);
+    assert.match(await p.locator('.deposit-total').innerText(),/250\.75/);
+    assert.equal(await p.locator('.deposit-receipt').evaluate(el=>getComputedStyle(el,'::before').backgroundSize),'100% 100%');
+   }
    const bounds=await p.evaluate(()=>{const h=document.querySelector('[data-zezms-website-header]'),q=document.querySelector('[data-zezms-website-qr]'),r=q.getBoundingClientRect(),a=h.getBoundingClientRect(),next=h.nextElementSibling?.getBoundingClientRect();return {right:r.right,headerRight:a.right,top:r.top,headerTop:a.top,bottom:r.bottom,nextTop:next?.top,width:r.width,height:r.height};});
    assert.ok(Math.abs(bounds.right-bounds.headerRight)<1,name+' QR at header right');assert.ok(Math.abs(bounds.top-bounds.headerTop)<1,name+' QR at header top');assert.equal(bounds.width,bounds.height);assert.ok(bounds.nextTop>=bounds.bottom,name+' details below QR');
    await p.addScriptTag({path:path.join(root,'vendor/zxing-browser-0.1.5.min.js')});const decoded=await p.evaluate(async()=>{const q=document.querySelector('[data-zezms-website-qr]');const decoder=new ZXingBrowser.BrowserQRCodeReader();return (await decoder.decodeFromImageElement(q)).getText();});
@@ -116,7 +129,7 @@ test('actual browser print pages and both A5 test documents place a scannable we
  }finally{await f.context.close();}
 });
 
-test('Direct Print submits self-contained receipts, invoices, waybills and the A5 test to the bridge', async () => {
+test('Direct Print submits self-contained sales and deposit receipts, invoices, waybills and the A5 test to the bridge', async () => {
  const f = await fixture();
  try {
   await seed(f.page);
@@ -146,7 +159,7 @@ test('Direct Print submits self-contained receipts, invoices, waybills and the A
      const blocked = forbidden.some(token => html.toLowerCase().includes(token)) ||
        /\son[a-z]+\s*=/i.test(html) || /<meta[^>]+http-equiv\s*=/i.test(html) ||
        css.some(([, value]) => !value.trim().replace(/^['"]|['"]$/g,'').toLowerCase().startsWith('data:image/'));
-     requests.push({ documentType:payload.documentType, blocked,
+     requests.push({ documentType:payload.documentType, documentId:payload.documentId, blocked,
        hasPrintedAddress:html.includes('<span data-zezms-website ') && html.includes('zolaelectronicszone.com</span>'),
        hasEmbeddedQR:html.includes('data-zezms-website-qr src="data:image/png;base64,'),
        page:payload.page });
@@ -160,11 +173,14 @@ test('Direct Print submits self-contained receipts, invoices, waybills and the A
    try {
     await ZEZPrint.testConnection();
     const fixture = window.__brandingFixtures;
+    DB.accountTxns.push(fixture.deposit);
+    ZEZMS.staffAuth={...ZEZMS.staffAuth,isActive:()=>true,can:permission=>permission==='VIEW_ACCOUNTS'};
     const before = {db:JSON.stringify(DB),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox())};
     const statuses = [];
     statuses.push((await ZEZMS.operationsUpdate.printReceiptDocument(fixture.receipt, {isReprint:true})).status);
     statuses.push((await ZEZMS.commercialDocuments.printCommercialDocument('invoice', fixture.invoice)).status);
     statuses.push((await ZEZMS.commercialDocuments.printCommercialDocument('waybill', fixture.waybill)).status);
+    statuses.push((await ZEZMS.deposits.print(fixture.deposit.id)).status);
     statuses.push((await ZEZPrint.directPrintTest()).status);
 
     const systemPreview = ZEZMS.documentBranding.headerHTML();
@@ -177,16 +193,17 @@ test('Direct Print submits self-contained receipts, invoices, waybills and the A
      after:{db:JSON.stringify(DB),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox())}};
    } finally { window.fetch = previousFetch; }
   }, forbidden);
-  assert.deepEqual(result.statuses, ['printed','printed','printed','printed']);
-  assert.deepEqual(result.requests.slice(0,4).map(request => request.documentType), ['receipt','invoice','waybill','test']);
-  for (const request of result.requests.slice(0,4)) {
+  assert.deepEqual(result.statuses, ['printed','printed','printed','printed','printed']);
+  assert.deepEqual(result.requests.slice(0,5).map(request => request.documentType), ['receipt','invoice','waybill','receipt','test']);
+  assert.equal(result.requests[3].documentId, 'DR-SYNTHETIC');
+  for (const request of result.requests.slice(0,5)) {
    assert.equal(request.blocked, false, request.documentType);
    assert.equal(request.hasPrintedAddress, true, request.documentType);
    assert.equal(request.hasEmbeddedQR, true, request.documentType);
    assert.deepEqual(request.page, { size:'A5', orientation:'portrait' });
   }
-  assert.equal(result.requests.length, 5);
-  assert.equal(result.requests[4].blocked, true);
+  assert.equal(result.requests.length, 6);
+  assert.equal(result.requests[5].blocked, true);
   assert.equal(result.refused.status, 'failed');
   assert.match(result.systemPreview, /<a data-zezms-website href="https:\/\/zolaelectronicszone\.com\//);
   assert.equal(result.bridgeStatus.connection, 'Connected');

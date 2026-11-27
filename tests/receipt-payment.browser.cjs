@@ -45,6 +45,92 @@ async function fixture(backend,device='MAIN',role='OWNER'){
 async function snapshot(page){return page.evaluate(()=>({receipt:DB.receipts[0],sale:DB.sales[0],debtor:DB.debtors[0],cash:DB.cashBalances,txns:DB.accountTxns,log:DB.cashLog,outbox:ZEZMS.cloudSync.getOutbox(),failed:ZEZMS.cloudSync.getFailedOperations(),journal:ZEZMS.syncDurability.pending()}));}
 async function prepare(page){return page.evaluate(()=>ZEZMS.receiptPayments.prepare('SR-SYNTHETIC'));}
 async function accept(page,p,wallet='Cash in Hand'){return page.evaluate(({p,wallet})=>ZEZMS.receiptPayments.accept(p,{wallet,confirmed:true}),{p,wallet});}
+test('Deposits posts one linked wallet and depositor operation, synchronizes and reprints a voided receipt', async () => {
+ const cloud = backend(), main = await fixture(cloud,'MAIN'), shop = await fixture(cloud,'SHOP');
+ const state = page => page.evaluate(() => ({
+  depositors:DB.depositors, txns:DB.accountTxns.filter(ZEZMS.deposits.isDeposit), cash:DB.cashLog,
+  balance:DB.cashBalances['Cash in Hand'], sales:DB.sales, receipts:DB.receipts
+ }));
+ const fill = async (page,{id,amount}) => {
+  await page.evaluate(()=>nav('deposits'));
+  await page.getByRole('button',{name:'Record deposit',exact:true}).click();
+  if (id) {
+   await page.locator('#depositAccount').selectOption(id);
+   assert.equal(await page.locator('#depositName').isVisible(),false);
+  } else {
+   await page.locator('#depositName').fill('Synthetic depositor');
+   await page.locator('#depositContact').fill('0200000000');
+  }
+  await page.locator('#depositAmount').fill(amount);
+  await page.locator('#depositWallet').selectOption('Cash in Hand');
+  await page.locator('#depositPurpose').fill('TV reservation');
+  await page.getByRole('button',{name:'Save deposit',exact:true}).click();
+  await page.locator('#modalBody .deposit-receipt').waitFor({timeout:3000});
+ };
+ try {
+  await main.page.evaluate(()=>nav('deposits'));
+  assert.equal(await main.page.locator('#mainNav [data-group=sales] [data-view=deposits]').count(),1);
+  const before = await state(main.page);
+  await fill(main.page,{amount:'250.75'});
+  const first = await state(main.page), txn = first.txns[0], accountId = txn.accountID;
+  const receipt = main.page.locator('#modalBody .deposit-receipt');
+  assert.match(await receipt.innerText(),/APPROVED/);
+  assert.match(await receipt.innerText(),/250\.75/);
+  assert.equal(await receipt.locator('[data-zezms-website]').getAttribute('href'),'https://zolaelectronicszone.com/');
+  assert.match(await receipt.locator('[data-zezms-website-qr]').getAttribute('src'),/^data:image\/png/);
+  assert.equal(first.balance,before.balance+250.75);
+  assert.equal(first.depositors.find(a=>a.id===accountId).balance,250.75);
+  assert.equal(first.txns.length,1);
+  assert.equal(first.cash[0].meta.accountTxnId,txn.id);
+  assert.equal(txn.meta.cashLogId,first.cash[0].id);
+  assert.deepEqual(first.sales,before.sales);
+  assert.deepEqual(first.receipts,before.receipts);
+  const outbox = await main.page.evaluate(()=>ZEZMS.cloudSync.getOutbox());
+  assert.equal(outbox.length,1);
+  assert.deepEqual(outbox[0].patches.map(p=>p.collection||p.root).sort(),['accountTxns','cashBalances','cashLog','depositors']);
+  await main.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await shop.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
+  const onShop = await state(shop.page);
+  assert.equal(onShop.txns[0].receiptNo,txn.receiptNo);
+  assert.equal(onShop.balance,first.balance);
+  await shop.page.evaluate(()=>nav('deposits'));
+  await shop.page.locator('#depositSearch').fill(txn.receiptNo);
+  assert.match(await shop.page.locator('#depositHistory').innerText(),/Synthetic depositor/);
+  await shop.page.getByRole('button',{name:'Depositor accounts',exact:true}).click();
+  assert.match(await shop.page.locator('#viewRoot').innerText(),/Synthetic depositor/);
+  await fill(shop.page,{id:accountId,amount:'49.25'});
+  await shop.page.getByRole('button',{name:'Settle depositor account',exact:true}).click();
+  assert.match(await shop.page.locator('#modalBody').innerText(),/Settle · Synthetic depositor/);
+  await shop.page.evaluate(()=>{closeModal();return ZEZMS.cloudSync.pushNow(false);});
+  await main.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
+  const both = await state(main.page);
+  assert.equal(both.depositors.filter(a=>a.id===accountId).length,1);
+  assert.equal(both.depositors.find(a=>a.id===accountId).balance,300);
+  assert.equal(both.balance,before.balance+300);
+  assert.equal(both.txns.length,2);
+  assert.equal(both.cash.length,2);
+  assert.deepEqual(both.sales,before.sales);
+  assert.deepEqual(both.receipts,before.receipts);
+
+  await main.page.evaluate(id=>{
+   window.promptPIN=(_label,_pin,complete)=>complete();
+   window.confirm=()=>true;
+   window.prompt=()=> 'Synthetic correction';
+   undoAccountTransaction(id);
+  },txn.id);
+  await main.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await shop.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
+  const undone = await state(shop.page);
+  assert.equal(undone.depositors.find(a=>a.id===accountId).balance,49.25);
+  assert.equal(undone.balance,before.balance+49.25);
+  assert.equal(undone.cash.find(c=>c.id===txn.meta.cashLogId).status,'UNDONE');
+  assert.equal(undone.txns.find(t=>t.id===txn.id).status,'UNDONE');
+  await shop.page.evaluate(id=>ZEZMS.deposits.preview(id),txn.id);
+  assert.match(await shop.page.locator('#modalBody').innerText(),/VOID DEPOSIT RECEIPT/);
+  assert.equal(await shop.page.locator('#modalBody .deposit-stamp').innerText(),'VOID');
+  assert.deepEqual(await state(shop.page),undone);
+ } finally { await main.context.close(); await shop.context.close(); }
+});
 test('an explicit Products selling price is used by new sales and documents after native sync', async () => {
  const cloud = backend(), main = await fixture(cloud,'MAIN'), shop = await fixture(cloud,'SHOP');
  const name = 'Synthetic cooler';
