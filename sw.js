@@ -1,7 +1,7 @@
 /* ZEZMS Owner Edition v3.31.19 - Deterministic Device Control r70P.
    Cache rotation is deliberately limited to application-shell assets. */
-const CACHE = 'zezms-pr11-delivery-20261026-29895ca458d40fbb';
-const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-7d8359753138880a';
+const CACHE = 'zezms-pr11-delivery-20261026-ccd86da7575525dc';
+const PATCHED_INDEX_CACHE = 'zezms-pr11-patched-fa58b43aee15846f';
 const ASSETS = [
   './',
   './index.html',
@@ -136,8 +136,8 @@ const CRITICAL_ASSETS = ['./', './index.html', './manifest.json',
 const DELIVERY = '20261127-deposit-checkout-r2';
 // PR11_VERIFIED_ASSETS_BEGIN
 const VERIFIED_ASSETS = Object.freeze({
-  "./": "b0948f794fe6e8bef1745f24fd8a8115f8835f36982d76a38a20a9728d42c0d4",
-  "./index.html": "b0948f794fe6e8bef1745f24fd8a8115f8835f36982d76a38a20a9728d42c0d4",
+  "./": "4059f137ced3b2837bbd1149174c20e3eb5fe2edcae1044a91ff51e6be2be5e3",
+  "./index.html": "4059f137ced3b2837bbd1149174c20e3eb5fe2edcae1044a91ff51e6be2be5e3",
   "./manifest.json": "65e7cbf3b2ecb6af102b97db4d778fa4f2cef9b82a612d6b64bcdb30e62e60be",
   "./assets/zez-document-watermark.jpg": "c477963932d6d765d0c2678b701d90aabfe9202ec486d68c2acb1f341b12c695",
   "./js/app.js?v=20260812-portfolio-signals-r39": "5c15ae89298b09c88b88672d2e1262572ea478f68c64b92d0643518b736c5162",
@@ -255,7 +255,7 @@ const VERIFIED_ASSETS = Object.freeze({
   "./CREDITOR_WALLET_UPDATE.html": "216160a95ea41bc686e2c83994e18a07524bd4b33bd17073d60098f00fa5980b",
   "./STOCK_UNIT_COST_UPDATE.html": "3f0130d8c43e0bc8c3f207916b1b36c8f15f8f8cb1d6569cc22c5c2cc810063e",
   "./PRODUCT_PRICE_UPDATE.html": "b0a0ddbc7ee744b7ae4f1294c272f5699442a0e91033aa2efdefb961e7bad4c4",
-  "./js/deposits.js?v=20261127-deposit-checkout-r2": "109d26e0a9a1b41a4924b65069f80db64a714e50e58d57857595aaf5b54a4d44",
+  "./js/deposits.js?v=20261127-deposit-checkout-r2": "b63f2ccefb2d5810da74252ae685de6c955191c29f01ad0760fc469ab3029cd4",
   "./DEPOSITS_UPDATE.html": "d2a36960bd141a51df98f35d2a382aeddb0a6df5a26f12340a0356e9aace55f9",
   "./js/deposit-checkout.js?v=20261127-deposit-checkout-r2": "2dbcc130efbc676d5bef513ead5c3c4aabaa60f294f7f913c0f17a51e5c8c40b"
 });

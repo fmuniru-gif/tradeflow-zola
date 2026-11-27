@@ -305,8 +305,9 @@
         <p>${voided(transaction)
           ? esc('Reversed' + (transaction.undoneAt ? ' on ' + timestamp(transaction.undoneAt) : '') + (transaction.undoneBy ? ' by ' + transaction.undoneBy : ''))
           : 'Please keep this receipt as proof of your deposit.'}</p>
-        <div><span class="deposit-stamp${voided(transaction) ? ' deposit-void' : ''}">${voided(transaction) ? 'VOID' : 'APPROVED'}</span></div>
-        <div class="deposit-signature"><b>${esc(transaction.cashier)}</b><br>Cashier signature ____________________</div>
+        <div class="deposit-approval"><span class="deposit-stamp${voided(transaction) ? ' deposit-void' : ''}">${voided(transaction) ? 'VOID' : 'APPROVED'}</span>
+          <div class="deposit-signature"><b>${esc(transaction.cashier)}</b><br>Cashier signature ____________________</div>
+        </div>
       </div>
     </main>`;
   }
@@ -322,9 +323,13 @@
       .deposit-paper dt{color:#475569}.deposit-paper dd{margin:0;font-weight:600}
       .deposit-total{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5mm 0;padding:3mm;border:1px solid #12495d;color:#12495d;font-size:14pt}
       .deposit-stamp{display:inline-block;font:bold 12pt Arial;color:#166534;border:3px double currentColor;border-radius:4px;padding:2mm 3mm}
-      .deposit-stamp.deposit-void{color:#991b1b}.deposit-signature{margin-top:4mm}
+      .deposit-stamp.deposit-void{color:#991b1b}
+      .deposit-approval{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2mm}
       @page{size:A5 portrait;margin:7mm}
-      @media print{html,body{margin:0;padding:0;background:white}.deposit-receipt{width:100%;font-size:9.5pt;break-inside:avoid}
+      @media print{html,body{margin:0;padding:0;background:white}.deposit-receipt{width:100%;font-size:9.5pt;line-height:1.27}
+        .deposit-paper{padding:2mm}.deposit-business{margin-bottom:2mm}.deposit-paper h2{margin:2mm 0}
+        .deposit-paper dl div{padding:1mm 0}.deposit-total{margin:3mm 0;padding:2mm;font-size:12pt}
+        .deposit-paper p{margin:2mm 0}.deposit-approval{break-inside:avoid}
         .deposit-receipt,.deposit-receipt *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
         .deposit-receipt::before{position:fixed;inset:-7mm auto auto -7mm;width:148mm;height:210mm}}
     `;
