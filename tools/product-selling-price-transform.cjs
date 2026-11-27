@@ -57,6 +57,7 @@ function transformProductSellingPrice(html, changes) {
 }
 
 function withoutProductSellingPrice(html) {
+  html = require('./deposits-transform.cjs').withoutDeposits(html);
   if (!html.includes('product.useCatalogSellingPrice === true')) return html;
   const reverse = edits().reverse().map(([before,after]) => [after,before]);
   return transformProductSellingPrice(html, reverse);
