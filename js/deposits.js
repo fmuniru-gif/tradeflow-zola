@@ -6,6 +6,7 @@
   const COLLECTION = 'depositors';
   let query = '';
   let draftActor = '';
+  let draftOrder = '';
   let saving = false;
 
   function can(permission) {
@@ -84,6 +85,7 @@
     const purpose = field(input.purpose).slice(0, 180);
     if (!input.accountId && (!name || contactKey(contact).length < 7)) throw Error('Enter the new depositor’s name and telephone.');
     const existing = selectedAccount(input.accountId, name, contact);
+    const terms = ZEZMS.depositCheckout.paymentTerms(input, amount, existing);
     const beforeBalance = Number(existing?.balance ?? 0);
     const afterBalance = nextBalance(beforeBalance, amount);
     const cashBefore = Number(DB.cashBalances[wallet]);
@@ -99,11 +101,16 @@
       const account = accountById(id);
       account.balance = afterBalance;
       account.date = nowISO();
+      delete account.depositArchivedAt;
       if (!account.contact && contact) account.contact = contact;
       transaction = logAccountTxn(id, 'DEPOSITOR', account.name, 'INCREASE', amount, afterBalance, reference, {
         kind:COLLECTION, source:SOURCE, beforeBalance, afterBalance,
         wallet, walletKey:wallet, walletLabelSnapshot:walletLabel, cashAction:'Add', cashAmount:amount,
         cashLogId:'', depositContact:account.contact || '', depositPurpose:purpose
+      });
+      if (terms) Object.assign(transaction.meta,{
+        depositOrderId:terms.orderId || reference, depositProduct:terms.product,
+        orderReceivedAfter:terms.received, orderBalanceAfter:terms.balance
       });
       const cash = adjustCash(wallet, 'Add', amount, 'Deposit ' + reference + ' · ' + account.name, {
         source:'ACCOUNT_TRANSACTION', accountTxnId:transaction.id, accountKind:COLLECTION, accountId:id,
@@ -135,6 +142,7 @@
 
   function validateUndo(transaction, account) {
     if (!isDeposit(transaction)) return;
+    ZEZMS.depositCheckout.validateDepositUndo(transaction);
     const meta = transaction.meta;
     const cash = DB.cashLog.find(row => row.id === meta.cashLogId);
     if (!cash || cash.status === 'UNDONE' || cash.meta?.accountTxnId !== transaction.id
@@ -155,8 +163,9 @@
 
   function settle(id) {
     requirePermission('MANAGE_ACCOUNTS');
-    const account = accountById(byId(id).accountID);
-    if (!account) throw Error('The linked depositor account is unavailable.');
+    const transaction = byId(id);
+    const account = accountById(transaction.accountID);
+    if (!account || !ZEZMS.depositCheckout.visibleAccount(account)) throw Error('The linked depositor account is closed.');
     accTab = COLLECTION;
     openSettle(COLLECTION, account.id);
   }
@@ -165,24 +174,40 @@
     try { action(); } catch (error) { toast(error.message, 'err'); }
   }
 
-  function openForm() {
+  function openForm(orderId = '') {
     requirePermission('MANAGE_ACCOUNTS');
+    const checkout = ZEZMS.depositCheckout;
+    const current = orderId ? checkout.order(orderId) : null;
+    if (orderId && (!current?.account || current.sale || voided(current.initial) || current.balance <= 0)) {
+      throw Error('This product has no remaining deposit payment to record.');
+    }
     draftActor = session.sharedUserId || session.cashier;
-    const accounts = DB.depositors.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    draftOrder = orderId;
+    const accounts = DB.depositors.filter(checkout.visibleAccount).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
     openModal(`<form onsubmit="event.preventDefault();ZEZMS.deposits.submit()">
-      <h3>Record deposit</h3>
+      <h3>${current ? 'Record installment' : 'Record deposit'}</h3>
+      ${current ? `<p><b>${esc(current.initial.name)}</b> · ${esc(current.product.name)}<br>Balance due ${fmt(current.balance)}</p>` : ''}
       <div class="field"><label for="depositAccount">Depositor account</label>
-        <select id="depositAccount" onchange="ZEZMS.deposits.accountChanged()">
+        <select id="depositAccount" onchange="ZEZMS.deposits.accountChanged()" ${current ? 'disabled' : ''}>
           <option value="">New depositor</option>
-          ${accounts.map(account => `<option value="${escAttr(account.id)}">${esc(account.name)}${account.contact ? ' · ' + esc(account.contact) : ''} · ${esc(fmt(account.balance))}</option>`).join('')}
+          ${accounts.map(account => `<option value="${escAttr(account.id)}" ${current?.account.id === account.id ? 'selected' : ''}>${esc(account.name)}${account.contact ? ' · ' + esc(account.contact) : ''} · ${esc(fmt(account.balance))}</option>`).join('')}
         </select>
       </div>
       <div id="depositNewAccount" class="grid g2">
         <div class="field"><label for="depositName">Full name</label><input id="depositName" maxlength="120" autocomplete="name" required></div>
         <div class="field"><label for="depositContact">Telephone</label><input id="depositContact" type="tel" maxlength="60" autocomplete="tel" required></div>
       </div>
+      ${current ? '' : `<div class="field"><label for="depositProduct">Product</label>
+        <select id="depositProduct" onchange="ZEZMS.deposits.productChanged()"><option value="">General deposit</option>${checkout.productOptions().map(p =>
+          `<option value="${escAttr(p.id)}">${esc(p.name)} · ${esc(p.id)} · ${fmtN(p.qty)} in stock</option>`).join('')}</select>
+      </div>
+      <div id="depositProductTerms" class="grid g2" style="display:none">
+        <div class="field"><label for="depositQuantity">Quantity</label><input id="depositQuantity" type="number" min="1" step="1" value="1" inputmode="numeric" oninput="ZEZMS.deposits.updateOrderTotal()"></div>
+        <div class="field"><label for="depositPrice">Agreed unit price (GH₵)</label><input id="depositPrice" type="number" min="0.01" step="0.01" inputmode="decimal" oninput="ZEZMS.deposits.updateOrderTotal()"></div>
+      </div>`}
+      <p id="depositOrderTotal" class="muted"></p>
       <div class="grid g2">
-        <div class="field"><label for="depositAmount">Amount received (GH₵)</label><input id="depositAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required></div>
+        <div class="field"><label for="depositAmount">Amount received (GH₵)</label><input id="depositAmount" type="number" min="0.01" step="0.01" inputmode="decimal" oninput="ZEZMS.deposits.updateOrderTotal()" required></div>
         <div class="field"><label for="depositWallet">Received into</label><select id="depositWallet" required>${ZEZMS.cashWallets.selectorOptions({placeholder:'Choose cash wallet'})}</select></div>
       </div>
       <div class="field"><label for="depositPurpose">Purpose or reference (optional)</label><input id="depositPurpose" maxlength="180"></div>
@@ -190,6 +215,24 @@
       <div class="row"><button id="recordDepositButton" class="btn" type="submit">Save deposit</button>
         <button class="btn ghost" type="button" onclick="closeModal()">Cancel</button></div>
     </form>`);
+    if (current) accountChanged();
+  }
+
+  function productChanged() {
+    const id = $('depositProduct').value;
+    $('depositProductTerms').style.display = id ? '' : 'none';
+    $('depositPrice').required = !!id;
+    $('depositPrice').value = id ? ZEZMS.depositCheckout.quote(id).price.toFixed(2) : '';
+    updateOrderTotal();
+  }
+
+  function updateOrderTotal() {
+    const current = draftOrder && ZEZMS.depositCheckout.order(draftOrder);
+    const total = current ? current.balance : ($('depositProduct')?.value
+      ? round2(Number($('depositPrice').value) * Number($('depositQuantity').value)) : 0);
+    $('depositOrderTotal').textContent = total
+      ? 'Amount due ' + fmt(total) + ' · Balance after this payment ' + fmt(Math.max(0,round2(total - Number($('depositAmount').value))))
+      : '';
   }
 
   function submit() {
@@ -202,7 +245,8 @@
       if (!draftActor || draftActor !== (session.sharedUserId || session.cashier)) throw Error('Reopen the form under your current staff account.');
       id = record({
         accountId:$('depositAccount').value, name:$('depositName').value, contact:$('depositContact').value,
-        amount:$('depositAmount').value, wallet:$('depositWallet').value, purpose:$('depositPurpose').value
+        amount:$('depositAmount').value, wallet:$('depositWallet').value, purpose:$('depositPurpose').value,
+        orderId:draftOrder, productId:$('depositProduct')?.value, quantity:$('depositQuantity')?.value, price:$('depositPrice')?.value
       });
     } catch (error) {
       $('depositStatus').textContent = error.message;
@@ -212,6 +256,7 @@
     }
     if (id) {
       draftActor = '';
+      draftOrder = '';
       query = '';
       ZEZMS.tablePages.reset('deposits');
       closeModal();
@@ -239,10 +284,16 @@
   function receiptHTML(transaction, logo) {
     const biz = DB.business || BUSINESS;
     const meta = transaction.meta;
+    const product = meta.depositProduct;
     const fields = [
       ['Receipt number', transaction.receiptNo], ['Date received', timestamp(transaction.date)],
       ['Depositor', transaction.name], ['Telephone', meta.depositContact],
-      ['Received into', meta.walletLabelSnapshot || meta.wallet], ['Purpose or reference', meta.depositPurpose]
+      ['Received into', meta.walletLabelSnapshot || meta.wallet], ['Purpose or reference', meta.depositPurpose],
+      ...(product ? [
+        ['Product', product.qty + ' × ' + product.name + ' · ' + product.id],
+        ['Agreed unit price', fmt(product.price)], ['Agreed total', fmt(product.total)],
+        ['Total paid to date', fmt(meta.orderReceivedAfter)], ['Balance left to pay', fmt(meta.orderBalanceAfter)]
+      ] : [])
     ].filter(([,value]) => value);
     return `<main class="deposit-receipt">
       <div class="deposit-paper">
@@ -254,8 +305,9 @@
         <p>${voided(transaction)
           ? esc('Reversed' + (transaction.undoneAt ? ' on ' + timestamp(transaction.undoneAt) : '') + (transaction.undoneBy ? ' by ' + transaction.undoneBy : ''))
           : 'Please keep this receipt as proof of your deposit.'}</p>
-        <div><span class="deposit-stamp${voided(transaction) ? ' deposit-void' : ''}">${voided(transaction) ? 'VOID' : 'APPROVED'}</span></div>
-        <div class="deposit-signature"><b>${esc(transaction.cashier)}</b><br>Cashier signature ____________________</div>
+        <div class="deposit-approval"><span class="deposit-stamp${voided(transaction) ? ' deposit-void' : ''}">${voided(transaction) ? 'VOID' : 'APPROVED'}</span>
+          <div class="deposit-signature"><b>${esc(transaction.cashier)}</b><br>Cashier signature ____________________</div>
+        </div>
       </div>
     </main>`;
   }
@@ -267,13 +319,17 @@
       .deposit-receipt::before{content:"";position:absolute;inset:0;background:url("${escAttr(logo || brand.url)}") center/100% 100% no-repeat;opacity:.10;pointer-events:none}
       .deposit-paper{position:relative;padding:4mm;overflow-wrap:anywhere}.deposit-business{margin-bottom:5mm}
       .deposit-paper h2{color:#12495d;text-align:center;font-size:17pt;margin:4mm 0}
-      .deposit-paper dl{margin:4mm 0}.deposit-paper dl div{display:grid;grid-template-columns:35% minmax(0,1fr);gap:2mm;padding:2mm 0;border-bottom:1px solid #cbd5e1}
+      .deposit-paper dl{margin:3mm 0}.deposit-paper dl div{display:grid;grid-template-columns:35% minmax(0,1fr);gap:2mm;padding:1.35mm 0;border-bottom:1px solid #cbd5e1}
       .deposit-paper dt{color:#475569}.deposit-paper dd{margin:0;font-weight:600}
       .deposit-total{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5mm 0;padding:3mm;border:1px solid #12495d;color:#12495d;font-size:14pt}
       .deposit-stamp{display:inline-block;font:bold 12pt Arial;color:#166534;border:3px double currentColor;border-radius:4px;padding:2mm 3mm}
-      .deposit-stamp.deposit-void{color:#991b1b}.deposit-signature{margin-top:4mm}
+      .deposit-stamp.deposit-void{color:#991b1b}
+      .deposit-approval{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2mm}
       @page{size:A5 portrait;margin:7mm}
-      @media print{html,body{margin:0;padding:0;background:white}.deposit-receipt{width:100%;font-size:9.5pt;break-inside:avoid}
+      @media print{html,body{margin:0;padding:0;background:white}.deposit-receipt{width:100%;font-size:9.5pt;line-height:1.27}
+        .deposit-paper{padding:2mm}.deposit-business{margin-bottom:2mm}.deposit-paper h2{margin:2mm 0}
+        .deposit-paper dl div{padding:1mm 0}.deposit-total{margin:3mm 0;padding:2mm;font-size:12pt}
+        .deposit-paper p{margin:2mm 0}.deposit-approval{break-inside:avoid}
         .deposit-receipt,.deposit-receipt *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
         .deposit-receipt::before{position:fixed;inset:-7mm auto auto -7mm;width:148mm;height:210mm}}
     `;
@@ -300,18 +356,30 @@
   function preview(id, isReprint = true) {
     requirePermission('VIEW_ACCOUNTS');
     const transaction = byId(id);
+    const current = ZEZMS.depositCheckout.order(transaction.meta.depositOrderId);
     openModal(`<style>${receiptStyles()}</style>${receiptHTML(transaction)}
+      ${current ? `<p class="muted">${current.sale ? 'Sale Out completed · ' + esc(current.sale.receiptRef || current.sale.receiptNo)
+        : 'Current order balance ' + fmt(current.balance)}</p>` : ''}
       <div class="row" style="margin-top:12px">
         <button class="btn" type="button" data-deposit-id="${escAttr(id)}" data-reprint="${isReprint}" onclick="ZEZMS.deposits.print(this.dataset.depositId,this.dataset.reprint==='true')">Print receipt</button>
-        ${can('MANAGE_ACCOUNTS') && accountById(transaction.accountID) ? `<button class="btn ghost" type="button" data-deposit-id="${escAttr(id)}" onclick="ZEZMS.deposits.settle(this.dataset.depositId)">Settle depositor account</button>` : ''}
+        ${orderButtons(transaction,current)}
+        ${can('MANAGE_ACCOUNTS') && ZEZMS.depositCheckout.visibleAccount(accountById(transaction.accountID) || {}) && accountById(transaction.accountID)
+          ? `<button class="btn ghost" type="button" data-deposit-id="${escAttr(id)}" onclick="ZEZMS.deposits.settle(this.dataset.depositId)">Settle depositor account</button>` : ''}
         <button class="btn ghost" type="button" onclick="closeModal()">Close</button>
       </div>`);
+  }
+
+  function orderButtons(transaction, current) {
+    if (!current?.account || current.sale || voided(current.initial) || voided(transaction) || !can('MANAGE_ACCOUNTS')) return '';
+    const attr = ' data-deposit-order="' + escAttr(current.id) + '"';
+    return (current.balance > 0 ? '<button class="btn sm ghost" type="button"' + attr + ' onclick="ZEZMS.deposits.openForm(this.dataset.depositOrder)">Record installment</button>' : '')
+      + (ZEZMS.depositCheckout.canRelease() ? '<button class="btn sm" type="button"' + attr + ' onclick="ZEZMS.depositCheckout.open(this.dataset.depositOrder)">Sale Out</button>' : '');
   }
 
   function historyHTML() {
     const key = query.toLowerCase().trim();
     const rows = DB.accountTxns.filter(transaction => isDeposit(transaction) &&
-      [transaction.receiptNo, transaction.name, transaction.meta.depositContact, transaction.meta.depositPurpose]
+      [transaction.receiptNo, transaction.name, transaction.meta.depositContact, transaction.meta.depositPurpose, transaction.meta.depositProduct?.name]
         .some(value => field(value).toLowerCase().includes(key)))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
     const pending = new Set(ZEZMS.cloudSync.getOutbox().flatMap(operation =>
@@ -319,15 +387,19 @@
     const visible = ZEZMS.tablePages.slice('deposits', rows, key);
     return `<div class="table-wrap"><table>
       <thead><tr><th>Receipt</th><th>Depositor</th><th>Received</th><th class="right">Amount</th><th>Wallet</th><th>Status</th><th></th></tr></thead>
-      <tbody>${visible.map(row => `<tr>
+      <tbody>${visible.map(row => {
+        const current = ZEZMS.depositCheckout.order(row.meta.depositOrderId);
+        return `<tr>
         <td class="mono" style="max-width:19ch;overflow-wrap:anywhere">${esc(row.receiptNo)}</td>
-        <td><b>${esc(row.name)}</b><br><small>${esc(row.meta.depositContact || '')}</small></td>
+        <td><b>${esc(row.name)}</b><br><small>${esc(row.meta.depositContact || '')}</small>
+          ${current ? `<br><small>${esc(current.product.name)} · ${current.sale ? 'Sale Out complete' : fmt(current.balance) + ' due'}</small>` : ''}</td>
         <td>${esc(timestamp(row.date))}</td><td class="mono right">${esc(fmt(row.amount))}</td>
         <td>${esc(row.meta.walletLabelSnapshot || row.meta.wallet)}</td>
         <td>${voided(row) ? 'Void' : 'Recorded'}${pending.has(row.id) ? '<br><small class="muted">Awaiting sync</small>' : ''}</td>
         <td><div class="row"><button type="button" class="btn sm ghost" data-deposit-id="${escAttr(row.id)}" onclick="ZEZMS.deposits.preview(this.dataset.depositId)">View</button>
-          <button type="button" class="btn sm" data-deposit-id="${escAttr(row.id)}" onclick="ZEZMS.deposits.print(this.dataset.depositId)">Print receipt</button></div></td>
-      </tr>`).join('') || '<tr><td colspan="7" class="empty">No matching deposit receipts.</td></tr>'}</tbody>
+          <button type="button" class="btn sm" data-deposit-id="${escAttr(row.id)}" onclick="ZEZMS.deposits.print(this.dataset.depositId)">Print receipt</button>
+          ${row.receiptNo === current?.id ? orderButtons(row,current) : ''}</div></td>
+      </tr>`; }).join('') || '<tr><td colspan="7" class="empty">No matching deposit receipts.</td></tr>'}</tbody>
     </table></div>${ZEZMS.tablePages.controls('deposits')}`;
   }
 
@@ -347,8 +419,9 @@
   }
 
   ZEZMS.deposits = Object.freeze({
-    viewHTML, isDeposit, validateUndo, buildPrintDocument, submit, accountChanged, print,
-    openForm:() => safeAction(openForm),
+    viewHTML, isDeposit, validateUndo, buildPrintDocument, submit, accountChanged, print, contactKey,
+    productChanged:() => safeAction(productChanged), updateOrderTotal,
+    openForm:id => safeAction(() => openForm(id)),
     openAccounts:() => safeAction(openAccounts),
     settle:id => safeAction(() => settle(id)),
     preview:id => safeAction(() => preview(id)),

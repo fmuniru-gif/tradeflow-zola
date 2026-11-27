@@ -32,6 +32,7 @@ function transformDeposits(html, changes, source) {
 }
 
 function withoutDeposits(html) {
+  html = require('./deposit-checkout-transform.cjs').withoutDepositCheckout(html);
   if (!html.includes(script)) return html;
   const reverse = edits().reverse().map(([before, after]) => [after, before]);
   return transformDeposits(html.replace(/<script data-zezms-deposits>[\s\S]*?<\/script>/, ''), reverse);

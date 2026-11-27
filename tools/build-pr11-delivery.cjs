@@ -14,6 +14,7 @@ const {edits:creditorWalletSettlementEdits,transformCreditorWalletSettlement}=re
 const {edits:stockUnitCostEdits,transformStockUnitCost}=require('./stock-unit-cost-transform.cjs');
 const {edits:productSellingPriceEdits,transformProductSellingPrice}=require('./product-selling-price-transform.cjs');
 const {edits:depositsEdits,transformDeposits}=require('./deposits-transform.cjs');
+const {edits:depositCheckoutEdits,transformDepositCheckout}=require('./deposit-checkout-transform.cjs');
 const {transformResiliencePerformance}=require('./resilience-performance-transform.cjs');
 const {transformDeviceCards}=require('./device-cards-transform.cjs');
 const {transformWatermarkIdle}=require('./watermark-idle-transform.cjs');
@@ -26,9 +27,9 @@ const {transformPairedDirectory}=require('./paired-directory-transform.cjs');
 const {transformCamonKpi}=require('./camon-kpi-transform.cjs');
 const {transformSyncDurability}=require('./sync-durability-transform.cjs');
 const root=path.resolve(__dirname,'..');
-const DELIVERY='20261127-deposit-receipts-r1';
+const DELIVERY='20261127-deposit-checkout-r2';
 const assetMemo=new Map();
-const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js','pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js','document-branding.js','print-website-qr.js','receipt-payment-core.js','receipt-payments.js','sync-resilience.js','desktop-presentation.js','commercial-foundation.js','device-cards.js','idle-session.js','tv-trade-ins.js','daily-profit-barcodes.js','device-sign-in.js','supabase-js-2.112.1.js','staff-directory-review-core.js','staff-directory-review-runtime.js','camon17p-kpi-review-r70w.js','paired-directory-review-core.js','paired-directory-review-runtime.js','sync-durability.js','sync-durability-runtime.js','dbservice.js','stock-corrections-v3150.js','deposits.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
+const coupledModules=Object.fromEntries(['management-intelligence-v380.js','stock-velocity-v390.js','remaining-tabs-presentation.js','main-table-pages.js','owner-maintenance-v373.js','bootstrap-startup-guard.js','auto-month-rollover-bootstrap-guard.js','pdf-export.js','invoice-waybill.js','print-readiness-v3120.js','direct-print-bridge-v3121.js','document-branding.js','print-website-qr.js','receipt-payment-core.js','receipt-payments.js','sync-resilience.js','desktop-presentation.js','commercial-foundation.js','device-cards.js','idle-session.js','tv-trade-ins.js','daily-profit-barcodes.js','device-sign-in.js','supabase-js-2.112.1.js','staff-directory-review-core.js','staff-directory-review-runtime.js','camon17p-kpi-review-r70w.js','paired-directory-review-core.js','paired-directory-review-runtime.js','sync-durability.js','sync-durability-runtime.js','dbservice.js','stock-corrections-v3150.js','deposits.js','deposit-checkout.js'].map(file=>[file,assetBytes('js/'+file).toString('base64')]));
 const oldConstants='  const PATCH_CACHE="zezms-ui-stock-review-patched-v1";\n  const PATCH_KEY=new Request(location.origin+location.pathname+\'?__zezms_r67i_patched=\'+RELEASE);';
 const oldCache=`  async function cachePatched(source){
     if(!('caches' in window))return;
@@ -148,6 +149,9 @@ const versions=`    // PR11_DELIVERY_URLS_BEGIN
     // DEPOSITS_DELIVERY_BEGIN
     output=(${transformDeposits.toString().replace(/<\/script/gi,'<\\/script')})(output,${JSON.stringify(depositsEdits())},safeInline(decodeBase64(DELIVERY_MODULES['deposits.js'])));
     // DEPOSITS_DELIVERY_END
+    // DEPOSIT_CHECKOUT_DELIVERY_BEGIN
+    output=(${transformDepositCheckout.toString().replace(/<\/script/gi,'<\\/script')})(output,${JSON.stringify(depositCheckoutEdits())},safeInline(decodeBase64(DELIVERY_MODULES['deposit-checkout.js'])));
+    // DEPOSIT_CHECKOUT_DELIVERY_END
     output=output.replace('</head>','<meta name="zezms-delivery" content="'+DELIVERY+'"></head>');
     // PR11_DELIVERY_URLS_END
 `;
@@ -189,6 +193,7 @@ function assembledShell(shell,options={}){
   shell=normalized(shell);
   const first=shell.indexOf('<script>')+8,last=shell.lastIndexOf('</script>');
   let script=shell.slice(first,last);
+  if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ DEPOSIT_CHECKOUT_DELIVERY_BEGIN[\s\S]*?    \/\/ DEPOSIT_CHECKOUT_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ DEPOSITS_DELIVERY_BEGIN[\s\S]*?    \/\/ DEPOSITS_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ PRODUCT_SELLING_PRICE_DELIVERY_BEGIN[\s\S]*?    \/\/ PRODUCT_SELLING_PRICE_DELIVERY_END\n/,'');
   if(Object.keys(options).some(key=>key.startsWith('without')&&options[key]))script=script.replace(/    \/\/ STOCK_UNIT_COST_DELIVERY_BEGIN[\s\S]*?    \/\/ STOCK_UNIT_COST_DELIVERY_END\n/,'');
