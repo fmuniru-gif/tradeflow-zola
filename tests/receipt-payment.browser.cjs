@@ -26,7 +26,7 @@ function backend({race=false,loseAck=false,offline=false,reject=false}={}){
 }
 async function fixture(backend,device='MAIN',role='OWNER'){
  if(!server.listening)await new Promise(r=>server.listen(0,'127.0.0.1',r));if(!browser)browser=await playwright.chromium.launch({headless:true,executablePath:process.env.CHROME_PATH});
- const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();context.setDefaultTimeout(15000);await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
+ const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();page.on('pageerror',error=>console.error('BROWSER',error.message));context.setDefaultTimeout(15000);await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
  await page.exposeFunction('syntheticPaymentRead',x=>backend.read(x));await page.exposeFunction('syntheticPaymentPush',x=>backend.push(x));
  const url='http://127.0.0.1:'+server.address().port+'/payment-test.html';await page.goto(url);await page.waitForFunction(()=>window.ZEZMS?.receiptPayments);await page.evaluate(()=>ZEZMS.cloudSync.waitUntilReady(10000));
  await page.evaluate(({data,device})=>{
@@ -131,6 +131,169 @@ test('Deposits posts one linked wallet and depositor operation, synchronizes and
   assert.deepEqual(await state(shop.page),undone);
  } finally { await main.context.close(); await shop.context.close(); }
 });
+async function stockForDeposit(f, device) {
+ await f.page.evaluate(device => {
+  const {year,month}=getLatestMonth();
+  DB.products.push({id:'P-DEP',name:'Synthetic freezer',uPrice:100,useCatalogSellingPrice:true});
+  DB.stockRows.push({id:'S-DEP',productName:'Synthetic freezer',productId:'P-DEP',year,month,
+    qtyIn:3,qtyOut:0,rStock:3,uCost:65,uPrice:95,tSales:0,profit:0});
+  ZEZMS.cloudSync._test.ensureSyncIds(DB);
+  ZEZMS.db.save(DB_KEY,DB);
+  ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,false);
+ },device);
+}
+
+async function newProductDeposit(page) {
+ await page.evaluate(()=>nav('deposits'));
+ await page.getByRole('button',{name:'Record deposit',exact:true}).click();
+ await page.locator('#depositName').fill('Synthetic freezer buyer');
+ await page.locator('#depositContact').fill('0201234567');
+ await page.locator('#depositProduct').selectOption('P-DEP');
+ assert.equal(await page.locator('#depositPrice').inputValue(),'100.00');
+ await page.locator('#depositPrice').fill('120');
+ await page.locator('#depositAmount').fill('70');
+ await page.locator('#depositWallet').selectOption('Cash in Hand');
+ await page.locator('#recordDepositButton').click();
+ await page.locator('#modalBody .deposit-receipt').waitFor({timeout:5000});
+ assert.match(await page.locator('#modalBody .deposit-receipt').innerText(),/Balance left to pay\s+GH₵\s*50\.00/);
+ return page.evaluate(()=>DB.accountTxns.find(ZEZMS.deposits.isDeposit).receiptNo);
+}
+
+function checkoutState(page,id) {
+ return page.evaluate(id=>{
+  const order=ZEZMS.depositCheckout.order(id);
+  return {order,stock:DB.stockRows.find(r=>r.id==='S-DEP'),saved:DB.receipts.find(r=>r.depositOrderId===id&&r.status!=='VOID'),
+   saleCount:DB.sales.filter(r=>r.depositOrderId===id&&r.status!=='UNDONE').length,
+   wallet:DB.cashBalances['Cash in Hand'],
+   debtor:DB.debtors.find(d=>d.name==='Synthetic freezer buyer'),
+   applied:DB.accountTxns.filter(t=>ZEZMS.depositCheckout.applied(t)&&t.status!=='UNDONE'),
+   outbox:ZEZMS.cloudSync.getOutbox(),failed:ZEZMS.cloudSync.getFailedOperations()};
+ },id);
+}
+
+test('installments keep stock on hand, then linked Sale Out applies deposits once and opens only the unpaid debt',async()=>{
+ const cloud=backend(),main=await fixture(cloud,'MAIN'),shop=await fixture(cloud,'SHOP');
+ try {
+  await stockForDeposit(main,'MAIN');
+  await stockForDeposit(shop,'SHOP');
+  const id=await newProductDeposit(main.page);
+  let a=await checkoutState(main.page,id);
+  assert.equal(a.order.received,70);
+  assert.equal(a.stock.rStock,3);
+  assert.equal(a.wallet,95);
+  assert.equal(a.saleCount,0);
+  await main.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await shop.page.evaluate(async()=>{await ZEZMS.cloudSync.pullNow(false);nav('deposits');});
+  await shop.page.getByRole('button',{name:'Record installment',exact:true}).click();
+  await shop.page.locator('#depositAmount').fill('20');
+  await shop.page.locator('#depositWallet').selectOption('Cash in Hand');
+  await shop.page.locator('#recordDepositButton').click();
+  assert.match(await shop.page.locator('#modalBody .deposit-receipt').innerText(),/Balance left to pay\s+GH₵\s*30\.00/);
+  await shop.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await shop.page.locator('#modalBody').getByRole('button',{name:'Sale Out',exact:true}).click();
+  assert.equal(await shop.page.locator('#viewTitle').innerText(),'Sale Out');
+  await shop.page.locator('#depositReleaseSave').click();
+  assert.match(await shop.page.locator('#depositReleaseStatus').innerText(),/Authorise handover on credit/);
+  await shop.page.locator('#depositReleaseAmount').fill('10');
+  await shop.page.locator('#depositReleaseWallet').selectOption('Cash in Hand');
+  await shop.page.locator('#depositReleaseCredit').check();
+  await shop.page.locator('#depositReleaseSave').click();
+  await shop.page.locator('#receiptPrint').waitFor({timeout:4500}).catch(async error=>{throw Error(JSON.stringify(await shop.page.evaluate(()=>({view:currentView,status:$('depositReleaseStatus')?.textContent,notice:$('toast')?.textContent,modal:$('modalBody')?.innerText?.slice(0,400),failed:ZEZMS.cloudSync.getFailedOperations().map(f=>f.message)}))) + '\n' + error.message);});
+  assert.match(await shop.page.locator('#receiptPrint').innerText(),/Deposit applied:\s*90\.00/);
+  await shop.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await main.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
+  a=await checkoutState(main.page,id);
+  assert.equal(a.saved.amountPaid,100);
+  assert.equal(a.saved.balance,20);
+  assert.equal(a.stock.rStock,2);
+  assert.equal(a.wallet,125);
+  assert.equal(a.debtor.balance,20);
+  assert.equal(a.order.account.balance,0);
+  assert.ok(a.order.account.depositArchivedAt);
+  assert.equal(a.applied.length,1);
+  assert.equal(a.applied[0].amount,-90);
+  assert.equal(a.outbox.length,0);
+  assert.equal(a.failed.length,0);
+  await main.page.evaluate(()=>{accTab='depositors';nav('accounts');});
+  assert.equal(await main.page.locator('#accountHolderFilter option').filter({hasText:'Synthetic freezer buyer'}).count(),0);
+  assert.match(await main.page.locator('#viewRoot').innerText(),/Deposit applied/);
+  const settlement=await main.page.evaluate(async receipt=>{
+   const prepared=await ZEZMS.receiptPayments.prepare(receipt);
+   return ZEZMS.receiptPayments.accept(prepared,{wallet:'Cash in Hand',confirmed:true});
+  },a.saved.receiptNo);
+  const afterPayment=await checkoutState(main.page,id);
+  assert.equal(afterPayment.wallet,145);
+  assert.equal(afterPayment.debtor.balance,0);
+  assert.equal(afterPayment.saved.balance,0);
+  await main.page.evaluate(payment=>ZEZMS.receiptPayments.undo(payment,'Synthetic reversal'),settlement.paymentId);
+  await main.page.evaluate(receipt=>{
+   window.promptPIN=(_label,_pin,complete)=>complete();
+   window.confirm=()=>true;
+   window.prompt=()=> 'Synthetic stock return';
+   undoInventoryTransaction('SALE:'+receipt);
+  },a.saved.receiptNo);
+  await main.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await shop.page.evaluate(async()=>{closeModal();await ZEZMS.cloudSync.pullNow(false);nav('deposits');});
+  const restored=await checkoutState(shop.page,id);
+  assert.equal(restored.order.account.balance,90);
+  assert.equal(restored.order.balance,30);
+  assert.equal(restored.applied.length,0);
+  assert.equal(restored.stock.rStock,3);
+  assert.equal(restored.wallet,115);
+  assert.equal(restored.debtor.balance,0);
+  assert.equal(restored.saleCount,0);
+  await shop.page.getByRole('button',{name:'Record installment',exact:true}).click();
+  await shop.page.locator('#depositAmount').fill('30');
+  await shop.page.locator('#depositWallet').selectOption('Cash in Hand');
+  await shop.page.locator('#recordDepositButton').click();
+  assert.match(await shop.page.locator('#modalBody .deposit-receipt').innerText(),/Balance left to pay\s+GH₵\s*0\.00/);
+  assert.equal((await checkoutState(shop.page,id)).stock.rStock,3);
+  await shop.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await shop.page.locator('#modalBody').getByRole('button',{name:'Sale Out',exact:true}).click();
+  await shop.page.locator('#depositReleaseSave').click();
+  await shop.page.locator('#receiptPrint').waitFor({timeout:4500}).catch(async error=>{throw Error(JSON.stringify(await shop.page.evaluate(()=>({view:currentView,status:$('depositReleaseStatus')?.textContent,notice:$('toast')?.textContent,modal:$('modalBody')?.innerText?.slice(0,400),failed:ZEZMS.cloudSync.getFailedOperations().map(f=>f.message)}))) + '\n' + error.message);});
+  await main.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
+  const paid=await checkoutState(main.page,id);
+  assert.equal(paid.stock.rStock,2);
+  assert.equal(paid.wallet,145);
+  assert.equal(paid.saved.balance,0);
+  assert.equal(paid.saved.depositApplied,120);
+  assert.equal(paid.saved.cashReceived,0);
+  assert.equal(paid.saleCount,1);
+ } finally {await main.context.close();await shop.context.close();}
+});
+
+test('concurrent handover on Main and Shop settles a product deposit once',async()=>{
+ const cloud=backend(),main=await fixture(cloud,'MAIN'),shop=await fixture(cloud,'SHOP');
+ try {
+  await stockForDeposit(main,'MAIN');
+  await stockForDeposit(shop,'SHOP');
+  const id=await newProductDeposit(main.page);
+  await main.page.evaluate(async()=>{closeModal();await ZEZMS.cloudSync.pushNow(false);});
+  await shop.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
+  for (const f of [main,shop]) {
+   await f.page.evaluate(id=>ZEZMS.depositCheckout.open(id),id);
+   await f.page.locator('#depositReleaseAmount').fill('50');
+   await f.page.locator('#depositReleaseWallet').selectOption('Cash in Hand');
+  }
+  cloud.mode.race=true;
+  await Promise.all([main,shop].map(f=>f.page.locator('#depositReleaseSave').click()));
+  await Promise.any([main,shop].map(f=>f.page.locator('#receiptPrint').waitFor({timeout:8000}))).catch(async error=>{throw Error(JSON.stringify(await Promise.all([main,shop].map(f=>f.page.locator('#depositReleaseStatus').allTextContents())))+'\n'+error);});
+  for (const f of [main,shop]) {
+   await f.page.waitForFunction(()=>!ZEZMS.cloudSync.getOutbox().some(op=>op.opId.startsWith('DCO-')),null,{timeout:6000}).catch(async()=>{throw Error(JSON.stringify(await f.page.evaluate(()=>({view:currentView,status:$('depositReleaseStatus')?.textContent,queue:ZEZMS.cloudSync.getOutbox().map(op=>[op.opId,op.lastError]),failed:ZEZMS.cloudSync.getFailedOperations()}))).slice(0,2500));});
+   const state=await checkoutState(f.page,id);
+   assert.equal(state.stock.rStock,2);
+   assert.equal(state.wallet,145);
+   assert.equal(state.saleCount,1);
+   assert.equal(state.order.account.balance,0);
+   assert.equal(state.applied.length,1);
+   assert.equal(state.failed.length,0);
+  }
+  assert.equal(cloud.rows.filter(r=>r.op_id.startsWith('DCO-')).length,1);
+  assert.equal(cloud.calls.filter(r=>r.opId.startsWith('DCO-')).length,2);
+ } finally {await main.context.close();await shop.context.close();}
+});
+
 test('an explicit Products selling price is used by new sales and documents after native sync', async () => {
  const cloud = backend(), main = await fixture(cloud,'MAIN'), shop = await fixture(cloud,'SHOP');
  const name = 'Synthetic cooler';

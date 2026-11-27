@@ -34,7 +34,7 @@ async function seed(page){
   const order={id:'PO1',poNo:'PO-SYNTHETIC',date:'2026-11-03',supplierName:'Synthetic Supplier',supplierContact:'0550000000',cashier:'Synthetic Owner',lines:[{productId:'P1',product:'Synthetic appliance',qty:2,unitCost:60,total:120}],total:120,amountPaid:20,outstanding:100,status:'OPEN'};
   const quote={quotationId:'Q-SYNTHETIC',customerId:'C1',quotationDate:'2026-11-03',validUntil:'2026-12-03',status:'DRAFT',vatRate:5,lineItems:[{productId:'P1',productName:'Synthetic appliance',quantity:2,unitPrice:100,discount:5,lineTotal:195}]};
   const proforma={id:'PF1',proformaNo:'PF-SYNTHETIC',date:'2026-11-03',customerName:'Synthetic Customer',telephone:'0550000000',location:'Tamale',vatRate:5,lines:[{productId:'P1',productName:'Synthetic appliance',quantity:2,baseUnitPrice:100,priceAdjustment:0,effectiveUnitPrice:100}]};
-  const deposit={id:'DEPOSIT-FIXTURE',receiptNo:'DR-SYNTHETIC',date:receipt.date,name:'Synthetic Customer',cashier:receipt.cashier,amount:250.75,status:'ACTIVE',meta:{kind:'depositors',source:'SALES_DEPOSIT',depositContact:'0550000000',depositPurpose:'TV reservation',walletLabelSnapshot:'Cash in Hand'}};
+  const deposit={id:'DEPOSIT-FIXTURE',receiptNo:'DR-SYNTHETIC',date:receipt.date,name:'Synthetic Customer',cashier:receipt.cashier,amount:250.75,status:'ACTIVE',meta:{kind:'depositors',source:'SALES_DEPOSIT',depositContact:'0550000000',depositPurpose:'TV reservation',walletLabelSnapshot:'Cash in Hand',depositProduct:{id:'P1',name:'Synthetic television',qty:1,price:500,total:500},orderReceivedAfter:250.75,orderBalanceAfter:249.25}};
   DB.purchaseOrders=[order];DB.invoices=[invoice];DB.waybills=[waybill];DB.quotations=[quote];
   window.__brandingFixtures={receipt,invoice,waybill,order,quote,proforma,deposit};
   // Only report authorization is synthetic; the production report builders run unchanged.
@@ -117,6 +117,7 @@ test('actual browser print pages and both A5 test documents place a scannable we
    if(name==='deposit'){
     assert.match(await p.locator('.deposit-receipt').innerText(),/APPROVED/);
     assert.match(await p.locator('.deposit-total').innerText(),/250\.75/);
+    assert.match(await p.locator('.deposit-paper').innerText(),/Balance left to pay\s+GH₵\s*249\.25/);
     assert.equal(await p.locator('.deposit-receipt').evaluate(el=>getComputedStyle(el,'::before').backgroundSize),'100% 100%');
    }
    const bounds=await p.evaluate(()=>{const h=document.querySelector('[data-zezms-website-header]'),q=document.querySelector('[data-zezms-website-qr]'),r=q.getBoundingClientRect(),a=h.getBoundingClientRect(),next=h.nextElementSibling?.getBoundingClientRect();return {right:r.right,headerRight:a.right,top:r.top,headerTop:a.top,bottom:r.bottom,nextTop:next?.top,width:r.width,height:r.height};});
@@ -124,7 +125,7 @@ test('actual browser print pages and both A5 test documents place a scannable we
    await p.addScriptTag({path:path.join(root,'vendor/zxing-browser-0.1.5.min.js')});const decoded=await p.evaluate(async()=>{const q=document.querySelector('[data-zezms-website-qr]');const decoder=new ZXingBrowser.BrowserQRCodeReader();return (await decoder.decodeFromImageElement(q)).getText();});
    assert.equal(decoded,'https://zolaelectronicszone.com/',name+' QR destination');
    if(name==='directTest'){const clear=await p.evaluate(()=>{const footer=document.querySelector('footer').getBoundingClientRect();return [...document.querySelectorAll('.content>p')].every(p=>p.getBoundingClientRect().bottom<footer.top);});assert.equal(clear,true,'direct test footer clears all sample text');}
-   try{await p.pdf({path:path.join(output,'browser-'+name+'.pdf'),preferCSSPageSize:true,printBackground:true});}catch(error){throw Error(name+' print capture: '+error.message);}await p.screenshot({path:path.join(output,'browser-'+name+'.png'),fullPage:true});await p.close();
+   try{const pdf=await p.pdf({path:path.join(output,'browser-'+name+'.pdf'),preferCSSPageSize:true,printBackground:true});if(name==='deposit')assert.equal([...pdf.toString('latin1').matchAll(/\/Type \/Page\b/g)].length,1,'deposit receipt page count');}catch(error){throw Error(name+' print capture: '+error.message);}await p.screenshot({path:path.join(output,'browser-'+name+'.png'),fullPage:true});await p.close();
   }
  }finally{await f.context.close();}
 });
