@@ -7,7 +7,7 @@ const delivery=require('../tools/build-pr11-delivery.cjs'),{fixtureAsset}=requir
 const root=path.resolve(__dirname,'..'),before='1241e0ea2a02d05d68e976d16f51164ad72c216b',production='f810940762809e89a35f982a8577a9f32dcabf4e';
 const brokenProduction='d2a91205e0c8974ad298b56b3b744a8588d32319';
 const currentProduction='e3e0bf654519f3d9745ec89f3d9dbc394cf53067';
-const depositR4='ac507d2763ab7e43ec192385932d9e5b57e7bd83';
+const bnplR1='c950bf0a97d464b0e95b2583545411b43599d9db';
 const memo=new Map();
 function committed(ref,name){const key=ref+':'+name;if(!memo.has(key))memo.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:32*1024*1024}));return memo.get(key);}
 let mode='before',fault='',browser;
@@ -23,7 +23,7 @@ const server=http.createServer((req,res)=>{
   if(mode==='corrected'&&fault==='stale-shell'&&file==='index.html')return res.end(committed(before,file));
   if(mode==='corrected'&&fault==='missing-main-pages'&&file==='js/main-table-pages.js'){res.writeHead(503);return res.end('synthetic interrupted paging download');}
   if(mode==='corrected'&&fault==='stale-owner-maintenance'&&file==='js/owner-maintenance-v373.js')return res.end(committed(currentProduction,file));
-  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='deposit-cancel-r4'?depositR4:mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
+  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='bnpl-r1'?bnplR1:mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 async function ready(page){await page.waitForFunction(()=>!!window.ZEZMS?.navigationV3101&&!!window.ZEZMS?.managementIntelligence&&!!window.ZEZMS?.stockVelocity,null,{timeout:20000});}
@@ -88,7 +88,7 @@ async function baseline(initial='before'){
   context.on('response',r=>{if(r.request().isNavigationRequest())navigations.push(r.body().then(body=>({url:r.url(),worker:r.fromServiceWorker(),sha:delivery.sha(body)})).catch(()=>({url:r.url(),unavailable:true})));});
   let page=await context.newPage();await page.goto(origin+'/index.html');await ready(page);
   await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js?v=20261024-ui-stock-review-r1');await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('synthetic worker startup timeout')),30000))]);});
-  if(initial==='corrected'||initial==='current-production'||initial==='deposit-cancel-r4'){
+  if(initial==='corrected'||initial==='current-production'||initial==='bnpl-r1'){
     await page.reload();await ready(page);
     return {context,page,origin,errors,external,navigations};
   }
@@ -320,14 +320,14 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   }finally{await f.context.close();}
 });
 
-test('cached deposit cancellation r4 uses the versioned update link and preserves Main storage',async()=>{
- const f=await baseline('deposit-cancel-r4');try{
-  assert.equal((await workerProof(f.page)).delivery,'20261128-deposit-cancel-r4');
-  const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./DEPOSITS_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261128-deposit-cancel-r4'/);
-  const saved=await seed(f,'Main','synthetic-deposit-r4-main','OWNER');mode='corrected';
+test('cached Buy Now, Pay Later r1 uses the versioned update link and preserves Main storage',async()=>{
+ const f=await baseline('bnpl-r1');try{
+  assert.equal((await workerProof(f.page)).delivery,'20261128-bnpl-undertaking-r1');
+  const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./BNPL_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261128-bnpl-undertaking-r1'/);
+  const saved=await seed(f,'Main','synthetic-bnpl-r1-main','OWNER');mode='corrected';
   await f.page.goto(f.origin+'/BNPL_UPDATE.html?delivery='+delivery.DELIVERY);
   await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified Buy Now, Pay Later update is ready'));
   assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
-  await activateNaturally(f);assert.equal(await f.page.evaluate(()=>typeof ZEZMS.bnplUndertaking?.viewHTML),'function');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
+  await activateNaturally(f);assert.equal(await f.page.evaluate(()=>typeof ZEZMS.bnplUndertaking?.refreshProducts),'function');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}
 });

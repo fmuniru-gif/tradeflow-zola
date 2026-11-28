@@ -38,10 +38,31 @@
     return `<div class="field"><label for="${id}">${label}</label><input id="${id}" name="${name}" ${attributes}></div>`;
   }
 
+  function currentProductNames() {
+    const period = getLatestMonth();
+    const names = new Set();
+    for (const row of DB.stockRows || []) {
+      if (!row || Number(row.year) !== Number(period.year) || Number(row.month) !== Number(period.month)) continue;
+      const product = currentProductMasterForStockRow(row);
+      if (product?.name) names.add(product.name);
+    }
+    return [...names].sort((left, right) => left.localeCompare(right));
+  }
+
+  function productOptionsHTML(names) {
+    return names.map(name => `<option value="${escAttr(name)}"></option>`).join('');
+  }
+
+  function refreshProducts(form) {
+    const list = form.elements.product.list;
+    const names = currentProductNames();
+    if (list.options.length !== names.length || names.some((name, index) => name !== list.options[index].value)) {
+      list.innerHTML = productOptionsHTML(names);
+    }
+  }
+
   function viewHTML() {
     if (!canGenerate()) return '';
-    const products = (DB.products || []).map(product => product.name).filter(Boolean)
-      .sort((left, right) => left.localeCompare(right));
     return `<section class="card" style="max-width:850px">
       <form id="${formId}" autocomplete="off" method="dialog">
         <p class="muted">For customers on a regular payroll. The offer opens on the 20th. Pay 60–70% upfront and the balance by the last day of the same month.</p>
@@ -55,14 +76,14 @@
         <h3>Product and payment</h3>
         <div class="grid g2">
           ${field('product', 'Product / model', 'list="bnpl-products" maxlength="120" required')}
-          <datalist id="bnpl-products">${products.map(name => `<option value="${escAttr(name)}"></option>`).join('')}</datalist>
+          <datalist id="bnpl-products">${productOptionsHTML(currentProductNames())}</datalist>
           ${field('serial', 'Serial number (optional)', 'maxlength="65" spellcheck="false"')}
           ${field('date', 'Agreement date', `type="date" min="2000-01-01" max="9998-12-31" value="${new Date().toISOString().slice(0, 10)}" required`)}
           ${field('receipt', 'Sale receipt reference (optional)', 'maxlength="65" spellcheck="false"')}
           ${field('total', 'Regular selling price / agreed total (GH₵)', 'type="number" min="0.01" max="99999999.99" step="0.01" required')}
           ${field('initial', 'Upfront payment (GH₵)', 'type="number" min="0.01" max="99999999.99" step="0.01" required')}
         </div>
-        <p class="muted">Choose a catalog product to load its current selling price. You can edit the amount to match the regular price agreed at the shop.</p>
+        <p class="muted">Choose a product from the open month to load its selling price. You can edit the amount to match the regular price agreed at the shop.</p>
         <p data-bnpl-payment aria-live="polite"></p>
         <p class="muted">Customer details appear in the PDF and are kept only in this form until you generate it or leave the page. Store the signed copies securely.</p>
         <div class="row">
@@ -223,9 +244,9 @@
     const form = event.target.form;
     if (form?.id !== formId || !canGenerate()) return;
     if (event.target === form.elements.product) {
-      const product = (DB.products || []).find(item => item.name === event.target.value);
-      if (product) {
-        const price = getBaseUnitPrice(product.name);
+      const name = event.target.value;
+      if (Array.from(event.target.list.options).some(option => option.value === name)) {
+        const price = getBaseUnitPrice(name);
         form.elements.total.value = price > 0 ? price.toFixed(2) : '';
       }
     }
@@ -267,5 +288,5 @@
     }
   });
 
-  ZEZMS.bnplUndertaking = Object.freeze({ canGenerate, viewHTML, clearForm });
+  ZEZMS.bnplUndertaking = Object.freeze({ canGenerate, viewHTML, refreshProducts, clearForm });
 }());

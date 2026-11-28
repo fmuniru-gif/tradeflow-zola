@@ -35,14 +35,30 @@ async function fixture(role, viewport) {
   const origin = 'http://127.0.0.1:' + server.address().port;
   await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
   const page = await context.newPage();
+  await page.clock.setFixedTime(new Date('2028-01-28T12:00:00Z'));
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(origin + '/index.html');
   await page.waitForFunction(() => !!window.ZEZMS?.bnplUndertaking);
   await page.evaluate(() => ZEZMS.cloudSync.waitUntilReady(10000));
+  await page.waitForFunction(() => !!localStorage.getItem('zezms_commercial_m5a1_state'));
   await page.evaluate(role => {
     DB.business = { name: 'ZOLA ELECTRONICS ZONE', address: 'Aliu Mahama Road, Tamale', tel: '0553486788' };
-    DB.products = [{ id: 'SYN-1', name: 'Synthetic Television 55', uPrice: 4000, useCatalogSellingPrice: true }];
+    DB.selectedYear = 2027;
+    DB.selectedMonth = 12;
+    DB.monthRollovers = [];
+    DB.products = [
+      { id: 'SYN-1', name: 'Synthetic Television 55', uPrice: 4000, useCatalogSellingPrice: true },
+      { id: 'SYN-2', name: 'Historical Television', uPrice: 3500 },
+      { id: 'SYN-3', name: 'Current Freezer', uPrice: 3000, useCatalogSellingPrice: true },
+      { id: 'SYN-4', name: 'Catalog Only Television', uPrice: 3200 }
+    ];
+    DB.stockRows = [
+      { id: 'ROW-1', productId: 'SYN-1', productName: 'Previous Television Name', year: 2028, month: 1, rStock: 2 },
+      { id: 'ROW-2', productId: 'SYN-1', productName: 'Synthetic Television 55', year: 2028, month: 1, rStock: 1 },
+      { id: 'ROW-3', productId: 'SYN-2', productName: 'Historical Television', year: 2027, month: 12, rStock: 2 },
+      { id: 'ROW-4', productName: 'Current Freezer', year: '2028', month: '1', rStock: 0 }
+    ];
     Object.assign(session, { cashier: 'Synthetic Staff', commercialRole: role, role: 'ADMIN' });
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').style.display = 'flex';
@@ -58,6 +74,40 @@ async function snapshot(page) {
     storage: JSON.stringify(localStorage)
   }));
 }
+
+test('product search follows the open month and refreshes while preserving the undertaking draft', async () => {
+  const { page, context, errors } = await fixture('OWNER', { width: 1280, height: 900 });
+  try {
+    await page.evaluate(() => nav('bnpl-undertaking'));
+    const options = () => page.locator('#bnpl-products option').evaluateAll(items => items.map(item => item.value));
+    assert.deepEqual(await options(), ['Current Freezer', 'Synthetic Television 55']);
+    const product = page.getByLabel('Product / model');
+    const price = page.getByLabel('Regular selling price');
+    await product.fill('Historical Television');
+    assert.equal(await price.inputValue(), '');
+    await product.fill('Synthetic Television 55');
+    assert.equal(await price.inputValue(), '4000.00');
+    await price.fill('4300.01');
+    await page.getByLabel('Full name').fill('Synthetic Draft');
+    await page.evaluate(() => {
+      DB.monthRollovers = [{ targetYear: 2028, targetMonth: 2 }];
+      render();
+    });
+    assert.deepEqual(await options(), []);
+    await page.evaluate(() => {
+      DB.stockRows.push({ id: 'ROW-5', productId: 'SYN-3', productName: 'Current Freezer', year: 2028, month: 2, rStock: 1 });
+      render();
+    });
+    assert.deepEqual(await options(), ['Current Freezer']);
+    assert.equal(await page.getByLabel('Full name').inputValue(), 'Synthetic Draft');
+    assert.equal(await price.inputValue(), '4300.01');
+    await product.fill('Current Freezer');
+    assert.equal(await price.inputValue(), '3000.00');
+    assert.deepEqual(errors, []);
+  } finally {
+    await context.close();
+  }
+});
 
 test('Owner generates a branded A4 undertaking with validated terms, exact customer data and no saved records', async () => {
   const { page, context, errors } = await fixture('OWNER', { width: 1280, height: 900 });

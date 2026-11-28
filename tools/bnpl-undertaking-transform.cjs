@@ -15,7 +15,7 @@ function edits() {
     [viewPermission, "    if (view === 'bnpl-undertaking') return ZEZMS.bnplUndertaking?.canGenerate() === true;\n\n" + viewPermission],
     [accessWrapper, accessWrapper.replace("\n", "\n      if (view === 'bnpl-undertaking') return canOpenView(view);\n")],
     [render,
-      "    if (!mountedFromCurrentVelocity && !(currentView === 'bnpl-undertaking' && root.querySelector('#bnplUndertakingForm'))) {\n      root.innerHTML = viewManagementSection(currentView);\n    }"],
+      "    const undertakingForm = currentView === 'bnpl-undertaking' && root.querySelector('#bnplUndertakingForm');\n    if (undertakingForm) ZEZMS.bnplUndertaking.refreshProducts(undertakingForm);\n    else if (!mountedFromCurrentVelocity) root.innerHTML = viewManagementSection(currentView);"],
     [logout, 'async function logout(){ZEZMS.bnplUndertaking?.clearForm();if(ZEZMS.cloudSync']
   ];
 }
