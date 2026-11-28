@@ -24,7 +24,7 @@ function backend({race=false,loseAck=false,offline=false,reject=false}={}){
  const rows=[],calls=[];let waiting=[],mode={race,loseAck,offline,reject,deviceStatus:'ACTIVE'};
  return {rows,calls,mode,async read(input){if(mode.offline)return {error:{message:'Failed to fetch'}};let found=rows.filter(r=>!input.filters.op_id||r.op_id===input.filters.op_id);if(input.filters.gt_seq!=null)found=found.filter(r=>r.seq>input.filters.gt_seq);return {data:input.single?found[0]||null:structuredClone(found),error:null};},async push(input){if(mode.offline)return {error:{message:'Failed to fetch'}};if(input.name==='zezms_m5a3_device_context')return {data:[Object.assign(mode.sparseContext?{device_status:mode.deviceStatus}:{device_id:input.args.p_device_id,owner_id:'OWNER-1',business_id:'BUSINESS-1',branch_id:'BRANCH-1',device_status:mode.deviceStatus},mode.contextOverride||{})],error:null};assert.equal(input.name,'zezms_ops_push');const op=input.args.p_operations[0];calls.push(structuredClone(op));if(mode.reject)return {error:{message:'ZEZMS_CASH_CONFLICT: synthetic server rejection'}};if(mode.race){await new Promise(resolve=>{waiting.push({op,resolve});if(waiting.length===2){const first=waiting[0];rows.push({seq:21+rows.length,op_id:first.op.opId,device_id:first.op.deviceId,payload:structuredClone(first.op),created_at:new Date().toISOString()});const pending=waiting;waiting=[];mode.race=false;pending.forEach(x=>x.resolve());}});}let row=rows.find(r=>r.op_id===op.opId);if(!row){row={seq:21+rows.length,op_id:op.opId,device_id:op.deviceId,payload:structuredClone(op),created_at:new Date().toISOString()};rows.push(row);}if(mode.loseAck){mode.loseAck=false;return {error:{message:'Failed to fetch'}};}return {data:[{op_id:row.op_id,server_seq:row.seq}],error:null};}};
 }
-async function fixture(backend,device='MAIN',role='OWNER'){
+async function fixture(backend,device='MAIN',role='OWNER',nativeStaff=false){
  if(!server.listening)await new Promise(r=>server.listen(0,'127.0.0.1',r));if(!browser)browser=await playwright.chromium.launch({headless:true,executablePath:process.env.CHROME_PATH});
  const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();page.on('pageerror',error=>console.error('BROWSER',error.message));context.setDefaultTimeout(15000);await context.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
  await page.exposeFunction('syntheticPaymentRead',x=>backend.read(x));await page.exposeFunction('syntheticPaymentPush',x=>backend.push(x));
@@ -39,7 +39,7 @@ async function fixture(backend,device='MAIN',role='OWNER'){
   ZEZMS.db.save(DB_KEY,DB);
   ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,false);
  },{data:F.fixture(),device});
- async function configure(preserve=true){await page.evaluate(({device,role,preserve})=>{window.__paymentRole=role;Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});DB.sharedDeviceAuth={version:1,enabled:true,businessId:'BUSINESS-1',users:[{id:'STAFF-'+device,name:'Synthetic '+device,role,active:true,tel:''}],audit:[]};Object.assign(session,{sharedUserId:'STAFF-'+device,cashier:'Synthetic '+device,commercialRole:role,role:'ADMIN',isCashier2:false,businessId:'BUSINESS-1'});document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';ZEZMS.db.save(DB_KEY,DB);const a=ZEZMS.staffAuth;ZEZMS.staffAuth={...a,isActive:()=>true,can:action=>['OWNER','ADMIN','MANAGER'].includes(__paymentRole)||action==='VIEW_RECEIPTS',getContext:()=>({role:__paymentRole,user:{id:'STAFF-'+device,name:'Synthetic '+device,active:true}})};ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,preserve);}, {device,role,preserve});}
+ async function configure(preserve=true){await page.evaluate(({device,role,preserve,nativeStaff})=>{window.__paymentRole=role;Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});DB.sharedDeviceAuth={version:1,enabled:true,businessId:'BUSINESS-1',users:[{id:'STAFF-'+device,name:'Synthetic '+device,role,active:true,tel:''}],audit:[]};Object.assign(session,{sharedUserId:'STAFF-'+device,cashier:'Synthetic '+device,commercialRole:role,role:'ADMIN',isCashier2:false,businessId:'BUSINESS-1'});document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';ZEZMS.db.save(DB_KEY,DB);const a=ZEZMS.staffAuth;if(!nativeStaff)ZEZMS.staffAuth={...a,isActive:()=>true,can:action=>['OWNER','ADMIN','MANAGER'].includes(__paymentRole)||action==='VIEW_RECEIPTS',getContext:()=>({role:__paymentRole,user:{id:'STAFF-'+device,name:'Synthetic '+device,active:true}})};ZEZMS.cloudSync._test.configureReceiptPaymentTest(device,preserve);}, {device,role,preserve,nativeStaff});}
  await configure();return {page,context,url,configure};
 }
 async function snapshot(page){return page.evaluate(()=>({receipt:DB.receipts[0],sale:DB.sales[0],debtor:DB.debtors[0],cash:DB.cashBalances,txns:DB.accountTxns,log:DB.cashLog,outbox:ZEZMS.cloudSync.getOutbox(),failed:ZEZMS.cloudSync.getFailedOperations(),journal:ZEZMS.syncDurability.pending()}));}
@@ -75,6 +75,7 @@ test('Deposits posts one linked wallet and depositor operation, synchronizes and
   const first = await state(main.page), txn = first.txns[0], accountId = txn.accountID;
   const receipt = main.page.locator('#modalBody .deposit-receipt');
   assert.match(await receipt.innerText(),/APPROVED/);
+  assert.ok(await receipt.evaluate(el=>el.querySelector('.deposit-stamp').getBoundingClientRect().bottom <= el.querySelector('.deposit-signature').getBoundingClientRect().top));
   assert.match(await receipt.innerText(),/250\.75/);
   assert.equal(await receipt.locator('[data-zezms-website]').getAttribute('href'),'https://zolaelectronicszone.com/');
   assert.match(await receipt.locator('[data-zezms-website-qr]').getAttribute('src'),/^data:image\/png/);
@@ -171,8 +172,8 @@ function checkoutState(page,id) {
  },id);
 }
 
-test('installments keep stock on hand, then linked Sale Out applies deposits once and opens only the unpaid debt',async()=>{
- const cloud=backend(),main=await fixture(cloud,'MAIN'),shop=await fixture(cloud,'SHOP');
+test('Manager records installments and completes Sale Out with the unpaid balance in Debtors',async()=>{
+ const cloud=backend(),main=await fixture(cloud,'MAIN'),shop=await fixture(cloud,'SHOP','MANAGER',true);
  try {
   await stockForDeposit(main,'MAIN');
   await stockForDeposit(shop,'SHOP');
@@ -183,7 +184,21 @@ test('installments keep stock on hand, then linked Sale Out applies deposits onc
   assert.equal(a.wallet,95);
   assert.equal(a.saleCount,0);
   await main.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
-  await shop.page.evaluate(async()=>{await ZEZMS.cloudSync.pullNow(false);nav('deposits');});
+  await shop.page.evaluate(async()=>{await ZEZMS.cloudSync.pullNow(false);nav('pos');});
+  await shop.page.locator('#mainNav [data-group=sales] .nav-group-toggle').click();
+  const managerNav = await shop.page.evaluate(() => {
+   const group = document.querySelector('#mainNav [data-group=sales]');
+   const deposits = group.querySelector('[data-view=deposits]');
+   return {role:ZEZMS.staffAuth.getContext().role, view:ZEZMS.staffAuth.canView('deposits'),
+    write:ZEZMS.staffAuth.can('MANAGE_DEPOSITS'), open:group.classList.contains('open'),
+    shown:deposits.style.display !== 'none'};
+  });
+  assert.deepEqual(managerNav,{role:'MANAGER',view:true,write:true,open:true,shown:true});
+  await shop.page.locator('#mainNav [data-group=sales] [data-view=deposits]').click();
+  assert.equal(await shop.page.locator('#uiUserRole').innerText(),'MANAGER');
+  assert.ok(await shop.page.getByRole('button',{name:'Record deposit',exact:true}).isVisible());
+  assert.equal(await shop.page.evaluate(()=>ZEZMS.staffAuth.can('MANAGE_STAFF') || ZEZMS.staffAuth.canView('accounts')),false);
+  assert.equal(await shop.page.getByRole('button',{name:'Depositor accounts',exact:true}).count(),0);
   await shop.page.getByRole('button',{name:'Record installment',exact:true}).click();
   await shop.page.locator('#depositAmount').fill('20');
   await shop.page.locator('#depositWallet').selectOption('Cash in Hand');
