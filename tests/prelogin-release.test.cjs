@@ -103,6 +103,7 @@ test('unrelated embedded business and protocol modules remain unchanged',()=>{
     'diagnostics/iphone-activation-storage/index.html',
     'STOCK_UNIT_COST_UPDATE.html','tools/stock-unit-cost-transform.cjs','tests/resilience-performance.browser.cjs','tests/recovery-source-proof.cjs','tests/recovery-source-proof.test.cjs',
     'PRODUCT_PRICE_UPDATE.html','tools/product-selling-price-transform.cjs','tests/pr12-raw-byte-delivery.test.cjs',
+    'BNPL_UPDATE.html','js/bnpl-undertaking.js','tools/bnpl-undertaking-transform.cjs','tests/bnpl-undertaking.browser.cjs',
     'DEPOSITS_UPDATE.html','js/deposits.js','tools/deposits-transform.cjs',
     'js/deposit-checkout.js','tools/deposit-checkout-transform.cjs',
     'CREDITOR_WALLET_UPDATE.html','tools/creditor-wallet-settlement-transform.cjs','tests/creditor-wallet-settlement.test.cjs',
