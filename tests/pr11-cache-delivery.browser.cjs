@@ -7,7 +7,7 @@ const delivery=require('../tools/build-pr11-delivery.cjs'),{fixtureAsset}=requir
 const root=path.resolve(__dirname,'..'),before='1241e0ea2a02d05d68e976d16f51164ad72c216b',production='f810940762809e89a35f982a8577a9f32dcabf4e';
 const brokenProduction='d2a91205e0c8974ad298b56b3b744a8588d32319';
 const currentProduction='e3e0bf654519f3d9745ec89f3d9dbc394cf53067';
-const depositR3='58b989c662156b0ef38042c3d72ad40f67618f38';
+const depositR4='ac507d2763ab7e43ec192385932d9e5b57e7bd83';
 const memo=new Map();
 function committed(ref,name){const key=ref+':'+name;if(!memo.has(key))memo.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:32*1024*1024}));return memo.get(key);}
 let mode='before',fault='',browser;
@@ -23,7 +23,7 @@ const server=http.createServer((req,res)=>{
   if(mode==='corrected'&&fault==='stale-shell'&&file==='index.html')return res.end(committed(before,file));
   if(mode==='corrected'&&fault==='missing-main-pages'&&file==='js/main-table-pages.js'){res.writeHead(503);return res.end('synthetic interrupted paging download');}
   if(mode==='corrected'&&fault==='stale-owner-maintenance'&&file==='js/owner-maintenance-v373.js')return res.end(committed(currentProduction,file));
-  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='deposit-manager-r3'?depositR3:mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
+  res.end(mode==='corrected'?fixtureAsset(file):committed(mode==='deposit-cancel-r4'?depositR4:mode==='current-production'?currentProduction:mode==='broken'?brokenProduction:mode==='before'?before:production,file));
 });
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 async function ready(page){await page.waitForFunction(()=>!!window.ZEZMS?.navigationV3101&&!!window.ZEZMS?.managementIntelligence&&!!window.ZEZMS?.stockVelocity,null,{timeout:20000});}
@@ -34,15 +34,16 @@ async function waitForAsync(page,predicate,arg,timeout){
   while(Date.now()<deadline){if(await page.evaluate(predicate,arg))return;await new Promise(resolve=>setTimeout(resolve,100));}
   assert.fail('Asynchronous delivery evidence did not become true within '+timeout+'ms');
 }
-async function apis(page){return page.evaluate(async depositNavigationItem=>{
-  const source=document.querySelector('script[data-zezms-navigation-v3101-r68e]')?.textContent;
+async function apis(page){return page.evaluate(async ({depositNavigationItem,bnplEdits})=>{
+  let source=document.querySelector('script[data-zezms-navigation-v3101-r68e]')?.textContent;
   if(!source)throw Error('Installed navigation source is missing');
+  for(const [before,after] of bnplEdits) source=source.replace(after,()=>before);
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source.replace(depositNavigationItem,'').replace(/\r\n/g,'\n').trim()));
   return {navigation:[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join(''),
     management:typeof ZEZMS.managementIntelligence.viewHTML==='function'&&typeof ZEZMS.managementIntelligence.viewDashboardHTML==='function',
     velocity:typeof ZEZMS.stockVelocity.clearPlanningSnapshot==='function',delivery:document.querySelector('meta[name="zezms-delivery"]')?.content||null,
     cloudSdk:typeof window.supabase?.createClient==='function',staffReview:typeof window.ZEZMS?.cloudSync?.staffDirectoryReview?.action==='function',tablePages:ZEZMS.tablePages?.size===50,receiptLookup:typeof ZEZMS.ownerMaintenance?.receiptEditLookup==='function'};
-},require('../tools/deposits-transform.cjs').navigationItem);}
+},{depositNavigationItem:require('../tools/deposits-transform.cjs').navigationItem,bnplEdits:require('../tools/bnpl-undertaking-transform.cjs').edits()});}
 async function workerProof(page,which='active'){return page.evaluate(which=>new Promise(async(resolve,reject)=>{
   const r=await navigator.serviceWorker.getRegistration(),worker=which==='controller'?navigator.serviceWorker.controller:r?.[which];
   if(!worker)return reject(Error('No '+which+' worker'));
@@ -87,7 +88,7 @@ async function baseline(initial='before'){
   context.on('response',r=>{if(r.request().isNavigationRequest())navigations.push(r.body().then(body=>({url:r.url(),worker:r.fromServiceWorker(),sha:delivery.sha(body)})).catch(()=>({url:r.url(),unavailable:true})));});
   let page=await context.newPage();await page.goto(origin+'/index.html');await ready(page);
   await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js?v=20261024-ui-stock-review-r1');await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('synthetic worker startup timeout')),30000))]);});
-  if(initial==='corrected'||initial==='current-production'||initial==='deposit-manager-r3'){
+  if(initial==='corrected'||initial==='current-production'||initial==='deposit-cancel-r4'){
     await page.reload();await ready(page);
     return {context,page,origin,errors,external,navigations};
   }
@@ -243,8 +244,8 @@ test('Main, Shop and Camon upgrade cached old bundles passively and retain all s
     try{
       await cachedBrokenPR12(f);
       const saved=await seed(f,label,device,access);mode='corrected';
-      await f.page.goto(f.origin+'/DEPOSITS_UPDATE.html?delivery='+delivery.DELIVERY);
-      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified deposit receipts update is ready'));
+      await f.page.goto(f.origin+'/BNPL_UPDATE.html?delivery='+delivery.DELIVERY);
+      await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified Buy Now, Pay Later update is ready'));
       assert.equal(await f.page.locator('#open').isVisible(),false);
       const waiting=await workerProof(f.page,'waiting');assert.equal(waiting.delivery,delivery.DELIVERY);assert.equal(waiting.verified,true);
       assert.equal((await workerProof(f.page)).cache,'zezms-ui-stock-review-20261024-v1','old active worker was replaced before its clients closed');
@@ -305,8 +306,8 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   const f=await baseline('corrected');
   try{
     const good=await apis(f.page);assert.equal(good.management,true);assert.equal(good.velocity,true);
-    await f.page.goto(f.origin+'/DEPOSITS_UPDATE.html?delivery='+delivery.DELIVERY);
-    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('deposit receipts update is verified and active'));
+    await f.page.goto(f.origin+'/BNPL_UPDATE.html?delivery='+delivery.DELIVERY);
+    await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('Buy Now, Pay Later update is verified and active'));
     assert.equal(await f.page.locator('#open').isVisible(),true);
     await f.page.goto(f.origin+'/index.html');await ready(f.page);
     await f.page.evaluate(async()=>{
@@ -319,14 +320,14 @@ test('fresh corrected installation starts cleanly and rejects an old assembled p
   }finally{await f.context.close();}
 });
 
-test('cached Manager deposits r3 uses the versioned update link and preserves Main storage',async()=>{
- const f=await baseline('deposit-manager-r3');try{
-  assert.equal((await workerProof(f.page)).delivery,'20261128-deposit-manager-r3');
-  const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./DEPOSITS_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261128-deposit-manager-r3'/);
-  const saved=await seed(f,'Main','synthetic-deposit-r3-main','OWNER');mode='corrected';
-  await f.page.goto(f.origin+'/DEPOSITS_UPDATE.html?delivery='+delivery.DELIVERY);
-  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified deposit receipts update is ready'));
+test('cached deposit cancellation r4 uses the versioned update link and preserves Main storage',async()=>{
+ const f=await baseline('deposit-cancel-r4');try{
+  assert.equal((await workerProof(f.page)).delivery,'20261128-deposit-cancel-r4');
+  const oldHelper=await f.page.evaluate(async()=>{const r=await fetch('./DEPOSITS_UPDATE.html');return r.text();});assert.match(oldHelper,/expected='20261128-deposit-cancel-r4'/);
+  const saved=await seed(f,'Main','synthetic-deposit-r4-main','OWNER');mode='corrected';
+  await f.page.goto(f.origin+'/BNPL_UPDATE.html?delivery='+delivery.DELIVERY);
+  await f.page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('The verified Buy Now, Pay Later update is ready'));
   assert.equal((await workerProof(f.page,'waiting')).delivery,delivery.DELIVERY);assert.deepEqual(await snapshot(f.page),saved);
-  await activateNaturally(f);assert.equal(await f.page.evaluate(()=>typeof ZEZMS.depositCheckout?.viewHTML),'function');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
+  await activateNaturally(f);assert.equal(await f.page.evaluate(()=>typeof ZEZMS.bnplUndertaking?.viewHTML),'function');assert.deepEqual(await snapshot(f.page),saved);assert.equal(f.errors.length,0,JSON.stringify(f.errors));
  }finally{await f.context.close();}
 });
