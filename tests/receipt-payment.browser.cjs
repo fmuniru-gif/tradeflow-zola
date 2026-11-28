@@ -22,7 +22,7 @@ const server=http.createServer((req,res)=>{const name=new URL(req.url,'http://lo
 after(async()=>{if(browser)await browser.close();if(server.listening)await new Promise(r=>server.close(r));});
 function backend({race=false,loseAck=false,offline=false,reject=false}={}){
  const rows=[],calls=[];let waiting=[],mode={race,loseAck,offline,reject,deviceStatus:'ACTIVE'};
- return {rows,calls,mode,async read(input){if(mode.offline)return {error:{message:'Failed to fetch'}};let found=rows.filter(r=>!input.filters.op_id||r.op_id===input.filters.op_id);if(input.filters.gt_seq!=null)found=found.filter(r=>r.seq>input.filters.gt_seq);return {data:input.single?found[0]||null:structuredClone(found),error:null};},async push(input){if(mode.offline)return {error:{message:'Failed to fetch'}};if(input.name==='zezms_m5a3_device_context')return {data:[Object.assign(mode.sparseContext?{device_status:mode.deviceStatus}:{device_id:input.args.p_device_id,owner_id:'OWNER-1',business_id:'BUSINESS-1',branch_id:'BRANCH-1',device_status:mode.deviceStatus},mode.contextOverride||{})],error:null};assert.equal(input.name,'zezms_ops_push');const op=input.args.p_operations[0];calls.push(structuredClone(op));if(mode.reject)return {error:{message:'ZEZMS_CASH_CONFLICT: synthetic server rejection'}};if(mode.race){await new Promise(resolve=>{waiting.push({op,resolve});if(waiting.length===2){const first=waiting[0];rows.push({seq:21+rows.length,op_id:first.op.opId,device_id:first.op.deviceId,payload:structuredClone(first.op),created_at:new Date().toISOString()});const pending=waiting;waiting=[];mode.race=false;pending.forEach(x=>x.resolve());}});}let row=rows.find(r=>r.op_id===op.opId);if(!row){row={seq:21+rows.length,op_id:op.opId,device_id:op.deviceId,payload:structuredClone(op),created_at:new Date().toISOString()};rows.push(row);}if(mode.loseAck){mode.loseAck=false;return {error:{message:'Failed to fetch'}};}return {data:[{op_id:row.op_id,server_seq:row.seq}],error:null};}};
+ return {rows,calls,mode,async read(input){if(mode.offline)return {error:{message:'Failed to fetch'}};let found=rows.filter(r=>!input.filters.op_id||r.op_id===input.filters.op_id);if(input.filters.gt_seq!=null)found=found.filter(r=>r.seq>input.filters.gt_seq);return {data:input.single?found[0]||null:structuredClone(found),error:null};},async push(input){if(mode.offline)return {error:{message:'Failed to fetch'}};if(input.name==='zezms_m5a3_device_context')return {data:[Object.assign(mode.sparseContext?{device_status:mode.deviceStatus}:{device_id:input.args.p_device_id,owner_id:'OWNER-1',business_id:'BUSINESS-1',branch_id:'BRANCH-1',device_status:mode.deviceStatus},mode.contextOverride||{})],error:null};assert.equal(input.name,'zezms_ops_push');const op=input.args.p_operations[0];calls.push(structuredClone(op));if(mode.reject)return {error:{message:'ZEZMS_CASH_CONFLICT: synthetic server rejection'}};if(mode.race){await new Promise(resolve=>{waiting.push({op,resolve});if(waiting.length===2){const first=waiting.find(item=>item.op.deviceId===mode.preferDevice)||waiting[0];rows.push({seq:21+rows.length,op_id:first.op.opId,device_id:first.op.deviceId,payload:structuredClone(first.op),created_at:new Date().toISOString()});const pending=waiting;waiting=[];mode.race=false;pending.forEach(x=>x.resolve());}});}let row=rows.find(r=>r.op_id===op.opId);if(!row){row={seq:21+rows.length,op_id:op.opId,device_id:op.deviceId,payload:structuredClone(op),created_at:new Date().toISOString()};rows.push(row);}if(mode.loseAck){mode.loseAck=false;return {error:{message:'Failed to fetch'}};}return {data:[{op_id:row.op_id,server_seq:row.seq}],error:null};}};
 }
 async function fixture(backend,device='MAIN',role='OWNER',nativeStaff=false){
  if(!server.listening)await new Promise(r=>server.listen(0,'127.0.0.1',r));if(!browser)browser=await playwright.chromium.launch({headless:true,executablePath:process.env.CHROME_PATH});
@@ -75,7 +75,11 @@ test('Deposits posts one linked wallet and depositor operation, synchronizes and
   const first = await state(main.page), txn = first.txns[0], accountId = txn.accountID;
   const receipt = main.page.locator('#modalBody .deposit-receipt');
   assert.match(await receipt.innerText(),/APPROVED/);
-  assert.ok(await receipt.evaluate(el=>el.querySelector('.deposit-stamp').getBoundingClientRect().bottom <= el.querySelector('.deposit-signature').getBoundingClientRect().top));
+  assert.ok(await receipt.evaluate(el=>{
+     const stamp=el.querySelector('.deposit-stamp').getBoundingClientRect();
+     const line=el.querySelector('.deposit-signature').getBoundingClientRect();
+     return stamp.bottom<=line.top && Math.abs(stamp.x+stamp.width/2-line.x-line.width/2)<1;
+    }));
   assert.match(await receipt.innerText(),/250\.75/);
   assert.equal(await receipt.locator('[data-zezms-website]').getAttribute('href'),'https://zolaelectronicszone.com/');
   assert.match(await receipt.locator('[data-zezms-website-qr]').getAttribute('src'),/^data:image\/png/);
@@ -113,19 +117,24 @@ test('Deposits posts one linked wallet and depositor operation, synchronizes and
   assert.deepEqual(both.sales,before.sales);
   assert.deepEqual(both.receipts,before.receipts);
 
-  await main.page.evaluate(id=>{
-   window.promptPIN=(_label,_pin,complete)=>complete();
-   window.confirm=()=>true;
-   window.prompt=()=> 'Synthetic correction';
-   undoAccountTransaction(id);
-  },txn.id);
-  await main.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
+  await main.page.evaluate(()=>{ ZEZMS.staffAuth.confirmSensitive=async()=>true; closeModal(); nav('deposits'); });
+  const cancel = main.page.locator('#depositHistory tr').filter({hasText:txn.receiptNo}).getByRole('button',{name:'Cancel',exact:true});
+  await cancel.click();
+  assert.match(await main.page.locator('#modalBody').innerText(),/250\.75 will be deducted/);
+  await main.page.getByRole('button',{name:'Keep deposit',exact:true}).click();
+  assert.deepEqual(await state(main.page),both);
+  await cancel.click();
+  await main.page.locator('#depositCancelReason').fill('Synthetic correction');
+  await main.page.getByRole('button',{name:'Confirm cancellation',exact:true}).click();
+  await main.page.waitForFunction(id=>DB.accountTxns.find(t=>t.id===id).status==='UNDONE'
+    && !ZEZMS.cloudSync.getOutbox().some(op=>op.opId.startsWith('DPC-')),txn.id);
   await shop.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
   const undone = await state(shop.page);
   assert.equal(undone.depositors.find(a=>a.id===accountId).balance,49.25);
   assert.equal(undone.balance,before.balance+49.25);
   assert.equal(undone.cash.find(c=>c.id===txn.meta.cashLogId).status,'UNDONE');
   assert.equal(undone.txns.find(t=>t.id===txn.id).status,'UNDONE');
+  assert.equal(undone.txns.find(t=>t.id===txn.id).undoReason,'Synthetic correction');
   await shop.page.evaluate(id=>ZEZMS.deposits.preview(id),txn.id);
   assert.match(await shop.page.locator('#modalBody').innerText(),/VOID DEPOSIT RECEIPT/);
   assert.equal(await shop.page.locator('#modalBody .deposit-stamp').innerText(),'VOID');
@@ -215,6 +224,10 @@ test('Manager records installments and completes Sale Out with the unpaid balanc
   await shop.page.locator('#depositReleaseSave').click();
   await shop.page.locator('#receiptPrint').waitFor({timeout:4500}).catch(async error=>{throw Error(JSON.stringify(await shop.page.evaluate(()=>({view:currentView,status:$('depositReleaseStatus')?.textContent,notice:$('toast')?.textContent,modal:$('modalBody')?.innerText?.slice(0,400),failed:ZEZMS.cloudSync.getFailedOperations().map(f=>f.message)}))) + '\n' + error.message);});
   assert.match(await shop.page.locator('#receiptPrint').innerText(),/Deposit applied:\s*90\.00/);
+  await shop.page.evaluate(()=>{closeModal();nav('deposits');});
+  await shop.page.locator('#depositHistory tr').filter({hasText:id}).getByRole('button',{name:'Cancel',exact:true}).first().click();
+  assert.match(await shop.page.locator('#toasts').innerText(),/Undo the linked Sale Out/);
+  assert.equal(await shop.page.locator('#depositCancelReason').count(),0);
   await shop.page.evaluate(()=>ZEZMS.cloudSync.pushNow(false));
   await main.page.evaluate(()=>ZEZMS.cloudSync.pullNow(false));
   a=await checkoutState(main.page,id);
@@ -278,6 +291,87 @@ test('Manager records installments and completes Sale Out with the unpaid balanc
  } finally {await main.context.close();await shop.context.close();}
 });
 
+test('cancelling the first installment from two devices deducts it once and leaves the remaining installment open',async()=>{
+ const cloud=backend(),main=await fixture(cloud,'MAIN'),shop=await fixture(cloud,'SHOP','MANAGER',true);
+ try {
+  await stockForDeposit(main,'MAIN');
+  await stockForDeposit(shop,'SHOP');
+  const id=await newProductDeposit(main.page);
+  await main.page.locator('#modalBody').getByRole('button',{name:'Record installment',exact:true}).click();
+  await main.page.locator('#depositAmount').fill('20');
+  await main.page.locator('#depositWallet').selectOption('Cash in Hand');
+  await main.page.locator('#recordDepositButton').click();
+  await main.page.evaluate(async()=>{closeModal();await ZEZMS.cloudSync.pushNow(false);nav('deposits');});
+  await shop.page.evaluate(async()=>{await ZEZMS.cloudSync.pullNow(false);nav('deposits');});
+  for (const f of [main,shop]) {
+   await f.page.evaluate(()=>{ZEZMS.staffAuth.confirmSensitive=async()=>true;});
+   await f.page.locator('#depositHistory tr').filter({hasText:id}).getByRole('button',{name:'Cancel',exact:true}).click();
+   await f.page.locator('#depositCancelReason').fill('Synthetic duplicate');
+  }
+  cloud.mode.race=true;
+  await Promise.all([main,shop].map(f=>f.page.getByRole('button',{name:'Confirm cancellation',exact:true}).click()));
+  for (const f of [main,shop]) {
+   await f.page.waitForFunction(id=>ZEZMS.depositCheckout.order(id).initial.status==='UNDONE'
+    && !ZEZMS.cloudSync.getOutbox().some(op=>op.opId.startsWith('DOR-')),id,{timeout:5000});
+   const state=await checkoutState(f.page,id);
+   assert.equal(state.stock.rStock,3);
+   assert.equal(state.wallet,45);
+   assert.equal(state.order.received,20);
+   assert.equal(state.order.balance,100);
+   assert.equal(state.order.account.balance,20);
+   assert.equal(state.failed.length,0);
+   await f.page.waitForFunction(()=>document.querySelectorAll('#depositHistory button[data-deposit-order]').length===2);
+   assert.match(await f.page.locator('#depositHistory tr').filter({hasText:id}).innerText(),/Void/);
+   assert.equal(await f.page.locator('#depositHistory tr').filter({hasText:id}).getByRole('button',{name:'Cancel',exact:true}).count(),0);
+   assert.equal(await f.page.getByRole('button',{name:'Sale Out',exact:true}).count(),1);
+  }
+  assert.equal(cloud.rows.filter(r=>r.op_id.startsWith('DOR-'+id+'-')).length,1);
+  assert.equal(cloud.calls.filter(r=>r.opId.startsWith('DOR-'+id+'-')).length,2);
+  await shop.page.getByRole('button',{name:'Record installment',exact:true}).click();
+  assert.match(await shop.page.locator('#modalBody').innerText(),/Balance due GH₵ 100\.00/);
+ } finally {await main.context.close();await shop.context.close();}
+});
+
+test('Sale Out and cancellation for the same product order accept one authoritative change',async()=>{
+ for (const winner of ['MAIN','SHOP']) {
+  const cloud=backend(),main=await fixture(cloud,'MAIN'),shop=await fixture(cloud,'SHOP');
+  try {
+   await stockForDeposit(main,'MAIN');
+   await stockForDeposit(shop,'SHOP');
+   const id=await newProductDeposit(main.page);
+   await main.page.evaluate(async()=>{closeModal();await ZEZMS.cloudSync.pushNow(false);ZEZMS.staffAuth.confirmSensitive=async()=>true;});
+   await shop.page.evaluate(async id=>{await ZEZMS.cloudSync.pullNow(false);ZEZMS.depositCheckout.open(id);},id);
+   await shop.page.locator('#depositReleaseAmount').fill('50');
+   await shop.page.locator('#depositReleaseWallet').selectOption('Cash in Hand');
+   await main.page.locator('#depositHistory').getByRole('button',{name:'Cancel',exact:true}).click();
+   cloud.mode.race=true;
+   cloud.mode.preferDevice=winner;
+   await Promise.all([
+    main.page.getByRole('button',{name:'Confirm cancellation',exact:true}).click(),
+    shop.page.locator('#depositReleaseSave').click()
+   ]);
+   const saleWon=winner==='SHOP';
+   for (const f of [main,shop]) {
+    await f.page.waitForFunction(({id,saleWon})=>{
+     const order=ZEZMS.depositCheckout.order(id);
+     const posted=saleWon ? order.sale : order.initial.status==='UNDONE';
+     return posted && !ZEZMS.cloudSync.getOutbox().some(op=>op.opId.startsWith('DOR-'));
+    },{id,saleWon},{timeout:6000});
+    const state=await checkoutState(f.page,id);
+    assert.equal(state.wallet,saleWon ? 145 : 25);
+    assert.equal(state.stock.rStock,saleWon ? 2 : 3);
+    assert.equal(state.saleCount,saleWon ? 1 : 0);
+    assert.equal(state.applied.length,saleWon ? 1 : 0);
+    assert.equal(state.order.initial.status,saleWon ? 'ACTIVE' : 'UNDONE');
+    assert.equal(state.order.account.balance,0);
+    assert.equal(state.failed.length,0);
+   }
+   assert.equal(cloud.rows.filter(r=>r.op_id.startsWith('DOR-'+id+'-')).length,1);
+   assert.equal(cloud.calls.filter(r=>r.opId.startsWith('DOR-'+id+'-')).length,2);
+  } finally {await main.context.close();await shop.context.close();}
+ }
+});
+
 test('concurrent handover on Main and Shop settles a product deposit once',async()=>{
  const cloud=backend(),main=await fixture(cloud,'MAIN'),shop=await fixture(cloud,'SHOP');
  try {
@@ -295,7 +389,7 @@ test('concurrent handover on Main and Shop settles a product deposit once',async
   await Promise.all([main,shop].map(f=>f.page.locator('#depositReleaseSave').click()));
   await Promise.any([main,shop].map(f=>f.page.locator('#receiptPrint').waitFor({timeout:8000}))).catch(async error=>{throw Error(JSON.stringify(await Promise.all([main,shop].map(f=>f.page.locator('#depositReleaseStatus').allTextContents())))+'\n'+error);});
   for (const f of [main,shop]) {
-   await f.page.waitForFunction(()=>!ZEZMS.cloudSync.getOutbox().some(op=>op.opId.startsWith('DCO-')),null,{timeout:6000}).catch(async()=>{throw Error(JSON.stringify(await f.page.evaluate(()=>({view:currentView,status:$('depositReleaseStatus')?.textContent,queue:ZEZMS.cloudSync.getOutbox().map(op=>[op.opId,op.lastError]),failed:ZEZMS.cloudSync.getFailedOperations()}))).slice(0,2500));});
+   await f.page.waitForFunction(()=>!ZEZMS.cloudSync.getOutbox().some(op=>op.opId.startsWith('DOR-')),null,{timeout:6000}).catch(async()=>{throw Error(JSON.stringify(await f.page.evaluate(()=>({view:currentView,status:$('depositReleaseStatus')?.textContent,queue:ZEZMS.cloudSync.getOutbox().map(op=>[op.opId,op.lastError]),failed:ZEZMS.cloudSync.getFailedOperations()}))).slice(0,2500));});
    const state=await checkoutState(f.page,id);
    assert.equal(state.stock.rStock,2);
    assert.equal(state.wallet,145);
@@ -304,8 +398,8 @@ test('concurrent handover on Main and Shop settles a product deposit once',async
    assert.equal(state.applied.length,1);
    assert.equal(state.failed.length,0);
   }
-  assert.equal(cloud.rows.filter(r=>r.op_id.startsWith('DCO-')).length,1);
-  assert.equal(cloud.calls.filter(r=>r.opId.startsWith('DCO-')).length,2);
+  assert.equal(cloud.rows.filter(r=>r.op_id.startsWith('DOR-')).length,1);
+  assert.equal(cloud.calls.filter(r=>r.opId.startsWith('DOR-')).length,2);
  } finally {await main.context.close();await shop.context.close();}
 });
 

@@ -116,7 +116,11 @@ test('actual browser print pages and both A5 test documents place a scannable we
    await p.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
    if(name==='deposit'){
     assert.match(await p.locator('.deposit-receipt').innerText(),/APPROVED/);
-    assert.ok(await p.locator('.deposit-receipt').evaluate(el=>el.querySelector('.deposit-stamp').getBoundingClientRect().bottom <= el.querySelector('.deposit-signature').getBoundingClientRect().top));
+    assert.ok(await p.locator('.deposit-receipt').evaluate(el=>{
+     const stamp=el.querySelector('.deposit-stamp').getBoundingClientRect();
+     const line=el.querySelector('.deposit-signature').getBoundingClientRect();
+     return stamp.bottom<=line.top && Math.abs(stamp.x+stamp.width/2-line.x-line.width/2)<1;
+    }));
     assert.match(await p.locator('.deposit-total').innerText(),/250\.75/);
     assert.match(await p.locator('.deposit-paper').innerText(),/Balance left to pay\s+GH₵\s*249\.25/);
     assert.equal(await p.locator('.deposit-receipt').evaluate(el=>getComputedStyle(el,'::before').backgroundSize),'100% 100%');

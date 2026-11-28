@@ -17,7 +17,7 @@ function edits() {
   const planUndo = '    const allocations = [];\n    (sale.lines || []).forEach((line) => {';
   const applyUndo = "    sale.undoReason = String(reason || '').trim();\n    if (receipt)";
   const editReceipt = "    if (!receipt || !sale) { toast('This receipt has no linked FIFO sale and cannot be edited safely.', 'err'); return; }";
-  const reverse = '      ZEZMS.deposits.validateUndo(txn, account);';
+  const reverse = '      const depositMutation = ZEZMS.deposits.validateUndo(txn, account);';
   return [
     [nav, "  if (window.ZEZMS?.depositCheckout) ZEZMS.depositCheckout.leaving(view);\n" + nav],
     [pos, "      case 'pos': if (ZEZMS.depositCheckout.selected()) root.innerHTML=ZEZMS.depositCheckout.viewHTML(); else { root.innerHTML=viewPOS(); bindPOS(); } break;"],

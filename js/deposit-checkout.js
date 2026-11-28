@@ -46,13 +46,18 @@
       && t.meta.depositOrderId === id && t.meta.depositProduct);
     if (!initial) return null;
     const product = initial.meta.depositProduct;
-    const payments = DB.accountTxns.filter(t => active(t) && ZEZMS.deposits.isDeposit(t)
+    const history = DB.accountTxns.filter(t => ZEZMS.deposits.isDeposit(t)
       && t.accountID === initial.accountID && t.meta.depositOrderId === id);
+    const payments = history.filter(active);
     const sales = DB.sales.filter(sale => sale.depositOrderId === id);
     const sale = sales.find(active);
     const received = round2(payments.reduce((sum, txn) => sum + Number(txn.amount), 0));
+    // Handover and cancellation share one Cloud operation ID per order revision.
+    const revision = history.length + (history.length - payments.length) + sales.length;
     return {
       id, initial, product, payments, received, sale, nextSale:sales.length + 1,
+      mutationId:'DOR-' + id + '-' + revision,
+      entry:payments.find(txn => txn.receiptNo === id) || payments[0],
       account:DB.depositors.find(a => a.id === initial.accountID),
       balance:round2(product.total - received)
     };
@@ -62,7 +67,7 @@
     if (!input.orderId && !input.productId) return null;
     if (input.orderId) {
       const current = order(input.orderId);
-      requireThat(current && active(current.initial) && !current.sale && depositor?.id === current.account?.id,
+      requireThat(current && current.entry && !current.sale && depositor?.id === current.account?.id,
         'This deposit order is no longer open for another payment.');
       requireThat(received <= current.balance, 'The payment exceeds the remaining balance for this product.');
       return { orderId:current.id, product:current.product, received:round2(current.received + received), balance:round2(current.balance - received) };
@@ -88,7 +93,7 @@
 
   function open(id) {
     const current = order(id);
-    if (!canRelease() || !current || current.sale || !active(current.initial) || !current.account
+    if (!canRelease() || !current || current.sale || !current.entry || !current.account
       || current.received <= 0) {
       toast('This deposit order is unavailable for Sale Out.', 'err');
       return;
@@ -166,12 +171,12 @@
       && ZEZMS.deposits.isDeposit(t) && t.meta.depositOrderId).map(t => t.meta.depositOrderId));
     return round2([...linkedIds].reduce((sum, id) => {
       const linked = order(id);
-      return sum + (linked && !linked.sale && active(linked.initial) ? linked.received : 0);
+      return sum + (linked && !linked.sale && linked.entry ? linked.received : 0);
     },0));
   }
 
   function paymentPlan(current, input) {
-    requireThat(current && !current.sale && active(current.initial) && current.account,
+    requireThat(current && !current.sale && current.entry && current.account,
       'This deposit order is no longer open.');
     const { account, product, received, balance } = current;
     requireThat(received > 0 && balance >= 0 && round2(account.balance) >= received,
@@ -260,7 +265,7 @@
         date:at, status:'ACTIVE', saleType:'RECEIPT', salesChannel:'Walk-in',
         cashBucket:wallet, walletKey:wallet, paymentWallet:wallet, cashReceived:additional, cashLogId:cash?.id || '',
         depositOrderId:current.id, depositAccountId:account.id, depositApplied:received,
-        depositHandoverCash:additional, depositCheckoutAttempt:attempt
+        depositHandoverCash:additional, depositCheckoutAttempt:attempt, depositMutationId:current.mutationId
       };
       const line = { product:name, productId:product.id, qty:product.qty, disc:0 };
       const receipt = { ...common, customerName:customer, totalAmount:product.total, amountPaid:paid, credit:remaining>0,
@@ -271,7 +276,7 @@
       ZEZMS.receiptReferencesR67X.attachReceiptReference(receipt);
       saveStarted = true;
       requireThat(cloud.saveLocalDatabaseDurably(),'TradeFlow could not save this linked sale.');
-      return { receiptNo, attempt };
+      return { receiptNo, attempt, mutationId:current.mutationId };
     } catch (error) {
       // The native journal restores the durable image after a partial commit.
       const stored = saveStarted ? ZEZMS.db.load(DB_KEY) : null;
@@ -310,12 +315,12 @@
       requireThat(scope.valid() && selection?.id === id && currentView === 'pos',
         'The device, staff member or page changed. Open the deposit order again.');
       const current = order(id);
-      requireThat(current?.received === original.received && current.nextSale === original.nextSale,
+      requireThat(current?.mutationId === original.mutationId,
         'Deposit payments changed. Review the new balance before releasing stock.');
       const result = post(paymentPlan(current,input),cloud);
       status('Saving Sale Out and confirming sync…');
       try { await cloud.pushNow(false); } catch (error) {
-        if (cloud.getOutbox().some(op => op.opId === 'DCO-' + result.receiptNo)) {
+        if (cloud.getOutbox().some(op => op.opId === result.mutationId)) {
           throw Error('This Sale Out is saved locally and awaiting sync. Check Sync before handing over the item.');
         }
         throw error;
@@ -323,8 +328,8 @@
       const saved = DB.receipts.find(r => r.receiptNo === result.receiptNo && active(r));
       requireThat(saved && saved.depositCheckoutAttempt === result.attempt,
         saved ? 'Another device posted this Sale Out first. Review its receipt before handing over stock.'
-          : 'Cloud did not accept this Sale Out. Check the order and Sync before handing over stock.');
-      requireThat(!cloud.getOutbox().some(op => op.opId === 'DCO-' + result.receiptNo),
+          : 'The order changed before Sale Out was confirmed. Check Deposits before handing over stock.');
+      requireThat(!cloud.getOutbox().some(op => op.opId === result.mutationId),
         'This Sale Out is awaiting sync. Check Sync before handing over the item.');
       // Post-sale integrations receive the same committed-sale event as regular Sale Out.
       try {
@@ -349,9 +354,9 @@
     const id = transaction.meta?.depositOrderId;
     if (!id) return;
     const current = order(id);
-    requireThat(!current?.sale,'Undo the linked Sale Out before reversing this deposit payment.');
-    requireThat(transaction.receiptNo !== id || current?.payments.length <= 1,
-      'Undo the other payments for this product before voiding its first deposit.');
+    requireThat(!current?.sale,'Undo the linked Sale Out before cancelling this deposit payment.');
+    requireThat(current?.payments.some(txn => txn.id === transaction.id), 'The linked product deposit could not be verified.');
+    return current.mutationId;
   }
 
   function applied(transaction) {
@@ -376,16 +381,27 @@
   }
 
   function operationId(patches) {
-    const sale = patches.find(patch => patch.collection === 'sales' && (patch.value || patch.fallback)?.depositOrderId);
-    if (sale?.action === 'insert') return 'DCO-' + sale.value.receiptNo;
+    const sale = salePatch(patches);
+    if (sale?.action === 'insert') return sale.value.depositMutationId || 'DCO-' + sale.value.receiptNo;
     if (sale?.action === 'update' && sale.changes.some(c => c.field === 'status' && c.value === 'UNDONE')) {
       return 'DCU-' + sale.fallback.receiptNo;
     }
-    return '';
+    return cancellationEntry(patches)?.depositMutationId || '';
+  }
+
+  function salePatch(patches) {
+    return patches.find(patch => patch.collection === 'sales' && (patch.value || patch.fallback)?.depositOrderId);
+  }
+
+  function cancellationEntry(patches) {
+    const update = patches.find(patch => patch.collection === 'accountTxns' && patch.action === 'update'
+      && ZEZMS.deposits.isDeposit(patch.fallback) && patch.fallback.receiptNo
+      && patch.changes.some(change => change.field === 'status' && change.value === 'UNDONE' && change.before !== 'UNDONE'));
+    return update?.fallback;
   }
 
   function linkedOperation(op) {
-    return /^DC[OU]-SR-DCO-/.test(String(op.opId || ''));
+    return /^(?:DC[OU]-SR-DCO-|DPC-DR-|DOR-DR-)/.test(String(op.opId || ''));
   }
 
   function collision(row, local, hash) {
@@ -395,8 +411,21 @@
       && incoming.payloadHash && incoming.payloadHash === hash(incoming)
       && operationId(local.patches) === local.opId && operationId(incoming.patches) === local.opId,
     'Cloud returned a different transaction for the linked deposit sale.');
-    const link = op => op.patches.find(p => p.collection === 'sales' && (p.value || p.fallback)?.depositOrderId);
-    const a = link(local), b = link(incoming);
+    if (local.opId.startsWith('DPC-')) {
+      const a = cancellationEntry(local.patches), b = cancellationEntry(incoming.patches);
+      requireThat(a.id === b.id && a.receiptNo === b.receiptNo && a.accountID === b.accountID
+        && a.amount === b.amount && a.meta.wallet === b.meta.wallet && a.meta.cashLogId === b.meta.cashLogId,
+      'The deposit cancellation identities differ.');
+      return true;
+    }
+    if (local.opId.startsWith('DOR-')) {
+      const orderId = op => salePatch(op.patches)?.value?.depositOrderId || cancellationEntry(op.patches)?.meta.depositOrderId;
+      const id = orderId(local);
+      requireThat(id && id === orderId(incoming) && local.opId.startsWith('DOR-' + id + '-'),
+        'The linked deposit order identities differ.');
+      return true;
+    }
+    const a = salePatch(local.patches), b = salePatch(incoming.patches);
     requireThat(a.key === b.key && (a.value || a.fallback).depositOrderId === (b.value || b.fallback).depositOrderId,
       'The linked deposit sale identities differ.');
     return true;
