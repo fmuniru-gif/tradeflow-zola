@@ -18,6 +18,8 @@ function edits() {
   const managerViews = "const MANAGER_VIEWS = new Set(['pos', 'receipts', 'invoices'";
   const managerActions = "const MANAGER_ACTIONS = new Set(['LOGIN', 'SALE_OUT', 'VIEW_RECEIPTS', 'MANAGE_DOCUMENTS'";
   const managerLimits = 'Manager access is limited to Sale Out, Sales Records, Invoices, Waybills, and normal Sync / Backup.';
+  const undoStart = '  function performAccountUndo(transactionId, reason) {';
+  const undoSave = "    saveDB();\n    toast('Account transaction undone.');";
   const reverse = '      reverseCashForAccountTxn(txn, reason);';
   const accountEdit = "    if (type === 'ACCOUNT_DELETE') return { ok: false, message: 'Account-delete audit entries cannot be edited.' };";
   return [
@@ -32,8 +34,15 @@ function edits() {
     [managerViews, managerViews.replace("'receipts',", "'receipts', 'deposits',")],
     [managerActions, managerActions.replace("'VIEW_RECEIPTS',", "'VIEW_RECEIPTS', 'VIEW_DEPOSITS', 'MANAGE_DEPOSITS',")],
     [managerLimits, managerLimits.replace('Sales Records,', 'Sales Records, Deposits,')],
-    [reverse, '      ZEZMS.deposits.validateUndo(txn, account);\n' + reverse],
-    [accountEdit, accountEdit + "\n    if (source === 'SALES_DEPOSIT') return { ok: false, message: 'Use Undo to void this issued deposit receipt before posting its correction.' };"]
+    [undoStart, undoStart.replace('reason)', 'reason, persist = true)')],
+    [undoSave, '    if (!persist) return;\n' + undoSave],
+    ['  window.undoLastAccountTransaction = function () {',
+      '  window.confirmDepositCancellation = function (id) {\n'
+      + '    return ZEZMS.deposits.confirmCancellation(id, reason => performAccountUndo(id, reason, false));\n'
+      + '  };\n\n  window.undoLastAccountTransaction = function () {'],
+    [reverse, '      const depositMutation = ZEZMS.deposits.validateUndo(txn, account);\n' + reverse
+      + '\n      if (depositMutation) txn.depositMutationId = depositMutation;'],
+    [accountEdit, accountEdit + "\n    if (source === 'SALES_DEPOSIT') return { ok: false, message: 'Use Cancel in Deposits to void this receipt before posting its correction.' };"]
   ];
 }
 

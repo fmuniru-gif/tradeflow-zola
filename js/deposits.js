@@ -8,6 +8,8 @@
   let draftActor = '';
   let draftOrder = '';
   let saving = false;
+  let cancellationId = '';
+  let cancelling = false;
 
   function can(permission) {
     return !!(ZEZMS.staffAuth?.isActive() && ZEZMS.staffAuth.can(permission));
@@ -142,16 +144,114 @@
 
   function validateUndo(transaction, account) {
     if (!isDeposit(transaction)) return;
-    ZEZMS.depositCheckout.validateDepositUndo(transaction);
+    if (voided(transaction)) throw Error('This deposit has already been cancelled.');
+    const orderMutation = ZEZMS.depositCheckout.validateDepositUndo(transaction);
     const meta = transaction.meta;
     const cash = DB.cashLog.find(row => row.id === meta.cashLogId);
-    if (!cash || cash.status === 'UNDONE' || cash.meta?.accountTxnId !== transaction.id
+    if (!account) throw Error('Restore the linked depositor account before cancelling this payment.');
+    if (!cash || voided(cash) || !Object.hasOwn(DB.cashBalances, meta.wallet)
+      || meta.cashAction !== 'Add' || meta.cashAmount !== transaction.amount || cash.meta?.accountTxnId !== transaction.id
       || cash.action !== 'Add' || cash.amount !== transaction.amount || (cash.walletKey || cash.cashType) !== meta.wallet) {
       throw Error('This deposit cannot be reversed because its linked wallet entry is unavailable or differs.');
     }
     if (round2(Number(account.balance) - transaction.amount) < 0) {
       throw Error('The deposit cannot be reversed because part of the balance has already been used or returned.');
     }
+    return orderMutation || 'DPC-' + transaction.receiptNo;
+  }
+
+  function openCancellation(id) {
+    requirePermission('MANAGE_DEPOSITS');
+    if (cancelling) return;
+    const txn = byId(id);
+    validateUndo(txn, accountById(txn.accountID));
+    cancellationId = id;
+    openModal(`<form onsubmit="event.preventDefault();confirmDepositCancellation(this.dataset.depositId)" data-deposit-id="${escAttr(id)}">
+      <h3>Cancel deposit</h3>
+      <p><b>${esc(txn.name)}</b> · ${esc(txn.receiptNo)}</p>
+      <p>${fmt(txn.amount)} will be deducted from ${esc(ZEZMS.cashWallets.label(txn.meta.wallet))} and the depositor balance. The receipt will be marked VOID.</p>
+      <div class="field"><label for="depositCancelReason">Reason (optional)</label><input id="depositCancelReason" maxlength="180"></div>
+      <div class="row"><button class="btn danger" type="submit">Confirm cancellation</button>
+        <button class="btn ghost" type="button" onclick="closeModal()">Keep deposit</button></div>
+    </form>`);
+  }
+
+  async function confirmCancellation(id, applyUndo) {
+    const input = $('depositCancelReason');
+    if (cancelling || id !== cancellationId || !input) return;
+    const staff = ZEZMS.staffAuth;
+    const actor = staff.getContext().user?.id;
+    const reason = field(input.value).slice(0,180);
+    cancelling = true;
+    cancellationId = '';
+    closeModal();
+    try {
+      requirePermission('MANAGE_DEPOSITS');
+      if (!actor || !await staff.confirmSensitive('Confirm deposit cancellation')) return;
+      const cloud = ZEZMS.cloudSync;
+      const scope = ZEZMS.syncResilience.captureContext(() => ({
+        client:cloud.getClient(), session:cloud.getSession(), state:cloud.getState(), ownerId:cloud.currentSyncOwnerId()
+      }));
+      const ready = () => {
+        requirePermission('MANAGE_DEPOSITS');
+        const user = staff.getContext().user;
+        if (!user || user.id !== actor || user.active === false || !scope.valid()) {
+          throw Error('The signed-in staff member or sync account changed. Open Cancel again.');
+        }
+        const state = cloud.getState();
+        if (!state.initialized || !navigator.onLine || !ZEZMS.bootstrapStartupGuard.allowsBusinessTransactions()
+          || !cloud.isReadyForLocalOperations() || cloud.isApplyingRemote() || state.configurationVerificationRequired
+          || state.integrityWarning || state.oldClientDetected || cloud.getFailedOperations().length) {
+          throw Error('Finish connecting and syncing this device before cancelling the deposit.');
+        }
+      };
+      ready();
+      if (cloud.getOutbox().length) await cloud.pushNow(false);
+      await cloud.pullNow(false);
+      ready();
+      if (cloud.getOutbox().length) throw Error('Upload queued transactions before cancelling the deposit.');
+      const txn = byId(id);
+      const operation = validateUndo(txn, accountById(txn.accountID));
+      const before = DB;
+      DB = structuredClone(before);
+      let writeStarted = false;
+      try {
+        applyUndo(reason);
+        writeStarted = true;
+        if (!cloud.saveLocalDatabaseDurably()) throw Error('The deposit cancellation could not be saved.');
+      } catch (error) {
+        if (!writeStarted) DB = before;
+        else {
+          const raw = ZEZMS.db.load(DB_KEY);
+          DB = (typeof raw === 'string' ? JSON.parse(raw) : raw) || before;
+          if (voided(byId(id))) throw Error('Cancellation is saved locally. Reopen TradeFlow and verify Sync before trying again.');
+        }
+        throw error;
+      }
+      try {
+        await cloud.pushNow(false);
+      } catch (error) {
+        if (!cloud.getOutbox().some(op => op.opId === operation)) throw error;
+      }
+      if (cloud.getOutbox().some(op => op.opId === operation)) {
+        toast('Cancellation is saved locally and awaiting sync.', 'warn');
+      } else if (voided(byId(id))) {
+        toast('Deposit cancelled. Its receipt is marked VOID.');
+      } else {
+        ZEZMS.depositCheckout.validateDepositUndo(byId(id));
+        throw Error('The order changed before cancellation was confirmed. Review the current deposit before trying again.');
+      }
+    } catch (error) {
+      toast(error.message, 'err');
+    } finally {
+      cancelling = false;
+      render();
+    }
+  }
+
+  function cancellationButton(txn) {
+    if (voided(txn) || !can('MANAGE_DEPOSITS')) return '';
+    return `<button type="button" class="btn sm danger" data-deposit-id="${escAttr(txn.id)}" onclick="ZEZMS.deposits.cancel(this.dataset.depositId)">Cancel</button>`;
   }
 
   function openAccounts() {
@@ -178,7 +278,7 @@
     requirePermission('MANAGE_DEPOSITS');
     const checkout = ZEZMS.depositCheckout;
     const current = orderId ? checkout.order(orderId) : null;
-    if (orderId && (!current?.account || current.sale || voided(current.initial) || current.balance <= 0)) {
+    if (orderId && (!current?.account || !current.entry || current.sale || current.balance <= 0)) {
       throw Error('This product has no remaining deposit payment to record.');
     }
     draftActor = session.sharedUserId || session.cashier;
@@ -305,8 +405,11 @@
         <p>${voided(transaction)
           ? esc('Reversed' + (transaction.undoneAt ? ' on ' + timestamp(transaction.undoneAt) : '') + (transaction.undoneBy ? ' by ' + transaction.undoneBy : ''))
           : 'Please keep this receipt as proof of your deposit.'}</p>
-        <div class="deposit-approval"><span class="deposit-stamp${voided(transaction) ? ' deposit-void' : ''}">${voided(transaction) ? 'VOID' : 'APPROVED'}</span>
-          <div class="deposit-signature"><b>${esc(transaction.cashier)}</b><br>Cashier signature ____________________</div>
+        <div class="deposit-approval">
+          <b class="deposit-cashier">${esc(transaction.cashier)}</b>
+          <span class="deposit-signature-label">Cashier signature</span>
+          <span class="deposit-stamp${voided(transaction) ? ' deposit-void' : ''}">${voided(transaction) ? 'VOID' : 'APPROVED'}</span>
+          <span class="deposit-signature" aria-hidden="true"></span>
         </div>
       </div>
     </main>`;
@@ -324,7 +427,10 @@
       .deposit-total{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5mm 0;padding:3mm;border:1px solid #12495d;color:#12495d;font-size:14pt}
       .deposit-stamp{display:inline-block;font:bold 12pt Arial;color:#166534;border:3px double currentColor;border-radius:4px;padding:2mm 3mm}
       .deposit-stamp.deposit-void{color:#991b1b}
-      .deposit-approval{display:grid;justify-items:start;gap:1mm;width:fit-content;max-width:100%;margin-inline-start:auto}
+      .deposit-approval{display:grid;grid-template-columns:auto minmax(8em,34mm);gap:1mm 2mm;align-items:end;width:fit-content;max-width:100%;margin-inline-start:auto}
+      .deposit-cashier{grid-area:1 / 1}.deposit-signature-label{grid-area:2 / 1}
+      .deposit-stamp{grid-area:1 / 2;justify-self:center}
+      .deposit-signature{grid-area:2 / 2;height:1em;border-bottom:1px solid currentColor}
       @page{size:A5 portrait;margin:7mm}
       @media print{html,body{margin:0;padding:0;background:white}.deposit-receipt{width:100%;font-size:9.5pt;line-height:1.27}
         .deposit-paper{padding:2mm}.deposit-business{margin-bottom:2mm}.deposit-paper h2{margin:2mm 0}
@@ -360,10 +466,11 @@
     const current = ZEZMS.depositCheckout.order(transaction.meta.depositOrderId);
     openModal(`<style>${receiptStyles()}</style>${receiptHTML(transaction)}
       ${current ? `<p class="muted">${current.sale ? 'Sale Out completed · ' + esc(current.sale.receiptRef || current.sale.receiptNo)
-        : 'Current order balance ' + fmt(current.balance)}</p>` : ''}
+        : current.entry ? 'Current order balance ' + fmt(current.balance) : 'Order cancelled'}</p>` : ''}
       <div class="row" style="margin-top:12px">
         <button class="btn" type="button" data-deposit-id="${escAttr(id)}" data-reprint="${isReprint}" onclick="ZEZMS.deposits.print(this.dataset.depositId,this.dataset.reprint==='true')">Print receipt</button>
         ${orderButtons(transaction,current)}
+        ${cancellationButton(transaction)}
         ${can('MANAGE_ACCOUNTS') && ZEZMS.depositCheckout.visibleAccount(accountById(transaction.accountID) || {}) && accountById(transaction.accountID)
           ? `<button class="btn ghost" type="button" data-deposit-id="${escAttr(id)}" onclick="ZEZMS.deposits.settle(this.dataset.depositId)">Settle depositor account</button>` : ''}
         <button class="btn ghost" type="button" onclick="closeModal()">Close</button>
@@ -371,7 +478,7 @@
   }
 
   function orderButtons(transaction, current) {
-    if (!current?.account || current.sale || voided(current.initial) || voided(transaction) || !can('MANAGE_DEPOSITS')) return '';
+    if (!current?.account || !current.entry || current.sale || voided(transaction) || !can('MANAGE_DEPOSITS')) return '';
     const attr = ' data-deposit-order="' + escAttr(current.id) + '"';
     return (current.balance > 0 ? '<button class="btn sm ghost" type="button"' + attr + ' onclick="ZEZMS.deposits.openForm(this.dataset.depositOrder)">Record installment</button>' : '')
       + (ZEZMS.depositCheckout.canRelease() ? '<button class="btn sm" type="button"' + attr + ' onclick="ZEZMS.depositCheckout.open(this.dataset.depositOrder)">Sale Out</button>' : '');
@@ -393,13 +500,14 @@
         return `<tr>
         <td class="mono" style="max-width:19ch;overflow-wrap:anywhere">${esc(row.receiptNo)}</td>
         <td><b>${esc(row.name)}</b><br><small>${esc(row.meta.depositContact || '')}</small>
-          ${current ? `<br><small>${esc(current.product.name)} · ${current.sale ? 'Sale Out complete' : fmt(current.balance) + ' due'}</small>` : ''}</td>
+          ${current ? `<br><small>${esc(current.product.name)} · ${current.sale ? 'Sale Out complete' : current.entry ? fmt(current.balance) + ' due' : 'Order cancelled'}</small>` : ''}</td>
         <td>${esc(timestamp(row.date))}</td><td class="mono right">${esc(fmt(row.amount))}</td>
         <td>${esc(row.meta.walletLabelSnapshot || row.meta.wallet)}</td>
         <td>${voided(row) ? 'Void' : 'Recorded'}${pending.has(row.id) ? '<br><small class="muted">Awaiting sync</small>' : ''}</td>
         <td><div class="row"><button type="button" class="btn sm ghost" data-deposit-id="${escAttr(row.id)}" onclick="ZEZMS.deposits.preview(this.dataset.depositId)">View</button>
           <button type="button" class="btn sm" data-deposit-id="${escAttr(row.id)}" onclick="ZEZMS.deposits.print(this.dataset.depositId)">Print receipt</button>
-          ${row.receiptNo === current?.id ? orderButtons(row,current) : ''}</div></td>
+          ${cancellationButton(row)}
+          ${row.id === current?.entry?.id ? orderButtons(row,current) : ''}</div></td>
       </tr>`; }).join('') || '<tr><td colspan="7" class="empty">No matching deposit receipts.</td></tr>'}</tbody>
     </table></div>${ZEZMS.tablePages.controls('deposits')}`;
   }
@@ -421,6 +529,7 @@
 
   ZEZMS.deposits = Object.freeze({
     viewHTML, isDeposit, validateUndo, buildPrintDocument, submit, accountChanged, print, contactKey,
+    cancel:id => safeAction(() => openCancellation(id)), confirmCancellation,
     productChanged:() => safeAction(productChanged), updateOrderTotal,
     openForm:id => safeAction(() => openForm(id)),
     openAccounts:() => safeAction(openAccounts),
