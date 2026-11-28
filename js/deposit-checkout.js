@@ -83,7 +83,7 @@
 
   function canRelease() {
     const staff = ZEZMS.staffAuth;
-    return staff.isActive() && staff.can('SALE_OUT') && staff.can('MANAGE_ACCOUNTS');
+    return staff.isActive() && staff.can('SALE_OUT') && staff.can('MANAGE_DEPOSITS');
   }
 
   function open(id) {

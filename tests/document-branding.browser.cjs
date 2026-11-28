@@ -95,7 +95,7 @@ test('actual browser print pages and both A5 test documents place a scannable we
    const v=__brandingFixtures,logo=await ZEZPrint.getEmbeddedWatermark(),b=ZEZMS.documentBranding;
    const docs={receipt:ZEZMS.operationsUpdate.buildReceiptPrintDocument(v.receipt,logo),invoice:ZEZMS.commercialDocuments.buildCommercialPrintDocument('invoice',v.invoice,logo),waybill:ZEZMS.commercialDocuments.buildCommercialPrintDocument('waybill',v.waybill,logo)};
    DB.accountTxns.push(v.deposit);
-   ZEZMS.staffAuth={...ZEZMS.staffAuth,isActive:()=>true,can:permission=>permission==='VIEW_ACCOUNTS'};
+   ZEZMS.staffAuth={...ZEZMS.staffAuth,isActive:()=>true,can:permission=>permission==='VIEW_DEPOSITS'};
    const originalOpen=window.open;
    try {
     window.open=()=>({document:{open(){},write(html){docs.deposit=html;},close(){}}});
@@ -116,6 +116,7 @@ test('actual browser print pages and both A5 test documents place a scannable we
    await p.evaluate(()=>Promise.all([...document.images].map(i=>i.decode())));
    if(name==='deposit'){
     assert.match(await p.locator('.deposit-receipt').innerText(),/APPROVED/);
+    assert.ok(await p.locator('.deposit-receipt').evaluate(el=>el.querySelector('.deposit-stamp').getBoundingClientRect().bottom <= el.querySelector('.deposit-signature').getBoundingClientRect().top));
     assert.match(await p.locator('.deposit-total').innerText(),/250\.75/);
     assert.match(await p.locator('.deposit-paper').innerText(),/Balance left to pay\s+GH₵\s*249\.25/);
     assert.equal(await p.locator('.deposit-receipt').evaluate(el=>getComputedStyle(el,'::before').backgroundSize),'100% 100%');
@@ -175,7 +176,7 @@ test('Direct Print submits self-contained sales and deposit receipts, invoices, 
     await ZEZPrint.testConnection();
     const fixture = window.__brandingFixtures;
     DB.accountTxns.push(fixture.deposit);
-    ZEZMS.staffAuth={...ZEZMS.staffAuth,isActive:()=>true,can:permission=>permission==='VIEW_ACCOUNTS'};
+    ZEZMS.staffAuth={...ZEZMS.staffAuth,isActive:()=>true,can:permission=>permission==='VIEW_DEPOSITS'};
     const before = {db:JSON.stringify(DB),queue:JSON.stringify(ZEZMS.cloudSync.getOutbox())};
     const statuses = [];
     statuses.push((await ZEZMS.operationsUpdate.printReceiptDocument(fixture.receipt, {isReprint:true})).status);

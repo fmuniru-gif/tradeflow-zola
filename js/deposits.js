@@ -68,7 +68,7 @@
   }
 
   function record(input) {
-    requirePermission('MANAGE_ACCOUNTS');
+    requirePermission('MANAGE_DEPOSITS');
     const cloud = ZEZMS.cloudSync;
     const state = cloud.getState();
     if (!ZEZMS.bootstrapStartupGuard.allowsBusinessTransactions() || !cloud.isReadyForLocalOperations()
@@ -175,7 +175,7 @@
   }
 
   function openForm(orderId = '') {
-    requirePermission('MANAGE_ACCOUNTS');
+    requirePermission('MANAGE_DEPOSITS');
     const checkout = ZEZMS.depositCheckout;
     const current = orderId ? checkout.order(orderId) : null;
     if (orderId && (!current?.account || current.sale || voided(current.initial) || current.balance <= 0)) {
@@ -324,12 +324,13 @@
       .deposit-total{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5mm 0;padding:3mm;border:1px solid #12495d;color:#12495d;font-size:14pt}
       .deposit-stamp{display:inline-block;font:bold 12pt Arial;color:#166534;border:3px double currentColor;border-radius:4px;padding:2mm 3mm}
       .deposit-stamp.deposit-void{color:#991b1b}
-      .deposit-approval{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2mm}
+      .deposit-approval{display:grid;justify-items:start;gap:1mm;width:fit-content;max-width:100%;margin-inline-start:auto}
       @page{size:A5 portrait;margin:7mm}
       @media print{html,body{margin:0;padding:0;background:white}.deposit-receipt{width:100%;font-size:9.5pt;line-height:1.27}
         .deposit-paper{padding:2mm}.deposit-business{margin-bottom:2mm}.deposit-paper h2{margin:2mm 0}
         .deposit-paper dl div{padding:1mm 0}.deposit-total{margin:3mm 0;padding:2mm;font-size:12pt}
         .deposit-paper p{margin:2mm 0}.deposit-approval{break-inside:avoid}
+        .deposit-stamp{padding:1mm 2.5mm;font-size:11pt}
         .deposit-receipt,.deposit-receipt *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
         .deposit-receipt::before{position:fixed;inset:-7mm auto auto -7mm;width:148mm;height:210mm}}
     `;
@@ -341,7 +342,7 @@
 
   async function print(id, isReprint = true) {
     try {
-      requirePermission('VIEW_ACCOUNTS');
+      requirePermission('VIEW_DEPOSITS');
       const transaction = byId(id);
       return await ZEZPrint.printDocument({
         documentType:'receipt', documentId:transaction.receiptNo, copies:1, isReprint,
@@ -354,7 +355,7 @@
   }
 
   function preview(id, isReprint = true) {
-    requirePermission('VIEW_ACCOUNTS');
+    requirePermission('VIEW_DEPOSITS');
     const transaction = byId(id);
     const current = ZEZMS.depositCheckout.order(transaction.meta.depositOrderId);
     openModal(`<style>${receiptStyles()}</style>${receiptHTML(transaction)}
@@ -370,7 +371,7 @@
   }
 
   function orderButtons(transaction, current) {
-    if (!current?.account || current.sale || voided(current.initial) || voided(transaction) || !can('MANAGE_ACCOUNTS')) return '';
+    if (!current?.account || current.sale || voided(current.initial) || voided(transaction) || !can('MANAGE_DEPOSITS')) return '';
     const attr = ' data-deposit-order="' + escAttr(current.id) + '"';
     return (current.balance > 0 ? '<button class="btn sm ghost" type="button"' + attr + ' onclick="ZEZMS.deposits.openForm(this.dataset.depositOrder)">Record installment</button>' : '')
       + (ZEZMS.depositCheckout.canRelease() ? '<button class="btn sm" type="button"' + attr + ' onclick="ZEZMS.depositCheckout.open(this.dataset.depositOrder)">Sale Out</button>' : '');
@@ -404,13 +405,13 @@
   }
 
   function viewHTML() {
-    requirePermission('VIEW_ACCOUNTS');
+    requirePermission('VIEW_DEPOSITS');
     return `<section class="card" id="depositsView">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
         <div><h3 style="margin:0">Deposit receipts</h3><p class="muted">Depositor balances total <b>${esc(fmt(DB.depositors.reduce((sum, a) => sum + (Number(a.balance) || 0), 0)))}</b></p></div>
         <div class="row">
-          ${can('MANAGE_ACCOUNTS') ? '<button type="button" class="btn" onclick="ZEZMS.deposits.openForm()">Record deposit</button>' : ''}
-          <button type="button" class="btn ghost" onclick="ZEZMS.deposits.openAccounts()">Depositor accounts</button>
+          ${can('MANAGE_DEPOSITS') ? '<button type="button" class="btn" onclick="ZEZMS.deposits.openForm()">Record deposit</button>' : ''}
+          ${can('VIEW_ACCOUNTS') ? '<button type="button" class="btn ghost" onclick="ZEZMS.deposits.openAccounts()">Depositor accounts</button>' : ''}
         </div>
       </div>
       <div class="field"><label for="depositSearch">Find a deposit receipt</label><input id="depositSearch" type="search" placeholder="Name, telephone, receipt number or purpose" value="${escAttr(query)}" oninput="ZEZMS.deposits.search(this.value)"></div>
@@ -426,7 +427,7 @@
     settle:id => safeAction(() => settle(id)),
     preview:id => safeAction(() => preview(id)),
     search(value) {
-      requirePermission('VIEW_ACCOUNTS');
+      requirePermission('VIEW_DEPOSITS');
       query = String(value || '');
       $('depositHistory').innerHTML = historyHTML();
     }
